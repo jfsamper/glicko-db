@@ -64,7 +64,7 @@ The default values are in `config.py`.
 - `AUDIT_RETENTION_DAYS`: number of days to retain audit events; defaults to `730`.
 - `MAIL_SERVER`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_USE_TLS`, and `MAIL_FROM`: SMTP settings for password recovery; `PASSWORD_RESET_TTL_SECONDS` controls link expiry and defaults to 3600 seconds.
 
-Application-generated dates and times use UTC-5 by default. Each account can choose an IANA time zone in user management; accounts without a preference keep UTC-5. When ratings are calculated, matches on the same day are processed by round number and then insertion order; unknown rounds are treated as round 1.
+Application-generated dates and times use UTC-5 by default. Each account can choose an IANA time zone in user management; accounts without a preference keep UTC-5. Python uses the system IANA database on Linux, while `tzdata` provides the portable fallback on Windows or minimal Linux images. If an account's stored zone cannot be loaded, display falls back to UTC-05:00. When ratings are calculated, matches on the same day are processed by round number and then insertion order; unknown rounds are treated as round 1.
 
 Reports at `/reports` use inclusive `start_date` and `end_date` boundaries, and period membership uses the fixed server timezone (UTC-5 by default), not the account timezone. Win percentage is wins divided by games. Each row includes absolute rating points, percentage rating change, and full-integer category change. Totals are calculated once on the server and reused by the page and CSV export; records with invalid dates or results are excluded and counted. Matches materialized from tournaments retain one unique identity per pairing so they cannot be imported or counted twice.
 
