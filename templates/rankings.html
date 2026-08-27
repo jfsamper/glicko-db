@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<section class="panel">
+  <p class="note" style="text-align: right;">{{ translations.source_note }}</p>
+  <div class="panel-header centered-header">
+    <div>
+      <h2>{{ translations.rankings_heading }}</h2>
+      <p>{{ translations.rankings_subtitle }}</p>
+    </div>
+    
+  </div>
+  
+
+  <div class="card-grid rankings-grid">
+    <article class="card rankings-table-card">
+      <h3>{{ translations.table_heading }}</h3>
+      <p class="muted">{{ translations.recent_results }}</p>
+      <table class="table-stack">
+        <thead>
+          <tr>
+            <th>{{ translations.position }}</th>
+            <th>{{ translations.player }}</th>
+            <th>{{ translations.rating }}</th>
+            <th>{{ translations.category }}</th>
+            <th>{{ translations.games }}</th>
+          </tr>
+        </thead>
+        <tbody>
+        {% set ns = namespace(n=(page - 1) * page_size) %}
+        {% for player in rankings %}
+          {% if player.games_played >= 1 %}
+            {% set ns.n = ns.n + 1 %}
+            <tr>
+              <td>{{ ns.n }}</td>
+              <td><a href="{{ url_for('player_profile', id=player.id, lang=lang) }}">{{ player.display_name }}</a></td>
+              <td>{{ player.rating | round(1) }}</td>
+              <td>{{ player.category }}</td>
+              <td>{{ player.games_played }}</td>
+            </tr>
+          {% endif %}
+        {% endfor %}
+        </tbody>
+      </table>
+
+      {% if total_count > 10 %}
+        <div class="pagination-summary">
+          {{ translations.showing_results }} {{ result_start }}-{{ result_end }} {{ translations.of_label }} {{ total_count }}
+        </div>
+        <div class="pagination-row">
+          <label for="rankings-page-size">{{ translations.page_size_label }}</label>
+          <select id="rankings-page-size" onchange="window.location.href = this.value">
+            {% for option in [10, 25, 50, 100] %}
+              <option value="{{ url_for('rankings', lang=lang, page=1, page_size=option) }}" {% if page_size == option %}selected{% endif %}>{{ option }}</option>
+            {% endfor %}
+          </select>
+          {% if page > 1 %}
+            <a class="button secondary" href="{{ url_for('rankings', lang=lang, page=page - 1, page_size=page_size) }}">{{ translations.prev_page }}</a>
+          {% endif %}
+          <span aria-label="{{ translations.page_label }} {{ page }}">{{ translations.page_label }} {{ page }} {{ translations.of_label }} {{ total_pages }}</span>
+          {% if page * page_size < total_count %}
+            <a class="button" href="{{ url_for('rankings', lang=lang, page=page + 1, page_size=page_size) }}">{{ translations.next_page }}</a>
+          {% endif %}
+        </div>
+      {% endif %}
+    </article>
+    
+    <article class="card rankings-form-card">
+      <h3>{{ translations.recent_form }}</h3>
+      <div class="mini-list">
+        {% for player in rankings[:20] %}
+        {% if player.recent_results %}
+          <div class="mini-row">
+            <strong>{{ player.display_name }}</strong>
+            <span>{{ player.recent_results }}</span>
+          </div>
+        {% endif %}
+        {% endfor %}
+      </div>
+    </article>
+  </div>
+</section>
+{% endblock %}

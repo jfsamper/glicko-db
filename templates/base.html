@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="{{ lang }}">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{{ translations.title }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/nouislider@15.8.1/dist/nouislider.min.css" /> 
+    <script src="https://cdn.bootcss.com/noUiSlider/15.8.1/nouislider.js"></script>
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">
+        <a href="{{ url_for('index', lang=lang) }}"><img src="{{ url_for('static', filename='favicon.svg') }}" alt="Logo" class="logo" width="200px" style="background-color: var(--border); border-radius: 50%;" /></a>
+      </div>
+      <div class="brand">
+        <h1 class="centered-header">{{ translations.title }}</h1>
+        <p>{{ translations.database }} {{translations.subtitle}}</p>
+      </div>
+      <div class="top-actions" style="display: flex; align-items: center;">
+        <nav>
+          <a href="{{ url_for('index', lang=lang) }}">{{ translations.home }}</a>
+          <a href="{{ url_for('rankings', lang=lang) }}">{{ translations.rankings }}</a>
+          <a href="{{ url_for('players', lang=lang) }}">{{ translations.players }}</a>
+          <a href="{{ url_for('matches', lang=lang) }}">{{ translations.games }}</a>
+          <a href="{{ url_for('reports', lang=lang) }}">{{ translations.get('reports_title', 'Reports') }}</a>
+          <a href="{{ url_for('tournaments', lang=lang) }}">{{ translations.tournaments_title }}</a>
+          <a href="{{ url_for('category_converter', lang=lang) }}">{{ translations.category }}</a>
+          {% if session.get('user_id') %}
+          <a href="{{ url_for('admin_profile', lang=lang) }}">{{ translations.profile_title }}</a>
+          {% endif %}
+        </nav>
+        <div id="floating-controls">
+        <button id="lang-toggle" type="button">ENG</button>
+        <button id="theme-toggle" type="button">⚫</button>
+        </div>
+    </div>
+    </header>
+
+    <div class="page-shell">
+      <aside class="sidebar">
+        <div class="sidebar-block small">
+          <h3>{{ translations.contact }}</h3>
+          <a href="tel:318-007-9047">318-007-9047</a>
+          <a href="mailto:contacto@colombiago.org">contacto@colombiago.org</a>
+          <a href="https://colombiago.org">colombiago.org</a>
+        </div>
+        <nav class="sidebar-nav">
+          <a href="{{ url_for('index', lang=lang) }}">{{ translations.home }}</a>
+          <a href="{{ url_for('rankings', lang=lang) }}">{{ translations.rankings }}</a>
+          <a href="{{ url_for('players', lang=lang) }}">{{ translations.players }}</a>
+          <a href="{{ url_for('matches', lang=lang) }}">{{ translations.games }}</a>
+          <a href="{{ url_for('reports', lang=lang) }}">{{ translations.get('reports_title', 'Reports') }}</a>
+          <a href="{{ url_for('tournaments', lang=lang) }}">{{ translations.tournaments_title }}</a>
+          <a href="{{ url_for('category_converter', lang=lang) }}">{{ translations.category }}</a>
+        </nav>
+        <div class="sidebar-block small">
+          <h4>{{ translations.report_results }}</h4>
+          <p>{{ translations.report_results_help }} <a href="{{ url_for('reports', lang=lang) }}">{{ translations.get('reports_title', 'Reports') }}.</a></p>
+        </div>
+      </aside>
+
+      <main class="content-area">
+        {% with messages = get_flashed_messages() %}
+          {% if messages %}
+            <div class="flash">
+              {% for message in messages %}
+                <p>{{ message }}</p>
+              {% endfor %}
+            </div>
+          {% endif %}
+        {% endwith %}
+        {% block content %}{% endblock %}
+      </main>
+    </div>
+
+    <footer>
+      <p>{{ translations.footer }}</p>
+    </footer>
+
+    <script id="frontend-i18n-data" type="application/json">
+      {{
+        {
+          "languageCycle": ["es", "en", "pt"],
+          "languageLabels": {"es": "SPA", "en": "ENG", "pt": "POR"},
+          "ratingSuffix": translations.get("glicko_label", "Glicko"),
+          "categoryScale": {
+            "k": (category_config|default({})).get("glicko_k", 16.6),
+            "m": (category_config|default({})).get("glicko_m", 338)
+          }
+        } | tojson
+      }}
+    </script>
+
+    <script>
+    const defaultFrontendI18n = {
+        languageCycle: ["es", "en", "pt"],
+        languageLabels: { "es": "SPA", "en": "ENG", "pt": "POR" },
+        ratingSuffix: "Glicko",
+      categoryScale: { k: 16.6, m: 338 },
+    };
+
+    const frontendI18nNode = document.getElementById("frontend-i18n-data");
+    let frontendI18n = defaultFrontendI18n;
+
+    if (frontendI18nNode) {
+        try {
+            const parsed = JSON.parse(frontendI18nNode.textContent);
+            frontendI18n = Object.assign({}, defaultFrontendI18n, parsed);
+        } catch (_error) {
+            frontendI18n = defaultFrontendI18n;
+        }
+    }
+
+    window.frontendI18n = frontendI18n;
+
+    const root = document.documentElement;
+
+    const savedTheme = {{ session.get('user_theme') | tojson }} || localStorage.getItem("theme") || "light";
+
+    if (savedTheme === "dark") {
+        root.setAttribute("data-theme", "dark");
+    }
+
+    const themeButton = document.getElementById("theme-toggle");
+
+    function updateThemeButton() {
+        themeButton.textContent =
+        root.getAttribute("data-theme") === "dark"
+            ? "⚪"
+            : "⚫";
+    }
+
+    updateThemeButton();
+
+    themeButton.addEventListener("click", () => {
+        const dark =
+        root.getAttribute("data-theme") === "dark";
+
+        if (dark) {
+        root.removeAttribute("data-theme");
+        localStorage.setItem("theme", "light");
+        } else {
+        root.setAttribute("data-theme", "dark");
+        localStorage.setItem("theme", "dark");
+        }
+
+        updateThemeButton();
+    });
+
+    const langButton = document.getElementById("lang-toggle");
+
+    const currentLang =
+        new URLSearchParams(window.location.search)
+        .get("lang") || "es";
+
+    const languageCycle = frontendI18n.languageCycle || ["es", "en", "pt"];
+    const languageLabels = frontendI18n.languageLabels || { "es": "SPA", "en": "ENG", "pt": "POR" };
+    const currentIndex = languageCycle.indexOf(currentLang);
+    const nextLang = languageCycle[(currentIndex + 1) % languageCycle.length];
+
+    langButton.textContent = languageLabels[nextLang];
+
+    langButton.addEventListener("click", () => {
+        const url = new URL(window.location);
+
+        url.searchParams.set("lang", nextLang);
+
+        window.location = url.toString();
+    });
+    </script>
+  </body>
+  <script>
+    const slider = document.getElementById("rating-slider");
+
+    if (slider) {
+
+        const minInput = document.getElementById("glicko_min");
+        const maxInput = document.getElementById("glicko_max");
+        const display = document.getElementById("rating-range-display");
+
+        function glickoToCategory(glicko) {
+          const scale = frontendI18n.categoryScale || defaultFrontendI18n.categoryScale;
+          const value = (Math.log(glicko / scale.m) * scale.k) - 29;
+          const rank = Math.floor(value);
+          return rank < 0 ? `${Math.abs(rank)} kyu` : `${rank + 1} dan`;
+        }
+
+        noUiSlider.create(slider, {
+            start: [
+                Number(minInput.value),
+                Number(maxInput.value)
+            ],
+            connect: true,
+            range: {
+                min: 300,
+                max: 3000
+            },
+            step: 10
+        });
+
+        slider.noUiSlider.on("update", function(values) {
+
+            const min = Math.round(values[0]);
+            const max = Math.round(values[1]);
+
+            minInput.value = min;
+            maxInput.value = max;
+
+            display.textContent = `${min} (${glickoToCategory(min)}) - ${max} (${glickoToCategory(max)})`;
+        });
+    }
+  </script>
+  <script>
+      window.MathJax = {
+          tex: {
+              inlineMath: [['$', '$'], ['\\(', '\\)']]
+          },
+          svg: {
+              fontCache: 'global'
+          }
+      };
+  </script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
+</html>

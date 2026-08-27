@@ -1,0 +1,5 @@
+/* Bundle entrypoint for modular CSS files */
+@import url("css/layout.css");
+@import url("css/tables.css");
+@import url("css/admin.css");
+@import url("css/tournament.css");

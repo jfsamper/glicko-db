@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<section class="panel">
+
+  <div class="panel-header centered-header">
+    <h2>{{translations.games}}</h2>
+  </div>
+
+  {% include "partials/matches_table.html" %}
+
+</section>
+
+{% endblock %}

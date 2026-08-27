@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<section class="panel">
+
+  <div class="panel-actions">
+    <nav aria-label="Breadcrumb" class="breadcrumb">
+      <a href="{{ url_for('admin', lang=lang) }}">{{ translations.admin_heading }}</a>
+      <span> &gt; </span>
+      <span>{{ translations.user_management_heading }}</span>
+    </nav>
+  </div>
+
+  <div class="panel-header">
+
+    <div>
+      <h2>{{ translations.user_management_heading }}</h2>
+      <p>{{ translations.user_management_subtitle }}</p>
+    </div>
+
+    <a href="{{ url_for('admin_create_user', lang=lang) }}" class="button">
+      {{ translations.create_user_button }}
+    </a>
+
+  </div>
+
+  <table class="table-stack">
+
+    <thead>
+      <tr>
+        <th>{{ translations.username_label }}</th>
+        <th>{{ translations.email_label }}</th>
+        <th>{{ translations.role_label }}</th>
+        <th>{{ translations.timezone_label }}</th>
+        <th>{{ translations.status }}</th>
+        <th>{{ translations.actions_label }}</th>
+      </tr>
+    </thead>
+
+    <tbody>
+
+      {% for user in users %}
+
+      <tr>
+        <td>{{ user.username }}</td>
+        <td>{{ user.email or '-' }}</td>
+        <td>{{ user.role_names or '-' }}</td>
+        <td>{{ user.timezone or translations.timezone_default }}</td>
+        <td>{{ translations.active_label if user.is_active else translations.inactive_label }}</td>
+        <td>
+          <div class="inline-actions">
+            <a href="{{ url_for('admin_edit_user', user_id=user.id, lang=lang) }}" class="button secondary">
+              {{ translations.edit_heading }}
+            </a>
+
+            <form method="post" action="{{ url_for('admin_delete_user', user_id=user.id, lang=lang) }}" class="inline-form" onsubmit="return confirm('{{ translations.delete_user_confirm }}');">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+              <button type="submit" class="button danger">
+                {{ translations.delete_user_button }}
+              </button>
+            </form>
+          </div>
+        </td>
+      </tr>
+
+      {% else %}
+
+      <tr>
+        <td colspan="6">{{ translations.no_users }}</td>
+      </tr>
+
+      {% endfor %}
+
+    </tbody>
+
+  </table>
+
+</section>
+
+{% endblock %}

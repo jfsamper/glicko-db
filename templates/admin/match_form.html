@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<section class="panel">
+
+  <div class="panel-actions">
+    <nav aria-label="Breadcrumb" class="breadcrumb">
+      <a href="{{ url_for('admin', lang=lang) }}">{{ translations.admin_heading }}</a>
+      <span> &gt; </span>
+      <a href="{{ url_for('admin_matches', lang=lang) }}">{{ translations.matches_heading_admin }}</a>
+      <span> &gt; </span>
+      <span>{{ translations.edit_match_heading if match else translations.add_match_heading }}</span>
+    </nav>
+  </div>
+
+  <div class="panel-header">
+    <div>
+      <h2>{{ translations.edit_match_heading if match else translations.add_match_heading }}</h2>
+    </div>
+  </div>
+
+  <form method="post" action="{{ form_action }}" class="filter-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+    <div class="filter-panel">
+      <div class="filter-header">
+        <h3>{{ translations.edit_match_heading if match else translations.add_match_heading }}</h3>
+      </div>
+
+      <div class="filter-grid">
+        <div class="filter-item">
+          <label for="match_date">{{ translations.match_date_label }}</label>
+          <input
+            id="match_date"
+            type="date"
+            name="match_date"
+            value="{{ match.match_date if match else '' }}"
+            required
+          >
+        </div>
+
+        <div class="filter-item">
+          <label for="result">{{ translations.result_label }}</label>
+          <select id="result" name="result" required>
+            <option value="1-0" {% if match and match.result == "1-0" %}selected{% endif %}>{{ translations.white_wins }}</option>
+            <option value="0-1" {% if match and match.result == "0-1" %}selected{% endif %}>{{ translations.black_wins }}</option>
+            <option value="1/2-1/2" {% if match and match.result == "1/2-1/2" %}selected{% endif %}>{{ translations.draw_result }}</option>
+          </select>
+        </div>
+
+        <div class="filter-item">
+          <label for="white_player_id">{{ translations.white_player_label }}</label>
+          <select id="white_player_id" name="white_player_id" required>
+            <option value="" disabled {% if not match %}selected{% endif %}>{{ translations.select_player }}</option>
+            {% for p in players %}
+              <option value="{{ p.id }}" {% if match and match.white_player_id == p.id %}selected{% endif %}>
+                {{ p.display_name }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="filter-item">
+          <label for="black_player_id">{{ translations.black_player_label }}</label>
+          <select id="black_player_id" name="black_player_id" required>
+            <option value="" disabled {% if not match %}selected{% endif %}>{{ translations.select_player }}</option>
+            {% for p in players %}
+              <option value="{{ p.id }}" {% if match and match.black_player_id == p.id %}selected{% endif %}>
+                {{ p.display_name }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="filter-item wide">
+          <label for="event">{{ translations.event_label }}</label>
+          <input
+            id="event"
+            type="text"
+            name="event"
+            value="{{ match.event if match else '' }}"
+          >
+        </div>
+
+        <div class="filter-item wide">
+          <label for="notes">{{ translations.notes_label }}</label>
+          <input
+            id="notes"
+            type="text"
+            name="notes"
+            value="{{ match.notes if match else '' }}"
+          >
+        </div>
+      </div>
+
+      <div class="filter-actions">
+        <button type="submit" class="button">
+          {{ translations.save_match }}
+        </button>
+      </div>
+    </div>
+  </form>
+
+</section>
+
+{% endblock %}

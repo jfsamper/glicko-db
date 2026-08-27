@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% block content %}
+<section class="panel">
+  <div class="panel-header centered-header">
+    <div>
+      <h2>{{ translations.import_heading }}</h2>
+      <p>{{ translations.import_subtitle }}</p>
+    </div>
+  </div>
+
+  <form method="post" enctype="multipart/form-data" class="filter-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+    <div class="filter-panel">
+      <div class="filter-grid">
+        <div class="filter-item wide">
+          <label for="file">{{ translations.upload_file }}</label>
+          <input id="file" name="file" type="file" accept=".csv,.xlsx,.xls" />
+        </div>
+      </div>
+
+      <div class="filter-actions">
+        <button type="submit" class="button">{{ translations.submit }}</button>
+      </div>
+    </div>
+  </form>
+</section>
+{% endblock %}

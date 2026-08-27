@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<section class="panel">
+  <div class="panel-header centered-header">
+    <h2>Glicko → {{translations.category}}</h2>
+  </div>
+  <form method="get" class="filter-form">
+    <div class="filter-panel">
+      <div class="filter-grid">
+        <div class="filter-item wide">
+          <label for="glicko-input">{{ translations.glicko_label }}</label>
+          <input
+            id="glicko-input"
+            type="number"
+            step="0.1"
+            name="glicko"
+            value="{{ glicko or '' }}"
+            placeholder="{{ translations.glicko_input_placeholder }}"
+            required
+          >
+        </div>
+      </div>
+      <div class="filter-actions">
+        <button type="submit" class="button">
+          {{ translations.convert_button }}
+        </button>
+      </div>
+    </div>
+  </form>
+  {% if category %}
+    <article class="card">
+      <h3>{{ translations.category }}</h3>
+      <p class="metric">{{ category }}</p>
+    </article>
+  {% endif %}
+</section>
+
+<section class="panel">
+  <div class="panel-header centered-header">
+    <h2>{{ translations.formula }} Glicko → {{ translations.category }}</h2>
+  </div>
+  <div class="card" style="text-align: center; align-content: center;">
+    <p> r &gt; 0 : {{ translations.dan_label }}</p>
+    <p> r &lt; 0 : {{ translations.kyu_label }} </p>
+
+    <div class="formula-box">
+      $$r = \left( \ln\left(\frac{glicko}{m}\right) \cdot k \right) - 29$$
+    </div>
+    <div class="variables-grid">
+      <div class="variable-card">
+        <div class="variable-name"> k <br/>({{ translations.constant }})</div>
+        <div class="variable-value">{{ k }} <!-- 16.6  17 --></div>
+      </div>
+      <div class="variable-card">
+        <div class="variable-name"> m <br/>({{ translations.minimum }})</div>
+        <div class="variable-value">{{ m }} <!-- 338 340 352 --></div>
+      </div>
+    </div>
+  </div>
+
+</section>
+
+
+<section class="panel">
+  <div class="panel-header centered-header">
+    <h2>{{ translations.glicko_scale }}</h2> 
+  </div>
+  
+  <div class="category-bars-header">
+      <span class="category-label">{{ translations.category }}</span>
+      <span class="category-label">{{ translations.glicko_label }}</span>
+      <span class="category-bar-header"></span>
+  </div>
+
+  <div class="category-bars">
+    {% for row in categories %}
+      {% set pct = (row.glicko * 100 / max_glicko) %}
+
+      <div class="category-bar-row">
+        <span class="category-label">
+          {{ row.display_category }}
+        </span>
+
+        <span class="category-label">
+          {{ row.glicko }}
+        </span>
+
+        <div class="category-bar">
+          <div
+            class="category-bar-fill"
+            style="width: {{ pct }}%;"
+          ></div>
+        </div>
+
+      </div>
+    {% endfor %}
+  </div></section>
+
+<!-- <section class="panel">
+  <div class="panel-header">
+    <h2>Category Reference Table</h2>
+  </div>
+
+  <table class="category-table">
+    <thead>
+      <tr>
+        <th>Category</th>
+        <th>Glicko</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in categories %}
+      <tr>
+        <td>{{ row.category }}</td>
+        <td>{{ row.glicko }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+-->
+
+{% endblock %}

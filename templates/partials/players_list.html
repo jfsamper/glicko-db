@@ -1,0 +1,156 @@
+<form method="get" class="filter-form">
+
+    <input type="hidden" name="lang" value="{{ lang }}">
+    <input type="hidden" name="page" value="1">
+
+    <div class="filter-panel">
+        <div class="filter-header">
+            <h3>{{ translations.search }}</h3>
+        </div>
+
+        <div class="filter-grid">
+            <div class="filter-item wide">
+                <label for="display_name">{{ translations.name_label }}</label>
+                <input
+                    type="text"
+                    id="display_name"
+                    name="display_name"
+                    placeholder="{{ translations.name_label }}"
+                    value="{{ request.args.get('display_name', '') }}"
+                >
+            </div>
+
+            <div class="filter-item compact">
+                <label for="last_active">{{ translations.last_active }}</label>
+                <select id="last_active" name="last_active">
+                    <option value="" {% if not request.args.get('last_active') %}selected{% endif %}>{{ translations.any_time }}</option>
+                    <option value="30" {% if request.args.get('last_active') == '30' %}selected{% endif %}>{{ translations.last_30_days }}</option>
+                    <option value="90" {% if request.args.get('last_active') == '90' %}selected{% endif %}>{{ translations.last_90_days }}</option>
+                    <option value="365" {% if request.args.get('last_active') == '365' %}selected{% endif %}>{{ translations.last_year }}</option>
+                </select>
+            </div>
+
+            <div class="filter-item compact">
+                <label for="sort">{{ translations.sort_label }}</label>
+                <select id="sort" name="sort">
+                    <option value="rating" {% if request.args.get('sort', 'rating') == 'rating' %}selected{% endif %}>{{ translations.rating }}</option>
+                    <option value="name" {% if request.args.get('sort', 'rating') == 'name' %}selected{% endif %}>{{ translations.name_label }}</option>
+                    <option value="activity" {% if request.args.get('sort', 'rating') == 'activity' %}selected{% endif %}>{{ translations.last_active }}</option>
+                </select>
+            </div>
+
+            <div class="filter-item compact">
+                <label for="order">{{ translations.order_label }}</label>
+                <select id="order" name="order">
+                    <option value="desc" {% if request.args.get('order', 'desc') == 'desc' %}selected{% endif %}>{{ translations.desc_label }}</option>
+                    <option value="asc" {% if request.args.get('order', 'desc') == 'asc' %}selected{% endif %}>{{ translations.asc_label }}</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="filter-item slider-block">
+            <div class="slider-header">
+                <label>{{ translations.glicko_range_label }}</label>
+                <span id="rating-range-display" class="range-badge"></span>
+            </div>
+
+            <div id="rating-slider" aria-label="Glicko range filter"></div>
+            <input type="hidden" name="glicko_min" id="glicko_min" value="{{ request.args.get('glicko_min', 300) }}">
+            <input type="hidden" name="glicko_max" id="glicko_max" value="{{ request.args.get('glicko_max', 3000) }}">
+        </div>
+
+        <div class="filter-actions">
+            <button type="submit" class="button">
+                {{ translations.search }}
+            </button>
+
+            {% if admin_mode %}
+                <a class="button secondary" href="{{ url_for('admin_players', lang=lang) }}">
+                    {{ translations.clear_search }}
+                </a>
+            {% else %}
+                <a class="button secondary" href="{{ url_for('players', lang=lang) }}">
+                    {{ translations.clear_search }}
+                </a>
+            {% endif %}
+        </div>
+    </div>
+</form>
+
+<div class="card-grid">
+
+  {% for player in rankings %}
+
+    <article class="card">
+
+      <h4>
+        <a href="{{ url_for('player_profile', id=player.id, lang=lang) }}">
+          {{ player.display_name }}
+        </a>
+      </h4>
+
+      <p class="muted">
+        {{ translations.rating }}:
+        {{ player.rating | round(1) }} ({{ player.category }})
+      </p>
+
+      <p class="muted">
+        {{ translations.games }}:
+        {{ player.games_played }}
+      </p>
+
+      {% if admin_mode %}
+        
+        <div class="admin-actions">
+            <a class="text-link" href="{{ url_for('admin_edit_player', id=player.id, lang=lang) }}">
+            <button type="submit" style="width: 85%;">  
+            {{ translations.edit_heading }} </button>
+            </a>
+            <form style="background-color: var(--card);" action="{{ url_for('admin_delete_player', id=player.id, lang=lang) }}" method="post"
+              onsubmit="return confirm(
+                '{{ translations.delete_confirmation }}'
+              );">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            <button type="post"
+              style="display:inline"
+              onsubmit="return confirm(
+                '{{ translations.delete_confirmation }}'
+              );"> 
+              {{ translations.delete_heading }} </button>
+          </form>
+        </div>
+
+      {% else %}
+
+        <a class="text-link" href="{{ url_for('player_profile', id=player.id, lang=lang) }}">
+          {{ translations.profile_heading }}
+        </a>
+
+      {% endif %}
+
+    </article>
+
+  {% endfor %}
+
+</div>
+
+{% if total_count is defined and total_count > 10 %}
+  <div class="pagination-summary">
+    {{ translations.showing_results }} {{ result_start }}-{{ result_end }} {{ translations.of_label }} {{ total_count }}
+  </div>
+  <div class="pagination-row">
+    <label for="players-page-size">{{ translations.page_size_label }}</label>
+    <select id="players-page-size" onchange="window.location.href = this.value">
+      {% for option in [10, 25, 50, 100] %}
+        <option value="{{ url_for('players' if not admin_mode else 'admin_players', lang=lang, page=1, page_size=option, display_name=request.args.get('display_name', ''), glicko_min=request.args.get('glicko_min', ''), glicko_max=request.args.get('glicko_max', ''), last_active=request.args.get('last_active', ''), sort=request.args.get('sort', 'rating'), order=request.args.get('order', 'desc')) }}" {% if page_size == option %}selected{% endif %}>{{ option }}</option>
+      {% endfor %}
+    </select>
+    {% if page > 1 %}
+      <a class="button secondary" href="{{ url_for('players' if not admin_mode else 'admin_players', lang=lang, display_name=request.args.get('display_name', ''), glicko_min=request.args.get('glicko_min', ''), glicko_max=request.args.get('glicko_max', ''), last_active=request.args.get('last_active', ''), sort=request.args.get('sort', 'rating'), order=request.args.get('order', 'desc'), page=page - 1, page_size=page_size) }}">{{ translations.prev_page }}</a>
+    {% endif %}
+    <span aria-label="{{ translations.page_label }} {{ page }}">{{ translations.page_label }} {{ page }} {{ translations.of_label }} {{ total_pages }}</span>
+    {% if page * page_size < total_count %}
+      <a class="button" href="{{ url_for('players' if not admin_mode else 'admin_players', lang=lang, display_name=request.args.get('display_name', ''), glicko_min=request.args.get('glicko_min', ''), glicko_max=request.args.get('glicko_max', ''), last_active=request.args.get('last_active', ''), sort=request.args.get('sort', 'rating'), order=request.args.get('order', 'desc'), page=page + 1, page_size=page_size) }}">{{ translations.next_page }}</a>
+    {% endif %}
+  </div>
+{% endif %}

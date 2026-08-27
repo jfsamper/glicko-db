@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<section class="panel">
+
+  <div class="panel-actions">
+    <nav aria-label="Breadcrumb" class="breadcrumb">
+      <a href="{{ url_for('admin', lang=lang) }}">{{ translations.admin_heading }}</a>
+      <span> &gt; </span>
+      <span>{{ translations.backups_heading }}</span>
+    </nav>
+  </div>
+
+  <div class="panel-header">
+
+    <div>
+      <h2>{{ translations.backups_heading }}</h2>
+      <p>{{ translations.backups_subtitle }}</p>
+    </div>
+    <form method="post" action="{{ url_for('admin_create_backup', lang=lang) }}" class="inline-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+      <button type="submit" class="button">
+        {{ translations.create_backup_button }}
+      </button>
+    </form>
+
+  </div>
+
+  <table class="table-stack">
+
+    <thead>
+      <tr>
+        <th>{{ translations.name_label }}</th>
+        <th>{{ translations.date }}</th>
+        <th>{{ translations.actions_label }}</th>
+      </tr>
+    </thead>
+
+    <tbody>
+
+      {% for backup in backups %}
+
+      <tr>
+
+        <td>{{ backup.name }}</td>
+
+        <td>{{ backup.modified }}</td>
+
+        <td>
+
+          <form
+            method="post"
+            class="inline-form"
+            action="{{url_for('admin_restore_backup', lang=lang)}}"
+          >
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            <input
+              type="hidden"
+              name="name"
+              value="{{ backup.name }}"
+            >
+
+            <button type="submit" class="button secondary">
+              Restore
+            </button>
+          </form>
+
+          <form
+            method="post"
+            class="inline-form"
+            onsubmit="return confirm('Delete backup?');"
+            action="{{url_for('admin_delete_backup', lang=lang)}}"
+          >
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            <input
+              type="hidden"
+              name="name"
+              value="{{ backup.name }}"
+            >
+
+            <button type="submit" class="button danger">
+              Delete
+            </button>
+          </form>
+
+        </td>
+
+      </tr>
+
+      {% else %}
+
+      <tr>
+        <td colspan="3">
+          {{ translations.no_backups }}
+        </td>
+      </tr>
+
+      {% endfor %}
+
+    </tbody>
+
+  </table>
+
+</section>
+
+{% endblock %}

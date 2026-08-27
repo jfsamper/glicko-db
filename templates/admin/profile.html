@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="panel">
+  <div class="panel-actions">
+    <nav aria-label="Breadcrumb" class="breadcrumb">
+      <a href="{{ url_for('admin', lang=lang) }}">{{ translations.admin_heading }}</a>
+      <span> &gt; </span>
+      <span>{{ translations.profile_title }}</span>
+    </nav>
+  </div>
+
+  <div class="panel-header">
+    <h2>{{ translations.profile_title }}</h2>
+  </div>
+
+  <form method="post" class="filter-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+    <div class="filter-panel">
+      <div class="filter-header"><h3>{{ user.username }}</h3></div>
+      <div class="filter-grid">
+        <div class="filter-item wide">
+          <label for="email">{{ translations.email_label }}</label>
+          <input id="email" name="email" type="email" value="{{ user.email or '' }}" autocomplete="email">
+        </div>
+        <div class="filter-item wide">
+          <label for="language">{{ translations.language_label }}</label>
+          <select id="language" name="language">
+            {% for language in languages %}
+              <option value="{{ language }}" {% if language == (user.language or lang) %}selected{% endif %}>{{ translations.language_names[language] }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="filter-item wide">
+          <label for="theme">{{ translations.theme_label }}</label>
+          <select id="theme" name="theme">
+            {% for theme in themes %}
+              <option value="{{ theme }}" {% if theme == (user.theme or 'light') %}selected{% endif %}>{{ translations.theme_names[theme] }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="filter-item wide">
+          <label for="timezone">{{ translations.timezone_label }}</label>
+          <select id="timezone" name="timezone">
+            <option value="">{{ translations.timezone_default }}</option>
+            {% for timezone in timezone_choices %}
+              <option value="{{ timezone }}" {% if timezone == user.timezone %}selected{% endif %}>{{ timezone }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="filter-panel">
+      <div class="filter-header"><h3>{{ translations.change_password_heading }}</h3></div>
+      <div class="filter-grid">
+        <div class="filter-item wide">
+          <label for="current_password">{{ translations.current_password_label }}</label>
+          <input id="current_password" name="current_password" type="password" autocomplete="current-password">
+        </div>
+        <div class="filter-item wide">
+          <label for="new_password">{{ translations.new_password_label }}</label>
+          <input id="new_password" name="new_password" type="password" autocomplete="new-password">
+        </div>
+        <div class="filter-item wide">
+          <label for="confirm_password">{{ translations.confirm_password_label }}</label>
+          <input id="confirm_password" name="confirm_password" type="password" autocomplete="new-password">
+        </div>
+      </div>
+      <div class="filter-actions">
+        <button type="submit" class="button">{{ translations.save_profile_button }}</button>
+      </div>
+    </div>
+  </form>
+</section>
+{% endblock %}

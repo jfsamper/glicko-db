@@ -1,0 +1,320 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="panel" id="tournament-dashboard-panel">
+  <div class="panel-actions">
+    <nav aria-label="Breadcrumb" class="breadcrumb">
+      <a href="{{ url_for('admin', lang=lang) }}">{{ translations.admin_heading }}</a>
+      <span> &gt; </span>
+      <a href="{{ url_for('admin_tournaments', lang=lang) }}">{{ translations.tournaments_title }}</a>
+      <span> &gt; </span>
+      <span>{{ tournament.name }}</span>
+    </nav>
+  </div>
+
+  <div class="panel-header">
+    <h2>{{ tournament.name }}</h2>
+    <p>{{ translations.tournament_type }}: {{ translations[tournament.tournament_type] }} | {{ translations.pairing_system }}: {{ translations[tournament.pairing_system] }} | {{ translations.status }}: {{ translations.get(tournament.status, tournament.status) }}</p>
+  </div>
+
+  <div class="card">
+    <dl class="tournament-summary" aria-label="{{ translations.tournament_name }}">
+      <div><dt>{{ translations.location }}</dt><dd>{{ tournament.location or '-' }}</dd></div>
+      <div><dt>{{ translations.rounds }}</dt><dd>{{ tournament.rounds }}</dd></div>
+      <div><dt>{{ translations.bye_points }}</dt><dd>{{ tournament.bye_points }}</dd></div>
+      <div><dt>{{ translations.absent_points }}</dt><dd>{{ tournament.absent_points }}</dd></div>
+      {% if tournament.begin_date or tournament.end_date %}
+        <div><dt>{{ translations.date }}</dt><dd>{{ tournament.begin_date or '-' }}{% if tournament.end_date and tournament.end_date != tournament.begin_date %} - {{ tournament.end_date }}{% endif %}</dd></div>
+      {% endif %}
+    </dl>
+    <p>{{ translations.players }}: <strong>{{ participant_count }}</strong></p>
+    <form method="post" action="{{ url_for('admin_update_tournament_status', tournament_id=tournament.id, lang=lang) }}" class="filter-form" data-async-admin-action="1">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+      <div class="filter-grid">
+        <div class="filter-item wide">
+          <label for="tournament_status">{{ translations.status }}</label>
+          <select id="tournament_status" name="status" onchange="this.form.requestSubmit ? this.form.requestSubmit() : this.form.submit()">
+            {% for status in ('draft', 'active', 'canceled', 'completed') %}
+              <option value="{{ status }}" {% if tournament.status == status %}selected{% endif %}>{{ translations.get(status, status) }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+    </form>
+    <div class="tournament-actions">
+      <a class="button" href="{{ url_for('admin_tournament_settings', tournament_id=tournament.id, lang=lang) }}">{{ translations.settings }}</a>
+      <a class="button" href="{{ url_for('admin_tournament_players', tournament_id=tournament.id, lang=lang) }}">{{ translations.player_management }}</a>
+      <a class="button" href="{{ url_for('admin_export_tournament_results', tournament_id=tournament.id, lang=lang) }}">{{ translations.export_results }}</a>
+    </div>
+    {% if pending_players %}
+      <div class="warning-box">
+        <strong>{{ translations.pending_new_players }}</strong>
+        <p>{{ translations.pending_new_players_warning.format(count=pending_players|length) }}</p>
+        <ul>
+          {% for pending in pending_players %}
+            <li>
+              {{ pending.display_name }}
+              {% if pending.suggested_name and pending.suggested_name != pending.display_name %}
+                <span class="pending-suggestion">
+                  <span>{{ translations.did_you_mean }} </span>
+                  {% if pending.suggested_player_id %}
+                    <form method="post" action="{{ url_for('admin_resolve_pending_player', tournament_id=tournament.id, lang=lang) }}" class="inline-form pending-suggestion-form">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                      <input type="hidden" name="pending_id" value="{{ pending.id }}"/>
+                      <input type="hidden" name="resolved_player_id" value="{{ pending.suggested_player_id }}"/>
+                      <button type="submit" class="link-button">{{ pending.suggested_name }}</button>
+                    </form>
+                  {% else %}
+                    <span>{{ pending.suggested_name }}</span>
+                  {% endif %}
+                  <span>?</span>
+                </span>
+              {% endif %}
+              <form method="post" action="{{ url_for('admin_resolve_pending_player', tournament_id=tournament.id, lang=lang) }}" class="inline-form pending-player-form">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <input type="hidden" name="pending_id" value="{{ pending.id }}"/>
+                <select name="resolved_player_id" aria-label="Resolve pending player" class="compact-select">
+                  <option value="">{{ translations.new_player_option if translations.new_player_option else 'Create new player' }}</option>
+                  {% for player in available_players %}
+                    <option value="{{ player.id }}" {% if pending.resolved_player_id == player.id %}selected{% endif %}>{{ player.display_name }}</option>
+                  {% endfor %}
+                </select>
+                <button type="submit" class="button small compact-button">{{ translations.set_player if translations.set_player else 'Set Player' }}</button>
+              </form>
+              <form method="post" action="{{ url_for('admin_delete_pending_player', tournament_id=tournament.id, lang=lang) }}" class="inline-form pending-player-form" onsubmit="return confirm('{{ translations.pending_player_delete_confirmation }}');">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <input type="hidden" name="pending_id" value="{{ pending.id }}"/>
+                <button type="submit" class="button small compact-button">{{ translations.remove_player }}</button>
+              </form>
+            </li>
+          {% endfor %}
+        </ul>
+        <small>{{ translations.pending_new_players_hint }}</small>
+      </div>
+    {% endif %}
+    {% if selected_round_id %}
+    <form method="post" action="{{ url_for('admin_process_tournament_round', tournament_id=tournament.id, lang=lang) }}" class="filter-form" data-async-admin-action="1">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+      <div class="filter-panel">
+        <div class="filter-header">
+          <h3>{{ translations.process_matches }}</h3>
+        </div>
+        <input type="hidden" name="round_id" value="{{ selected_round_id }}">
+        <div class="filter-grid">
+          <div class="filter-item">
+            <label for="process_match_date">{{ translations.match_date_label }}</label>
+            <input id="process_match_date" type="date" name="match_date" value="{{ tournament.begin_date or '' }}">
+          </div>
+          <div class="filter-item">
+            <label for="process_event">{{ translations.event_label }}</label>
+            <input id="process_event" type="text" name="event" value="{{ tournament.name }}" placeholder="{{ translations.event_label }}">
+          </div>
+        </div>
+        <div class="filter-actions">
+          <button type="submit" class="button">{{ translations.process_matches }}</button>
+        </div>
+      </div>
+    </form>
+    {% endif %}
+  </div>
+  
+    <article class="card">
+      <form method="get" class="filter-form" data-async-admin-action="1">
+        <div class="filter-panel">
+          <div class="filter-header">
+            <h3>{{ translations.select_round }}</h3>
+          </div>
+          <input type="hidden" name="lang" value="{{ lang }}">
+          <div class="filter-grid">
+            <div class="filter-item wide">
+              <label for="round_id">{{ translations.select_round }}</label>
+              <select id="round_id" name="round_id" onchange="this.form.requestSubmit ? this.form.requestSubmit() : this.form.submit()">
+                {% for round in rounds %}
+                  <option value="{{ round.id }}" {% if round.id == selected_round_id %}selected{% endif %}>{{ translations.tournament_round }} {{ round.round_number }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+        </div>
+      </form>
+    </article>
+  
+  <div class="card-grid tournament-pairing-grid">
+    <article class="card">
+      <h3>{{ translations.unpaired_players }}</h3>
+      {% if unpaired_players and selected_round_id %}
+        <form method="post" action="{{ url_for('admin_pair_selected_players', tournament_id=tournament.id, lang=lang) }}" class="filter-form" data-async-admin-action="1">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+          <div class="filter-panel">
+            <input type="hidden" name="round_id" value="{{ selected_round_id }}">
+            <div class="filter-grid">
+              <div class="filter-item wide">
+                <label for="player_ids">{{ translations.unpaired_players }}</label>
+                <select id="player_ids" name="player_ids" multiple size="8">
+                  {% for player in unpaired_players %}<option value="{{ player.player_id }}">{{ player.display_name }}</option>{% endfor %}
+                </select>
+              </div>
+            </div>
+            <div class="filter-actions">
+              <button type="submit" class="button">{{ translations.pair_selected }}</button>
+            </div>
+          </div>
+        </form>
+      {% elif not selected_round_id %}
+        <p>{{ translations.no_rounds }}</p>
+      {% else %}
+        <p>{{ translations.no_unpaired_players }}</p>
+      {% endif %}
+    </article>
+
+    <article class="card paired-tables-card">
+      <h3>{{ translations.paired_tables }}</h3>
+    {% if selected_pairings %}
+      <table class="table-stack">
+        <thead><tr><th>{{ translations.tournament_round }}</th><th>{{ translations.board }}</th><th>{{ translations.white }}</th><th>{{ translations.black }}</th><th>{{ translations.result }}</th><th>{{ translations.actions_label }}</th></tr></thead>
+        <tbody>
+          {% for pairing in selected_pairings if not pairing.is_bye %}
+          <tr>
+            <td>{{ pairing.round_number }}</td>
+            <td>{{ pairing.board_number }}</td>
+            <td class="pairing-player {% if pairing.result == '1-0' %}pairing-winner{% endif %}">
+              <form method="post" action="{{ url_for('admin_set_tournament_result', tournament_id=tournament.id, lang=lang) }}" class="pairing-result-form" data-async-admin-action="1">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <input type="hidden" name="pairing_id" value="{{ pairing.id }}">
+                <input type="hidden" name="round_id" value="{{ selected_round_id }}">
+                <input type="hidden" name="result" value="{% if pairing.result != '1-0' %}1-0{% endif %}">
+                <button type="submit" class="pairing-player-button {% if pairing.result == '1-0' %}pairing-winner{% endif %}" aria-label="{{ pairing.white_name }}">{{ pairing.white_name }}</button>
+              </form>
+            </td>
+            <td class="pairing-player {% if pairing.result == '0-1' %}pairing-winner{% endif %}">
+              <form method="post" action="{{ url_for('admin_set_tournament_result', tournament_id=tournament.id, lang=lang) }}" class="pairing-result-form" data-async-admin-action="1">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <input type="hidden" name="pairing_id" value="{{ pairing.id }}">
+                <input type="hidden" name="round_id" value="{{ selected_round_id }}">
+                <input type="hidden" name="result" value="{% if pairing.result == '0-1' %}{% endif %}{% if pairing.result != '0-1' %}0-1{% endif %}">
+                <button type="submit" class="pairing-player-button {% if pairing.result == '0-1' %}pairing-winner{% endif %}" aria-label="{{ pairing.black_name }}">{{ pairing.black_name }}</button>
+              </form>
+            </td>
+            <td>
+              {% if pairing.result in ('', None) %}
+                {% set next_result = '1-0' %}
+                {% set result_label = '-' %}
+              {% elif pairing.result == '1-0' %}
+                {% set next_result = '1/2-1/2' %}
+                {% set result_label = '1-0' %}
+              {% elif pairing.result == '1/2-1/2' %}
+                {% set next_result = '0-1' %}
+                {% set result_label = '1/2-1/2' %}
+              {% else %}
+                {% set next_result = '' %}
+                {% set result_label = '0-1' %}
+              {% endif %}
+              <form method="post" action="{{ url_for('admin_set_tournament_result', tournament_id=tournament.id, lang=lang) }}" class="pairing-result-form" data-async-admin-action="1">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <input type="hidden" name="pairing_id" value="{{ pairing.id }}">
+                <input type="hidden" name="round_id" value="{{ selected_round_id }}">
+                <input type="hidden" name="result" value="{{ next_result }}">
+                <button type="submit" class="pairing-result-button" aria-label="{{ translations.result }}: {{ result_label }}">{{ result_label }}</button>
+              </form>
+            </td>
+            <td class="pairing-actions">
+              <form class="unpair-form" method="post" action="{{ url_for('admin_unpair', tournament_id=tournament.id, lang=lang) }}" data-async-admin-action="1">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <input type="hidden" name="pairing_id" value="{{ pairing.id }}">
+                <input type="hidden" name="round_id" value="{{ selected_round_id }}">
+                <button
+                  type="submit"
+                  class="unpair-button"
+                  data-action="unpair"
+                  title="{{ translations.unpair }}"
+                  aria-label="{{ translations.unpair }}: {{ pairing.white_name }}{% if not pairing.is_bye %} - {{ pairing.black_name }}{% endif %}"
+                >{{ translations.unpair }}</button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+          {% for pairing in selected_pairings if pairing.is_bye %}
+          <tr class="bye-pairing-row">
+            <td>{{ pairing.round_number }}</td>
+            <td colspan="3" class="pairing-player bye-player">{{ pairing.white_name }}</td>
+            <td class="bye-label">{{ translations.bye }}</td>
+            <td class="pairing-actions">
+              <form class="unpair-form" method="post" action="{{ url_for('admin_unpair', tournament_id=tournament.id, lang=lang) }}" data-async-admin-action="1">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <input type="hidden" name="pairing_id" value="{{ pairing.id }}">
+                <input type="hidden" name="round_id" value="{{ selected_round_id }}">
+                <button
+                  type="submit"
+                  class="unpair-button"
+                  data-action="unpair"
+                  title="{{ translations.unpair }}"
+                  aria-label="{{ translations.unpair }}: {{ pairing.white_name }}"
+                >{{ translations.unpair }}</button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p>{{ translations.no_paired_tables }}</p>
+    {% endif %}
+    </article>
+
+    <article class="card round-results-card">
+      <form method="post" action="{{ url_for('admin_generate_tournament_round', tournament_id=tournament.id, lang=lang) }}" class="filter-form" style="margin-top: 12px;" data-async-admin-action="1">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        <button type="submit" class="button">{{ translations.generate_round }}</button>
+      </form>
+    </article>
+
+    <article class="card round-results-card">
+      <h3>{{ translations.round_results }}</h3>
+      {% if selected_round_id and unpaired_players %}
+        <form method="post" action="{{ url_for('admin_set_round_player_status', tournament_id=tournament.id, lang=lang) }}" class="filter-form" data-async-admin-action="1">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+          <div class="filter-panel">
+            <input type="hidden" name="round_id" value="{{ selected_round_id }}">
+            <div class="filter-grid">
+              <div class="filter-item wide">
+                <label for="absent_player_id">{{ translations.player }}</label>
+                <select id="absent_player_id" name="player_id" required>
+                  {% for player in unpaired_players %}<option value="{{ player.player_id }}">{{ player.display_name }}</option>{% endfor %}
+                </select>
+              </div>
+            </div>
+            <div class="filter-actions">
+              <button type="submit" name="status" value="absent" class="button">{{ translations.mark_absent }}</button>
+            </div>
+          </div>
+        </form>
+      {% endif %}
+      {% if absent_players %}
+        <div class="mini-list">
+          {% for player in absent_players %}<div class="mini-row"><strong>{{ player.display_name }}</strong><span>{{ translations.absent }}</span></div>{% endfor %}
+        </div>
+      {% endif %}
+    </article>
+  </div>
+
+
+  <div class="card">
+    <h3>{{ translations.standings }}</h3>
+    {% if standings %}
+      <table class="table-stack standings-table">
+        <thead><tr><th class="standings-rank">N°</th><th class="standings-player">{{ translations.player }}</th>{% for round in rounds|reverse %}<th class="standings-round">R{{ round.round_number }}</th>{% endfor %}<th>{{ translations.score }}</th>{% if tournament.tournament_type == 'mcmahon' %}<th>{{ translations.mms or 'MMS' }}</th>{% endif %}<th>{{ translations.wins }}</th><th>{{ translations.sos }}</th><th>{{ translations.sosos }}</th><th>{{ translations.sodos }}</th></tr></thead>
+        <tbody>
+          {% for row in standings %}
+          <tr>
+            <td class="standings-rank">{{ row.rank }}</td><td class="standings-player">{{ row.name }}{% if row.rank_label %} ({{ row.rank_label }}){% endif %}</td>{% for round in rounds|reverse %}<td class="standings-round">{% for item in row.round_results if item.round == round.round_number %}{{ item.opponent }}{{ item.result }}{% else %}-{% endfor %}</td>{% endfor %}<td>{{ row.primary_score }}</td>{% if tournament.tournament_type == 'mcmahon' %}<td>{{ row.mms }}</td>{% endif %}<td>{{ row.wins }}</td><td>{{ row.sos }}</td><td>{{ row.sosos }}</td><td>{{ row.sodos }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p>{{ translations.no_tournaments }}</p>
+    {% endif %}
+  </div>
+</section>
+<script src="{{ url_for('static', filename='js/admin_tournament_async.js') }}"></script>
+{% endblock %}

@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<section class="panel">
+
+  <div class="panel-actions">
+    <nav aria-label="Breadcrumb" class="breadcrumb">
+      <a href="{{ url_for('admin', lang=lang) }}">{{ translations.admin_heading }}</a>
+      <span> &gt; </span>
+      <a href="{{ url_for('admin_players', lang=lang) }}">{{ translations.players }}</a>
+      <span> &gt; </span>
+      <span>{{ translations.edit_player_heading }}</span>
+    </nav>
+  </div>
+
+  <div class="panel-header">
+    <div>
+      <h2>{{ translations.edit_player_heading }}</h2>
+      <p>{{ translations.edit_player_subtitle }}</p>
+    </div>
+  </div>
+
+  <form method="post" class="filter-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+    <div class="filter-panel">
+      <div class="filter-header">
+        <h3>{{ translations.edit_player_heading }}</h3>
+      </div>
+
+      <div class="filter-grid">
+        <div class="filter-item wide">
+          <label for="display_name">{{ translations.display_name_label }}</label>
+          <input id="display_name" type="text" name="display_name" value="{{ player.display_name }}" required>
+        </div>
+
+        <div class="filter-item">
+          <label for="first_name">{{ translations.first_name_label }}</label>
+          <input id="first_name" type="text" name="first_name" value="{{ player.first_name }}">
+        </div>
+
+        <div class="filter-item">
+          <label for="last_name">{{ translations.last_name_label }}</label>
+          <input id="last_name" type="text" name="last_name" value="{{ player.last_name }}">
+        </div>
+
+        <div class="filter-item wide">
+          <label for="slug">{{ translations.slug_label }}</label>
+          <input id="slug" type="text" name="slug" value="{{ player.slug }}" required>
+        </div>
+
+        <div class="filter-item">
+          <label for="initial_rating">Initial Rating</label>
+          <input id="initial_rating" type="number" step="0.1" name="initial_rating" value="{{ player.initial_rating }}">
+        </div>
+
+        <div class="filter-item">
+          <label for="country">Country</label>
+          <input id="country" type="text" name="country" value="{{ player.country or '' }}">
+        </div>
+
+        <div class="filter-item wide">
+          <label for="club">Club</label>
+          <input id="club" type="text" name="club" value="{{ player.club or '' }}">
+        </div>
+
+        <div class="filter-item">
+          <label for="active">Status</label>
+          <select id="active" name="active">
+            <option value="1" {% if player.active %}selected{% endif %}>Active</option>
+            <option value="0" {% if not player.active %}selected{% endif %}>Inactive</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="filter-actions">
+        <button type="submit" class="button">{{ translations.save_changes }}</button>
+      </div>
+    </div>
+  </form>
+
+</section>
+
+{% endblock %}

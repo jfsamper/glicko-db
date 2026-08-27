@@ -1,0 +1,88 @@
+{% extends 'base.html' %}
+{% block content %}
+<section class="hero panel centered-header">
+  <h2>{{ translations.hero_title }}</h2>
+  <p>{{ translations.hero_text }}</p>
+  <p>{{ translations.hero_text2 }}</p>
+  <div class="actions">
+    <a class="button" href="{{ url_for('rankings', lang=lang) }}">{{ translations.cta_rankings }}</a>
+    <a class="button secondary" href="{{ url_for('players', lang=lang) }}">{{ translations.cta_players }}</a>
+  </div>
+</section>
+
+<section class="panel">
+  <div class="card-grid">
+    <article class="card stats-card">
+      <h3>{{ translations.news }}</h3>
+      <p class="muted">...</p>
+      <p class="muted">...</p>
+
+      <h3>{{ translations.team }}</h3>
+      {% for member in team_members %}
+        <a href="{{ url_for('player_profile', id=member.player.id, lang=lang) }}">
+          {{ member.player.display_name }}
+        </a>
+        <span class="muted">- {{ member.role }}</span><br/>
+      {% endfor %}
+    </article>
+    <article class="card">
+      <h3>{{ translations.rankings_heading }}</h3>
+      <p class="muted">{{ translations.rankings_subtitle }}</p>
+      <div class="mini-list">
+        {% set count = namespace(value=0) %}
+
+        {% for player in rankings %}
+          {% if player.games_played > 0 and count.value < 5 %}
+            <div class="mini-row">
+              <strong>
+                <a href="{{ url_for('player_profile', id=player.id, lang=lang) }}">
+                  {{ player.display_name }}
+                </a>
+              </strong>
+              <span>{{ player.rating | round(1) }} ({{glicko_to_category(player.rating, 1)}})</span>
+            </div>
+
+            {% set count.value = count.value + 1 %}
+          {% endif %}
+        {% endfor %}
+      </div>
+    </article>
+  </div>
+</section>
+
+<section class="panel">
+  <div class="panel-header centered-header">
+    <div>
+      <h3>{{ translations.stats_title }}</h3>
+      <!--<p class="muted">{{ translations.stats_subtitle or translations.rankings_subtitle }}</p>-->
+    </div>
+  </div>
+
+  <div class="stats-grid">
+    {% for period_key, period_label in [('all_time', translations.stats_period_all_time), ('year', translations.stats_period_year), ('quarter', translations.stats_period_quarter)] %}
+    <article class="stats-panel centered-header">
+      <h4>{{ period_label }}</h4>
+      <div class="stats-list">
+        {% set period_stats = home_stats[period_key] %}
+        {% for metric_key, metric_label in [('most_active', translations.stats_metric_active), ('most_wins', translations.stats_metric_wins), ('relative_glicko_gain', translations.stats_metric_glicko), ('most_wins_as_white', translations.stats_metric_white), ('most_wins_as_black', translations.stats_metric_black)] %}
+        <div class="stats-group">
+          <h5>{{ metric_label }}</h5>
+          {% set entries = period_stats[metric_key] %}
+          {% if entries %}
+            {% for entry in entries %}
+            <div class="mini-row">
+              <strong><a href="{{ url_for('player_profile', id=entry.player_id, lang=lang) }}">{{ entry.display_name }}</a></strong>
+              <span>{{ entry.display_value }}</span>
+            </div>
+            {% endfor %}
+          {% else %}
+            <p class="muted">{{ translations.stats_empty }}</p>
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

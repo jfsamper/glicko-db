@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<section class="panel">
+
+  <div class="panel-actions">
+    <nav aria-label="Breadcrumb" class="breadcrumb">
+      <a href="{{ url_for('admin', lang=lang) }}">{{ translations.admin_heading }}</a>
+      <span> &gt; </span>
+      <span>{{ translations.admin_categories_title }}</span>
+    </nav>
+  </div>
+
+  <div class="panel-header centered-header">
+    <h2>{{ translations.admin_categories_title }}</h2>
+  </div>
+
+  <div class="card">
+
+    <h3>{{ translations.category_parameters }} → {{ translations.category }}</h3>
+
+    <p>
+      {{ translations.admin_categories_desc }}
+    </p>
+
+    <form method="post" class="filter-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+      <div class="filter-panel">
+        <div class="filter-header">
+          <h3>{{translations.category_parameters}}</h3>
+        </div>
+
+        <input type="hidden" name="action" value="save">
+
+        <div class="filter-grid">
+          <div class="filter-item">
+            <label for="glicko_k">GLICKO_K</label>
+            <input
+              id="glicko_k"
+              name="glicko_k"
+              style="text-align: center;"
+              type="number"
+              step="0.01"
+              value="{{ glicko_k }}"
+              required
+            >
+          </div>
+
+          <div class="filter-item">
+            <label for="glicko_m">GLICKO_M</label>
+            <input
+              id="glicko_m"
+              name="glicko_m"
+              style="text-align: center;"
+              type="number"
+              step="1"
+              value="{{ glicko_m }}"
+              required
+            >
+          </div>
+        </div>
+
+        <div class="filter-actions">
+          <button type="submit" name="action" value="save" class="button">{{translations.refresh_button}}</button>
+          <button type="submit" name="action" value="reset" class="button secondary">{{ translations.reset_to_default }}</button>
+        </div>
+      </div>
+    </form>
+
+  </div>
+
+  <div class="card">
+
+    <h3>{{ translations.formula }}</h3>
+
+    <div class="formula-box">
+      $$r = \left(\ln\left(\frac{glicko}{m}\right)\cdot k\right)-29$$
+    </div>
+
+    <div class="variables-grid">
+
+      <div class="variable-card">
+        <div class="variable-name">GLICKO_K</div>
+        <div class="variable-value">
+          {{ glicko_k }}
+        </div>
+      </div>
+
+      <div class="variable-card">
+        <div class="variable-name">GLICKO_M</div>
+        <div class="variable-value">
+          {{ glicko_m }}
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+  <div class="card">
+    <h3>{{ translations.preview }}</h3>
+
+    <p>
+        {{ translations.admin_categories_preview_desc }}
+    </p>
+
+    <table class="table-stack">
+
+        <thead>
+        <tr>
+            <th>{{ translations.player }}</th>
+            <th>{{ translations.glicko_label }}</th>
+            <th>{{ translations.period_current }}</th>
+            <th>{{ translations.new }}</th>
+        </tr>
+        </thead>
+
+        <tbody>
+
+        {% for player in preview_players %}
+
+        <tr>
+
+            <td>
+            {{ player.display_name }}
+            </td>
+
+            <td>
+            {{ player.rating|round(1) }}
+            </td>
+
+            <td>
+            {{ player.current_category }}
+            </td>
+
+            <td>
+
+            {% if player.current_category != player.preview_category %}
+
+                <strong style="color:var(--accent);">
+                {{ player.preview_category }}
+                </strong>
+
+            {% else %}
+
+                {{ player.preview_category }}
+
+            {% endif %}
+
+            </td>
+
+        </tr>
+
+        {% endfor %}
+
+        </tbody>
+
+    </table>
+
+   </div>
+</section>
+
+{% endblock %}

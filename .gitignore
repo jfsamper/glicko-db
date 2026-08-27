@@ -1,0 +1,77 @@
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+venv.bak/
+
+# Packaging/build artifacts
+build/
+dist/
+*.egg-info/
+.eggs/
+pip-wheel-metadata/
+
+# Test, lint, coverage, tooling caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.pyre/
+.coverage
+.coverage.*
+htmlcov/
+
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+
+# Logs and runtime output
+*.log
+logs/
+passenger.log
+
+# Database and local data files
+*.sqlite3
+*.db
+*.db-journal
+
+# OS/editor noise
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Flask / app runtime artifacts
+instance/
+.webassets-cache/
+
+# Project-specific generated or transient content
+agents/
+.tmp_repro.py
+lastnotes.txt
+
+backups/*.zip
+backups/*.tar
+backups/*.gz
+backups/*.bak
+backups/*.sql
+
+temp/
+tmp/
+
+# Keep source fixtures/examples tracked if needed
+# Uncomment if you want to ignore generated uploads or exports:
+uploads/
+exports/
+data/

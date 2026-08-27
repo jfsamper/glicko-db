@@ -1,0 +1,348 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<section class="panel">
+
+  <div class="panel-actions">
+    <nav aria-label="Breadcrumb" class="breadcrumb">
+      <a href="{{ url_for('admin', lang=lang) }}">{{ translations.admin_heading }}</a>
+      <span> &gt; </span>
+      <span>{{ translations.ratings_heading }}</span>
+    </nav>
+  </div>
+
+  <div class="panel-header">
+    <h2>{{ translations.ratings_heading }}</h2>
+  </div>
+
+  <div class="card">
+
+    <h3>{{ translations.system_statistics }}</h3>
+
+    <div class="stats-grid">
+
+      <div class="stat">
+        <span class="label">{{ translations.players }}</span>
+        <span class="metric">
+          {{ player_count }}
+        </span>
+      </div>
+
+      <div class="stat">
+        <span class="label">{{ translations.games }}</span>
+        <span class="metric">
+          {{ match_count }}
+        </span>
+      </div>
+
+      <div class="stat">
+        <span class="label">{{ translations.snapshots }}</span>
+        <span class="metric">
+          {{ snapshot_count }}
+        </span>
+      </div>
+
+    </div>
+
+  </div>
+  
+  <div class="card" style="width: 100%; text-align: center; align-content: center;">
+
+    <h3>{{ translations.glicko_formula }}</h3>
+
+    <math display="block">
+      <mi>μ</mi>
+      <mo>=</mo>
+      <mfrac>
+        <mrow>
+          <mi>rating</mi>
+          <mo>−</mo>
+          <mn>1500</mn>
+        </mrow>
+        <mn>173.7178</mn>
+      </mfrac>
+    </math>
+
+    <math display="block">
+      <mi>φ</mi>
+      <mo>=</mo>
+      <mfrac>
+        <mi>RD</mi>
+        <mn>173.7178</mn>
+      </mfrac>
+    </math>
+
+    <math display="block">
+      <mi>g</mi>
+      <mo>(</mo>
+      <msub><mi>φ</mi><mi>j</mi></msub>
+      <mo>)</mo>
+      <mo>=</mo>
+      <mfrac>
+        <mn>1</mn>
+        <msqrt>
+          <mrow>
+            <mn>1</mn>
+            <mo>+</mo>
+            <mfrac>
+              <mrow>
+                <mn>3</mn>
+                <msubsup>
+                  <mi>φ</mi>
+                  <mi>j</mi>
+                  <mn>2</mn>
+                </msubsup>
+                <msup><mi>q</mi><mn>2</mn></msup>
+              </mrow>
+              <msup><mi>π</mi><mn>2</mn></msup>
+            </mfrac>
+          </mrow>
+        </msqrt>
+      </mfrac>
+    </math>
+
+    <math display="block">
+      <mi>E</mi>
+      <mo>=</mo>
+      <mfrac>
+        <mn>1</mn>
+        <mrow>
+          <mn>1</mn>
+          <mo>+</mo>
+          <mi>exp</mi>
+          <mo>(</mo>
+          <mo>−</mo>
+          <mi>g</mi>
+          <mo>(</mo>
+          <msub><mi>φ</mi><mi>j</mi></msub>
+          <mo>)</mo>
+          <mo>(</mo>
+          <mi>μ</mi>
+          <mo>−</mo>
+          <msub><mi>μ</mi><mi>j</mi></msub>
+          <mo>)</mo>
+          <mo>)</mo>
+        </mrow>
+      </mfrac>
+    </math>
+
+    <math display="block">
+      <mi>v</mi>
+      <mo>=</mo>
+      <mfrac>
+        <mn>1</mn>
+        <mrow>
+          <mo>∑</mo>
+          <mo>[</mo>
+          <msup>
+            <mrow>
+              <mi>g</mi>
+              <mo>(</mo>
+              <msub><mi>φ</mi><mi>j</mi></msub>
+              <mo>)</mo>
+            </mrow>
+            <mn>2</mn>
+          </msup>
+          <mo>⋅</mo>
+          <mi>E</mi>
+          <mo>⋅</mo>
+          <mo>(</mo>
+          <mn>1</mn>
+          <mo>−</mo>
+          <mi>E</mi>
+          <mo>)</mo>
+          <mo>]</mo>
+        </mrow>
+      </mfrac>
+    </math>
+
+    <math display="block">
+      <mi>Δ</mi>
+      <mo>=</mo>
+      <mi>v</mi>
+      <mo>⋅</mo>
+      <mo>∑</mo>
+      <mo>[</mo>
+      <mi>g</mi>
+      <mo>(</mo>
+      <msub><mi>φ</mi><mi>j</mi></msub>
+      <mo>)</mo>
+      <mo>⋅</mo>
+      <mo>(</mo>
+      <msub><mi>s</mi><mi>j</mi></msub>
+      <mo>−</mo>
+      <mi>E</mi>
+      <mo>)</mo>
+      <mo>]</mo>
+    </math>
+
+    <math display="block">
+      <msup><mi>μ</mi><mo>′</mo></msup>
+      <mo>=</mo>
+      <mi>μ</mi>
+      <mo>+</mo>
+      <msup>
+        <msup><mi>φ</mi><mo>′</mo></msup>
+        <mn>2</mn>
+      </msup>
+      <mo>⋅</mo>
+      <mo>∑</mo>
+      <mo>[</mo>
+      <mi>g</mi>
+      <mo>(</mo>
+      <msub><mi>φ</mi><mi>j</mi></msub>
+      <mo>)</mo>
+      <mo>⋅</mo>
+      <mo>(</mo>
+      <msub><mi>s</mi><mi>j</mi></msub>
+      <mo>−</mo>
+      <mi>E</mi>
+      <mo>)</mo>
+      <mo>]</mo>
+    </math>
+
+    <math display="block">
+      <msup><mi>Rating</mi><mo>′</mo></msup>
+      <mo>=</mo>
+      <msup><mi>μ</mi><mo>′</mo></msup>
+      <mo>×</mo>
+      <mn>173.7178</mn>
+      <mo>+</mo>
+      <mn>1500</mn>
+    </math>
+
+  </div>
+
+  <div class="card">
+
+    <h3>{{ translations.rating_parameters }}</h3>
+
+    <form method="post" class="filter-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+      <div class="filter-panel">
+        <div class="filter-grid">
+          <div class="filter-item">
+            <label for="tau">{{ translations.tau_label }}</label>
+            <input
+              id="tau"
+              name="tau"
+              type="number"
+              step="0.01"
+              value="{{ config.tau }}"
+              required
+            >
+          </div>
+
+          <div class="filter-item">
+            <label for="default_rating">{{ translations.default_rating_label }}</label>
+            <input
+              id="default_rating"
+              name="default_rating"
+              type="number"
+              step="1"
+              value="{{ config.default_rating }}"
+              required
+            >
+          </div>
+
+          <div class="filter-item">
+            <label for="default_rd">{{ translations.default_rd_label }}</label>
+            <input
+              id="default_rd"
+              name="default_rd"
+              type="number"
+              step="1"
+              value="{{ config.default_rd }}"
+              required
+            >
+          </div>
+
+          <div class="filter-item">
+            <label for="default_volatility">{{ translations.default_volatility_label }}</label>
+            <input
+              id="default_volatility"
+              name="default_volatility"
+              type="number"
+              step="0.000001"
+              value="{{ config.default_volatility }}"
+              required
+            >
+          </div>
+        </div>
+
+        <div class="filter-actions">
+          <button type="submit" name="action" value="save" class="button">{{ translations.save_parameters }}</button>
+          <button type="submit" name="action" value="reset" class="button secondary">{{ translations.reset_to_default }}</button>
+        </div>
+      </div>
+    </form>
+
+  </div>
+
+  <div class="card">
+
+    <h3>{{ translations.incremental_update }}</h3>
+
+    {% if dirty_date %}
+
+      <p>
+        {{ translations.ratings_out_of_date_since }}
+        <strong>{{ dirty_date }}</strong>
+      </p>
+
+      <form
+        class="filter-form"
+        method="post"
+        onsubmit="return confirm(
+          '{{ translations.update_latest_snapshot_confirm }}'
+        );"
+      >
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        <div class="filter-panel">
+          <input type="hidden" name="action" value="update">
+          <div class="filter-actions">
+            <button type="submit" class="button">{{ translations.update_latest_snapshot }}</button>
+          </div>
+        </div>
+      </form>
+
+    {% else %}
+
+      <p>
+        {{ translations.ratings_up_to_date }}
+      </p>
+
+    {% endif %}
+
+  </div>
+
+  <div class="card">
+
+    <h3>{{ translations.recalculate_ratings }}</h3>
+
+    <p>
+      {{ translations.recalculate_description }}
+    </p>
+
+    <form
+      class="filter-form"
+      method="post"
+      onsubmit="return confirm(
+        '{{ translations.recalculate_confirm }}'
+      );"
+    >
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+      <div class="filter-panel">
+        <input type="hidden" name="action" value="recalculate">
+        <div class="filter-actions">
+          <button type="submit" class="button danger">{{ translations.recalculate_everything }}</button>
+        </div>
+      </div>
+    </form>
+
+  </div>
+
+</section>
+
+{% endblock %}

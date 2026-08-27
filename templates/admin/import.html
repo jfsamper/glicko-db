@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<section class="panel">
+
+  <div class="panel-actions">
+    <nav aria-label="Breadcrumb" class="breadcrumb">
+      <a href="{{ url_for('admin', lang=lang) }}">{{ translations.admin_heading }}</a>
+      <span> &gt; </span>
+      <span>{{ translations.import_heading }}</span>
+    </nav>
+  </div>
+
+  <div class="panel-header">
+    <div>
+      <h2>{{ translations.import_heading }}</h2>
+      <p>{{ translations.import_subtitle }}</p>
+    </div>
+  </div>
+
+  <form method="post" enctype="multipart/form-data" class="filter-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+    <div class="filter-panel">
+      <div class="filter-header">
+        <h3>{{ translations.import_heading }}</h3>
+      </div>
+
+      <div class="filter-grid">
+        <div class="filter-item wide">
+          <label for="file">{{ translations.upload_file }}</label>
+          <input
+            id="file"
+            name="file"
+            type="file"
+            accept=".csv,.xlsx,.xls,.xml"
+          >
+        </div>
+      </div>
+
+      <div class="filter-actions">
+        <button type="submit" class="button">{{ translations.submit }}</button>
+      </div>
+    </div>
+  </form>
+
+  {% if preview %}
+    <div class="card" style="margin-top: 1.5rem;">
+      <div class="panel-header">
+        <h3>Preview import</h3>
+      </div>
+
+      <p>
+        <strong>{{ preview.metadata.name }}</strong>
+        {% if preview.metadata.begin_date %}
+          · {{ preview.metadata.begin_date }}
+        {% endif %}
+      </p>
+
+      <div class="filter-grid">
+        <div class="filter-item wide">
+          <label for="metadata_name">Tournament name</label>
+          <input id="metadata_name" name="metadata_name" form="commit-preview-form" value="{{ preview.metadata.name or '' }}" required>
+        </div>
+        <div class="filter-item">
+          <label for="metadata_begin_date">Start date</label>
+          <input id="metadata_begin_date" name="metadata_begin_date" type="date" form="commit-preview-form" value="{{ preview.metadata.begin_date or '' }}" required>
+        </div>
+        <div class="filter-item">
+          <label for="metadata_rounds">Rounds</label>
+          <input id="metadata_rounds" name="metadata_rounds" type="number" min="1" form="commit-preview-form" value="{{ preview.metadata.rounds or 1 }}" required>
+        </div>
+        <div class="filter-item">
+          <label for="metadata_pairing_system">Pairing system</label>
+          <select id="metadata_pairing_system" name="metadata_pairing_system" form="commit-preview-form">
+            {% for system in ('swiss', 'accelerated_swiss', 'swiss_cat', 'mcmahon') %}
+              <option value="{{ system }}" {% if preview.metadata.pairing_system == system %}selected{% endif %}>{{ system }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+      {% if preview.metadata_mismatches %}
+        <div class="warning-box">
+          <strong>Metadata mismatch</strong>
+          {% for mismatch in preview.metadata_mismatches %}<p>{{ mismatch.reason }}</p>{% endfor %}
+          <p>Edit the metadata above or reject this import.</p>
+        </div>
+      {% endif %}
+
+      <div class="stats-grid" style="margin-bottom: 1rem;">
+        <div class="stats-panel">
+          <h4>Players</h4>
+          <p class="metric small">{{ preview.summary.players_total }}</p>
+        </div>
+        <div class="stats-panel">
+          <h4>Exact matches</h4>
+          <p class="metric small">{{ preview.summary.exact_matches }}</p>
+        </div>
+        <div class="stats-panel">
+          <h4>Fuzzy match</h4>
+          <p class="metric small">{{ preview.summary.fuzzy_matches }}</p>
+        </div>
+        <div class="stats-panel">
+          <h4>New players</h4>
+          <p class="metric small">{{ preview.summary.new_players }}</p>
+        </div>
+      </div>
+
+      <table class="table-stack">
+        <thead>
+          <tr>
+            <th>Player</th>
+            <th>Status</th>
+            <th>Suggested match</th>
+            <th>Decision</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in preview.rows %}
+            <tr>
+              <td>{{ row.display_name }}</td>
+              <td>
+                {% if row.status == 'exact' %}Exact match
+                {% elif row.status == 'fuzzy' %}Fuzzy match
+                {% else %}New player
+                {% endif %}
+              </td>
+              <td>
+                <select name="player_decision_{{ row.source_key }}" form="commit-preview-form">
+                  {% if row.suggested_player_id %}<option value="{{ row.suggested_player_id }}">Use suggested player</option>{% endif %}
+                  {% if row.resolved_player_id %}<option value="{{ row.resolved_player_id }}">Use exact player</option>{% endif %}
+                  <option value="new" {% if row.status == 'new' %}selected{% endif %}>Create new player</option>
+                  <option value="reject" {% if row.status == 'duplicate' %}selected{% endif %}>Reject row</option>
+                </select>
+              </td>
+              <td>
+                {% if row.suggested_name %}
+                  {{ row.suggested_name }}
+                {% else %}
+                  —
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+
+      <form id="commit-preview-form" method="post" action="{{ url_for('admin_import', lang=lang) }}" style="margin-top: 1rem;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        <input type="hidden" name="action" value="commit_preview"/>
+        <input type="hidden" name="preview_file" value="{{ preview_file }}"/>
+        <button type="submit" name="metadata_decision" value="accept" class="button">Import tournament</button>
+        <button type="submit" name="metadata_decision" value="reject" class="button">Reject import</button>
+      </form>
+    </div>
+  {% endif %}
+
+</section>
+
+{% endblock %}

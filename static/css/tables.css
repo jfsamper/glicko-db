@@ -1,0 +1,127 @@
+.table-stack {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--panel);
+  table-layout: fixed;
+}
+
+.table-stack th,
+.table-stack td {
+  padding: 0.75rem;
+  border-bottom: 1px solid var(--border);
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.table-stack a {
+  color: var(--accent-secondary);
+  text-decoration: none;
+}
+
+.table-stack a:hover {
+  text-decoration: underline;
+}
+
+.standings-table {
+  table-layout: fixed;
+}
+
+.standings-rank {
+  width: 3rem;
+  min-width: 3rem;
+}
+
+.standings-rank-label {
+  width: 4.25rem;
+  min-width: 4.25rem;
+  padding-left: 0;
+  padding-right: 0.4rem;
+  white-space: nowrap;
+}
+
+.standings-player {
+  width: 26%;
+  min-width: 10rem;
+  text-align: left;
+}
+
+.standings-round {
+  width: 4.2rem;
+  min-width: 4.2rem;
+  padding-left: 0.25rem;
+  padding-right: 0.25rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.category-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.category-table th,
+.category-table td {
+  padding: 0.6rem 0.8rem;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+}
+
+.category-table th:last-child,
+.category-table td:last-child {
+  text-align: right;
+}
+
+.record-name {
+  text-align: left;
+}
+
+.record-win {
+  background-color: #34d399;
+}
+
+.record-even {
+  background-color: rgba(234, 179, 8, 0.15);
+}
+
+.record-loss {
+  background-color: rgba(255, 0, 0, 0.5);
+}
+
+[data-theme="dark"] .record-win {
+  background-color: rgba(50, 255, 0, 0.35);
+}
+
+[data-theme="dark"] .record-even {
+  background-color: rgba(0, 255, 255, 0.35);
+}
+
+[data-theme="dark"] .record-loss {
+  background-color: rgba(255, 75, 75, 0.35);
+}
+
+.pagination-row {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 1.25rem auto 0;
+  flex-wrap: wrap;
+}
+
+.pagination-row span {
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.mini-list {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.mini-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--border-soft);
+}

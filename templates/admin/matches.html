@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<section class="panel">
+
+  <div class="panel-actions">
+    <nav aria-label="Breadcrumb" class="breadcrumb">
+      <a href="{{ url_for('admin', lang=lang) }}">{{ translations.admin_heading }}</a>
+      <span> &gt; </span>
+      <span>{{ translations.matches_heading_admin }}</span>
+    </nav>
+  </div>
+
+  <div class="panel-header">
+
+    <div>
+      <h2>{{ translations.matches_heading_admin }}</h2>
+      <p>{{ translations.manage_matches_subtitle }}</p>
+    </div>
+
+    <a href="{{ url_for('admin_add_match', lang=lang) }}">
+      <button type="button">{{ translations.add_match }}</button>
+    </a>
+
+  </div>
+
+  {% set admin_mode = true %}
+  {% include "partials/matches_table.html" %}
+
+</section>
+
+{% endblock %}

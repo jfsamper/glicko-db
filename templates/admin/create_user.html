@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<section class="panel">
+
+  <div class="panel-actions">
+    <nav aria-label="Breadcrumb" class="breadcrumb">
+      <a href="{{ url_for('admin', lang=lang) }}">{{ translations.admin_heading }}</a>
+      <span> &gt; </span>
+      <a href="{{ url_for('admin_users', lang=lang) }}">{{ translations.admin_users_title }}</a>
+      <span> &gt; </span>
+      <span>{{ translations.create_user_heading }}</span>
+    </nav>
+  </div>
+
+  <div class="panel-header">
+    <h2>{{ translations.create_user_heading }}</h2>
+  </div>
+
+  <form method="post" class="filter-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+    <div class="filter-panel">
+      <div class="filter-header">
+        <h3>{{ translations.user_management_subtitle }}</h3>
+      </div>
+
+      <div class="filter-grid">
+        <div class="filter-item wide">
+          <label for="username">{{ translations.username_label }}</label>
+          <input id="username" name="username" type="text" required>
+        </div>
+
+        <div class="filter-item wide">
+          <label for="password">{{ translations.password_label }}</label>
+          <input id="password" name="password" type="password" required>
+        </div>
+
+        <div class="filter-item wide">
+          <label for="email">{{ translations.email_label }}</label>
+          <input id="email" name="email" type="email" autocomplete="email">
+        </div>
+
+        <div class="filter-item wide">
+          <label for="role_name">{{ translations.role_label }}</label>
+          <select id="role_name" name="role_name">
+            {% for role in roles %}
+              <option value="{{ role }}">{{ role }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="filter-item wide">
+          <label for="timezone">{{ translations.timezone_label }}</label>
+          <select id="timezone" name="timezone">
+            <option value="">{{ translations.timezone_default }}</option>
+            {% for timezone in timezone_choices %}
+              <option value="{{ timezone }}">{{ timezone }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <div class="filter-actions">
+        <button type="submit" class="button">{{ translations.create_user_button }}</button>
+      </div>
+    </div>
+  </form>
+
+</section>
+
+{% endblock %}

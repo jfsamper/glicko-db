@@ -1,0 +1,13 @@
+{% extends 'base.html' %}
+{% block content %}
+<section class="panel">
+  <div class="panel-header centered-header">
+    <div>
+      <h2>{{ translations.players_heading }}</h2>
+      <p>{{ translations.players_subtitle }}</p>
+    </div>
+  </div>
+  {% set admin_mode = false %}
+  {% include 'partials/players_list.html' %}
+</section>
+{% endblock %}

@@ -1,0 +1,418 @@
+{% extends 'base.html' %}
+{% block content %}
+<section class="panel">
+  <div class="panel-header centered-header">
+    <div>
+      <h2>{{ translations.profile_heading }}: {{ player.display_name }}</h2>
+      <p>{{ translations.profile_subtitle }}</p>
+    </div>
+  </div>
+
+  <div class="card-grid">
+    <article class="card highlight-card" style="width:100%; text-align: center;">
+      <h3>{{ translations.current_rating }}</h3>
+      <p class="metric">{{ player.rating | round(1) }} ({{ category }})</p>
+      <p class="muted">{{ translations.games_played }}: {{ player.games_played }}</p>
+    </article>
+  </div>
+
+  {% if badges and badges|length > 0 %}
+  <div class="card-grid" style="margin-top: 1%;">
+    <article class="card">
+      <h3>{{ translations.get('player_badges_heading', 'Achievements') }}</h3>
+      <div class="badge-list">
+        {% for badge in badges %}
+        <span class="badge-pill">
+          {% if badge.is_rank_badge %}
+            {{ badge.label }} · Colombia
+          {% else %}
+            {{ badge.label }} · {{ badge.period }}
+          {% endif %}
+        </span>
+        {% endfor %}
+      </div>
+    </article>
+  </div>
+  {% endif %}
+
+  {% if total_matches > 0 %}
+  <form method="get" class="filter-form profile-season-filter" style="margin-top: 1rem;">
+    <input type="hidden" name="id" value="{{ player.id }}">
+    <input type="hidden" name="lang" value="{{ lang }}">
+    <div class="filter-grid">
+      <div class="filter-item">
+        <label for="profile-season">{{ translations.season }}</label>
+        <select id="profile-season" name="season" onchange="this.form.submit()">
+          <option value="">{{ translations.all_seasons }}</option>
+          {% for year in profile_seasons %}<option value="{{ year }}" {% if season == year|string %}selected{% endif %}>{{ year }}</option>{% endfor %}
+        </select>
+      </div>
+    </div>
+  </form>
+
+  <div class="card-grid" style="display: block; margin-top: 1%;">
+    <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; width: 100%; margin: 0 auto 1rem auto;">
+      <article class="card" style="height: 100%;">
+        <h3>{{ translations.total_results }}</h3>
+        <p class="metric small">{{ stats.total.wins }}-{{ stats.total.losses }}{% if stats.total.draws %}-{{ stats.total.draws }}{% endif %}</p>
+      </article>
+
+      <article class="card" style="height: 100%;">
+        <h3>{{ translations.yearly_results }}</h3>
+        <p class="metric small">{{ stats.yearly.wins }}-{{ stats.yearly.losses }}{% if stats.yearly.draws %}-{{ stats.yearly.draws }}{% endif %}</p>
+      </article>
+
+      <article class="card" style="height: 100%;">
+        <h3>{{ translations.quarterly_results }}</h3>
+        <p class="metric small">{{ stats.quarterly.wins }}-{{ stats.quarterly.losses }}{% if stats.quarterly.draws %}-{{ stats.quarterly.draws }}{% endif %}</p>
+      </article>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; width: 100%; margin: 0 auto 1rem auto;">
+      <article class="card" style="height: 100%;">
+        <h3>{{ translations.win_rate }}</h3>
+        <div style="display:grid; gap:0.35rem;">
+          <div><strong>{{ translations.overall_results }}</strong>: {{ '%.1f'|format(stats.total.win_rate) }}%</div>
+          <div>{{ translations.as_white }}: {{ '%.1f'|format(stats.white.win_rate) }}%</div>
+          <div>{{ translations.as_black }}: {{ '%.1f'|format(stats.black.win_rate) }}%</div>
+        </div>
+      </article>
+
+      <article class="card" style="height: 100%;">
+        <h3>{{ translations.recent_streak }}</h3>
+        {% if stats.recent_streak %}
+          <div class="badge-list" style="justify-content: center;">
+            {% for symbol in stats.recent_streak %}
+              <span class="badge-pill {% if symbol == 'X' %}record-win{% elif symbol == 'O' %}record-loss{% else %}record-even{% endif %}" style="min-width: 1.6rem; text-align: center;">{{ symbol }}</span>
+            {% endfor %}
+          </div>
+        {% else %}
+          <p class="muted">—</p>
+        {% endif %}
+      </article>
+
+      <article class="card" style="height: 100%;">
+        <h3>{{ translations.career_milestones }}</h3>
+        <div style="display:grid; gap:0.35rem;">
+          <div><strong>{{ translations.best_rating }}</strong>: {{ stats.milestones.best_rating | round(1) }} ({{ glicko_to_category(stats.milestones.best_rating, 1) }})</div>
+          <div><strong>{{ translations.streak_count }}</strong>: {{ stats.milestones.streak_count }}</div>
+          <div><strong>{{ translations.current_streak }}</strong>: {{ stats.milestones.current_streak }}</div>
+          <div><strong>{{ translations.last_played }}</strong>: {{ stats.milestones.last_played if stats.milestones.last_played else '—' }}</div>
+        </div>
+      </article>
+    </div>
+
+    <article class="card chart-card" style="width: 100%;">  
+      <div style="text-align:center ;">
+        <div>
+          <h3>{{ translations.chart_title }}</h3>
+          <p class="muted">{{ translations.chart_caption }}</p>
+        </div>
+      </div>
+      {% if rating_chart.points %}
+        <div class="chart-viewport">
+          <svg viewBox="0 0 600 225" class="rating-chart" role="img" aria-label="{{ translations.chart_title }}">
+            <rect x="-35" y="2" width="675" height="220" rx="20" class="chart-surface"></rect>
+            <line x1="24" y1="196" x2="596" y2="196" class="axis"></line>
+            <line x1="24" y1="24" x2="24" y2="196" class="axis"></line>
+            <line x1="24" y1="24" x2="596" y2="24" class="grid"></line>
+            <line x1="24" y1="110" x2="596" y2="110" class="grid"></line>
+            <line x1="24" y1="196" x2="596" y2="196" class="grid"></line>
+            <line x1="24" y1="{{ rating_chart.baseline_y }}" x2="596" y2="{{ rating_chart.baseline_y }}" class="baseline">
+              {{glicko_to_category(rating_chart.baseline_y, 1)}}
+            </line>
+            <path d="{{ rating_chart.path }}" class="trend"></path>
+            {% for point in rating_chart.points %}
+              <circle
+                cx="{{ point.x }}"
+                cy="{{ point.y }}"
+                r="4"
+                class="point"
+                data-date="{{ point.date }}"
+                data-rating="{{ point.rating | round(1) }}"
+                data-category="{{ glicko_to_category(point.rating, 1) }}"
+                data-x="{{ point.x }}"
+                data-y="{{ point.y }}">
+              </circle>
+            {% endfor %}
+            <circle
+              cx="{{ rating_chart.points[-1].x }}"
+              cy="{{ rating_chart.points[-1].y }}"
+              r="6"
+              class="current-point"
+              data-date="{{ rating_chart.points[-1].date }}"
+              data-rating="{{ rating_chart.points[-1].rating | round(1) }}"
+              data-category="{{ glicko_to_category(rating_chart.points[-1].rating, 1) }}"
+              data-x="{{ rating_chart.points[-1].x }}"
+              data-y="{{ rating_chart.points[-1].y }}"></circle>
+            <text x="-20" y="18" class="chart-label">{{ glicko_to_category(rating_chart.label_max, 1) }}</text>
+            <text x="-20" y="110" class="chart-label">{{ glicko_to_category(((rating_chart.label_max + rating_chart.label_min) / 2), 1) }}</text>
+            <text x="-20" y="195" class="chart-label">{{ glicko_to_category(rating_chart.label_min, 1) }}</text>
+            <text x="20" y="215" class="chart-label">{{ datetime.strptime(rating_chart.points[0].date, '%Y-%m-%d').strftime('%m/%y') }}</text>
+            <text x="300" y="215" class="chart-label">{{ datetime.strptime(rating_chart.points[(rating_chart.points|length // 2)].date, '%Y-%m-%d').strftime('%m/%y') }}</text>
+            <text x="570" y="215" class="chart-label">{{ datetime.strptime(rating_chart.points[-1].date, '%Y-%m-%d').strftime('%m/%y') }}</text>
+          </svg>
+          <div id="chart-tooltip" class="chart-tooltip" role="status" aria-live="polite">
+            <div class="chart-tooltip__content">
+              <strong class="chart-tooltip__date">-</strong>
+              <span class="chart-tooltip__rating">-</span>
+              <span class="chart-tooltip__category">-</span>
+            </div>
+          </div>
+        </div>
+        <div class="chart-meta">
+          <span class="chart-current">{{ datetime.strptime(rating_chart.points[0].date, '%Y-%m-%d').strftime('%d/%m/%y') }}: {{ rating_chart.points[0].rating | round(1) }} ({{ glicko_to_category(rating_chart.points[0].rating, 1) }})</span>
+          <!-- Change in rating, if positive prefix + if negative prefix - -->
+          <span class="chart-current">
+            {% set rating_change = rating_chart.points[-1].rating - rating_chart.points[0].rating %}
+            {% if rating_change > 0 %}
+              {{ translations.change }} +{{ rating_change | round(1) }} 
+            {% elif rating_change < 0 %}
+              {{ translations.change }} {{ rating_change | round(1) }}
+            {% else %}
+              {{ translations.change }} +0
+            {% endif %} 
+            
+          </span>
+          <span class="chart-current">{{ datetime.strptime(rating_chart.points[-1].date, '%Y-%m-%d').strftime('%d/%m/%y') }}: {{ rating_chart.points[-1].rating | round(1) }} ({{ glicko_to_category(rating_chart.points[-1].rating, 1) }})</span>
+
+        </div>
+      {% else %}
+        <p class="muted centered-header">{{ translations.no_rating_history }}</p>
+      {% endif %}
+    </article>
+  </div>
+</section>
+
+<section class="panel">
+  <div class="panel-header centered-header"><h3>{{ translations.tournament_overview }}</h3></div>
+  {% if tournaments %}
+    <table class="table-stack"><thead><tr><th>{{ translations.tournament_name }}</th><th>{{ translations.date }}</th><th>{{ translations.pairing_system }}</th><th>{{ translations.score }}</th><th>{{ translations.final_position }}</th></tr></thead>
+      <tbody>{% for tournament in tournaments %}<tr><td><a href="{{ url_for('tournament_page', tournament_id=tournament.id, lang=lang) }}">{{ tournament.name }}</a></td><td>{{ tournament.begin_date }}</td><td>{{ tournament.pairing_system }}</td><td>{{ tournament.score }}</td><td>{{ tournament.final_position }}</td></tr>{% endfor %}</tbody>
+    </table>
+  {% else %}<p class="muted">{{ translations.no_tournament_history }}</p>{% endif %}
+  {% if total_tournaments > 10 %}
+    <div class="pagination-summary">
+      {{ translations.showing_results }} {{ tournament_pagination.result_start }}-{{ tournament_pagination.result_end }} {{ translations.of_label }} {{ total_tournaments }}
+    </div>
+    <div class="pagination-row">
+      {% if tournament_pagination.page > 1 %}
+        <a class="button secondary" href="{{ url_for('player_profile', id=player.id, lang=lang, season=season, page=page, page_size=page_size, tournament_page=tournament_pagination.page - 1) }}">{{ translations.prev_page }}</a>
+      {% endif %}
+      <span aria-label="{{ translations.page_label }} {{ tournament_pagination.page }}">{{ translations.page_label }} {{ tournament_pagination.page }} {{ translations.of_label }} {{ tournament_pagination.total_pages }}</span>
+      {% if tournament_pagination.page < tournament_pagination.total_pages %}
+        <a class="button" href="{{ url_for('player_profile', id=player.id, lang=lang, season=season, page=page, page_size=page_size, tournament_page=tournament_pagination.page + 1) }}">{{ translations.next_page }}</a>
+      {% endif %}
+    </div>
+  {% endif %}
+</section>
+
+<section class="panel">
+  <div class="panel-header centered-header">
+    <h3>{{ translations.opponent_records }}</h3>
+  </div>
+
+  <table class="table-stack">
+    <thead>
+      <tr>
+        <th style="text-align:left;">{{ translations.opponent }}</th>
+        <th>{{ translations.rating }}</th>
+        <th>{{ translations.result }}</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for opponent in opponent_records %}
+      
+      <tr
+      class="
+      {% if opponent.is_self %}
+        record-even
+      {% endif %}
+      "
+      >
+        <td style="text-align:left;">
+          {% if opponent.is_self %}
+          {{ opponent.name }}
+          {% else %}
+          <a href="{{ url_for('player_profile', id=opponent.id, lang=lang) }}">
+            {{ opponent.name }}
+          </a>
+          {% endif %}
+        </td>
+
+        <td>{{ opponent.rating | round(1) }}</td>
+
+        <td
+        class="
+        {% if opponent.is_self %}
+          
+        {% elif opponent.wins > opponent.losses %}
+          record-win
+        {% elif opponent.wins < opponent.losses %}
+          record-loss
+        {% else %}
+          record-even
+        {% endif %}
+        "
+        >
+          {% if opponent.is_self %}
+            
+          {% else %}
+            {{ opponent.wins }}-{{ opponent.losses }}
+            {% if opponent.draws %}
+              -{{ opponent.draws }}
+            {% endif %}
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+
+<section class="panel">
+  <div class="panel-header centered-header">
+    <h3>{{ translations.match_history }}</h3>
+  </div>
+  <table class="table-stack">
+    <thead>
+      <tr>
+        <th>{{ translations.date }}</th>
+        <th>{{ translations.white }}</th>
+        <th>{{ translations.black }}</th>
+        <th>{{ translations.result }}</th>
+      </tr>
+    </thead>
+    <tbody>
+    
+    {% for match in matches %}
+    <tr
+      class="
+      {% set result_text =
+          format_match_result(
+            match.result,
+            lang,
+            player_id=player.id,
+            white_player_id=match.white_player_id,
+            black_player_id=match.black_player_id
+          )
+      %}
+
+      {% if result_text in ['Win', 'Victoria'] %}
+        record-win
+      {% elif result_text in ['Loss', 'Derrota'] %}
+        record-loss
+      {% else %}
+        record-even
+      {% endif %}
+      "
+    >
+        <td>{{ match.match_date }}</td>
+
+        <td>
+        {% if match.white_player_id == player.id %}
+            {{ match.white_name }}
+        {% else %}
+            <a href="{{ url_for('player_profile', id=match.white_player_id, lang=lang) }}"> {{ match.white_name }} </a>
+        {% endif %}
+        </td>
+
+        <td>
+        {% if match.black_player_id == player.id %}
+            {{ match.black_name }}
+        {% else %}
+            <a href="{{ url_for('player_profile', id=match.black_player_id, lang=lang) }}"> {{ match.black_name }} </a>
+        {% endif %}
+        </td>
+
+        <td>
+        {{ format_match_result(
+            match.result,
+            lang,
+            player_id=player.id,
+            white_player_id=match.white_player_id,
+            black_player_id=match.black_player_id
+        ) }}
+        </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+
+  {% if total_matches > 10 %}
+    <div class="pagination-summary">
+      {{ translations.showing_results }} {{ result_start }}-{{ result_end }} {{ translations.of_label }} {{ total_matches }}
+    </div>
+    <div class="pagination-row">
+      <label for="player-page-size">{{ translations.page_size_label }}</label>
+      <select id="player-page-size" onchange="window.location.href = this.value">
+        {% for option in [10, 25, 50, 100] %}
+          <option value="{{ url_for('player_profile', id=player.id, lang=lang, page=1, page_size=option) }}" {% if page_size == option %}selected{% endif %}>{{ option }}</option>
+        {% endfor %}
+      </select>
+      {% if page > 1 %}
+        <a class="button secondary" href="{{ url_for('player_profile', id=player.id, lang=lang, page=page - 1, page_size=page_size) }}">{{ translations.prev_page }}</a>
+      {% endif %}
+      <span aria-label="{{ translations.page_label }} {{ page }}">{{ translations.page_label }} {{ page }} {{ translations.of_label }} {{ total_pages }}</span>
+      {% if page * page_size < total_matches %}
+        <a class="button" href="{{ url_for('player_profile', id=player.id, lang=lang, page=page + 1, page_size=page_size) }}">{{ translations.next_page }}</a>
+      {% endif %}
+    </div>
+  {% endif %}
+</section>
+
+<script>
+  (function () {
+    const tooltip = document.getElementById('chart-tooltip');
+    if (!tooltip) return;
+
+    const frontendI18n = window.frontendI18n || {};
+    const ratingSuffix = frontendI18n.ratingSuffix || 'Glicko';
+
+    const viewport = tooltip.closest('.chart-viewport');
+    const svg = viewport?.querySelector('.rating-chart');
+    if (!viewport || !svg) return;
+
+    const activatePoint = (point) => {
+      svg.querySelectorAll('.point, .current-point').forEach((item) => {
+        item.classList.toggle('is-active', item === point);
+      });
+      showTooltip(point);
+    };
+
+    const showTooltip = (point) => {
+      const viewportRect = viewport.getBoundingClientRect();
+      const pointRect = point.getBoundingClientRect();
+
+      tooltip.querySelector('.chart-tooltip__date').textContent = point.dataset.date || '-';
+      tooltip.querySelector('.chart-tooltip__rating').textContent = `${point.dataset.rating || '-'} ${ratingSuffix}`;
+      tooltip.querySelector('.chart-tooltip__category').textContent = point.dataset.category || '-';
+
+      const left = pointRect.left - viewportRect.left + (pointRect.width / 2);
+      const top = pointRect.top - viewportRect.top + (pointRect.height / 2) - 18;
+
+      tooltip.style.left = `${left}px`;
+      tooltip.style.top = `${top}px`;
+      tooltip.classList.add('is-visible');
+    };
+
+    const hideTooltip = () => {
+      svg.querySelectorAll('.point, .current-point').forEach((item) => {
+        item.classList.remove('is-active');
+      });
+      tooltip.classList.remove('is-visible');
+    };
+
+    svg.querySelectorAll('.point, .current-point').forEach((point) => {
+      point.addEventListener('mouseenter', () => activatePoint(point));
+      point.addEventListener('mousemove', () => activatePoint(point));
+      point.addEventListener('mouseleave', hideTooltip);
+      point.addEventListener('focus', () => activatePoint(point));
+      point.addEventListener('blur', hideTooltip);
+    });
+  })();
+</script>
+  {% else %}
+    <p class="muted centered-header">{{ translations.no_rating_history }}</p>
+  {% endif %}
+{% endblock %}

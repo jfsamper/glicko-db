@@ -1,0 +1,533 @@
+.paired-tables-card {
+  grid-column: span 1;
+  min-width: 0;
+  overflow-x: auto;
+}
+
+.tournament-actions {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin: 1rem 0;
+}
+
+.tournament-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 1.25rem;
+  margin: 0 0 0.85rem;
+  color: var(--muted-text);
+  font-size: 0.92rem;
+}
+
+.tournament-summary div {
+  display: inline-flex;
+  gap: 0.35rem;
+}
+
+.tournament-summary dt {
+  font-weight: 600;
+}
+
+.tournament-summary dd {
+  margin: 0;
+}
+
+.paired-tables-card .table-stack {
+  min-width: 52rem;
+}
+
+.paired-tables-card .table-stack th:last-child,
+.paired-tables-card .table-stack td:last-child {
+  width: 10rem;
+}
+
+.paired-tables-card .table-stack th:nth-child(1),
+.paired-tables-card .table-stack tr:not(.bye-pairing-row) td:nth-child(1) {
+  width: 5.5rem;
+}
+
+.paired-tables-card .table-stack th:nth-child(2),
+.paired-tables-card .table-stack tr:not(.bye-pairing-row) td:nth-child(2) {
+  width: 4.5rem;
+}
+
+.bye-pairing-row {
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+  border-top: 2px solid color-mix(in srgb, var(--accent) 35%, transparent);
+}
+
+.bye-pairing-row .bye-player,
+.bye-pairing-row .bye-label {
+  font-weight: 700;
+}
+
+.bye-pairing-row .bye-label {
+  color: var(--accent);
+  text-transform: uppercase;
+}
+
+.pairing-result-form {
+  display: inline;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+}
+
+.pairing-player-button,
+.pairing-result-button {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  padding: 0.2rem 0.35rem;
+}
+
+.pairing-player-button:hover,
+.pairing-result-button:hover {
+  color: var(--accent);
+  text-decoration: underline;
+}
+
+.pairing-winner,
+.pairing-player-button.pairing-winner {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.pairing-result-button {
+  min-width: 2.5rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.tournament-pairing-grid {
+  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+}
+
+.round-results-card {
+  grid-column: 1 / -1;
+}
+
+.rankings-grid {
+  grid-template-columns: minmax(0, 7fr) minmax(220px, 3fr);
+  align-items: start;
+}
+
+.rankings-table-card {
+  min-width: 0;
+}
+
+.rankings-form-card {
+  min-width: 0;
+}
+
+.card-grid .chart-card {
+  grid-column: 1 / -1;
+  min-height: 430px;
+}
+
+.feature-list {
+  display: grid;
+  gap: 0.5rem;
+  padding-left: 1.2rem;
+}
+
+.badge-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  justify-content: center;
+}
+
+.badge-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.45rem 0.7rem;
+  border-radius: 999px;
+  background: rgba(15, 143, 95, 0.12);
+  border: 1px solid rgba(15, 143, 95, 0.28);
+  color: var(--accent);
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.badge-pill.record-win {
+  background: rgba(16, 185, 129, 0.12);
+  border-color: rgba(16, 185, 129, 0.28);
+  color: #047857;
+}
+
+.badge-pill.record-even {
+  background: rgba(234, 179, 8, 0.12);
+  border-color: rgba(234, 179, 8, 0.28);
+  color: #92400e;
+}
+
+.badge-pill.record-loss {
+  background: rgba(239, 68, 68, 0.12);
+  border-color: rgba(239, 68, 68, 0.28);
+  color: #b91c1c;
+}
+
+.rank-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2rem;
+  padding: 0.25rem 0.45rem;
+  border-radius: 999px;
+  background: var(--accent);
+  color: white;
+  font-weight: 700;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1rem;
+}
+
+.stats-panel {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1rem;
+}
+
+.stats-panel h4,
+.stats-group h5 {
+  margin-top: 0;
+}
+
+.stats-list {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.stats-group {
+  border-top: 1px solid var(--border-soft);
+  padding-top: 0.75rem;
+}
+
+.stats-group:first-of-type {
+  border-top: none;
+  padding-top: 0;
+}
+
+.category-bars-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.4rem;
+}
+
+.category-bar-header {
+  flex: 1;
+}
+
+.category-value-header {
+  width: 5rem;
+  text-align: right;
+}
+
+.category-value {
+  width: 5rem;
+  text-align: right;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.category-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin-top: 1rem;
+}
+
+.category-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  border-color: var(--muted);
+  border-style: dashed solid;
+  border-width: 0 0 1px 0;
+}
+
+.category-label {
+  width: 5rem;
+  flex-shrink: 0;
+}
+
+.category-bar {
+  flex: 1;
+  height: 1rem;
+  background: var(--border-soft);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.category-bar-fill {
+  height: 100%;
+  background: var(--accent);
+}
+
+.slider-block {
+  margin-top: 1rem;
+}
+
+.slider-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.range-badge {
+  display: inline-flex;
+  align-items: center;
+  background: rgba(15, 143, 95, 0.12);
+  color: var(--accent);
+  border-radius: 999px;
+  padding: 0.28rem 0.75rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+#rating-slider {
+  margin-top: 0.65rem;
+  background: transparent;
+}
+
+#rating-slider .noUi-connect {
+  background: linear-gradient(90deg, var(--accent-secondary), var(--accent));
+}
+
+#rating-range-display {
+  font-weight: bold;
+  color: var(--accent);
+}
+
+.formula-box {
+  background-color: var(--border-soft);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+  font-size: 1.25rem;
+  transition: background-color 0.3s, border-color 0.3s;
+}
+
+.variables-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.variable-card {
+  background-color: var(--card);
+  border: 1px solid var(--border);
+  padding: 1rem;
+  border-radius: 6px;
+  transition: background-color 0.3s, border-color 0.3s;
+}
+
+.variable-name {
+  font-weight: bold;
+  color: var(--muted);
+  margin-bottom: 0.25rem;
+  font-size: 0.9rem;
+  transition: color 0.3s;
+}
+
+.variable-value {
+  font-size: 1.5rem;
+  color: var(--accent-secondary);
+  font-weight: 700;
+  transition: color 0.3s;
+}
+
+.chart-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.chart-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.chart-badge {
+  background: var(--header);
+  color: white;
+  padding: 0.55rem 0.8rem;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.chart-viewport {
+  position: relative;
+  width: 100%;
+}
+
+.rating-chart {
+  width: 100%;
+  height: 320px;
+  display: block;
+  background: var(--chart-bg);
+  border-radius: 12px;
+}
+
+.chart-tooltip {
+  position: absolute;
+  z-index: 2;
+  min-width: 110px;
+  max-width: 160px;
+  padding: 0.45rem 0.55rem;
+  border-radius: 10px;
+  border: 1px solid rgba(15, 29, 45, 0.08);
+  background: rgba(15, 29, 45, 0.92);
+  color: white;
+  box-shadow: 0 10px 22px rgba(15, 29, 45, 0.2);
+  opacity: 0;
+  transform: translate(-50%, -90%);
+  pointer-events: none;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.chart-tooltip.is-visible {
+  opacity: 1;
+  transform: translate(-50%, -100%);
+}
+
+.chart-tooltip__content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  align-items: flex-start;
+  font-size: 0.75rem;
+}
+
+.chart-tooltip__date {
+  font-size: 0.72rem;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.chart-tooltip__rating {
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.chart-tooltip__category {
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.chart-surface {
+  fill: var(--chart-surface);
+  stroke: var(--border);
+  stroke-width: 1;
+}
+
+.axis {
+  stroke: var(--border-soft);
+}
+
+.grid {
+  stroke: var(--border-soft);
+  stroke-dasharray: 4 4;
+}
+
+.baseline {
+  stroke: #ef4444;
+  stroke-width: 2;
+  stroke-dasharray: 6 4;
+}
+
+.trend {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.point {
+  fill: var(--header);
+  stroke: white;
+  stroke-width: 2;
+  cursor: pointer;
+  transition: fill 0.18s ease, stroke 0.18s ease, transform 0.18s ease, opacity 0.18s ease;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.point:hover,
+.point.is-active {
+  fill: var(--accent-secondary);
+  stroke: #c7d7f2;
+  stroke-width: 2.8;
+  transform: scale(1.18);
+}
+
+.current-point {
+  fill: #ef4444;
+  stroke: white;
+  stroke-width: 2;
+  cursor: pointer;
+  transition: fill 0.18s ease, stroke 0.18s ease, transform 0.18s ease;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.current-point:hover,
+.current-point.is-active {
+  fill: #f97316;
+  stroke: #ffe7cf;
+  stroke-width: 3;
+  transform: scale(1.18);
+}
+
+.chart-label {
+  fill: var(--muted);
+  font-size: 12px;
+}
+
+.chart-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.chart-current {
+  font-weight: 700;
+  color: var(--text);
+}
+
+@media (max-width: 900px) {
+  .paired-tables-card,
+  .round-results-card {
+    grid-column: 1 / -1;
+  }
+
+  .tournament-pairing-grid {
+    grid-template-columns: 1fr;
+    column-gap: 1rem;
+    row-gap: 1rem;
+  }
+}

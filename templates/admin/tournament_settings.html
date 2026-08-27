@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="panel" id="tournament-dashboard-panel">
+  <div class="panel-actions">
+    <nav aria-label="Breadcrumb" class="breadcrumb">
+      <a href="{{ url_for('admin', lang=lang) }}">{{ translations.admin_heading }}</a>
+      <span> &gt; </span>
+      <a href="{{ url_for('admin_tournaments', lang=lang) }}">{{ translations.tournaments_title }}</a>
+      <span> &gt; </span>
+      <a href="{{ url_for('admin_tournament', tournament_id=tournament.id, lang=lang) }}">{{ tournament.name }}</a>
+      <span> &gt; </span>
+      <span>{{ translations.settings }}</span>
+    </nav>
+  </div>
+
+  <div class="panel-header centered-header">
+    <div>
+      <h2>{{ translations.settings }}</h2>
+      <p>{{ tournament.name }}</p>
+    </div>
+  </div>
+
+  <div class="card tournament-settings-card">
+    <form method="post" action="{{ url_for('admin_update_tournament_settings', tournament_id=tournament.id, lang=lang) }}" class="filter-form" data-async-admin-action="1">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+      <div class="filter-grid">
+        <div class="filter-item wide">
+          <label for="tournament_name">{{ translations.tournament_name }}</label>
+          <input id="tournament_name" name="name" value="{{ tournament.name }}" required>
+        </div>
+        <div class="filter-item wide">
+          <label for="tournament_location">{{ translations.location }}</label>
+          <input id="tournament_location" name="location" value="{{ tournament.location or '' }}">
+        </div>
+        <div class="filter-item">
+          <label for="tournament_rounds">{{ translations.rounds }}</label>
+          <input id="tournament_rounds" name="rounds" type="number" min="1" value="{{ tournament.rounds }}" required>
+        </div>
+        <div class="filter-item">
+          <label for="tournament_bye_points">{{ translations.bye_points }}</label>
+          <select id="tournament_bye_points" name="bye_points">
+            {% for points in (1, 0.5, 0) %}<option value="{{ points }}" {% if tournament.bye_points == points %}selected{% endif %}>{{ points }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="filter-item">
+          <label for="tournament_absent_points">{{ translations.absent_points }}</label>
+          <select id="tournament_absent_points" name="absent_points">
+            {% for points in (0, 0.5, 1) %}<option value="{{ points }}" {% if tournament.absent_points == points %}selected{% endif %}>{{ points }}</option>{% endfor %}
+          </select>
+        </div>
+      </div>
+      <div class="filter-actions">
+        <button type="submit" class="button">{{ translations.save_changes }}</button>
+      </div>
+    </form>
+  </div>
+</section>
+<script src="{{ url_for('static', filename='js/admin_tournament_async.js') }}"></script>
+{% endblock %}

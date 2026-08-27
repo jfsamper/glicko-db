@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="panel">
+  <div class="panel-actions">
+    <nav aria-label="Breadcrumb" class="breadcrumb">
+      <a href="{{ url_for('admin', lang=lang) }}">{{ translations.admin_heading }}</a>
+      <span> &gt; </span>
+      <span>{{ translations.admin_settings_title }}</span>
+    </nav>
+  </div>
+
+  <div class="panel-header">
+    <h2>{{ translations.admin_settings_title }}</h2>
+    <p>{{ translations.admin_settings_desc }}</p>
+  </div>
+
+  <form method="post" class="filter-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+    <div class="filter-panel">
+      <div class="filter-header">
+        <h3>{{ translations.security_settings_heading }}</h3>
+      </div>
+      <div class="filter-grid">
+        <div class="filter-item">
+          <label for="max_login_attempts">{{ translations.max_login_attempts_label }}</label>
+          <input id="max_login_attempts" name="max_login_attempts" type="number" min="1" max="1000" value="{{ settings.max_login_attempts }}" required>
+        </div>
+        <div class="filter-item">
+          <label for="login_window_seconds">{{ translations.login_window_seconds_label }}</label>
+          <input id="login_window_seconds" name="login_window_seconds" type="number" min="1" max="86400" value="{{ settings.login_window_seconds }}" required>
+        </div>
+        <div class="filter-item">
+          <label for="password_reset_ttl_seconds">{{ translations.password_reset_ttl_seconds_label }}</label>
+          <input id="password_reset_ttl_seconds" name="password_reset_ttl_seconds" type="number" min="300" max="604800" value="{{ settings.password_reset_ttl_seconds }}" required>
+        </div>
+      </div>
+      <div class="filter-actions">
+        <button type="submit" name="action" value="save" class="button">{{ translations.save_parameters }}</button>
+        <button type="submit" name="action" value="reset" class="button secondary">{{ translations.reset_to_default }}</button>
+      </div>
+    </div>
+  </form>
+</section>
+{% endblock %}

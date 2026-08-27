@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<section class="panel">
+
+  <div class="panel-actions">
+    <nav aria-label="Breadcrumb" class="breadcrumb">
+      <a href="{{ url_for('admin', lang=lang) }}">{{ translations.admin_heading }}</a>
+      <span> &gt; </span>
+      <span>{{ translations.audit_review_heading }}</span>
+    </nav>
+  </div>
+
+  <div class="panel-header">
+    <div>
+      <h2>{{ translations.audit_review_heading }}</h2>
+      <p>{{ translations.audit_review_subtitle }}</p>
+    </div>
+  </div>
+
+  <form method="get" class="filter-form" style="margin-bottom: 1rem;">
+    <input type="hidden" name="lang" value="{{ lang }}"/>
+    <div class="filter-grid">
+      <div class="filter-item">
+        <label for="user_id">{{ translations.actor_label }}</label>
+        <select id="user_id" name="user_id">
+          <option value="all">{{ translations.all_users }}</option>
+          {% for user in users %}
+            <option value="{{ user.id }}" {% if selected_user_id == user.id|string %}selected{% endif %}>{{ user.username }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="filter-item">
+        <label for="q">{{ translations.audit_search_label }}</label>
+        <input id="q" name="q" type="search" value="{{ search_text }}">
+      </div>
+      <div class="filter-item">
+        <label for="date_from">{{ translations.audit_date_from }}</label>
+        <input id="date_from" name="date_from" type="date" value="{{ date_from }}">
+      </div>
+      <div class="filter-item">
+        <label for="date_to">{{ translations.audit_date_to }}</label>
+        <input id="date_to" name="date_to" type="date" value="{{ date_to }}">
+      </div>
+
+      <div class="filter-item">
+        <label for="action_type">{{ translations.action_label }}</label>
+        <select id="action_type" name="action_type">
+          <option value="">{{ translations.all_actions }}</option>
+          {% for action in action_types %}
+            <option value="{{ action }}" {% if selected_action_type == action %}selected{% endif %}>{{ action }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+
+    <div class="filter-actions">
+      <button type="submit" class="button">{{ translations.search }}</button>
+    </div>
+  </form>
+
+  <table class="table-stack">
+    <thead>
+      <tr>
+        <th>{{ translations.timestamp_label }}</th>
+        <th>{{ translations.actor_label }}</th>
+        <th>{{ translations.action_label }}</th>
+        <th>{{ translations.resource_label }}</th>
+        <th>{{ translations.details_label }}</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for event in events %}
+        <tr>
+          <td>{{ event.created_at }}</td>
+          <td>{{ event.username or 'System' }}</td>
+          <td>{{ event.action_type }}</td>
+          <td>{{ event.resource_type or '-' }}</td>
+          <td>{{ event.details_summary }}</td>
+        </tr>
+      {% else %}
+        <tr>
+          <td colspan="5">{{ translations.audit_review_empty }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+</section>
+
+{% endblock %}

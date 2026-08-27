@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="panel">
+  <div class="panel-actions">
+    <nav aria-label="Breadcrumb" class="breadcrumb">
+      <a href="{{ url_for('admin', lang=lang) }}">{{ translations.admin_heading }}</a>
+      <span> &gt; </span>
+      <a href="{{ url_for('admin_tournaments', lang=lang) }}">{{ translations.tournaments_title }}</a>
+      <span> &gt; </span>
+      <a href="{{ url_for('admin_tournament', tournament_id=tournament.id, lang=lang) }}">{{ tournament.name }}</a>
+      <span> &gt; </span>
+      <span>{{ translations.player_management }}</span>
+    </nav>
+  </div>
+
+  <div class="panel-header centered-header">
+    <div>
+      <h2>{{ translations.player_management }}</h2>
+      <p>{{ tournament.name }}</p>
+    </div>
+  </div>
+
+  <div class="card-grid two-up">
+    <article class="card">
+      <h3>{{ translations.participant_list }}</h3>
+      {% if participants %}
+        <table class="table-stack">
+          <thead><tr><th>{{ translations.player }}</th><th>{{ translations.rating }}</th><th>{{ translations.actions_label }}</th></tr></thead>
+          <tbody>
+            {% for participant in participants %}
+            <tr>
+              <td>{{ participant.display_name }}{% if participant.is_pending %} <em>({{ translations.pending_label }})</em>{% endif %}</td>
+              <td>{{ participant.seed_rating|round(1) }}</td>
+              <td>
+                {% if participant.is_pending %}
+                <form method="post" action="{{ url_for('admin_delete_pending_player', tournament_id=tournament.id, lang=lang) }}" onsubmit="return confirm('{{ translations.pending_player_delete_confirmation }}');">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                  <input type="hidden" name="pending_id" value="{{ participant.pending_id }}">
+                  <input type="hidden" name="return_to" value="players">
+                  <button type="submit">{{ translations.remove_player }}</button>
+                </form>
+                {% else %}
+                <form method="post" action="{{ url_for('admin_remove_tournament_participant', tournament_id=tournament.id, lang=lang) }}">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                  <input type="hidden" name="player_id" value="{{ participant.player_id }}">
+                  <button type="submit">{{ translations.remove_player }}</button>
+                </form>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <p>{{ translations.no_unpaired_players }}</p>
+      {% endif %}
+    </article>
+
+    <article class="card">
+      <h3>{{ translations.add_player }}</h3>
+      <form method="post" action="{{ url_for('admin_add_tournament_participant', tournament_id=tournament.id, lang=lang) }}" class="filter-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        <label for="player_id">{{ translations.select_player }}</label>
+        <select id="player_id" name="player_id" required>
+          <option value="" disabled selected>{{ translations.select_player }}</option>
+          {% for player in available_players %}<option value="{{ player.id }}">{{ player.display_name }} ({{ player.rating|round(1) }})</option>{% endfor %}
+        </select>
+        <button type="submit">{{ translations.add_player }}</button>
+      </form>
+
+      <hr>
+      <form method="post" action="{{ url_for('admin_create_tournament_player', tournament_id=tournament.id, lang=lang) }}" class="filter-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        <div class="filter-panel">
+          <div class="filter-header">
+            <h3>{{ translations.create_pending_player }}</h3>
+          </div>
+          <div class="filter-grid">
+            <div class="filter-item">
+              <label for="new_last_name">{{ translations.last_name_label }}</label>
+              <input id="new_last_name" type="text" name="last_name" required>
+            </div>
+            <div class="filter-item">
+              <label for="new_first_name">{{ translations.first_name_label }}</label>
+              <input id="new_first_name" type="text" name="first_name" required>
+            </div>
+            <div class="filter-item">
+              <label for="new_rank">{{ translations.rank_label }}</label>
+              <select id="new_rank" name="glicko" required>
+                <option value="" disabled selected>{{ translations.rank_label }}</option>
+                {% for option in rank_options %}
+                  <option value="{{ option.glicko }}">{{ option.label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+          <div class="filter-actions">
+            <button type="submit" class="button">{{ translations.create_pending_player }}</button>
+          </div>
+        </div>
+      </form>
+    </article>
+  </div>
+
+</section>
+{% endblock %}

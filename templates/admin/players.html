@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<section class="panel">
+
+  <div class="panel-actions">
+    <nav aria-label="Breadcrumb" class="breadcrumb">
+      <a href="{{ url_for('admin', lang=lang) }}">{{ translations.admin_heading }}</a>
+      <span> &gt; </span>
+      <span>{{ translations.players }}</span>
+    </nav>
+  </div>
+
+  <div class="panel-header">
+
+    <div>
+      <h2>{{ translations.players }}</h2>
+      <p>{{ translations.edit_subtitle }}</p>
+    </div>
+
+  </div>
+
+  {% set admin_mode = true %}
+  {% include 'partials/players_list.html' %}
+
+</section>
+
+{% endblock %}

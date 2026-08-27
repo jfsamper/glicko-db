@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<section class="panel">
+
+  <h2>{{ translations.admin_heading }}</h2>
+
+  {% for section in menu_sections %}
+    <h3 class="centered-header">{{ translations[section.heading] }}</h3>
+    <div class="card-grid">
+      {% for item in section["items"] %}
+        <article class="card">
+          <h4 class="centered-header">{{ translations[item.title] }}</h4>
+          <p>{{ translations[item.description] }}</p>
+          <a href="{{ url_for(item.endpoint, lang=lang) }}">
+            {{ translations.open_link }}
+          </a>
+        </article>
+      {% endfor %}
+    </div>
+  {% endfor %}
+
+</section>
+
+{% endblock %}

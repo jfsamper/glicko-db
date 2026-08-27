@@ -1,0 +1,213 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="panel">
+  <div class="panel-actions">
+    <nav aria-label="Breadcrumb" class="breadcrumb">
+      <a href="{{ url_for('admin', lang=lang) }}">{{ translations.admin_heading }}</a>
+      <span> &gt; </span>
+      <span>{{ translations.tournaments_title }}</span>
+    </nav>
+  </div>
+
+  <div class="panel-header">
+    <h2>{{ translations.tournaments_title }}</h2>
+    <p>{{ translations.tournaments_desc }}</p>
+  </div>
+
+  <div class="card-grid">
+    <article class="card">
+      <h3>{{ translations.create_tournament }}</h3>
+      <form method="post" class="filter-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        <div class="filter-panel">
+
+          <input type="hidden" name="action" value="create">
+
+          <div class="filter-grid">
+            <div class="filter-item wide">
+              <label for="name">{{ translations.tournament_name }}</label>
+              <input id="name" name="name" required>
+            </div>
+            <div class="filter-item">
+              <label for="location">{{ translations.location }}</label>
+              <input id="location" name="location">
+            </div>
+            <div class="filter-item">
+              <label for="absent_points">{{ translations.absent_points }}</label>
+              <select id="absent_points" name="absent_points">
+                <option value="0">0</option><option value="0.5">0.5</option><option value="1">1</option>
+              </select>
+            </div>            
+            <div class="filter-item">
+              <label for="pairing_system">{{ translations.pairing_system }}</label>
+              <select id="pairing_system" name="pairing_system">
+                <option value="swiss">{{ translations.swiss }}</option>
+                <option value="swiss_cat">{{ translations.swiss_cat }}</option>
+                <option value="accelerated_swiss">{{ translations.accelerated_swiss }}</option>
+                <option value="mcmahon">{{ translations.mcmahon }}</option>
+              </select>
+            </div>
+            <div class="filter-item">
+              <label for="bye_points">{{ translations.bye_points }}</label>
+              <select id="bye_points" name="bye_points">
+                <option value="1">1</option><option value="0.5">0.5</option><option value="0">0</option>
+              </select>
+            </div>
+            <div class="filter-item">
+              <label for="rounds">{{ translations.rounds }}</label>
+              <input id="rounds" name="rounds" type="number" min="1" value="1" required>
+            </div>            
+
+          </div>
+
+          <div class="filter-actions">
+            <button type="submit" class="button">{{ translations.create_tournament }}</button>
+          </div>
+        </div>
+      </form>
+    </article>
+
+    <article class="card">
+      <h3>{{ translations.import_opengotha }}</h3>
+      <form method="post" enctype="multipart/form-data" class="filter-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        <div class="filter-panel">
+
+          <input type="hidden" name="action" value="import_opengotha">
+
+          <div class="filter-grid">
+            <div class="filter-item wide">
+              <label for="file">{{ translations.tournament_file }}</label>
+              <input id="file" name="file" type="file" accept=".xml" required>
+            </div>
+          </div>
+
+          <div class="filter-actions">
+            <button type="submit" class="button">{{ translations.import_opengotha }}</button>
+          </div>
+        </div>
+      </form>
+    </article>
+  </div>
+
+  <div class="card">
+    <h3>{{ translations.tournaments_title }}</h3>
+    <form method="get" class="filter-form" style="margin-bottom: 1rem;">
+      <input type="hidden" name="lang" value="{{ lang }}">
+      <div class="filter-actions" style="gap: 0.75rem; flex-wrap: wrap;">
+        <label for="sort" style="margin: 0;">{{ translations.sort_label }}</label>
+        <select id="sort" name="sort">
+          <option value="date" {% if request.args.get('sort', 'date') == 'date' %}selected{% endif %}>{{ translations.date }}</option>
+          <option value="name" {% if request.args.get('sort', 'date') == 'name' %}selected{% endif %}>{{ translations.name_label }}</option>
+          <option value="status" {% if request.args.get('sort', 'date') == 'status' %}selected{% endif %}>{{ translations.status }}</option>
+          <option value="participants" {% if request.args.get('sort', 'date') == 'participants' %}selected{% endif %}>{{ translations.players }}</option>
+        </select>
+        <select id="order" name="order">
+          <option value="desc" {% if request.args.get('order', 'desc') == 'desc' %}selected{% endif %}>{{ translations.desc_label }}</option>
+          <option value="asc" {% if request.args.get('order', 'desc') == 'asc' %}selected{% endif %}>{{ translations.asc_label }}</option>
+        </select>
+        {% if total_count is defined and total_count > 10 %}
+          <label for="page_size" style="margin: 0;">{{ translations.page_size_label }}</label>
+          <select id="page_size" name="page_size">
+            {% for option in [10, 25, 50, 100] %}
+              <option value="{{ option }}" {% if page_size == option %}selected{% endif %}>{{ option }}</option>
+            {% endfor %}
+          </select>
+        {% endif %}
+        <button type="submit" class="button small">{{ translations.search if translations.search else 'Apply' }}</button>
+      </div>
+    </form>
+    {% if tournaments %}
+      <table class="table-stack">
+        <thead><tr><th>{{ translations.tournament_name }}</th><th>{{ translations.pairing_system }}</th><th>{{ translations.rounds }}</th><th>{{ translations.status }}</th><th>{{ translations.actions_label }}</th></tr></thead>
+        <tbody>
+          {% for tournament in tournaments %}
+          <tr>
+            <td>{{ tournament.name }}</td>
+            <td>{{ translations[tournament.pairing_system] }}</td>
+            <td>{{ tournament.rounds }}</td>
+            <td>
+              <form method="post" action="{{ url_for('admin_update_tournament_status', tournament_id=tournament.id, lang=lang) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <select name="status" onchange="this.form.submit()" aria-label="{{ translations.status }}">
+                  {% for status in ('draft', 'active', 'canceled', 'completed') %}
+                    <option value="{{ status }}" {% if tournament.status == status %}selected{% endif %}>{{ translations.get(status, status) }}</option>
+                  {% endfor %}
+                </select>
+              </form>
+            </td>
+            <td>
+              <a href="{{ url_for('admin_tournament', tournament_id=tournament.id, lang=lang) }}">{{ translations.open_link }}</a>
+              <form method="post" action="{{ url_for('admin_delete_tournament', tournament_id=tournament.id, lang=lang) }}" class="inline-form">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <button type="button" data-delete-tournament data-tournament-name="{{ tournament.name }}">{{ translations.delete_heading }}</button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p>{{ translations.no_tournaments }}</p>
+    {% endif %}
+    {% if total_count is defined and total_count > 10 %}
+      <div class="pagination-summary">
+        {{ translations.showing_results }} {{ result_start }}-{{ result_end }} {{ translations.of_label }} {{ total_count }}
+      </div>
+      <div class="pagination-row">
+        {% if page > 1 %}<a class="button secondary" href="{{ url_for('admin_tournaments', lang=lang, sort=sort, order=order, page=page - 1, page_size=page_size) }}">{{ translations.prev_page }}</a>{% endif %}
+        <span aria-label="{{ translations.page_label }} {{ page }}">{{ translations.page_label }} {{ page }} {{ translations.of_label }} {{ total_pages }}</span>
+        {% if page < total_pages %}<a class="button" href="{{ url_for('admin_tournaments', lang=lang, sort=sort, order=order, page=page + 1, page_size=page_size) }}">{{ translations.next_page }}</a>{% endif %}
+      </div>
+    {% endif %}
+  </div>
+</section>
+
+<dialog id="delete-tournament-dialog" class="confirmation-dialog" aria-labelledby="delete-tournament-title" aria-describedby="delete-tournament-message">
+  <h2 id="delete-tournament-title">{{ translations.delete_tournament_heading }}</h2>
+  <p id="delete-tournament-message">
+    <strong data-delete-tournament-name></strong><br>
+    {{ translations.delete_tournament_confirmation }}
+  </p>
+  <form method="post" data-delete-tournament-confirmation>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+    <div class="dialog-actions">
+      <button type="button" class="button secondary" data-delete-tournament-cancel>{{ translations.cancel_button }}</button>
+      <button type="submit" class="button danger">{{ translations.delete_heading }}</button>
+    </div>
+  </form>
+</dialog>
+
+<script>
+  (() => {
+    const dialog = document.getElementById("delete-tournament-dialog");
+    const confirmationForm = dialog?.querySelector("[data-delete-tournament-confirmation]");
+    const tournamentName = dialog?.querySelector("[data-delete-tournament-name]");
+    const cancelButton = dialog?.querySelector("[data-delete-tournament-cancel]");
+
+    if (!dialog || !confirmationForm || !tournamentName || !cancelButton) return;
+
+    document.querySelectorAll("[data-delete-tournament]").forEach((trigger) => {
+      trigger.addEventListener("click", () => {
+        confirmationForm.action = trigger.form.action;
+        tournamentName.textContent = trigger.dataset.tournamentName || "";
+        if (typeof dialog.showModal === "function") {
+          dialog.showModal();
+        } else {
+          dialog.setAttribute("open", "");
+        }
+      });
+    });
+
+    cancelButton.addEventListener("click", () => {
+      dialog.close();
+    });
+
+    dialog.addEventListener("close", () => {
+      confirmationForm.removeAttribute("action");
+      tournamentName.textContent = "";
+    });
+  })();
+</script>
+{% endblock %}

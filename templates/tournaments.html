@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+{% block content %}
+<section class="panel">
+  <div class="panel-header centered-header">
+    <div>
+      <h2>{{ translations.public_tournaments_heading }}</h2>
+      <p>{{ translations.public_tournaments_subtitle }}</p>
+    </div>
+  </div>
+
+  <form method="get" class="filter-form" style="margin-bottom: 1rem;">
+    <input type="hidden" name="lang" value="{{ lang }}">
+    {% if show_drafts %}
+      <input type="hidden" name="show_drafts" value="1">
+    {% endif %}
+    <div class="filter-actions" style="gap: 0.75rem; flex-wrap: wrap;">
+      <label for="sort" style="margin: 0;">{{ translations.sort_label }}</label>
+      <select id="sort" name="sort">
+        <option value="date" {% if request.args.get('sort', 'date') == 'date' %}selected{% endif %}>{{ translations.date }}</option>
+        <option value="name" {% if request.args.get('sort', 'date') == 'name' %}selected{% endif %}>{{ translations.name_label }}</option>
+        <option value="status" {% if request.args.get('sort', 'date') == 'status' %}selected{% endif %}>{{ translations.status }}</option>
+        <option value="participants" {% if request.args.get('sort', 'date') == 'participants' %}selected{% endif %}>{{ translations.players }}</option>
+      </select>
+      <select id="order" name="order">
+        <option value="desc" {% if request.args.get('order', 'desc') == 'desc' %}selected{% endif %}>{{ translations.desc_label }}</option>
+        <option value="asc" {% if request.args.get('order', 'desc') == 'asc' %}selected{% endif %}>{{ translations.asc_label }}</option>
+      </select>
+      {% if total_count is defined and total_count > 10 %}
+        <label for="page_size" style="margin: 0;">{{ translations.page_size_label }}</label>
+        <select id="page_size" name="page_size">
+          {% for option in [10, 25, 50, 100] %}
+            <option value="{{ option }}" {% if page_size == option %}selected{% endif %}>{{ option }}</option>
+          {% endfor %}
+        </select>
+      {% endif %}
+      <button type="submit" class="button small">{{ translations.search if translations.search else 'Apply' }}</button>
+    </div>
+  </form>
+
+  {% if tournaments %}
+    <div class="card-grid two-up">
+      {% for tournament in tournaments %}
+        <article class="card">
+          <h3><a href="{{ url_for('tournament_page', tournament_id=tournament.id, lang=lang, show_drafts=1 if show_drafts else None) }}">{{ tournament.name }}</a></h3>
+          <p>{{ translations.tournament_type }}: {{ translations.get(tournament.tournament_type, tournament.tournament_type) }}</p>
+          <p>{{ translations.players }}: {{ tournament.participant_count }}</p>
+          <p>{{ translations.status }}: {{ translations.get(tournament.public_status, tournament.public_status) }}</p>
+          <a href="{{ url_for('tournament_page', tournament_id=tournament.id, lang=lang, show_drafts=1 if show_drafts else None) }}">{{ translations.open_link }}</a>
+        </article>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="card"><p>{{ translations.no_public_tournaments }}</p></div>
+  {% endif %}
+
+  <div class="filter-actions" style="gap: 0.75rem; flex-wrap: wrap; margin-top: 1rem;">
+    {% if show_drafts %}
+      <a class="button small" href="{{ url_for('tournaments', lang=lang) }}">{{ translations.hide_drafts if translations.hide_drafts else 'Hide drafts' }}</a>
+    {% else %}
+      <a class="button small" href="{{ url_for('tournaments', lang=lang, show_drafts=1) }}">{{ translations.show_drafts if translations.show_drafts else 'Show drafts' }}</a>
+    {% endif %}
+  </div>
+
+  {% if total_count is defined and total_count > 10 %}
+    <div class="pagination-summary">
+      {{ translations.showing_results }} {{ result_start }}-{{ result_end }} {{ translations.of_label }} {{ total_count }}
+    </div>
+    <div class="pagination-row">
+      {% if page > 1 %}<a class="button secondary" href="{{ url_for('tournaments', lang=lang, show_drafts=1 if show_drafts else None, sort=sort, order=order, page=page - 1, page_size=page_size) }}">{{ translations.prev_page }}</a>{% endif %}
+      <span aria-label="{{ translations.page_label }} {{ page }}">{{ translations.page_label }} {{ page }} {{ translations.of_label }} {{ total_pages }}</span>
+      {% if page < total_pages %}<a class="button" href="{{ url_for('tournaments', lang=lang, show_drafts=1 if show_drafts else None, sort=sort, order=order, page=page + 1, page_size=page_size) }}">{{ translations.next_page }}</a>{% endif %}
+    </div>
+  {% endif %}
+</section>
+{% endblock %}

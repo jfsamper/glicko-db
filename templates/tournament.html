@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+{% block content %}
+<section class="panel">
+  <div class="panel-header centered-header">
+    <div>
+      <h2>{{ tournament.name }}</h2>
+      <p>{{ translations.tournament_type }}: {{ translations.get(tournament.tournament_type, tournament.tournament_type) }}</p>
+      <p>{{ translations.location }}: {{ tournament.location or '' }}</p>
+      <p>{{ translations.date }}: {{ tournament.date or '' }}</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>{{ translations.paired_tables }}</h3>
+
+    <form method="get" class="filter-form">
+      <div class="filter-panel">
+        <input type="hidden" name="lang" value="{{ lang }}">
+        <div class="filter-grid">
+          <div class="filter-item wide">
+            <label for="round_id">{{ translations.select_round }}</label>
+            <select id="round_id" name="round_id" onchange="this.form.submit()" {% if not rounds %}disabled{% endif %} style="text-align: center;">
+              {% for round in rounds %}
+                <option value="{{ round.id }}" {% if round.id == selected_round_id %}selected{% endif %}>{{ translations.tournament_round }} {{ round.round_number }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+      </div>
+    </form>
+
+    {% if pairings %}
+      <table class="table-stack">
+        <thead>
+          <tr><th>{{ translations.board }}</th><th>{{ translations.white }}</th><th>{{ translations.black }}</th><th>{{ translations.result }}</th></tr>
+        </thead>
+        <tbody>
+          {% for pairing in pairings %}
+            <tr>
+              <td>{{ pairing.board_number }}</td>
+              <td>
+                {% if pairing.white_player_id %}
+                  <a href="{{ url_for('player_profile', id=pairing.white_player_id, lang=lang) }}">{{ pairing.white_name }}</a>
+                {% else %}
+                  {{ pairing.white_name }}
+                {% endif %}
+              </td>
+              <td>
+                {% if pairing.is_bye %}
+                  {{ translations.bye }}
+                {% elif pairing.black_player_id %}
+                  <a href="{{ url_for('player_profile', id=pairing.black_player_id, lang=lang) }}">{{ pairing.black_name }}</a>
+                {% else %}
+                  {{ pairing.black_name }}
+                {% endif %}
+              </td>
+              <td>
+                {% if pairing.is_bye %}{{ translations.bye }}{% elif pairing.result == '1-0' %}{{ translations.white_wins }}{% elif pairing.result == '0-1' %}{{ translations.black_wins }}{% elif pairing.result == '1/2-1/2' %}{{ translations.draw_result }}{% else %}-{% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p>{{ translations.no_paired_tables }}</p>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <h3>{{ translations.standings }}</h3>
+    {% if standings %}
+      <table class="table-stack standings-table">
+        <thead>
+          <tr><th class="standings-rank">N°</th><th class="standings-player">{{ translations.player }}</th>{% for round in rounds|reverse %}<th class="standings-round">R{{ round.round_number }}</th>{% endfor %}<th>{{ translations.score }}</th>{% if tournament.tournament_type == 'mcmahon' %}<th>{{ translations.mms or 'MMS' }}</th>{% endif %}<th>{{ translations.wins }}</th><th>{{ translations.sos }}</th><th>{{ translations.sosos }}</th></tr>
+        </thead>
+        <tbody>
+          {% for row in standings %}
+            <tr>
+              <td class="standings-rank">{{ row.rank }}</td>
+              <td class="standings-player">
+                {% if row.id and row.id > 0 %}
+                  <a href="{{ url_for('player_profile', id=row.id, lang=lang) }}">{{ row.name }}{% if row.rank_label %} ({{ row.rank_label }}){% endif %}</a>
+                {% else %}
+                  {{ row.name }}{% if row.rank_label %} ({{ row.rank_label }}){% endif %}
+                {% endif %}
+              </td>
+              {% for round in rounds|reverse %}<td class="standings-round">{% for item in row.round_results if item.round == round.round_number %}{{ item.opponent }}{{ item.result }}{% else %}-{% endfor %}</td>{% endfor %}<td>{{ row.primary_score }}</td>{% if tournament.tournament_type == 'mcmahon' %}<td>{{ row.mms }}</td>{% endif %}<td>{{ row.wins }}</td><td>{{ row.sos }}</td><td>{{ row.sosos }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p>{{ translations.no_public_tournaments }}</p>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}
