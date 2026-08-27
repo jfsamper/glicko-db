@@ -30,6 +30,16 @@ def test_public_tournament_index_renders_in_supported_languages():
         assert hide_text in body
 
 
+def test_public_navigation_keeps_reports_link_and_sidebar_login_link():
+    app.testing = True
+    body = app.test_client().get("/?lang=en").get_data(as_text=True)
+
+    assert 'href="/reports?lang=en"' in body
+    assert 'href="/admin/login?lang=en"' in body
+    assert "Report results" in body
+    assert "Login." in body
+
+
 def test_public_tournament_index_supports_sort_by_name(monkeypatch, tmp_path):
     db_path = tmp_path / "sorted_tournaments.db"
     monkeypatch.setattr(config, "DB_PATH", str(db_path))
