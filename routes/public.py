@@ -2,6 +2,7 @@
 
 from datetime import datetime
 import math
+import re
 
 from flask import Blueprint, Response, render_template, request, flash, redirect, url_for
 
@@ -16,6 +17,7 @@ from services.home_stats import build_home_stats
 from services.reporting_service import (
     build_date_report,
     export_report_csv,
+    export_report_pdf,
     resolve_report_range,
 )
 from services.player_service import (
@@ -177,7 +179,7 @@ def index():
 
 
 def _report_request():
-    period = request.args.get("period", "year")
+    period = request.args.get("period", "all_time")
     start_date, end_date = resolve_report_range(
         period,
         request.args.get("start_date"),
@@ -195,9 +197,25 @@ def _report_request():
         conn.close()
 
 
+def _report_period_label(period, report, translations):
+    if period == "all_time":
+        return translations.get("period_all_time", translations.get("all_time", "All time"))
+    if period == "custom":
+        start = report["start_date"] or ""
+        end = report["end_date"] or ""
+        return f"{start} - {end}".strip(" -")
+    return translations.get(f"period_{period}", period)
+
+
+def _report_filename_part(value):
+    value = re.sub(r"[^A-Za-z0-9]+", "-", value).strip("-")
+    return value or "report"
+
+
 @public_bp.route("/reports")
 def reports():
     lang = get_language(request.args.get("lang"))
+    period = request.args.get("period", "all_time")
     try:
         report = _report_request()
     except ValueError as exc:
@@ -207,7 +225,8 @@ def reports():
         lang=lang,
         translations=TRANSLATIONS[lang],
         report=report,
-        period=request.args.get("period", "year"),
+        period=period,
+        period_label=_report_period_label(period, report, TRANSLATIONS[lang]),
     )
 
 
@@ -224,6 +243,31 @@ def report_export():
         export_report_csv(report),
         content_type="text/csv; charset=utf-8",
         headers={"Content-Disposition": f"attachment; filename=report_{start}_{end}.csv"},
+    )
+
+
+@public_bp.route("/reports/export.pdf")
+def report_export_pdf_file():
+    lang = get_language(request.args.get("lang"))
+    period = request.args.get("period", "all_time")
+    try:
+        report = _report_request()
+    except ValueError as exc:
+        return Response(str(exc), status=400)
+    selected_player = next(
+        (row for row in report["players"] if row["player_id"] == report["selected_player_id"]),
+        None,
+    )
+    player_part = _report_filename_part(selected_player["display_name"]) if selected_player else "all-players"
+    period_part = (
+        f"{report['start_date'] or 'start'}_to_{report['end_date'] or 'end'}"
+        if period == "custom"
+        else _report_filename_part(_report_period_label(period, report, TRANSLATIONS[lang]))
+    )
+    return Response(
+        export_report_pdf(report, TRANSLATIONS[lang], _report_period_label(period, report, TRANSLATIONS[lang])),
+        content_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename=report_{player_part}_{period_part}.pdf"},
     )
 
 

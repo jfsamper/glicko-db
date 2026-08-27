@@ -12,7 +12,7 @@ Glicko DB is a Flask and SQLite application for managing a Go community's player
 - Player and match administration with pagination, filters, and consistent ordering
 - Excel workbook, OpenGotha XML, and legacy CSV match imports
 - Tournament creation and editing, OpenGotha import, pairings, result entry, standings, and export
-- Public date-bounded reports with CSV export, rating movement, and opponent, country, and club performance
+- Public reports, defaulting to All time, with player filters, localized CSV/PDF export, rating movement, and opponent, country, and club performance
 - Swiss, category Swiss, accelerated Swiss, and McMahon pairing systems
 - BYE and absence handling, backups, restore safeguards, and SQLite schema migrations
 
@@ -25,6 +25,7 @@ Glicko DB is a Flask and SQLite application for managing a Go community's player
   - `Flask-WTF>=1.2`
   - `Werkzeug>=3.0`
   - `openpyxl>=3.1`
+  - `reportlab>=4.0`
   - `tzdata>=2024.1` (Windows time zone data)
 
 ## Local run
@@ -66,7 +67,7 @@ The default values are in `config.py`.
 
 Application-generated dates and times use UTC-5 by default. Each account can choose an IANA time zone in user management; accounts without a preference keep UTC-5. Python uses the system IANA database on Linux, while `tzdata` provides the portable fallback on Windows or minimal Linux images. If an account's stored zone cannot be loaded, display falls back to UTC-05:00. When ratings are calculated, matches on the same day are processed by round number and then insertion order; unknown rounds are treated as round 1.
 
-Reports at `/reports` use inclusive `start_date` and `end_date` boundaries, and period membership uses the fixed server timezone (UTC-5 by default), not the account timezone. Win percentage is wins divided by games. Each row includes absolute rating points, percentage rating change, and full-integer category change. Totals are calculated once on the server and reused by the page and CSV export; records with invalid dates or results are excluded and counted. Matches materialized from tournaments retain one unique identity per pairing so they cannot be imported or counted twice.
+Reports at `/reports` use inclusive `start_date` and `end_date` boundaries, and period membership uses the fixed server timezone (UTC-5 by default), not the account timezone. General and player-filtered reports default to All time. Win percentage is wins divided by games. Each row includes absolute rating points, percentage rating change, and full-integer category change. The player selector is ordered by total games. Totals are calculated once on the server and reused by the page and CSV/PDF exports; PDF labels and text use the current language, while records with invalid dates or results are excluded and counted. Matches materialized from tournaments retain one unique identity per pairing so they cannot be imported or counted twice.
 
 Administration uses named accounts with three roles: `administrator`, `tournament_director`, and `operator`. When no account exists, the app bootstraps one initial administrator from `ADMIN_PASSWORD` on first start; manage additional accounts and their time zones at `/admin/users`. Users can open `/admin/profile` to save their language, theme, time zone, email, and password. The recovery link on `/admin/login` uses single-use tokens and non-enumerating responses; configure SMTP in production. Failed attempts are rate limited; production should use HTTPS and strong, unique passwords. Authorization is based on the user session and role permissions. Only `administrator` and `operator` roles can modify players, ratings, and categories; `tournament_director` retains tournament operations.
 Administrators can adjust the maximum login attempts, rate-limit window, and recovery-link lifetime at `/admin/settings`. These values are stored in SQLite, and the reset button restores the initial values from `config.py`. `ADMIN_PASSWORD`, paths, and SMTP credentials remain environment configuration.
@@ -105,7 +106,7 @@ When an OpenGotha import finds a similar name, it shows a database player sugges
 
 ### View reports
 
-Open `/reports` to choose a year, quarter, month, or custom range. The table shows players with valid games in the period and links to performance against each opponent. It also shows aggregates by opponent country and club. The CSV link preserves the selected dates and uses the same totals shown on screen.
+Open `/reports` to choose a year, quarter, month, All time, or custom range. The table shows players with valid games in the period and links to performance against each opponent. It also shows aggregates by opponent country and club. The CSV and PDF links preserve the selected filters and use the same totals shown on screen; PDF filenames include the player and period.
 
 When round results are materialized in the main matches table, the `event` column preserves the tournament or event name. The `notes` column, shown as `Round` in the interface, stores the round label in canonical form, such as `Round 5`. If the entry is in a legacy format, such as `15:00:00`, it is preserved and converted to a numeric round. If no numeric value is found, the text is kept and treated as `0`.
 

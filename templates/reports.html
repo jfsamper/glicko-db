@@ -4,9 +4,12 @@
   <div class="panel-header">
     <div>
       <h2>{{ translations.get('reports_title', 'Reports') }}</h2>
-      <p>{{ report.start_date or translations.get('all_time', 'All time') }}{% if report.end_date %} - {{ report.end_date }}{% endif %}</p>
+      <p>{{ period_label }}</p>
     </div>
-    <a class="button" href="{{ url_for('report_export', lang=lang, period=period, start_date=report.start_date, end_date=report.end_date, player_id=report.selected_player_id) }}">{{ translations.get('export_report', 'Export CSV') }}</a>
+    <div>
+      <a class="button" href="{{ url_for('report_export', lang=lang, period=period, start_date=report.start_date, end_date=report.end_date, player_id=report.selected_player_id) }}">{{ translations.get('export_report', 'Export CSV') }}</a>
+      <a class="button" href="{{ url_for('report_export_pdf_file', lang=lang, period=period, start_date=report.start_date, end_date=report.end_date, player_id=report.selected_player_id) }}">{{ translations.get('export_report_pdf', 'Export PDF') }}</a>
+    </div>
   </div>
 
   <form method="get" class="filter-form">
@@ -16,7 +19,7 @@
         <label for="report-player">{{ translations.get('report_player', 'Player') }}</label>
         <select id="report-player" name="player_id">
           <option value="">{{ translations.get('all_players', 'All players') }}</option>
-          {% for player in report.players %}
+          {% for player in report.selector_players %}
             <option value="{{ player.player_id }}" {% if report.selected_player_id == player.player_id %}selected{% endif %}>{{ player.display_name }}</option>
           {% endfor %}
         </select>
@@ -42,7 +45,13 @@
   </form>
 
   <div class="stats-grid">
-    {% for key, label in [('matches', translations.get('matches_total', 'Matches')), ('player_games', translations.get('games', 'Games')), ('wins', translations.get('wins', 'Wins')), ('losses', translations.get('losses', 'Losses')), ('draws', translations.get('draws', 'Draws')), ('win_percentage', translations.get('win_pct', 'Win percentage'))] %}
+    {% set summary_cards = [('games', translations.get('games', 'Games'))] %}
+    {% if report.selected_player_id %}
+      {% set summary_cards = summary_cards + [('wins', translations.get('wins', 'Wins')), ('losses', translations.get('losses', 'Losses')), ('draws', translations.get('draws', 'Draws')), ('win_percentage', translations.get('win_pct', 'Win percentage'))] %}
+    {% else %}
+      {% set summary_cards = summary_cards + [('players', translations.get('players', 'Players'))] %}
+    {% endif %}
+    {% for key, label in summary_cards %}
       <article class="stats-panel"><h4>{{ label }}</h4><strong>{{ report.summary[key] if report.summary[key] is not none else '-' }}{% if key == 'win_percentage' and report.summary[key] is not none %}%{% endif %}</strong></article>
     {% endfor %}
   </div>
@@ -56,13 +65,13 @@
         {% for player in report.players %}
           <tr>
             <td>{{ player.rank }}</td>
-            <td><a href="{{ url_for('reports', lang=lang, period=period, start_date=report.start_date, end_date=report.end_date, player_id=player.player_id) }}">{{ player.display_name }}</a></td>
+            <td><a href="{{ url_for('player_profile', id=player.player_id, lang=lang) }}">{{ player.display_name }}</a></td>
             <td>{{ player.games }}</td><td>{{ player.wins }}</td><td>{{ player.losses }}</td><td>{{ player.draws }}</td><td>{{ player.win_percentage }}%</td>
             <td>{{ '%+.2f'|format(player.rating_change_points) if player.rating_change_points is not none else '-' }}</td>
             <td>{{ '%+.1f'|format(player.rating_change_percentage) ~ '%' if player.rating_change_percentage is not none else '-' }}</td>
             <td>{{ '%+d'|format(player.category_change) if player.category_change is not none else '-' }}</td>
           </tr>
-        {% else %}<tr><td colspan="10">{{ translations.get('report_empty', 'No matches in this period.') }}</td></tr>{% endfor %}
+        {% else %}<tr><td colspan="10">{{ translations.get('report_empty', 'No games in this period.') }}</td></tr>{% endfor %}
         </tbody>
       </table>
     </div>
@@ -72,17 +81,17 @@
   <article class="card">
     <h3>{{ translations.get('opponent_records', 'Results vs opponents') }}</h3>
     <table class="table-stack"><thead><tr><th>{{ translations.get('opponent', 'Opponent') }}</th><th>{{ translations.get('games', 'Games') }}</th><th>{{ translations.get('wins', 'Wins') }}</th><th>{{ translations.get('losses', 'Losses') }}</th><th>{{ translations.get('draws', 'Draws') }}</th><th>{{ translations.get('win_pct', 'Win percentage') }}</th></tr></thead>
-      <tbody>{% for opponent in report.opponents %}<tr><td>{{ opponent.display_name }}</td><td>{{ opponent.games }}</td><td>{{ opponent.wins }}</td><td>{{ opponent.losses }}</td><td>{{ opponent.draws }}</td><td>{{ opponent.win_percentage }}%</td></tr>{% else %}<tr><td colspan="6">{{ translations.get('report_empty', 'No matches in this period.') }}</td></tr>{% endfor %}</tbody>
+      <tbody>{% for opponent in report.opponents %}<tr><td>{{ opponent.display_name }}</td><td>{{ opponent.games }}</td><td>{{ opponent.wins }}</td><td>{{ opponent.losses }}</td><td>{{ opponent.draws }}</td><td>{{ opponent.win_percentage }}%</td></tr>{% else %}<tr><td colspan="6">{{ translations.get('report_empty', 'No games in this period.') }}</td></tr>{% endfor %}</tbody>
     </table>
   </article>
   {% endif %}
 
   <div class="card-grid">
     {% for key, title, label in [('countries', translations.get('report_countries', 'Performance by opponent country'), translations.get('country', 'Country')), ('clubs', translations.get('report_clubs', 'Performance by opponent club'), translations.get('club', 'Club'))] %}
-    <article class="card"><h3>{{ title }}</h3><table class="table-stack"><thead><tr><th>{{ label }}</th><th>{{ translations.get('games', 'Games') }}</th><th>{{ translations.get('wins', 'Wins') }}</th><th>{{ translations.get('win_pct', 'Win percentage') }}</th></tr></thead><tbody>{% for group in report[key] %}<tr><td>{{ group.display_name }}</td><td>{{ group.games }}</td><td>{{ group.wins }}</td><td>{{ group.win_percentage }}%</td></tr>{% else %}<tr><td colspan="4">{{ translations.get('report_empty', 'No matches in this period.') }}</td></tr>{% endfor %}</tbody></table></article>
+    <article class="card"><h3>{{ title }}</h3><table class="table-stack"><thead><tr><th>{{ label }}</th><th>{{ translations.get('games', 'Games') }}</th><th>{{ translations.get('wins', 'Wins') }}</th><th>{{ translations.get('win_pct', 'Win percentage') }}</th></tr></thead><tbody>{% for group in report[key] %}<tr><td>{{ group.display_name }}</td><td>{{ group.games }}</td><td>{{ group.wins }}</td><td>{{ group.win_percentage }}%</td></tr>{% else %}<tr><td colspan="4">{{ translations.get('report_empty', 'No games in this period.') }}</td></tr>{% endfor %}</tbody></table></article>
     {% endfor %}
   </div>
 
-  {% if report.excluded_matches %}<p class="muted">{{ translations.get('report_excluded', 'Excluded records') }}: {{ report.excluded_matches }}</p>{% endif %}
+  {% if report.excluded_games %}<p class="muted">{{ translations.get('report_excluded', 'Excluded records') }}: {{ report.excluded_games }}</p>{% endif %}
 </section>
 {% endblock %}

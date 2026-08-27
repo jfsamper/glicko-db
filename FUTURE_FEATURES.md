@@ -1,6 +1,6 @@
 # Future roadmap and remaining work
 
-This document lists only unfinished product, operational, and maintainability work. Completed import, audit, search, pagination, account profile/recovery, timezone-default, and rating-order work is summarized below rather than repeated in the backlog.
+This document lists only unfinished product, operational, and maintainability work. Completed import, audit, search, pagination, account profile/recovery, timezone-default, rating-order, and reporting work is summarized below rather than repeated in the backlog.
 
 ## Current status
 
@@ -23,6 +23,8 @@ This document lists only unfinished product, operational, and maintainability wo
 - Full rating recomputation and incremental replay process same-day matches by round, treating unknown rounds as round 1.
 - Login rate-limit thresholds are environment-configurable through `config.py`, with defaults of five attempts in sixty seconds.
 - Account profile and password recovery are available: users can save email, language, theme, timezone, and password at `/admin/profile`; recovery uses configurable SMTP, hashed expiring tokens, single-use consumption, and generic responses.
+- Public reporting is available at `/reports` with inclusive calendar periods, All time defaults, player filtering, games-based selector ordering, opponent/country/club aggregates, and shared server-side totals.
+- Reports can be exported as CSV or localized PDF; PDF exports include centered headings, the selected player and period in the filename, and preserve the active filters.
 
 ## Verified implementation status
 
@@ -90,7 +92,6 @@ Confirmed in code:
 
 3. Reporting follow-ups
    - Add custom named seasons if the organization needs them beyond calendar periods
-   - Add PDF output only if CSV reports do not cover the operational workflow
 
 ### P3 — Operational enhancements
 
@@ -117,11 +118,11 @@ Confirmed in code:
 
 ## Technical implementation order
 
-The login rate-limit settings, typed OpenGotha payload, explicit tournament-delete modal, per-account timezone preferences, account profile/recovery, and date-bounded reporting were completed and are no longer part of the remaining backlog. The next recommended sequence is:
+The login rate-limit settings, typed OpenGotha payload, explicit tournament-delete modal, per-account timezone preferences, account profile/recovery, date-bounded reporting, and PDF reporting were completed and are no longer part of the remaining backlog. The next recommended sequence is:
 
 1. Add hidden/unpublished tournament visibility.
 2. Add player activation/status management if operationally needed.
-3. Add named seasons or PDF output only if the reporting workflow requires them.
+3. Add named seasons if the reporting workflow requires them.
 4. Add scheduled backups with retention and restore verification.
 5. Add result moderation only if the tournament workflow requires it.
 6. Consider replay observability and tournament preflight after the core workflows are settled.
@@ -134,4 +135,4 @@ The login rate-limit settings, typed OpenGotha payload, explicit tournament-dele
 
 ## Current next steps
 
-1. Evaluate named seasons and PDF output after using the date-bounded reports in production.
+1. Evaluate named seasons and further reporting refinements after using the date-bounded reports and PDF exports in production.

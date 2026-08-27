@@ -74,10 +74,10 @@ def test_report_uses_inclusive_range_and_precomputed_metrics():
     report = build_date_report(conn, date(2026, 1, 1), date(2026, 1, 2), selected_player_id=1)
 
     assert report["summary"] == {
-        "matches": 2,
-        "player_games": 4,
-        "wins": 2,
-        "losses": 2,
+        "games": 2,
+        "players": 2,
+        "wins": 1,
+        "losses": 1,
         "draws": 0,
         "win_percentage": 50.0,
     }
@@ -93,14 +93,33 @@ def test_report_uses_inclusive_range_and_precomputed_metrics():
     conn.close()
 
 
+def test_player_selector_is_ordered_by_total_games():
+    conn = create_report_db()
+    conn.execute(
+        "INSERT INTO players VALUES (?, ?, ?, ?, ?, ?)",
+        (3, "Cara", 1500, 1500, "FR", "Club C"),
+    )
+    conn.execute(
+        "INSERT INTO matches (id, match_date, white_player_id, black_player_id, result, event) VALUES (?, ?, ?, ?, ?, ?)",
+        (4, "2026-01-02", 1, 3, "1/2-1/2", "League"),
+    )
+
+    report = build_date_report(conn, date(2026, 1, 1), date(2026, 1, 2))
+
+    assert [player["player_id"] for player in report["selector_players"]] == [1, 2, 3]
+    assert [player["games"] for player in report["selector_players"]] == [3, 2, 1]
+    conn.close()
+
+
 def test_duplicate_tournament_pairing_is_counted_once_and_export_contains_range():
     conn = create_report_db()
     conn.execute("ALTER TABLE matches ADD COLUMN tournament_pairing_id INTEGER")
     conn.execute("UPDATE matches SET tournament_pairing_id = 10 WHERE id IN (1, 2)")
     report = build_date_report(conn, "2026-01-01", "2026-01-02")
 
-    assert report["summary"]["matches"] == 1
-    assert report["excluded_matches"] == 1
+    assert report["summary"]["games"] == 1
+    assert report["summary"]["players"] == 2
+    assert report["excluded_games"] == 1
     exported = export_report_csv(report)
     assert "report_start_date,2026-01-01,report_end_date,2026-01-02" in exported
     assert exported.count("Alice") >= 1

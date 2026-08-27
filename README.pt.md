@@ -12,7 +12,7 @@ Glicko DB é uma aplicação Flask e SQLite para gerenciar jogadores, ratings, p
 - Administração de jogadores e partidas com paginação, filtros e ordenação consistente
 - Importação de planilhas Excel, XML do OpenGotha e CSV legado de partidas
 - Criação e edição de torneios, importação do OpenGotha, emparelhamentos, registro de resultados, classificação e exportação
-- Relatórios públicos por período com exportação CSV, mudanças de rating e desempenho por oponente, país e clube
+- Relatórios públicos por período, iniciando por Todo o período, com filtros por jogador, exportação CSV/PDF traduzida, mudanças de rating e desempenho por oponente, país e clube
 - Sistemas suíço, suíço por categoria, suíço acelerado e McMahon
 - Tratamento de BYE e ausências, cópias de segurança, proteção de restauração e migrações SQLite
 
@@ -25,6 +25,7 @@ Glicko DB é uma aplicação Flask e SQLite para gerenciar jogadores, ratings, p
   - `Flask-WTF>=1.2`
   - `Werkzeug>=3.0`
   - `openpyxl>=3.1`
+  - `reportlab>=4.0`
   - `tzdata>=2024.1` (dados de fuso horário no Windows)
 
 ## Execução local
@@ -66,7 +67,7 @@ Os valores padrão estão em `config.py`.
 
 As datas e horas geradas pelo aplicativo usam UTC-5 por padrão. Cada conta pode escolher um fuso horário IANA no gerenciamento de usuários; contas sem preferência continuam usando UTC-5. O Python usa o banco de dados IANA do sistema no Linux, enquanto `tzdata` fornece o fallback portátil no Windows ou em imagens Linux mínimas. Se o fuso salvo de uma conta não puder ser carregado, a exibição volta para UTC-05:00. No cálculo dos ratings, as partidas do mesmo dia são processadas pelo número da rodada e depois pela ordem de inserção; rodadas desconhecidas são tratadas como a rodada 1.
 
-Os relatórios em `/reports` usam limites inclusivos `start_date` e `end_date`, e a inclusão no período usa o fuso horário fixo do servidor (UTC-5 por padrão), não o fuso da conta. A porcentagem de vitórias é vitórias divididas por partidas. Cada linha mostra pontos absolutos, variação percentual do rating e mudança inteira de categoria. Os totais são calculados uma vez no servidor e reutilizados na página e na exportação CSV; registros com datas ou resultados inválidos são excluídos e contabilizados. Partidas materializadas de torneios mantêm uma identidade única por emparelhamento para impedir importações ou contagens duplicadas.
+Os relatórios em `/reports` usam limites inclusivos `start_date` e `end_date`, e a inclusão no período usa o fuso horário fixo do servidor (UTC-5 por padrão), não o fuso da conta. A visão geral e os relatórios filtrados por jogador começam em Todo o período. A porcentagem de vitórias é vitórias divididas por partidas. Cada linha mostra pontos absolutos, variação percentual do rating e mudança inteira de categoria. O seletor de jogadores é ordenado pelo total de partidas. Os totais são calculados uma vez no servidor e reutilizados na página e nas exportações CSV/PDF; os rótulos e textos do PDF usam o idioma atual, enquanto registros com datas ou resultados inválidos são excluídos e contabilizados. Partidas materializadas de torneios mantêm uma identidade única por emparelhamento para impedir importações ou contagens duplicadas.
 
 A administração usa contas nominadas com três funções: `administrator`, `tournament_director` e `operator`. Quando não existe nenhuma conta, o aplicativo cria um administrador inicial a partir de `ADMIN_PASSWORD` na primeira inicialização; contas adicionais e seus fusos horários são gerenciados em `/admin/users`. Cada usuário pode abrir `/admin/profile` para salvar idioma, tema, fuso horário, e-mail e senha. O link de recuperação em `/admin/login` usa tokens de uso único e respostas que não revelam se um e-mail existe; configure SMTP em produção. Tentativas com falha sofrem limitação; em produção, use HTTPS e senhas fortes e exclusivas. A autorização real se baseia na sessão do usuário e nas permissões. Apenas `administrator` e `operator` podem modificar jogadores, ratings e categorias; `tournament_director` mantém as operações de torneios.
 Administradores podem ajustar o número máximo de tentativas de login, a janela de limitação e a duração do link de recuperação em `/admin/settings`. Esses valores são armazenados no SQLite, e o botão de restauração recupera os valores iniciais de `config.py`. `ADMIN_PASSWORD`, caminhos e credenciais SMTP continuam sendo configuração do ambiente.
@@ -105,7 +106,7 @@ Quando uma importação do OpenGotha encontra um nome semelhante, ela mostra a s
 
 ### Consultar relatórios
 
-Abra `/reports` para escolher ano, trimestre, mês ou período personalizado. A tabela mostra jogadores com partidas válidas no período e permite abrir o desempenho contra cada oponente. Ela também mostra agregados por país e clube do oponente. O link CSV preserva as datas escolhidas e usa os mesmos totais exibidos na tela.
+Abra `/reports` para escolher ano, trimestre, mês, Todo o período ou período personalizado. A tabela mostra jogadores com partidas válidas no período e permite abrir o desempenho contra cada oponente. Ela também mostra agregados por país e clube do oponente. Os links CSV e PDF preservam os filtros escolhidos e usam os mesmos totais exibidos na tela; o nome do PDF inclui o jogador e o período.
 
 Quando os resultados da rodada são materializados na tabela principal de partidas, a coluna `event` mantém o nome do torneio ou evento. O campo `notes`, exibido como `Round` na interface, armazena a etiqueta da rodada em formato canônico, por exemplo `Round 5`. Se a entrada estiver em um formato legado, como `15:00:00`, ela é preservada e convertida em uma rodada numérica. Se nenhum valor numérico for encontrado, o texto é mantido e tratado como `0`.
 

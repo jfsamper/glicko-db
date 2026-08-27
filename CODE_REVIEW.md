@@ -1,6 +1,6 @@
 # Code Review – glicko-db
 
-This review is intentionally short and action-oriented. The project is currently green: the full suite passes with 248 tests, and the remaining work is mainly follow-up cleanup rather than new production risk.
+This review is intentionally short and action-oriented. The project is currently green: the full suite passes with 262 tests, and the remaining work is mainly follow-up cleanup rather than new production risk.
 
 ## 1. Critical bugs
 
@@ -26,23 +26,24 @@ This review is intentionally short and action-oriented. The project is currently
 - Performance cleanup: lookup caching, SQL `LIMIT/OFFSET` use, and migration guards were tightened to reduce unnecessary scanning and repeated work.
 - Import reliability: fuzzy player matching, round-note normalization, and metadata handling were hardened across workbook and XML imports. OpenGotha tournament metadata and match records now use typed `GothaTournamentPayload`, `GothaPlayer`, and `GothaMatch` dataclasses while preserving legacy mapping access.
 - Date and round consistency: application-generated timestamps use UTC-5 by default or the active account's valid IANA timezone preference, and both rating calculation paths share deterministic date/round ordering. Invalid or unset preferences fall back to UTC-5.
+- Reporting: public reports default to All time, support player filtering and games-based selector ordering, and provide consistent CSV/PDF exports with localized PDF text and filter-preserving filenames.
 
 ## 4. Low-priority / refactoring
 
 - Review document cleanup: this file was shortened to a concise 4-section issue log; historical duplicate notes and stale long-form explanations were merged or removed.
 - Optional cleanup: split large CSS bundles, keep dev-only scripts under `scripts/dev_only`, and trim backlog docs that drift from the active roadmap.
-- Future follow-ups: scheduled backup retention, audit-report UI, and broader reporting/observability improvements remain optional, non-blocking enhancements.
+- Future follow-ups: scheduled backup retention, named reporting seasons, and broader observability improvements remain optional, non-blocking enhancements.
 
 ## Status summary
 
 - Production blockers: none remaining in the current scope.
-- Current project status: green, with the audit, auth, account profile/recovery, per-account timezone, round-order, tournament-delete modal, and typed OpenGotha changes completed and validated by 248 tests.
+- Current project status: green, with the audit, auth, account profile/recovery, per-account timezone, round-order, tournament-delete modal, typed OpenGotha, and reporting changes completed and validated by 262 tests.
 
 ## 5. Remaining low-priority follow-ups
 
 The project is green; the historical 4.x backlog has been narrowed down to items that still genuinely need work.
 
-- Date-bounded reporting and broader observability remain deferred.
+- Named reporting seasons and broader observability remain deferred.
 
 ---
 
@@ -50,7 +51,7 @@ The project is green; the historical 4.x backlog has been narrowed down to items
 
 The remaining work is narrow and optional rather than production-critical:
 
-1. Expand date-bounded reporting after defining its reporting semantics.
+1. Add named reporting seasons if a real operational need emerges.
 
 ---
 

@@ -1,8 +1,15 @@
 """Date-bounded reporting and CSV export services."""
 import csv
 import math
+import re
 from datetime import date, datetime
-from io import StringIO
+from io import BytesIO, StringIO
+
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import A4, landscape
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.lib.units import mm
+from reportlab.platypus import SimpleDocTemplate, Spacer, Table, TableStyle, Paragraph
 
 from config import GLICKO_K, GLICKO_M
 from services.common import server_date as configured_server_date
@@ -215,20 +222,20 @@ def build_date_report(conn, start_date=None, end_date=None, selected_player_id=N
 
     seen_pairings = set()
     matches = []
-    excluded_matches = 0
+    excluded_games = 0
     for row in match_rows:
         pairing_id = row["tournament_pairing_id"]
         if pairing_id is not None:
             if pairing_id in seen_pairings:
-                excluded_matches += 1
+                excluded_games += 1
                 continue
             seen_pairings.add(pairing_id)
         match_date = _normalized_date(row["match_date"])
         if match_date is None or (start_date and match_date < start_date) or (end_date and match_date > end_date):
-            excluded_matches += 1
+            excluded_games += 1
             continue
         if row["result"] not in VALID_RESULTS:
-            excluded_matches += 1
+            excluded_games += 1
             continue
         matches.append((row, match_date))
 
@@ -242,18 +249,15 @@ def build_date_report(conn, start_date=None, end_date=None, selected_player_id=N
     opponent_records = {row["id"]: {} for row in players}
     country_records = {}
     club_records = {}
-    summary = {"matches": 0, "player_games": 0, "wins": 0, "losses": 0, "draws": 0}
+    summary = {"games": 0}
 
-    def apply_result(record, result, include_summary=False):
+    def apply_result(record, result):
         record["games"] += 1
         outcome = _result_for_player(result, record["is_white"])
         record[{"win": "wins", "loss": "losses", "draw": "draws"}[outcome]] += 1
-        if include_summary:
-            summary["player_games"] += 1
-            summary[{"win": "wins", "loss": "losses", "draw": "draws"}[outcome]] += 1
 
     for row, _match_date in matches:
-        summary["matches"] += 1
+        summary["games"] += 1
         for player_id, opponent_id, is_white, opponent_name, opponent_country, opponent_club in (
             (row["white_player_id"], row["black_player_id"], True, row["black_name"], row["black_country"], row["black_club"]),
             (row["black_player_id"], row["white_player_id"], False, row["white_name"], row["white_country"], row["white_club"]),
@@ -262,7 +266,7 @@ def build_date_report(conn, start_date=None, end_date=None, selected_player_id=N
             if record is None:
                 continue
             result_record = {"is_white": is_white, **record}
-            apply_result(result_record, row["result"], include_summary=True)
+            apply_result(result_record, row["result"])
             record.update({key: value for key, value in result_record.items() if key != "is_white"})
             opponent = opponent_records[player_id].setdefault(opponent_id, _empty_record(opponent_name))
             opponent_result = {"is_white": is_white, **opponent}
@@ -302,20 +306,35 @@ def build_date_report(conn, start_date=None, end_date=None, selected_player_id=N
     player_rows.sort(key=lambda row: (-row["wins"], -(row["win_percentage"] or 0), -row["games"], row["display_name"].casefold()))
     for rank, row in enumerate(player_rows, 1):
         row["rank"] = rank
+    selector_players = sorted(
+        player_rows,
+        key=lambda row: (-row["games"], row["display_name"].casefold()),
+    )
 
-    summary["win_percentage"] = round(summary["wins"] * 100.0 / summary["player_games"], 1) if summary["player_games"] else None
     selected_player_id = int(selected_player_id) if selected_player_id not in (None, "") else None
     selected_player = next((row for row in player_rows if row["player_id"] == selected_player_id), None)
+    summary["players"] = len(player_rows)
+    if selected_player is not None:
+        summary["games"] = selected_player["games"]
+        summary.update(
+            {
+                "wins": selected_player["wins"],
+                "losses": selected_player["losses"],
+                "draws": selected_player["draws"],
+                "win_percentage": selected_player["win_percentage"],
+            }
+        )
     return {
         "start_date": start_date.isoformat() if start_date else None,
         "end_date": end_date.isoformat() if end_date else None,
         "summary": summary,
         "players": player_rows,
+        "selector_players": selector_players,
         "opponents": selected_player["opponents"] if selected_player else [],
         "countries": sorted(country_records.values(), key=lambda item: (-item["games"], item["display_name"].casefold())),
         "clubs": sorted(club_records.values(), key=lambda item: (-item["games"], item["display_name"].casefold())),
         "selected_player_id": selected_player_id,
-        "excluded_matches": excluded_matches,
+        "excluded_games": excluded_games,
     }
 
 
@@ -325,7 +344,7 @@ def export_report_csv(report):
     writer = csv.writer(output)
     writer.writerow(["report_start_date", report["start_date"] or "", "report_end_date", report["end_date"] or ""])
     summary = report["summary"]
-    writer.writerow(["summary", "matches", summary["matches"], "player_games", summary["player_games"], "wins", summary["wins"], "losses", summary["losses"], "draws", summary["draws"], "win_percentage", summary["win_percentage"] if summary["win_percentage"] is not None else ""])
+    writer.writerow(["summary", "games", summary["games"], "players", summary["players"], "wins", summary.get("wins", ""), "losses", summary.get("losses", ""), "draws", summary.get("draws", ""), "win_percentage", summary.get("win_percentage", "") if summary.get("win_percentage") is not None else ""])
     writer.writerow([])
     writer.writerow(["rank", "player", "games", "wins", "losses", "draws", "win_percentage", "rating_change_points", "rating_change_percentage", "category_change", "start_category", "end_category"])
     for row in report["players"]:
@@ -347,3 +366,87 @@ def export_report_csv(report):
         for row in report["opponents"]:
             writer.writerow([row["display_name"], row["games"], row["wins"], row["losses"], row["draws"], row["win_percentage"] if row["win_percentage"] is not None else ""])
     return output.getvalue()
+
+
+def export_report_pdf(report, translations=None, period_label=None):
+    translations = translations or {}
+    output = BytesIO()
+    document = SimpleDocTemplate(
+        output,
+        pagesize=landscape(A4),
+        rightMargin=12 * mm,
+        leftMargin=12 * mm,
+        topMargin=12 * mm,
+        bottomMargin=12 * mm,
+    )
+    styles = getSampleStyleSheet()
+    title = translations.get("reports_title", "Reports")
+    period = period_label or report["start_date"] or translations.get("all_time", "All time")
+    if period_label is None and report["end_date"]:
+        period = f"{period} - {report['end_date']}"
+    summary = report["summary"]
+    labels = {
+        "games": translations.get("games", "Games"),
+        "players": translations.get("players", "Players"),
+        "wins": translations.get("wins", "Wins"),
+        "losses": translations.get("losses", "Losses"),
+        "draws": translations.get("draws", "Draws"),
+        "win_percentage": translations.get("win_pct", "Win percentage"),
+        "rank": translations.get("position", "Rank"),
+        "player": translations.get("player", "Player"),
+        "opponent": translations.get("opponent", "Opponent"),
+    }
+    story = [
+        Paragraph(title, _pdf_text_style(styles["Title"])),
+        Paragraph(period, _pdf_text_style(styles["Normal"])),
+        Spacer(1, 6 * mm),
+        _pdf_table(
+            [[labels["games"], labels["players"], labels["wins"], labels["losses"], labels["draws"], labels["win_percentage"]], [
+                summary["games"], summary["players"], summary.get("wins", ""),
+                summary.get("losses", ""), summary.get("draws", ""),
+                summary.get("win_percentage", ""),
+            ]
+            ]
+        ),
+        Spacer(1, 6 * mm),
+        Paragraph(translations.get("report_players", "Player performance"), _pdf_text_style(styles["Heading2"])),
+        _pdf_table(
+            [[labels["rank"], labels["player"], labels["games"], labels["wins"], labels["losses"], labels["draws"], labels["win_percentage"]]]
+            + [[row["rank"], row["display_name"], row["games"], row["wins"], row["losses"], row["draws"], row["win_percentage"]] for row in report["players"]]
+        ),
+    ]
+    if report["selected_player_id"] is not None:
+        story.extend(
+            [
+                Spacer(1, 6 * mm),
+                Paragraph(translations.get("opponent_records", "Results vs opponents"), _pdf_text_style(styles["Heading2"])),
+                _pdf_table(
+                    [[labels["opponent"], labels["games"], labels["wins"], labels["losses"], labels["draws"], labels["win_percentage"]]]
+                    + [[row["display_name"], row["games"], row["wins"], row["losses"], row["draws"], row["win_percentage"]] for row in report["opponents"]]
+                ),
+            ]
+        )
+    document.build(story)
+    return output.getvalue()
+
+
+def _pdf_text_style(style):
+    style.alignment = 1
+    return style
+
+
+def _pdf_table(rows):
+    table = Table(rows, repeatRows=1)
+    table.setStyle(
+        TableStyle(
+            [
+                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#1f4e5f")),
+                ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+                ("GRID", (0, 0), (-1, -1), 0.25, colors.HexColor("#b8c4c8")),
+                ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                ("FONTSIZE", (0, 0), (-1, -1), 8),
+                ("PADDING", (0, 0), (-1, -1), 5),
+            ]
+        )
+    )
+    return table

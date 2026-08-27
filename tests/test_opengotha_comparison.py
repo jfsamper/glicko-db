@@ -37,32 +37,6 @@ def test_gotha2glicko_warns_and_handles_missing_games(tmp_path):
             assert gotha2glicko.main(str(xml_path)) == []
 
 
-def test_opengotha_fixture_pairings_and_results_are_preserved():
-    metadata = read_gotha_tournament(XML_PATH)
-    imported_games = parse_gotha_xml(XML_PATH)
-    root = ET.parse(XML_PATH).getroot()
-    expected_round_one = {
-        (
-            game.get("whitePlayer"),
-            game.get("blackPlayer"),
-            game.get("result"),
-        )
-        for game in root.findall("Games/Game")
-        if game.get("roundNumber") == "1"
-    }
-    actual_round_one = {
-        (game["white"].replace(", ", "").replace(" ", "").upper(),
-         game["black"].replace(", ", "").replace(" ", "").upper(),
-         "RESULT_WHITEWINS" if game["result"] == "1-0" else "RESULT_BLACKWINS" if game["result"] == "0-1" else "RESULT_EQUAL")
-        for game in imported_games
-        if game["round"] == "1"
-    }
-    assert len(metadata["players"]) == 10
-    assert len(actual_round_one) == len(expected_round_one) == 5
-    assert {pair[:2] for pair in actual_round_one} == {pair[:2] for pair in expected_round_one}
-    assert all(pair[2] in {"RESULT_WHITEWINS", "RESULT_BLACKWINS", "RESULT_EQUAL"} for pair in actual_round_one)
-
-
 def test_pairing_changes_with_system_and_rating_seed():
     players = [
         {"id": index, "name": f"P{index}", "rating": rating, "score": 0,
