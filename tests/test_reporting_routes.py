@@ -62,6 +62,11 @@ def test_reports_page_and_csv_preserve_selected_dates(app, monkeypatch, tmp_path
     assert exported.status_code == 200
     assert "report_start_date,2026-01-01,report_end_date,2026-01-01" in exported.get_data(as_text=True)
 
+    body = page.get_data(as_text=True)
+    player_filter = body.index('class="filter-item wide"')
+    period_filter = body.index('id="report-period"')
+    assert player_filter < period_filter
+
 
 def test_reports_reject_reversed_custom_range(app, monkeypatch, tmp_path):
     db_path = tmp_path / "invalid_report_routes.db"

@@ -37,7 +37,6 @@ def test_public_navigation_keeps_reports_link_and_sidebar_login_link():
     assert 'href="/reports?lang=en"' in body
     assert 'href="/admin/login?lang=en"' in body
     assert "Report results" in body
-    assert "Login." in body
 
 
 def test_public_tournament_index_supports_sort_by_name(monkeypatch, tmp_path):

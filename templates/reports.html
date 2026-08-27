@@ -12,6 +12,15 @@
   <form method="get" class="filter-form">
     <input type="hidden" name="lang" value="{{ lang }}">
     <div class="filter-grid">
+      <div class="filter-item wide">
+        <label for="report-player">{{ translations.get('report_player', 'Player') }}</label>
+        <select id="report-player" name="player_id">
+          <option value="">{{ translations.get('all_players', 'All players') }}</option>
+          {% for player in report.players %}
+            <option value="{{ player.player_id }}" {% if report.selected_player_id == player.player_id %}selected{% endif %}>{{ player.display_name }}</option>
+          {% endfor %}
+        </select>
+      </div>
       <div class="filter-item">
         <label for="report-period">{{ translations.get('report_period', 'Period') }}</label>
         <select id="report-period" name="period">
@@ -27,15 +36,6 @@
       <div class="filter-item">
         <label for="report-end">{{ translations.get('report_end_date', 'End date') }}</label>
         <input id="report-end" type="date" name="end_date" value="{{ report.end_date or '' }}">
-      </div>
-      <div class="filter-item">
-        <label for="report-player">{{ translations.get('report_player', 'Player') }}</label>
-        <select id="report-player" name="player_id">
-          <option value="">{{ translations.get('all_players', 'All players') }}</option>
-          {% for player in report.players %}
-            <option value="{{ player.player_id }}" {% if report.selected_player_id == player.player_id %}selected{% endif %}>{{ player.display_name }}</option>
-          {% endfor %}
-        </select>
       </div>
     </div>
     <div class="filter-actions"><button type="submit" class="button">{{ translations.get('apply_filters', 'Apply') }}</button></div>
