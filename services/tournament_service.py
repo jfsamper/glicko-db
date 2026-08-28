@@ -1581,6 +1581,15 @@ def delete_tournament(conn, tournament_id):
             (tournament_id,),
         )
         conn.execute(
+            """
+            DELETE FROM tournament_round_players
+            WHERE round_id IN (
+                SELECT id FROM tournament_rounds WHERE tournament_id = ?
+            )
+            """,
+            (tournament_id,),
+        )
+        conn.execute(
             "DELETE FROM tournament_rounds WHERE tournament_id = ?",
             (tournament_id,),
         )

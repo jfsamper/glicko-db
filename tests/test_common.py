@@ -95,7 +95,7 @@ def test_rating_recompute_orders_same_day_matches_by_round(monkeypatch, tmp_path
 
     calls = []
 
-    def record_update(rating, rd, vol, opponent_rating, opponent_rd, opponent_vol, score, conn=None):
+    def record_update(rating, rd, vol, opponent_rating, opponent_rd, opponent_vol, score, conn=None, tau=None):
         calls.append(score)
         return {"rating": rating, "rd": rd, "volatility": vol}
 

@@ -961,6 +961,7 @@ def test_delete_tournament_removes_all_dependent_records():
         "tournaments",
         "tournament_participants",
         "tournament_rounds",
+        "tournament_round_players",
         "tournament_pairings",
         "tournament_pending_players",
     ):

@@ -35,9 +35,10 @@ def clear_rating_state():
     conn.close()
 
 
-def player_state_from_row(row, conn=None):
+def player_state_from_row(row, conn=None, cfg=None):
 
-    cfg = get_rating_config(conn=conn)
+    if cfg is None:
+        cfg = get_rating_config(conn=conn)
 
     return {
         "id": row["id"],
@@ -70,9 +71,12 @@ def glicko2_update(
     opponent_vol,
     score,
     conn=None,
+    tau=None,
 ):
 
-    Player._tau = get_rating_config(conn=conn)["tau"]
+    if tau is None:
+        tau = get_rating_config(conn=conn)["tau"]
+    Player._tau = tau
     player = Player(
         rating=rating,
         rd=rd,
@@ -100,6 +104,7 @@ def recompute_ratings(conn=None):
         conn.execute("DELETE FROM rating_snapshots")
         rows = conn.execute("SELECT * FROM players").fetchall()
         cfg = get_rating_config(conn=conn)
+        Player._tau = cfg["tau"]
 
         for row in rows:
             conn.execute(
@@ -121,7 +126,10 @@ def recompute_ratings(conn=None):
                 ),
             )
 
-        states = {row["id"]: player_state_from_row(row, conn=conn) for row in rows}
+        states = {
+            row["id"]: player_state_from_row(row, conn=conn, cfg=cfg)
+            for row in rows
+        }
         matches = conn.execute(
             f"SELECT * FROM matches ORDER BY match_date, {_match_order_clause(conn)}"
         ).fetchall()
@@ -145,6 +153,7 @@ def recompute_ratings(conn=None):
                 black_state["volatility"],
                 white_score,
                 conn=conn,
+                tau=cfg["tau"],
             )
             black_update = glicko2_update(
                 black_state["rating"],
@@ -155,6 +164,7 @@ def recompute_ratings(conn=None):
                 white_state["volatility"],
                 black_score,
                 conn=conn,
+                tau=cfg["tau"],
             )
 
             states[match["white_player_id"]] = {
@@ -477,6 +487,7 @@ def _replay_from_dirty_date(conn, dirty_date):
     #
     states = {}
     cfg = get_rating_config(conn=conn)
+    Player._tau = cfg["tau"]
 
     for player_id in affected_players:
         snapshot = conn.execute(
@@ -566,6 +577,7 @@ def _replay_from_dirty_date(conn, dirty_date):
             black_state["volatility"],
             score,
             conn=conn,
+            tau=cfg["tau"],
         )
 
         black_update = glicko2_update(
@@ -577,6 +589,7 @@ def _replay_from_dirty_date(conn, dirty_date):
             white_state["volatility"],
             1.0 - score if score != 0.5 else 0.5,
             conn=conn,
+            tau=cfg["tau"],
         )
 
         states[white_id] = white_update

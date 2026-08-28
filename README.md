@@ -109,7 +109,7 @@ Cuando una importación de OpenGotha encuentra un nombre parecido, muestra una s
 
 Abre `/reports` para elegir año, trimestre, mes, Todo el tiempo o un rango personalizado. La tabla muestra solo jugadores con partidas válidas en el periodo y permite abrir el rendimiento frente a cada oponente. También se muestran agregados por país y club del oponente. Los enlaces CSV y PDF conservan los filtros seleccionados y usan los mismos totales visibles en pantalla; el nombre del PDF incluye el jugador y el periodo.
 
-Cuando se materializan resultados de ronda en la tabla principal de partidas, la columna `event` conserva el nombre del torneo o evento. La columna `notes` (visible como `Round` en la interfaz) guarda la etiqueta de la ronda en formato canónico, por ejemplo `Round 5`. Si la entrada esta en un formato de legado (por ej. `15:00:00`), se converva y convierte en ronda numérica. Si no se encuentra un valor numérico, se deja el texto y se trata como `0`.
+Cuando se materializan resultados de ronda en la tabla principal de partidas, la columna `event` conserva el nombre del torneo o evento. La columna `notes` (visible como `Round` en la interfaz) guarda el número de ronda en formato canónico como un entero sin etiqueta, por ejemplo `5` (no `Round 5`). Si la entrada esta en un formato de legado (por ej. `15:00:00`), se converva y convierte en ronda numérica. Si no se encuentra un valor numérico, se deja el texto y se trata como `0`.
 
 Las tablas de torneos se migran automáticamente al iniciar para mantener la compatibilidad con bases de datos existentes.
 

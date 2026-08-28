@@ -174,6 +174,48 @@ def test_glicko2_update_uses_class_level_tau_config():
         Player._tau = original_tau
 
 
+def test_glicko2_update_uses_explicit_tau_without_config_query(monkeypatch):
+    import services.rating_service as rating_service
+
+    original_tau = Player._tau
+
+    def unexpected_config_query(*args, **kwargs):
+        raise AssertionError("explicit tau must not query rating_config")
+
+    monkeypatch.setattr(rating_service, "get_rating_config", unexpected_config_query)
+    try:
+        result = rating_service.glicko2_update(
+            1500, 200, 0.06, 1500, 200, 0.06, 1.0, tau=0.25
+        )
+        assert Player._tau == 0.25
+        assert set(result) == {"rating", "rd", "volatility"}
+    finally:
+        Player._tau = original_tau
+
+
+def test_player_state_reuses_explicit_rating_config(monkeypatch):
+    import services.rating_service as rating_service
+
+    def unexpected_config_query(*args, **kwargs):
+        raise AssertionError("explicit config must be reused")
+
+    monkeypatch.setattr(rating_service, "get_rating_config", unexpected_config_query)
+    state = rating_service.player_state_from_row(
+        {"id": 7, "initial_rating": None},
+        cfg={
+            "default_rating": 1500.0,
+            "default_rd": 88.0,
+            "default_volatility": 0.01,
+        },
+    )
+    assert state == {
+        "id": 7,
+        "rating": 1500.0,
+        "rd": 88.0,
+        "volatility": 0.01,
+    }
+
+
 def test_replay_uses_caller_owned_connection_without_nested_get_db(monkeypatch, tmp_path):
     import services.rating_service as rating_service
 

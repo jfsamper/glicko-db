@@ -108,7 +108,7 @@ When an OpenGotha import finds a similar name, it shows a database player sugges
 
 Open `/reports` to choose a year, quarter, month, All time, or custom range. The table shows players with valid games in the period and links to performance against each opponent. It also shows aggregates by opponent country and club. The CSV and PDF links preserve the selected filters and use the same totals shown on screen; PDF filenames include the player and period.
 
-When round results are materialized in the main matches table, the `event` column preserves the tournament or event name. The `notes` column, shown as `Round` in the interface, stores the round label in canonical form, such as `Round 5`. If the entry is in a legacy format, such as `15:00:00`, it is preserved and converted to a numeric round. If no numeric value is found, the text is kept and treated as `0`.
+When round results are materialized in the main matches table, the `event` column preserves the tournament or event name. The `notes` column, shown as `Round` in the interface, stores the round number in canonical form as a bare integer, such as `5` (not `Round 5`). If the entry is in a legacy format, such as `15:00:00`, it is preserved and converted to a numeric round. If no numeric value is found, the text is kept and treated as `0`.
 
 Tournament tables are migrated automatically at startup to preserve compatibility with existing databases.
 
@@ -145,6 +145,8 @@ The consistent ordering, filtering, and search behavior is already shipped and v
 1. Pagination improvements. Show total pages, current-page context, and a simple results-per-page selection.
 2. Player profile with tournament results and statistics. Add an overview card for each player showing tournaments played, win/loss record, event results, recent tournament table, streaks, and performance percentages, with filters by category and season.
 3. Simple hidden or unpublished tournament state. Allow a tournament to be excluded from the public view without introducing a complete lifecycle.
+
+Tournaments with status `draft` are hidden from public listings. Use the ‘show drafts’ button on the tournament list page to view them.
 4. Scheduled backups with retention and restore verification. Keep them disabled by default and enable them only when a clear retention policy exists.
 5. Optional moderation workflow for results. Only if required by the tournament workflow.
 
