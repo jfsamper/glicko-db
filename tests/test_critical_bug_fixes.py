@@ -405,10 +405,11 @@ def test_workbook_import_normalizes_round_and_preserves_time_notes(tmp_path, mon
     workbook_path = tmp_path / "matches.xlsx"
     workbook = Workbook()
     worksheet = workbook.active
-    worksheet.title = "Matches"
-    worksheet.append(["Date", "Hora/Ronda", "White", "Black", "Winner", "Comments"])
-    worksheet.append(["2026-08-01", 3, "Alice", "Bob", "Alice", "Open"])
-    worksheet.append(["2026-08-02", time(15, 0), "Alice", "Carol", "Carol", "Open"])
+    if worksheet:       
+        worksheet.title = "Matches"
+        worksheet.append(["Date", "Hora/Ronda", "White", "Black", "Winner", "Comments"])
+        worksheet.append(["2026-08-01", 3, "Alice", "Bob", "Alice", "Open"])
+        worksheet.append(["2026-08-02", time(15, 0), "Alice", "Carol", "Carol", "Open"])
     workbook.save(workbook_path)
 
     def get_test_db():

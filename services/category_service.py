@@ -92,5 +92,7 @@ def update_category_config(
     conn.commit()
     conn.close()
 
-
+# Circular import workaround
+# Consider moving `glicko_to_category()` to a shared utility module (e.g., `services/rating_utils.py`) 
+# that neither `rating_service` nor `category_service` depends on deeply. Functional but hard to follow.
 from services.rating_service import glicko_to_category  # noqa: E402, F401

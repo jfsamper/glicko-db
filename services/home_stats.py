@@ -44,15 +44,6 @@ def _period_bounds(period):
     return None, None
 
 
-def _result_tier(result):
-    normalized = str(result).strip().lower()
-    if normalized in {"1-0", "white", "w", "win", "victoria"}:
-        return "win"
-    if normalized in {"0-1", "black", "l", "lose", "loss", "derrota"}:
-        return "loss"
-    return "draw"
-
-
 def _normalized_sql_date(column_name):
     return (
         "CASE "
@@ -137,28 +128,6 @@ def _build_metric_entries(players, metric_values, min_value=1):
     )
 
     return ranked[:5]
-
-
-def _top_metric_entry(players, metric_values):
-    ranked = []
-    for player in players:
-        if player["player_id"] in metric_values:
-            value = metric_values[player["player_id"]]
-            ranked.append({
-                "player_id": player["player_id"],
-                "display_name": player["display_name"],
-                "value": value,
-                "display_value": str(value),
-            })
-
-    if not ranked:
-        return None
-
-    ranked.sort(key=lambda entry: (-entry["value"], entry["display_name"].lower()))
-    top_entry = ranked[0]
-    if top_entry["value"] in (None, 0):
-        return None
-    return top_entry
 
 
 def _period_stats(conn, period):
@@ -277,7 +246,7 @@ def build_player_badges(player_id, translations=None, conn=None):
             return []
         if games_played <= 0:
             return []
-
+    # consider caching `_period_stats()` results per request if profiles become a bottleneck.
     all_time_stats = _period_stats(conn, "all_time")
     year_stats = _period_stats(conn, "year")
     quarter_stats = _period_stats(conn, "quarter")
