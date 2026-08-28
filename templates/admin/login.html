@@ -4,20 +4,16 @@
 
 <section class="panel">
 
-  <div class="panel-header">
-    <h2>{{ translations.admin_login_heading }}</h2>
-  </div>
-
   <form method="post" class="filter-form">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
     <div class="filter-panel">
-      <div class="filter-header">
+      <div class="filter-header centered-header">
         <h3>{{ translations.admin_login_heading }}</h3>
       </div>
 
       <div class="filter-grid">
         <div class="filter-item wide">
-          <label for="username">Username</label>
+          <label for="username">{{ translations.username_label }}</label>
           <input
             id="username"
             name="username"
