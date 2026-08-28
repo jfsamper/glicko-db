@@ -15,6 +15,7 @@ Glicko DB é uma aplicação Flask e SQLite para gerenciar jogadores, ratings, p
 - Relatórios públicos por período, iniciando por Todo o período, com filtros por jogador, exportação CSV/PDF traduzida, mudanças de rating e desempenho por oponente, país e clube
 - Sistemas suíço, suíço por categoria, suíço acelerado e McMahon
 - Tratamento de BYE e ausências, cópias de segurança, proteção de restauração e migrações SQLite
+- Partidas com handicap em pedras (estilo Go), com sugestão automática pela diferença de categoria e ajuste de rating no estilo OGS
 
 ## Requisitos
 
@@ -85,8 +86,8 @@ O plano detalhado e priorizado está em [FUTURE_FEATURES.md](FUTURE_FEATURES.md)
 3. Envie um dos formatos compatíveis:
 
   - `.xlsx` ou `.xls`: importa os dados e substitui o conjunto atual.
-  - `.xml` do OpenGotha: importa partidas e metadados do torneio.
-  - `.csv`: requer as colunas `date`, `white`, `black` e `result`.
+  - `.xml` do OpenGotha: importa partidas e metadados do torneio. O atributo `handicap` de cada partida (número de pedras dadas a Preto) é preservado quando presente.
+  - `.csv`: requer as colunas `date`, `white`, `black` e `result`. Uma coluna opcional `handicap` (número de pedras, 0-9) é preservada; valores ausentes ou inválidos usam 0.
 4. Confirme as classificações e os perfis de jogadores resultantes.
 
 Mantenha uma cópia de segurança antes de importar uma planilha que substitua os dados.
@@ -103,6 +104,8 @@ Mantenha uma cópia de segurança antes de importar uma planilha que substitua o
 As posições da classificação são sempre únicas e sequenciais; os empates são resolvidos por SOS, SOSOS, SODOS, rating e nome. O emparelhamento evita repetir o BYE para um jogador enquanto outro participante ainda não o recebeu, e os BYEs importados do OpenGotha são registrados para que as rodadas futuras respeitem esse histórico.
 
 Quando uma importação do OpenGotha encontra um nome semelhante, ela mostra a sugestão de um jogador do banco de dados. Clique no nome sugerido para vinculá-lo imediatamente ao jogador existente ou use o seletor para criar um novo jogador ou escolher outro jogador.
+
+Cada emparelhamento recebe uma sugestão automática de handicap em pedras (uma pedra por categoria de diferença entre os jogadores), que o diretor do torneio pode editar antes de registrar o resultado. Ao processar a rodada, o handicap é transferido para a partida e ajusta o rating no estilo OGS: o rating do adversário é deslocado apenas para o cálculo dessa partida, sem alterar seu rating base.
 
 ### Consultar relatórios
 

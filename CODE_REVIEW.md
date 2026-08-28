@@ -1,6 +1,6 @@
 # Code Review – glicko-db
 
-This review is intentionally short and action-oriented. The project is currently green: the full suite passes with 262 tests, and the remaining work is mainly follow-up cleanup rather than new production risk.
+This review is intentionally short and action-oriented. The project is currently green: the full suite passes with 287 tests, and the remaining work is mainly follow-up cleanup rather than new production risk.
 
 ## 1. Critical bugs
 
@@ -25,6 +25,7 @@ This review is intentionally short and action-oriented. The project is currently
 - Search consistency: player, match, and tournament list pages now share a consistent ordering and filtering model, with query state preserved across pagination, and this is covered by regression tests.
 - Performance cleanup: lookup caching, SQL `LIMIT/OFFSET` use, and migration guards were tightened to reduce unnecessary scanning and repeated work.
 - Import reliability: fuzzy player matching, round-note normalization, and metadata handling were hardened across workbook and XML imports. OpenGotha tournament metadata and match records now use typed `GothaTournamentPayload`, `GothaPlayer`, and `GothaMatch` dataclasses while preserving legacy mapping access.
+- Handicap games (2026-08): stones-based handicap support landed end-to-end -- `category_service.handicap_points`/`suggested_handicap_stones` (OGS-inspired but using this app's own log category curve rather than a flat points-per-stone constant), auto-suggested/overridable handicap on manual and generated tournament pairings, OGS-style opponent-only rating shift in `rating_service.glicko2_update`, and handicap columns on `matches`/`tournament_pairings` with a defaulting migration. OpenGotha XML import (`import_gotha.py`, `import_service.py`, `tournament_service.create_tournament_from_gotha`) and the CSV importer both read an optional handicap value; missing/invalid values default to 0. Covered by `tests/test_handicap.py`.
 - Date and round consistency: application-generated timestamps use UTC-5 by default or the active account's valid IANA timezone preference, and both rating calculation paths share deterministic date/round ordering. Invalid or unset preferences fall back to UTC-5.
 - Reporting: public reports default to All time, support player filtering and games-based selector ordering, and provide consistent CSV/PDF exports with localized PDF text and filter-preserving filenames.
 
@@ -37,7 +38,7 @@ This review is intentionally short and action-oriented. The project is currently
 ## Status summary
 
 - Production blockers: none remaining in the current scope.
-- Current project status: green, with the audit, auth, account profile/recovery, per-account timezone, round-order, tournament-delete modal, typed OpenGotha, and reporting changes completed and validated by 262 tests.
+- Current project status: green, with the audit, auth, account profile/recovery, per-account timezone, round-order, tournament-delete modal, typed OpenGotha, reporting, and handicap-games changes completed and validated by 287 tests.
 
 ## 5. Remaining low-priority follow-ups
 

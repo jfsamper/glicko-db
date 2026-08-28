@@ -275,7 +275,8 @@ def test_admin_edit_match_preserves_string_note_when_stats_refresh_fails(monkeyp
             result TEXT NOT NULL,
             event TEXT,
             notes TEXT,
-            round_number INTEGER NOT NULL DEFAULT 0
+            round_number INTEGER NOT NULL DEFAULT 0,
+            handicap_stones INTEGER NOT NULL DEFAULT 0
         );
         INSERT INTO players (id, display_name) VALUES (1, 'Alice'), (2, 'Bob');
         INSERT INTO matches

@@ -40,6 +40,7 @@ class GothaMatch:
     winner: str | None
     result: str
     event: str
+    handicap_stones: int = 0
 
     def __getitem__(self, field_name: str) -> Any:
         try:
@@ -173,6 +174,11 @@ def parse_gotha_xml(xml_path) -> list[GothaMatch]:
             result = "1/2-1/2"
             winner = ""
 
+        try:
+            handicap_stones = int(game.get("handicap") or 0)
+        except (TypeError, ValueError):
+            handicap_stones = 0
+
         matches.append(
             GothaMatch(
                 match_date=event_date,
@@ -182,6 +188,7 @@ def parse_gotha_xml(xml_path) -> list[GothaMatch]:
                 winner=winner,
                 result=result,
                 event=event_name,
+                handicap_stones=handicap_stones,
             )
         )
 

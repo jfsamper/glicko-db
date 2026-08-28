@@ -61,7 +61,8 @@ def create_test_db(db_path):
             result TEXT NOT NULL,
             event TEXT,
             notes TEXT,
-            round_number INTEGER NOT NULL DEFAULT 0
+            round_number INTEGER NOT NULL DEFAULT 0,
+            handicap_stones INTEGER NOT NULL DEFAULT 0
         );
         CREATE TABLE rating_snapshots (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -1172,6 +1173,7 @@ def test_create_tournament_from_gotha_repairs_legacy_players_corrupt_table(tmp_p
             black_player_name TEXT,
             result TEXT,
             is_bye INTEGER NOT NULL DEFAULT 0,
+            handicap_stones INTEGER NOT NULL DEFAULT 0,
             UNIQUE(round_id, board_number)
         );
         CREATE TABLE tournament_pending_players (
@@ -1303,6 +1305,7 @@ def test_create_tournament_from_gotha_repairs_stale_players_corrupt_foreign_keys
             black_player_name TEXT,
             result TEXT,
             is_bye INTEGER NOT NULL DEFAULT 0,
+            handicap_stones INTEGER NOT NULL DEFAULT 0,
             UNIQUE(round_id, board_number),
             FOREIGN KEY (white_player_id) REFERENCES players_corrupt(id) ON DELETE RESTRICT,
             FOREIGN KEY (black_player_id) REFERENCES players_corrupt(id) ON DELETE RESTRICT
@@ -1435,6 +1438,7 @@ def test_create_tournament_from_gotha_repairs_dangling_fk_when_corrupt_table_alr
             black_player_name TEXT,
             result TEXT,
             is_bye INTEGER NOT NULL DEFAULT 0,
+            handicap_stones INTEGER NOT NULL DEFAULT 0,
             UNIQUE(round_id, board_number),
             FOREIGN KEY (white_player_id) REFERENCES players_corrupt(id) ON DELETE RESTRICT,
             FOREIGN KEY (black_player_id) REFERENCES players_corrupt(id) ON DELETE RESTRICT

@@ -15,6 +15,7 @@ Glicko DB es una aplicación Flask y SQLite para administrar jugadores, ratings,
 - Reportes públicos por periodo (por defecto, todo el tiempo) con filtros por jugador, exportación CSV/PDF localizada, cambios de rating y rendimiento por oponente, país y club
 - Sistemas Suizo, Suizo por Categoría, Suizo Acelerado y McMahon
 - Manejo de descansos y ausencias, copias de seguridad, protecciones de restauración y migraciones SQLite
+- Partidas con hándicap en piedras (estilo Go), con sugerencia automática por diferencia de categoría y ajuste de rating estilo OGS
 
 ## Requisitos
 
@@ -86,8 +87,8 @@ La hoja de ruta detallada y priorizada está en [FUTURE_FEATURES.md](FUTURE_FEAT
 2. Abre la pantalla de importación.
 3. Carga uno de los formatos compatibles:
    - Libro `.xlsx` o `.xls`: importa los datos y reemplaza el conjunto de datos actual.
-   - Archivo `.xml` de OpenGotha: importa partidas y metadatos del torneo.
-   - Archivo `.csv` con las columnas `date`, `white`, `black` y `result`.
+   - Archivo `.xml` de OpenGotha: importa partidas y metadatos del torneo. El atributo `handicap` de cada partida (número de piedras dadas a Negro) se conserva si está presente.
+   - Archivo `.csv` con las columnas `date`, `white`, `black` y `result`. Una columna opcional `handicap` (número de piedras, 0-9) se conserva; si falta o no es válida se usa 0.
 4. Confirma las posiciones y perfiles de jugadores resultantes.
 
 Conserva una copia de seguridad antes de importar un libro que reemplace los datos.
@@ -104,6 +105,8 @@ Conserva una copia de seguridad antes de importar un libro que reemplace los dat
 Las posiciones de la clasificación son siempre únicas y secuenciales; los empates se resuelven con SOS, SOSOS, SODOS, rating y nombre. El emparejamiento evita repetir el BYE en un mismo jugador mientras otro participante no lo haya recibido, y los BYE importados de OpenGotha quedan registrados para que las rondas futuras respeten ese historial.
 
 Cuando una importación de OpenGotha encuentra un nombre parecido, muestra una sugerencia de un jugador en la base de datos. Haz clic en el nombre sugerido para vincularlo inmediatamente al jugador existente, o usa el selector para crear un jugador nuevo o elegir otro jugador.
+
+Cada emparejamiento recibe una sugerencia automática de hándicap en piedras (una piedra por categoría de diferencia entre los jugadores), que el director del torneo puede editar antes de registrar el resultado. Al procesar la ronda, el hándicap se traslada a la partida y ajusta el rating de forma similar a OGS: el rating del oponente se desplaza solo para el cálculo de esa partida, sin tocar su rating base.
 
 ### Consultar reportes
 

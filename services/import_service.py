@@ -472,9 +472,10 @@ def import_gotha_xml(xml_path):
                 result,
                 event,
                 notes,
-                round_number
+                round_number,
+                handicap_stones
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 match["match_date"],
@@ -486,6 +487,7 @@ def import_gotha_xml(xml_path):
                     f"Round {match['round']}" if match.get("round") else ""
                 ),
                 normalize_round_note(match.get("round")),
+                match.get("handicap_stones", 0) or 0,
             ),
         )
 

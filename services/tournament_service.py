@@ -7,7 +7,7 @@ from pathlib import Path
 import xml.etree.ElementTree as ET
 
 from config import DEFAULT_RATING, GLICKO_K, GLICKO_M
-from services.category_service import glicko_to_category
+from services.category_service import glicko_to_category, suggested_handicap_stones
 from services.common import current_date, current_timestamp
 from services.helpers import normalize_key, normalize_text
 from services.import_gotha import GothaPlayer, GothaTournamentPayload
@@ -61,6 +61,34 @@ def _category_for_rating(conn, rating):
     if category.endswith(" kyu"):
         return f"{category[:-4]}K"
     return category
+
+
+def _auto_handicap_stones(conn, white_player_id, black_player_id):
+    """Best-effort auto-suggested handicap (in stones) for a newly created
+    pairing, from the two players' current ratings. Returns 0 if either
+    rating can't be found (e.g. a not-yet-materialized pending player) --
+    callers should let a tournament director edit the result either way.
+    """
+    rows = conn.execute(
+        "SELECT id, rating FROM players WHERE id IN (?, ?)",
+        (white_player_id, black_player_id),
+    ).fetchall()
+    ratings = {row["id"]: row["rating"] for row in rows}
+    if white_player_id not in ratings or black_player_id not in ratings:
+        return 0
+
+    config = conn.execute(
+        "SELECT glicko_k, glicko_m FROM category_config WHERE id = 1"
+    ).fetchone() if conn.execute(
+        "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'category_config'"
+    ).fetchone() else None
+
+    return suggested_handicap_stones(
+        ratings[white_player_id],
+        ratings[black_player_id],
+        k=config["glicko_k"] if config else GLICKO_K,
+        m=config["glicko_m"] if config else GLICKO_M,
+    )
 
 
 def normalize_tournament_rounds(rounds):
@@ -918,11 +946,16 @@ def create_tournament_from_gotha(
 
         is_bye = white_player is not None and black_player is None and not black_name
 
+        try:
+            handicap_stones = int(game.get("handicap") or 0)
+        except (TypeError, ValueError):
+            handicap_stones = 0
+
         conn.execute(
             """
             INSERT INTO tournament_pairings
-                (round_id, board_number, white_player_id, black_player_id, white_player_name, black_player_name, result, is_bye)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                (round_id, board_number, white_player_id, black_player_id, white_player_name, black_player_name, result, is_bye, handicap_stones)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 round_id,
@@ -933,6 +966,7 @@ def create_tournament_from_gotha(
                 black_name if black_player is None else None,
                 result,
                 int(is_bye),
+                handicap_stones,
             ),
         )
         if is_bye:
@@ -1026,11 +1060,16 @@ def generate_next_round(conn, tournament_id):
     )
     round_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
     for board_number, pairing in enumerate(pairings, 1):
+        pairing_handicap = (
+            0
+            if pairing["is_bye"]
+            else _auto_handicap_stones(conn, pairing["white_player_id"], pairing["black_player_id"])
+        )
         conn.execute(
             """
             INSERT INTO tournament_pairings
-                (round_id, board_number, white_player_id, black_player_id, is_bye)
-            VALUES (?, ?, ?, ?, ?)
+                (round_id, board_number, white_player_id, black_player_id, is_bye, handicap_stones)
+            VALUES (?, ?, ?, ?, ?, ?)
             """,
             (
                 round_id,
@@ -1038,6 +1077,7 @@ def generate_next_round(conn, tournament_id):
                 pairing["white_player_id"],
                 pairing["black_player_id"],
                 int(pairing["is_bye"]),
+                pairing_handicap,
             ),
         )
         if pairing["is_bye"]:
@@ -1263,7 +1303,12 @@ def remove_participant(conn, tournament_id, player_id):
     conn.commit()
 
 
-def manual_pair(conn, tournament_id, round_id, white_player_id, black_player_id):
+def manual_pair(conn, tournament_id, round_id, white_player_id, black_player_id, handicap_stones=None):
+    """Creates a pairing. handicap_stones defaults to an auto-suggested
+    value from the two players' current ratings (see _auto_handicap_stones);
+    pass an explicit int (including 0) to override it, e.g. from a
+    tournament director editing the suggestion in the admin UI.
+    """
     round_row = conn.execute(
         "SELECT id FROM tournament_rounds WHERE id = ? AND tournament_id = ?",
         (round_id, tournament_id),
@@ -1309,14 +1354,50 @@ def manual_pair(conn, tournament_id, round_id, white_player_id, black_player_id)
     board_number = 1
     while board_number in used_boards:
         board_number += 1
+
+    if handicap_stones is None:
+        handicap_stones = _auto_handicap_stones(conn, white_player_id, black_player_id)
+
     conn.execute(
         """
         INSERT INTO tournament_pairings
-            (round_id, board_number, white_player_id, black_player_id, is_bye)
-        VALUES (?, ?, ?, ?, 0)
+            (round_id, board_number, white_player_id, black_player_id, is_bye, handicap_stones)
+        VALUES (?, ?, ?, ?, 0, ?)
         """,
-        (round_id, board_number, white_player_id, black_player_id),
+        (round_id, board_number, white_player_id, black_player_id, handicap_stones),
     )
+    conn.commit()
+
+
+def update_pairing_handicap(conn, tournament_id, pairing_id, handicap_stones):
+    """Lets a tournament director override the auto-suggested handicap for
+    an existing, not-yet-materialized pairing. Once a pairing's result has
+    already been processed into the matches table, editing the handicap
+    here does NOT retroactively touch that match -- the match row's own
+    handicap_stones would need a normal match edit + mark_dirty/replay,
+    same as editing any other match field.
+    """
+    if handicap_stones is None:
+        raise ValueError("handicap_stones is required")
+    try:
+        handicap_stones = int(handicap_stones)
+    except (TypeError, ValueError):
+        raise ValueError("handicap_stones must be an integer")
+    if not (0 <= handicap_stones <= 9):
+        raise ValueError("handicap_stones must be between 0 and 9")
+
+    updated = conn.execute(
+        """
+        UPDATE tournament_pairings
+        SET handicap_stones = ?
+        WHERE id = ? AND round_id IN (
+            SELECT id FROM tournament_rounds WHERE tournament_id = ?
+        )
+        """,
+        (handicap_stones, pairing_id, tournament_id),
+    ).rowcount
+    if not updated:
+        raise ValueError("Pairing not found")
     conn.commit()
 
 
@@ -1419,7 +1500,7 @@ def process_tournament_round_matches(conn, tournament_id, round_id=None, match_d
 
     pairings = conn.execute(
         """
-        SELECT id, white_player_id, black_player_id, result
+        SELECT id, white_player_id, black_player_id, result, handicap_stones
         FROM tournament_pairings
         WHERE round_id = ? AND is_bye = 0 AND result IS NOT NULL AND result != ''
         """,
@@ -1436,20 +1517,24 @@ def process_tournament_round_matches(conn, tournament_id, round_id=None, match_d
         if tournament_rounds_limit is not None and round_row["round_number"] > tournament_rounds_limit:
             continue
 
+        pairing_handicap = pairing["handicap_stones"] if "handicap_stones" in pairing.keys() and pairing["handicap_stones"] is not None else 0
+
         existing = conn.execute(
-            "SELECT id, match_date, result, event FROM matches WHERE tournament_pairing_id = ?",
+            "SELECT id, match_date, result, event, handicap_stones FROM matches WHERE tournament_pairing_id = ?",
             (pairing["id"],),
         ).fetchone()
         if existing is not None:
-            if (existing["match_date"], existing["result"], existing["event"]) != (
+            existing_handicap = existing["handicap_stones"] if "handicap_stones" in existing.keys() and existing["handicap_stones"] is not None else 0
+            if (existing["match_date"], existing["result"], existing["event"], existing_handicap) != (
                 match_date,
                 pairing["result"],
                 event_name,
+                pairing_handicap,
             ):
                 conn.execute(
                     """
                     UPDATE matches
-                    SET match_date = ?, result = ?, event = ?, notes = ?, round_number = ?
+                    SET match_date = ?, result = ?, event = ?, notes = ?, round_number = ?, handicap_stones = ?
                     WHERE id = ?
                     """,
                     (
@@ -1458,6 +1543,7 @@ def process_tournament_round_matches(conn, tournament_id, round_id=None, match_d
                         event_name,
                         round_row["round_number"],
                         round_row["round_number"],
+                        pairing_handicap,
                         existing["id"],
                     ),
                 )
@@ -1466,8 +1552,8 @@ def process_tournament_round_matches(conn, tournament_id, round_id=None, match_d
         conn.execute(
             """
             INSERT INTO matches
-                (match_date, white_player_id, black_player_id, result, event, notes, round_number, tournament_pairing_id)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                (match_date, white_player_id, black_player_id, result, event, notes, round_number, tournament_pairing_id, handicap_stones)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 match_date,
@@ -1478,6 +1564,7 @@ def process_tournament_round_matches(conn, tournament_id, round_id=None, match_d
                 round_row["round_number"],
                 round_row["round_number"],
                 pairing["id"],
+                pairing_handicap,
             ),
         )
         inserted += 1

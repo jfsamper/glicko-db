@@ -129,6 +129,7 @@ def init_db():
             notes TEXT,
             round_number INTEGER NOT NULL DEFAULT 0,
             tournament_pairing_id INTEGER,
+            handicap_stones INTEGER NOT NULL DEFAULT 0,
             CHECK (white_player_id != black_player_id),
             FOREIGN KEY (white_player_id) REFERENCES players(id) ON DELETE CASCADE,
             FOREIGN KEY (black_player_id) REFERENCES players(id) ON DELETE CASCADE
@@ -205,6 +206,7 @@ def init_db():
             black_player_name TEXT,
             result TEXT,
             is_bye INTEGER NOT NULL DEFAULT 0,
+            handicap_stones INTEGER NOT NULL DEFAULT 0,
             UNIQUE(round_id, board_number),
             CHECK (white_player_id != black_player_id),
             FOREIGN KEY (round_id) REFERENCES tournament_rounds(id) ON DELETE CASCADE,
@@ -309,6 +311,7 @@ def migrate_matches_notes_schema(conn):
             notes TEXT,
             round_number INTEGER NOT NULL DEFAULT 0,
             tournament_pairing_id INTEGER,
+            handicap_stones INTEGER NOT NULL DEFAULT 0,
             CHECK (white_player_id != black_player_id),
             FOREIGN KEY (white_player_id) REFERENCES players(id) ON DELETE CASCADE,
             FOREIGN KEY (black_player_id) REFERENCES players(id) ON DELETE CASCADE
@@ -317,12 +320,30 @@ def migrate_matches_notes_schema(conn):
     )
     conn.execute(
         """
-        INSERT INTO matches (id, match_date, white_player_id, black_player_id, result, event, notes, round_number, tournament_pairing_id)
-        SELECT id, match_date, white_player_id, black_player_id, result, event, CAST(notes AS TEXT), 0, NULL
+        INSERT INTO matches (id, match_date, white_player_id, black_player_id, result, event, notes, round_number, tournament_pairing_id, handicap_stones)
+        SELECT id, match_date, white_player_id, black_player_id, result, event, CAST(notes AS TEXT), 0, NULL, 0
         FROM matches__legacy_round_notes
         """
     )
     conn.execute(f"DROP TABLE {legacy_name}")
+    conn.commit()
+
+
+def migrate_handicap_schema(conn):
+    """Add handicap_stones tracking to matches and tournament_pairings.
+
+    Defaults to 0 (no handicap) so every existing row, and every future
+    non-handicap match, is unaffected -- rating_service.py treats a
+    missing or zero handicap_stones value as a complete no-op.
+    """
+    for table in ("matches", "tournament_pairings"):
+        columns = {
+            row[1] for row in conn.execute(f"PRAGMA table_info({table})").fetchall()
+        }
+        if columns and "handicap_stones" not in columns:
+            conn.execute(
+                f"ALTER TABLE {table} ADD COLUMN handicap_stones INTEGER NOT NULL DEFAULT 0"
+            )
     conn.commit()
 
 
@@ -584,6 +605,7 @@ def migrate_tournament_schema(conn):
             "white_player_name": "TEXT",
             "black_player_name": "TEXT",
             "result": "TEXT", "is_bye": "INTEGER NOT NULL DEFAULT 0",
+            "handicap_stones": "INTEGER NOT NULL DEFAULT 0",
         },
         "tournament_pending_players": {
             "tournament_id": "INTEGER NOT NULL DEFAULT 0",
@@ -615,6 +637,7 @@ def migrate_tournament_schema(conn):
                     black_player_name TEXT,
                     result TEXT,
                     is_bye INTEGER NOT NULL DEFAULT 0,
+                    handicap_stones INTEGER NOT NULL DEFAULT 0,
                     UNIQUE(round_id, board_number),
                     CHECK (white_player_id != black_player_id),
                     FOREIGN KEY (round_id) REFERENCES tournament_rounds(id) ON DELETE CASCADE,
@@ -844,6 +867,7 @@ def initialize_app():
     migrate_matches_notes_schema(conn)
     migrate_tournament_match_identity_schema(conn)
     normalize_match_round_values(conn)
+    migrate_handicap_schema(conn)
 
     columns = {
         row["name"]

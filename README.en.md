@@ -15,6 +15,7 @@ Glicko DB is a Flask and SQLite application for managing a Go community's player
 - Public reports, defaulting to All time, with player filters, localized CSV/PDF export, rating movement, and opponent, country, and club performance
 - Swiss, category Swiss, accelerated Swiss, and McMahon pairing systems
 - BYE and absence handling, backups, restore safeguards, and SQLite schema migrations
+- Handicap games in stones (Go style), with an automatic suggestion from the category gap and an OGS-style rating adjustment
 
 ## Requirements
 
@@ -85,8 +86,8 @@ The detailed and prioritized roadmap is in [FUTURE_FEATURES.md](FUTURE_FEATURES.
 3. Upload one of these supported formats:
 
   - `.xlsx` or `.xls`: imports the data and replaces the current dataset.
-  - OpenGotha `.xml`: imports matches and tournament metadata.
-  - `.csv`: requires the `date`, `white`, `black`, and `result` columns.
+  - OpenGotha `.xml`: imports matches and tournament metadata. Each game's `handicap` attribute (stones given to Black) is kept if present.
+  - `.csv`: requires the `date`, `white`, `black`, and `result` columns. An optional `handicap` column (stones, 0-9) is kept; missing or invalid values default to 0.
 4. Confirm the resulting rankings and player profiles.
 
 Keep a backup before importing a workbook that replaces the data.
@@ -103,6 +104,8 @@ Keep a backup before importing a workbook that replaces the data.
 Standings positions are always unique and sequential; ties resolve through SOS, SOSOS, SODOS, rating, and name. The pairing algorithm avoids repeating a BYE for a player while another participant has not received one, and imported OpenGotha BYEs are recorded so future rounds respect that history.
 
 When an OpenGotha import finds a similar name, it shows a database player suggestion. Click the suggested name to link it immediately to the existing player, or use the selector to create a new player or choose another player.
+
+Each pairing gets an automatic handicap suggestion in stones (one stone per category of rating gap between the players), which the tournament director can edit before entering the result. When the round is processed, the handicap carries over to the match and adjusts ratings OGS-style: the opponent's rating is shifted only for that match's calculation, never touching their base rating.
 
 ### View reports
 

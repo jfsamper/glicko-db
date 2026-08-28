@@ -104,6 +104,7 @@ def create_db():
             black_player_name TEXT,
             result TEXT,
             is_bye INTEGER NOT NULL DEFAULT 0,
+            handicap_stones INTEGER NOT NULL DEFAULT 0,
             UNIQUE(round_id, board_number)
         );
         CREATE TABLE tournament_pending_players (
@@ -126,7 +127,9 @@ def create_db():
             result TEXT NOT NULL,
             event TEXT,
             notes TEXT,
-            round_number INTEGER NOT NULL DEFAULT 0
+            round_number INTEGER NOT NULL DEFAULT 0,
+            tournament_pairing_id INTEGER,
+            handicap_stones INTEGER NOT NULL DEFAULT 0
         );
         """
     )
