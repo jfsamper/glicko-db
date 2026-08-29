@@ -93,7 +93,7 @@
         </div>
 
         <div class="filter-item">
-          <label for="handicap_stones">{{ translations.get('handicap_stones_label', 'Handicap (stones)') }}</label>
+          <label for="handicap_stones">{{ translations.handicap_stones_label }}</label>
           <input
             id="handicap_stones"
             type="number"
@@ -103,7 +103,6 @@
             step="1"
             value="{{ match.handicap_stones if match else 0 }}"
           >
-          <p class="muted">{{ translations.get('handicap_stones_help', 'Stones given to Black, if this was a handicap game. Leave at 0 for an even game.') }}</p>
         </div>
       </div>
 

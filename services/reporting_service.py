@@ -313,8 +313,10 @@ def build_date_report(conn, start_date=None, end_date=None, selected_player_id=N
 
     selected_player_id = int(selected_player_id) if selected_player_id not in (None, "") else None
     selected_player = next((row for row in player_rows if row["player_id"] == selected_player_id), None)
+    visible_player_rows = [selected_player] if selected_player is not None else player_rows
     summary["players"] = len(player_rows)
     if selected_player is not None:
+        summary["players"] = 1
         summary["games"] = selected_player["games"]
         summary.update(
             {
@@ -328,7 +330,7 @@ def build_date_report(conn, start_date=None, end_date=None, selected_player_id=N
         "start_date": start_date.isoformat() if start_date else None,
         "end_date": end_date.isoformat() if end_date else None,
         "summary": summary,
-        "players": player_rows,
+        "players": visible_player_rows,
         "selector_players": selector_players,
         "opponents": selected_player["opponents"] if selected_player else [],
         "countries": sorted(country_records.values(), key=lambda item: (-item["games"], item["display_name"].casefold())),

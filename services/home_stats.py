@@ -251,6 +251,66 @@ def build_player_badges(player_id, translations=None, conn=None):
     year_stats = _period_stats(conn, "year")
     quarter_stats = _period_stats(conn, "quarter")
 
+    yearly_metrics = {}
+    yearly_matches = conn.execute(
+        """
+        SELECT substr(match_date, 1, 4) AS year, white_player_id, black_player_id, result
+        FROM matches
+        WHERE match_date IS NOT NULL
+          AND substr(match_date, 1, 4) GLOB '[0-9][0-9][0-9][0-9]'
+        """
+    ).fetchall()
+    for match in yearly_matches:
+        year = match["year"]
+        metrics = yearly_metrics.setdefault(year, {})
+        for participant_id in (match["white_player_id"], match["black_player_id"]):
+            player_metrics = metrics.setdefault(participant_id, {"games": 0, "wins": 0})
+            player_metrics["games"] += 1
+        winner_id = (
+            match["white_player_id"] if match["result"] == "1-0"
+            else match["black_player_id"] if match["result"] == "0-1"
+            else None
+        )
+        if winner_id is not None:
+            metrics[winner_id]["wins"] += 1
+
+    yearly_snapshots = conn.execute(
+        """
+        SELECT player_id, substr(snapshot_date, 1, 4) AS year, rating
+        FROM rating_snapshots
+        WHERE snapshot_date IS NOT NULL
+          AND substr(snapshot_date, 1, 4) GLOB '[0-9][0-9][0-9][0-9]'
+        ORDER BY snapshot_date, id
+        """
+    ).fetchall()
+    snapshot_ranges = {}
+    for snapshot in yearly_snapshots:
+        key = (snapshot["year"], snapshot["player_id"])
+        values = snapshot_ranges.setdefault(key, [])
+        values.append(float(snapshot["rating"]))
+    for (year, snapshot_player_id), values in snapshot_ranges.items():
+        if len(values) > 1:
+            yearly_metrics.setdefault(year, {}).setdefault(
+                snapshot_player_id, {"games": 0, "wins": 0}
+            )["rating_increase"] = round(values[-1] - values[0], 1)
+
+    def add_yearly_badge(metric_key, label):
+        for year in sorted(yearly_metrics, reverse=True):
+            entries = [
+                (metrics.get(metric_key, 0), candidate_id)
+                for candidate_id, metrics in yearly_metrics[year].items()
+                if metrics.get(metric_key, 0) > 0
+            ]
+            if not entries:
+                continue
+            top_value, top_player_id = sorted(entries, key=lambda item: (-item[0], item[1]))[0]
+            if top_player_id == player_id:
+                badges.append({
+                    "label": label,
+                    "value": top_value,
+                    "period": year,
+                })
+
     badges = []
 
     def add_badge(metric_key, label, period_key, period_label):
@@ -275,8 +335,9 @@ def build_player_badges(player_id, translations=None, conn=None):
 
     add_badge("most_active", translations["stats_metric_active"], "all_time", translations["stats_period_all_time"])
     add_badge("most_wins", translations["stats_metric_wins"], "all_time", translations["stats_period_all_time"])
-    add_badge("most_active", translations["stats_metric_active"], "year", translations["stats_period_year"])
-    add_badge("most_wins", translations["stats_metric_wins"], "year", translations["stats_period_year"])
+    add_yearly_badge("games", translations["stats_metric_active"])
+    add_yearly_badge("wins", translations["stats_metric_wins"])
+    add_yearly_badge("rating_increase", translations["stats_metric_glicko"])
     add_badge("most_active", translations["stats_metric_active"], "quarter", translations["stats_period_quarter"])
     add_badge("most_wins", translations["stats_metric_wins"], "quarter", translations["stats_period_quarter"])
 
@@ -294,4 +355,4 @@ def build_player_badges(player_id, translations=None, conn=None):
             "period": f"{translations['period_current']}",
         })
 
-    return badges[:5]
+    return badges

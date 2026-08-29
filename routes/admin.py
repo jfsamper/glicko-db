@@ -105,6 +105,7 @@ from services.tournament_service import (
     set_pairing_result,
     set_round_player_status,
     pair_selected_players,
+    update_tournament_handicaps,
     update_pairing_handicap,
 )
 
@@ -1183,6 +1184,7 @@ def admin_tournaments():
                 rounds = normalize_tournament_rounds(request.form.get("rounds", 1, type=int))
                 bye_points = request.form.get("bye_points", 1.0, type=float)
                 absent_points = request.form.get("absent_points", 0.0, type=float)
+                handicap_enabled = 1 if request.form.get("handicap_enabled") == "1" else 0
                 if bye_points not in {0.0, 0.5, 1.0} or absent_points not in {0.0, 0.5, 1.0}:
                     flash(translations["error"])
                     bye_points = absent_points = None
@@ -1196,17 +1198,38 @@ def admin_tournaments():
                         lang=lang,
                         translations=translations,
                     )
-                conn.execute(
-                    """
-                    INSERT INTO tournaments
-                        (name, location, rounds, tournament_type, pairing_system,
-                        bye_points, absent_points, status, created_at)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, 'draft', ?)
-                    """,
-                    (name, request.form.get("location", "").strip(), rounds,
-                     "mcmahon" if pairing_system == "mcmahon" else ("swiss_cat" if pairing_system == "swiss_cat" else "swiss"), pairing_system,
-                     bye_points, absent_points, current_timestamp()),
+                tournament_columns = {
+                    row[1] for row in conn.execute("PRAGMA table_info(tournaments)").fetchall()
+                }
+                tournament_values = (
+                    name,
+                    request.form.get("location", "").strip(),
+                    rounds,
+                    "mcmahon" if pairing_system == "mcmahon" else ("swiss_cat" if pairing_system == "swiss_cat" else "swiss"),
+                    pairing_system,
+                    bye_points,
+                    absent_points,
                 )
+                if "handicap_enabled" in tournament_columns:
+                    conn.execute(
+                        """
+                        INSERT INTO tournaments
+                            (name, location, rounds, tournament_type, pairing_system,
+                            bye_points, absent_points, handicap_enabled, status, created_at)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'draft', ?)
+                        """,
+                        (*tournament_values, handicap_enabled, current_timestamp()),
+                    )
+                else:
+                    conn.execute(
+                        """
+                        INSERT INTO tournaments
+                            (name, location, rounds, tournament_type, pairing_system,
+                            bye_points, absent_points, status, created_at)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, 'draft', ?)
+                        """,
+                        (*tournament_values, current_timestamp()),
+                    )
                 tournament_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
                 conn.commit()
                 log_admin_action(
@@ -1292,6 +1315,13 @@ def admin_update_tournament_status(tournament_id):
 
     conn = get_db()
     try:
+        tournament_columns = {
+            row[1] for row in conn.execute("PRAGMA table_info(tournaments)").fetchall()
+        }
+        if "handicap_enabled" not in tournament_columns:
+            conn.execute(
+                "ALTER TABLE tournaments ADD COLUMN handicap_enabled INTEGER NOT NULL DEFAULT 0"
+            )
         updated = conn.execute(
             "UPDATE tournaments SET status = ? WHERE id = ?",
             (status, tournament_id),
@@ -1307,6 +1337,10 @@ def admin_update_tournament_status(tournament_id):
                 user_id=session.get("user_id"),
             )
             flash(TRANSLATIONS[lang]["success"])
+    except sqlite3.DatabaseError as exc:
+        conn.rollback()
+        logger.exception("Tournament settings update failed for %s", tournament_id)
+        flash(f"{TRANSLATIONS[lang]['error']}: {exc}")
     finally:
         conn.close()
     return redirect_or_json(url_for("admin_tournament", tournament_id=tournament_id, lang=lang))
@@ -1323,6 +1357,8 @@ def admin_update_tournament_settings(tournament_id):
     rounds = normalize_tournament_rounds(request.form.get("rounds", 1, type=int))
     bye_points = request.form.get("bye_points", type=float)
     absent_points = request.form.get("absent_points", type=float)
+    handicap_enabled = request.form.get("handicap_enabled") == "1"
+    apply_auto_handicap = request.form.get("apply_auto_handicap") == "1"
 
     if not name or bye_points not in {0.0, 0.5, 1.0} or absent_points not in {0.0, 0.5, 1.0}:
         flash(TRANSLATIONS[lang]["error"])
@@ -1333,14 +1369,20 @@ def admin_update_tournament_settings(tournament_id):
         updated = conn.execute(
             """
             UPDATE tournaments
-            SET name = ?, location = ?, rounds = ?, bye_points = ?, absent_points = ?
+            SET name = ?, location = ?, rounds = ?, bye_points = ?, absent_points = ?, handicap_enabled = ?
             WHERE id = ?
             """,
-            (name, location, rounds, bye_points, absent_points, tournament_id),
+            (name, location, rounds, bye_points, absent_points, int(handicap_enabled), tournament_id),
         ).rowcount
         if not updated:
             flash(TRANSLATIONS[lang]["error"])
         else:
+            update_tournament_handicaps(
+                conn,
+                tournament_id,
+                handicap_enabled,
+                apply_auto_handicap=apply_auto_handicap,
+            )
             conn.commit()
             log_admin_action(
                 "tournament_settings_updated",

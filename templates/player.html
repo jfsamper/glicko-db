@@ -19,12 +19,12 @@
   {% if badges and badges|length > 0 %}
   <div class="card-grid" style="margin-top: 1%;">
     <article class="card">
-      <h3>{{ translations.get('player_badges_heading', 'Achievements') }}</h3>
+      <h3>{{ translations.player_badges_heading }}</h3>
       <div class="badge-list">
         {% for badge in badges %}
         <span class="badge-pill">
           {% if badge.is_rank_badge %}
-            {{ badge.label }} · Colombia
+            {{ badge.label }} · {{ translations.country_colombia }}
           {% else %}
             {{ badge.label }} · {{ badge.period }}
           {% endif %}

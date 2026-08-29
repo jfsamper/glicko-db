@@ -91,6 +91,46 @@ def _auto_handicap_stones(conn, white_player_id, black_player_id):
     )
 
 
+def _tournament_handicap_enabled(conn, tournament_id):
+    columns = _table_columns(conn, "tournaments")
+    if "handicap_enabled" not in columns:
+        # Legacy schemas predate the setting and already auto-suggested handicaps.
+        return True
+    row = conn.execute(
+        "SELECT handicap_enabled FROM tournaments WHERE id = ?",
+        (tournament_id,),
+    ).fetchone()
+    return bool(row and row["handicap_enabled"])
+
+
+def update_tournament_handicaps(conn, tournament_id, handicap_enabled, apply_auto_handicap=False):
+    """Update existing pairings when a tournament's handicap mode changes."""
+    pairings = conn.execute(
+        """
+        SELECT p.id, p.white_player_id, p.black_player_id, p.is_bye
+        FROM tournament_pairings p
+        JOIN tournament_rounds r ON r.id = p.round_id
+        WHERE r.tournament_id = ?
+        """,
+        (tournament_id,),
+    ).fetchall()
+    for pairing in pairings:
+        handicap_stones = 0
+        if handicap_enabled and apply_auto_handicap and not pairing["is_bye"]:
+            if pairing["white_player_id"] and pairing["black_player_id"]:
+                handicap_stones = _auto_handicap_stones(
+                    conn, pairing["white_player_id"], pairing["black_player_id"]
+                )
+        conn.execute(
+            "UPDATE tournament_pairings SET handicap_stones = ? WHERE id = ?",
+            (handicap_stones, pairing["id"]),
+        )
+        conn.execute(
+            "UPDATE matches SET handicap_stones = ? WHERE tournament_pairing_id = ?",
+            (handicap_stones, pairing["id"]),
+        )
+
+
 def normalize_tournament_rounds(rounds):
     """Tournament rounds must always be valid and non-zero."""
     try:
@@ -810,6 +850,14 @@ def create_tournament_from_gotha(
         insert_values.extend([
             metadata.get("mm_bar", 8), metadata.get("mm_floor", -30), metadata.get("mm_zero", 30),
         ])
+    if "handicap_enabled" in tournament_columns:
+        has_handicap_game = any(
+            int(game.get("handicap") or 0) > 0
+            for game in ET.parse(xml_path).getroot().findall("Games/Game")
+            if str(game.get("handicap") or "0").strip().lstrip("-").isdigit()
+        )
+        insert_columns.append("handicap_enabled")
+        insert_values.append(1 if has_handicap_game else 0)
     insert_columns.extend(["status", "source_format", "created_at"])
     insert_values.extend(["draft", "OpenGotha XML", current_timestamp()])
 
@@ -1355,8 +1403,10 @@ def manual_pair(conn, tournament_id, round_id, white_player_id, black_player_id,
     while board_number in used_boards:
         board_number += 1
 
-    if handicap_stones is None:
+    if handicap_stones is None and _tournament_handicap_enabled(conn, tournament_id):
         handicap_stones = _auto_handicap_stones(conn, white_player_id, black_player_id)
+    if handicap_stones is None:
+        handicap_stones = 0
 
     conn.execute(
         """

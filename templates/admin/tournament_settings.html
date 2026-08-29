@@ -22,7 +22,7 @@
   </div>
 
   <div class="card tournament-settings-card">
-    <form method="post" action="{{ url_for('admin_update_tournament_settings', tournament_id=tournament.id, lang=lang) }}" class="filter-form" data-async-admin-action="1">
+    <form method="post" action="{{ url_for('admin_update_tournament_settings', tournament_id=tournament.id, lang=lang) }}" class="filter-form">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
       <div class="filter-grid">
         <div class="filter-item wide">
@@ -49,6 +49,13 @@
             {% for points in (0, 0.5, 1) %}<option value="{{ points }}" {% if tournament.absent_points == points %}selected{% endif %}>{{ points }}</option>{% endfor %}
           </select>
         </div>
+        <div class="filter-item">
+          <label for="tournament_handicap_enabled">
+            <input id="tournament_handicap_enabled" name="handicap_enabled" type="checkbox" value="1" {% if tournament.handicap_enabled %}checked{% endif %}>
+            {{ translations.handicap_tournament_label }}
+          </label>
+          <input type="hidden" name="apply_auto_handicap" value="0">
+        </div>
       </div>
       <div class="filter-actions">
         <button type="submit" class="button">{{ translations.save_changes }}</button>
@@ -56,5 +63,18 @@
     </form>
   </div>
 </section>
-<script src="{{ url_for('static', filename='js/admin_tournament_async.js') }}"></script>
+<script>
+  (() => {
+    const form = document.querySelector("form[action*='/settings']");
+    const handicap = document.getElementById("tournament_handicap_enabled");
+    const applyAuto = form?.querySelector("[name='apply_auto_handicap']");
+    if (!form || !handicap || !applyAuto) return;
+
+    form.addEventListener("submit", () => {
+      if (handicap.checked) {
+        applyAuto.value = window.confirm("{{ translations.handicap_apply_existing_confirmation }}") ? "1" : "0";
+      }
+    });
+  })();
+</script>
 {% endblock %}

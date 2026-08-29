@@ -23,6 +23,7 @@
       <div><dt>{{ translations.rounds }}</dt><dd>{{ tournament.rounds }}</dd></div>
       <div><dt>{{ translations.bye_points }}</dt><dd>{{ tournament.bye_points }}</dd></div>
       <div><dt>{{ translations.absent_points }}</dt><dd>{{ tournament.absent_points }}</dd></div>
+      <div><dt>{{ translations.handicap_tournament_label }}</dt><dd>{{ translations.handicap_status_enabled if tournament.handicap_enabled else translations.handicap_status_disabled }}</dd></div>
       {% if tournament.begin_date or tournament.end_date %}
         <div><dt>{{ translations.date }}</dt><dd>{{ tournament.begin_date or '-' }}{% if tournament.end_date and tournament.end_date != tournament.begin_date %} - {{ tournament.end_date }}{% endif %}</dd></div>
       {% endif %}

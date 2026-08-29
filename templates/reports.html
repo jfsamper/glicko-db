@@ -60,7 +60,7 @@
     <h3>{{ translations.get('report_players', 'Player performance') }}</h3>
     <div class="table-wrapper">
       <table class="table-stack">
-        <thead><tr><th>{{ translations.get('position', 'Rank') }}</th><th>{{ translations.get('player', 'Player') }}</th><th>{{ translations.get('games', 'Games') }}</th><th>{{ translations.get('wins', 'Wins') }}</th><th>{{ translations.get('losses', 'Losses') }}</th><th>{{ translations.get('draws', 'Draws') }}</th><th>{{ translations.get('win_pct', 'Win percentage') }}</th><th>{{ translations.get('rating_change_points', 'Rating points') }}</th><th>{{ translations.get('rating_change_percentage', 'Rating %') }}</th><th>{{ translations.get('category_change', 'Category') }}</th></tr></thead>
+        <thead><tr><th>{{ translations.get('position', 'Rank') }}</th><th>{{ translations.get('player', 'Player') }}</th><th>{{ translations.get('games', 'Games') }}</th><th>{{ translations.get('wins', 'Wins') }}</th><th>{{ translations.get('losses', 'Losses') }}</th><th>{{ translations.get('draws', 'Draws') }}</th><th>{{ translations.get('win_pct', 'Win percentage') }}</th><th>{{ translations.get('rating_change_points', 'Rating points') }}</th><th>{{ translations.get('rating_change_percentage', 'Rating %') }}</th><th>{{ translations.get('export_report', 'Export') }}</th></tr></thead>
         <tbody>
         {% for player in report.players %}
           <tr>
@@ -69,7 +69,7 @@
             <td>{{ player.games }}</td><td>{{ player.wins }}</td><td>{{ player.losses }}</td><td>{{ player.draws }}</td><td>{{ player.win_percentage }}%</td>
             <td>{{ '%+.2f'|format(player.rating_change_points) if player.rating_change_points is not none else '-' }}</td>
             <td>{{ '%+.1f'|format(player.rating_change_percentage) ~ '%' if player.rating_change_percentage is not none else '-' }}</td>
-            <td>{{ '%+d'|format(player.category_change) if player.category_change is not none else '-' }}</td>
+            <td><a class="button compact-button" href="{{ url_for('report_export', lang=lang, period=period, start_date=report.start_date, end_date=report.end_date, player_id=player.player_id) }}">{{ translations.get('export_report', 'Export') }}</a></td>
           </tr>
         {% else %}<tr><td colspan="10">{{ translations.get('report_empty', 'No games in this period.') }}</td></tr>{% endfor %}
         </tbody>
@@ -85,6 +85,26 @@
     </table>
   </article>
   {% endif %}
+
+  <article class="card report-export-card">
+    <h3>{{ translations.get('report_player_export', 'Export a player report') }}</h3>
+    <form method="get" class="filter-form" action="{{ url_for('report_export', lang=lang) }}">
+      <input type="hidden" name="period" value="{{ period }}">
+      <input type="hidden" name="start_date" value="{{ report.start_date or '' }}">
+      <input type="hidden" name="end_date" value="{{ report.end_date or '' }}">
+      <label for="report-export-player">{{ translations.get('report_player', 'Player') }}</label>
+      <select id="report-export-player" name="player_id" required>
+        <option value="">{{ translations.get('select_player', 'Select a player') }}</option>
+        {% for player in report.selector_players %}
+          <option value="{{ player.player_id }}" {% if report.selected_player_id == player.player_id %}selected{% endif %}>{{ player.display_name }}</option>
+        {% endfor %}
+      </select>
+      <div class="filter-actions">
+        <button type="submit" class="button">{{ translations.get('export_report', 'Export CSV') }}</button>
+        <button type="submit" class="button secondary" formaction="{{ url_for('report_export_pdf_file', lang=lang) }}">{{ translations.get('export_report_pdf', 'Export PDF') }}</button>
+      </div>
+    </form>
+  </article>
 
   <div class="card-grid">
     {% for key, title, label in [('countries', translations.get('report_countries', 'Performance by opponent country'), translations.get('country', 'Country')), ('clubs', translations.get('report_clubs', 'Performance by opponent club'), translations.get('club', 'Club'))] %}

@@ -9,7 +9,7 @@ from datetime import datetime, timedelta, timezone as datetime_timezone
 from email.message import EmailMessage
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
-from flask import session
+from flask import request, session
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from services.player_stats import (
@@ -193,6 +193,7 @@ TRANSLATIONS = {
         "chart_caption": "El gráfico muestra la evolución del rating del jugador con el tiempo.",
         "best_rating": "Mejor rating",
         "player_badges_heading": "Logros",
+        "country_colombia": "Colombia",
         "badge_rank_prefix": "#",
 
         "glicko_scale": "Escala Glicko",
@@ -292,6 +293,11 @@ TRANSLATIONS = {
         "tournament_type": "Tipo de torneo",
         "bye_points": "Puntos por descanso",
         "absent_points": "Puntos por ausencia",
+        "handicap_stones_label": "Piedras de hándicap",
+        "handicap_tournament_label": "Hándicap",
+        "handicap_status_enabled": "Sí",
+        "handicap_status_disabled": "No",
+        "handicap_apply_existing_confirmation": "¿Aplicar el hándicap automático a los emparejamientos existentes? Si eliges No, se pondrán a 0.",
         "standings": "Clasificación",
         "score": "Puntuación",
         "mms": "MMS",
@@ -494,6 +500,7 @@ TRANSLATIONS = {
         "report_start_date": "Fecha inicial",
         "report_end_date": "Fecha final",
         "report_player": "Jugador",
+        "report_player_export": "Exportar informe de jugador",
         "all_players": "Todos los jugadores",
         "apply_filters": "Aplicar",
         "period_month": "Este mes",
@@ -616,6 +623,7 @@ TRANSLATIONS = {
         "baseline": "1500 baseline",
         "best_rating": "Best rating",
         "player_badges_heading": "Achievements",
+        "country_colombia": "Colombia",
         "badge_rank_prefix": "#",
         "category_nav": "Category",
 
@@ -714,6 +722,11 @@ TRANSLATIONS = {
         "tournament_type": "Tournament type",
         "bye_points": "BYE points",
         "absent_points": "Absent points",
+        "handicap_stones_label": "Handicap stones",
+        "handicap_tournament_label": "Handicap",
+        "handicap_status_enabled": "Yes",
+        "handicap_status_disabled": "No",
+        "handicap_apply_existing_confirmation": "Apply automatic handicap to existing pairings? Choosing No will set them to 0.",
         "standings": "Standings",
         "score": "Score",
         "mms": "MMS",
@@ -913,6 +926,7 @@ TRANSLATIONS = {
         "report_start_date": "Start date",
         "report_end_date": "End date",
         "report_player": "Player",
+        "report_player_export": "Export a player report",
         "all_players": "All players",
         "apply_filters": "Apply",
         "period_month": "This month",
@@ -1035,6 +1049,7 @@ TRANSLATIONS = {
         "baseline": "Base 1500",
         "best_rating": "Melhor rating",
         "player_badges_heading": "Conquistas",
+        "country_colombia": "Colômbia",
         "badge_rank_prefix": "#",
         "glicko_scale": "Escala Glicko",
         "glicko_label": "Glicko",
@@ -1130,6 +1145,11 @@ TRANSLATIONS = {
         "tournament_type": "Tipo de torneio",
         "bye_points": "Pontos por folga",
         "absent_points": "Pontos por ausência",
+        "handicap_stones_label": "Pedras de handicap",
+        "handicap_tournament_label": "Handicap",
+        "handicap_status_enabled": "Sim",
+        "handicap_status_disabled": "Não",
+        "handicap_apply_existing_confirmation": "Aplicar o handicap automático aos emparelhamentos existentes? Se escolher Não, eles serão definidos como 0.",
         "standings": "Classificação",
         "score": "Pontuação",
         "mms": "MMS",
@@ -1331,6 +1351,7 @@ TRANSLATIONS = {
         "report_start_date": "Data inicial",
         "report_end_date": "Data final",
         "report_player": "Jogador",
+        "report_player_export": "Exportar relatório do jogador",
         "all_players": "Todos os jogadores",
         "apply_filters": "Aplicar",
         "period_month": "Este mês",
@@ -1365,6 +1386,11 @@ def get_language(value):
             value = session.get("user_language")
         except RuntimeError:
             value = None
+        if value in (None, ""):
+            try:
+                value = request.cookies.get("user_language")
+            except RuntimeError:
+                value = None
     return value if value in TRANSLATIONS else "es"
 
 

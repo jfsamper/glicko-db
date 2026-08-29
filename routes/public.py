@@ -4,11 +4,12 @@ from datetime import datetime
 import math
 import re
 
-from flask import Blueprint, Response, render_template, request, flash, redirect, url_for
+from flask import Blueprint, Response, jsonify, render_template, request, flash, redirect, session, url_for
 
 from services.category_service import get_category_config, glicko_to_category
 from services.common import (
     TRANSLATIONS,
+    get_current_user,
     get_language,
     get_db,
 )
@@ -176,6 +177,34 @@ def index():
             m=category_config["glicko_m"],
         ),
     )
+
+
+@public_bp.route("/preferences", methods=["POST"])
+def save_preferences():
+    values = request.get_json(silent=True) or {}
+    language = values.get("language")
+    theme = values.get("theme")
+    if language not in TRANSLATIONS or theme not in {"light", "dark"}:
+        return jsonify({"error": "invalid preferences"}), 400
+
+    user = get_current_user()
+    if user is not None:
+        conn = get_db()
+        try:
+            conn.execute(
+                "UPDATE users SET language = ?, theme = ? WHERE id = ?",
+                (language, theme, user["id"]),
+            )
+            conn.commit()
+        finally:
+            conn.close()
+        session["user_language"] = language
+        session["user_theme"] = theme
+
+    response = jsonify({"language": language, "theme": theme})
+    response.set_cookie("user_language", language, max_age=31536000, samesite="Lax")
+    response.set_cookie("user_theme", theme, max_age=31536000, samesite="Lax")
+    return response
 
 
 def _report_request():

@@ -689,7 +689,7 @@ def test_player_delete_removes_tournament_dependencies(tmp_path, monkeypatch):
     conn.close()
 
 
-def test_migrate_tournament_schema_skips_legacy_work_when_user_version_is_current(tmp_path):
+def test_migrate_tournament_schema_applies_new_columns_to_previous_version(tmp_path):
     db_path = tmp_path / "schema_v1.db"
     conn = sqlite3.connect(db_path)
     conn.executescript(
@@ -708,8 +708,9 @@ def test_migrate_tournament_schema_skips_legacy_work_when_user_version_is_curren
 
     migrate_tournament_schema(conn)
 
-    assert conn.execute("SELECT rounds FROM tournaments WHERE id = 1").fetchone()[0] == 0
-    assert conn.execute("PRAGMA user_version").fetchone()[0] == 1
+    assert conn.execute("SELECT rounds FROM tournaments WHERE id = 1").fetchone()[0] == 1
+    assert conn.execute("SELECT handicap_enabled FROM tournaments WHERE id = 1").fetchone()[0] == 0
+    assert conn.execute("PRAGMA user_version").fetchone()[0] == 2
     conn.close()
 
 

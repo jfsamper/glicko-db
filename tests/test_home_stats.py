@@ -535,6 +535,55 @@ def test_build_player_badges_only_awards_the_single_top_metric_winner():
     conn.close()
 
 
+def test_build_player_badges_awards_translated_yearly_leaders():
+    conn = sqlite3.connect(":memory:")
+    conn.row_factory = sqlite3.Row
+    conn.executescript(
+        """
+        CREATE TABLE players (id INTEGER PRIMARY KEY, display_name TEXT, initial_rating REAL, rating REAL);
+        CREATE TABLE matches (id INTEGER PRIMARY KEY, match_date TEXT, white_player_id INTEGER, black_player_id INTEGER, result TEXT);
+        CREATE TABLE rating_snapshots (id INTEGER PRIMARY KEY, player_id INTEGER, snapshot_date TEXT, rating REAL);
+        """
+    )
+    conn.executemany(
+        "INSERT INTO players VALUES (?, ?, ?, ?)",
+        [(1, "Alice", 1500, 1800), (2, "Bob", 1500, 1800), (3, "Cara", 1500, 1500)],
+    )
+    conn.executemany(
+        "INSERT INTO matches VALUES (?, ?, ?, ?, ?)",
+        [
+            (1, "2024-01-01", 1, 2, "1-0"),
+            (2, "2024-02-01", 1, 2, "0-1"),
+            (3, "2025-01-01", 2, 1, "0-1"),
+            (4, "2025-02-01", 2, 1, "0-1"),
+            (5, "2025-03-01", 2, 1, "1-0"),
+            (6, "2025-04-01", 2, 1, "1-0"),
+            (7, "2025-05-01", 2, 1, "1-0"),
+            (8, "2025-06-01", 2, 1, "1-0"),
+            (9, "2025-07-01", 2, 3, "1-0"),
+        ],
+    )
+    conn.executemany(
+        "INSERT INTO rating_snapshots VALUES (?, ?, ?, ?)",
+        [
+            (1, 1, "2024-01-01", 1500), (2, 1, "2024-12-01", 1600),
+            (3, 2, "2024-01-01", 1500), (4, 2, "2024-12-01", 1550),
+            (5, 1, "2025-01-01", 1600), (6, 1, "2025-12-01", 1650),
+            (7, 2, "2025-01-01", 1550), (8, 2, "2025-12-01", 1800),
+        ],
+    )
+
+    badges = build_player_badges(1, translations=TRANSLATIONS["es"], conn=conn)
+
+    yearly_badges = {(badge["label"], badge["period"]) for badge in badges if str(badge["period"]).isdigit()}
+    assert (TRANSLATIONS["es"]["stats_metric_active"], "2024") in yearly_badges
+    assert (TRANSLATIONS["es"]["stats_metric_wins"], "2024") in yearly_badges
+    assert (TRANSLATIONS["es"]["stats_metric_glicko"], "2024") in yearly_badges
+    assert (TRANSLATIONS["es"]["stats_metric_active"], "2025") not in yearly_badges
+    assert (TRANSLATIONS["es"]["stats_metric_glicko"], "2025") not in yearly_badges
+    conn.close()
+
+
 def test_get_player_rank_badge_returns_rank_for_top_five_with_games():
     conn = sqlite3.connect(":memory:")
     conn.row_factory = sqlite3.Row

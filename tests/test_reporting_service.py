@@ -75,7 +75,7 @@ def test_report_uses_inclusive_range_and_precomputed_metrics():
 
     assert report["summary"] == {
         "games": 2,
-        "players": 2,
+        "players": 1,
         "wins": 1,
         "losses": 1,
         "draws": 0,
@@ -87,6 +87,8 @@ def test_report_uses_inclusive_range_and_precomputed_metrics():
     assert alice["rating_change_points"] == 100.0
     assert alice["rating_change_percentage"] == 6.7
     assert alice["category_change"] == 1
+    assert [row["display_name"] for row in report["players"]] == ["Alice"]
+    assert len(report["selector_players"]) == 2
     assert report["opponents"][0]["display_name"] == "Bob"
     assert {row["display_name"] for row in report["countries"]} == {"CO", "US"}
     assert {row["display_name"] for row in report["clubs"]} == {"Club A", "Club B"}

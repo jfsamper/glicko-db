@@ -157,6 +157,7 @@ def init_db():
             pairing_system TEXT NOT NULL DEFAULT 'swiss',
             bye_points REAL NOT NULL DEFAULT 1,
             absent_points REAL NOT NULL DEFAULT 0,
+            handicap_enabled INTEGER NOT NULL DEFAULT 0,
             placement_criteria TEXT NOT NULL DEFAULT 'NBW,SOS,SOSOS',
             mm_bar INTEGER NOT NULL DEFAULT 8,
             mm_floor INTEGER NOT NULL DEFAULT -30,
@@ -502,7 +503,7 @@ def migrate_config_schema(conn):
 
 def migrate_tournament_schema(conn):
     """Create or upgrade tournament tables before any tournament queries run."""
-    schema_version = 1
+    schema_version = 2
     current_version = conn.execute("PRAGMA user_version").fetchone()[0]
     if current_version >= schema_version:
         return
@@ -516,6 +517,7 @@ def migrate_tournament_schema(conn):
             pairing_system TEXT NOT NULL DEFAULT 'swiss',
             bye_points REAL NOT NULL DEFAULT 1,
             absent_points REAL NOT NULL DEFAULT 0,
+            handicap_enabled INTEGER NOT NULL DEFAULT 0,
             placement_criteria TEXT NOT NULL DEFAULT 'NBW,SOS,SOSOS',
             mm_bar INTEGER NOT NULL DEFAULT 8,
             mm_floor INTEGER NOT NULL DEFAULT -30,
@@ -577,6 +579,7 @@ def migrate_tournament_schema(conn):
             "pairing_system": "TEXT NOT NULL DEFAULT 'swiss'",
             "bye_points": "REAL NOT NULL DEFAULT 1",
             "absent_points": "REAL NOT NULL DEFAULT 0",
+            "handicap_enabled": "INTEGER NOT NULL DEFAULT 0",
             "placement_criteria": "TEXT NOT NULL DEFAULT 'NBW,SOS,SOSOS'",
             "mm_bar": "INTEGER NOT NULL DEFAULT 8",
             "mm_floor": "INTEGER NOT NULL DEFAULT -30",

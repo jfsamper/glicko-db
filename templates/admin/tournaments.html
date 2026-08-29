@@ -56,8 +56,14 @@
             </div>
             <div class="filter-item">
               <label for="rounds">{{ translations.rounds }}</label>
-              <input id="rounds" name="rounds" type="number" min="1" value="1" required>
+              <input style="text-align: center;" id="rounds" name="rounds" type="number" min="1" value="1" required>
             </div>            
+            <div class="filter-item">
+              <label for="handicap_enabled">
+                <input id="handicap_enabled" name="handicap_enabled" type="checkbox" value="1">
+                {{ translations.handicap_tournament_label }}
+              </label>
+            </div>
 
           </div>
 

@@ -92,6 +92,41 @@ def test_profile_persists_preferences_and_changes_password(tmp_path, monkeypatch
     assert "Meu perfil" in response.get_data(as_text=True)
 
 
+def test_anonymous_preferences_are_saved_in_cookies(tmp_path, monkeypatch):
+    app, _db_path, _user_id = make_account_app(tmp_path, monkeypatch)
+    client = app.test_client()
+
+    response = client.post(
+        "/preferences",
+        json={"language": "pt", "theme": "dark"},
+    )
+
+    assert response.status_code == 200
+    assert client.get_cookie("user_language").value == "pt"
+    assert client.get_cookie("user_theme").value == "dark"
+
+
+def test_authenticated_preferences_update_profile_and_session(tmp_path, monkeypatch):
+    app, db_path, user_id = make_account_app(tmp_path, monkeypatch)
+    client = app.test_client()
+    authenticate_client(client, user_id)
+
+    response = client.post(
+        "/preferences",
+        json={"language": "en", "theme": "dark"},
+    )
+
+    assert response.status_code == 200
+    conn = sqlite3.connect(db_path)
+    assert conn.execute(
+        "SELECT language, theme FROM users WHERE id = ?", (user_id,)
+    ).fetchone() == ("en", "dark")
+    conn.close()
+    with client.session_transaction() as session:
+        assert session["user_language"] == "en"
+        assert session["user_theme"] == "dark"
+
+
 def test_forgot_password_response_does_not_reveal_account_existence(tmp_path, monkeypatch):
     app, _db_path, _user_id = make_account_app(tmp_path, monkeypatch)
     client = app.test_client()
