@@ -15,6 +15,7 @@ Glicko DB é uma aplicação Flask e SQLite para gerenciar jogadores, ratings, p
 - Relatórios públicos por período, iniciando por Todo o período, com filtros por jogador, exportação CSV/PDF traduzida, mudanças de rating e desempenho por oponente, país e clube
 - Sistemas suíço, suíço por categoria, suíço acelerado e McMahon
 - Tratamento de BYE e ausências, cópias de segurança, proteção de restauração e migrações SQLite
+- Torneios em rascunho ocultos das listas públicas, com opção administrativa para mostrar rascunhos
 - Partidas com handicap em pedras (estilo Go), com sugestão automática pela diferença de categoria e ajuste de rating no estilo OGS
 
 ## Requisitos
@@ -163,9 +164,8 @@ A ordenação, os filtros e a busca consistentes já estão entregues e validado
 
 1. Melhorias de paginação. Mostrar o total de páginas, o contexto da página atual e uma seleção simples de resultados por página.
 2. Perfil do jogador com resultados e estatísticas de torneios. Adicionar em cada ficha um resumo de torneios disputados, registro de vitórias/derrotas, resultados por evento, tabela de torneios recentes, sequências e porcentagens de desempenho, com filtros por categoria e temporada.
-3. Estado simples de torneio oculto ou não publicado. Permitir excluir um torneio da visão pública sem introduzir um ciclo de vida completo.
-4. Backups programados com retenção e verificação de restauração. Mantê-los desativados por padrão e habilitá-los apenas quando existir uma política clara de retenção.
-5. Fluxo opcional de moderação de resultados. Somente se for necessário para o processo do torneio.
+3. Backups programados com retenção e verificação de restauração. Mantê-los desativados por padrão e habilitá-los apenas quando existir uma política clara de retenção.
+4. Fluxo opcional de moderação de resultados. Somente se for necessário para o processo do torneio.
 
 ## Licença e atribuição
 

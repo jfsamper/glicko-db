@@ -15,6 +15,7 @@ Glicko DB is a Flask and SQLite application for managing a Go community's player
 - Public reports, defaulting to All time, with player filters, localized CSV/PDF export, rating movement, and opponent, country, and club performance
 - Swiss, category Swiss, accelerated Swiss, and McMahon pairing systems
 - BYE and absence handling, backups, restore safeguards, and SQLite schema migrations
+- Draft tournaments hidden from public listings, with an administrative option to show drafts
 - Handicap games in stones (Go style), with an automatic suggestion from the category gap and an OGS-style rating adjustment
 
 ## Requirements
@@ -163,11 +164,8 @@ The consistent ordering, filtering, and search behavior is already shipped and v
 
 1. Pagination improvements. Show total pages, current-page context, and a simple results-per-page selection.
 2. Player profile with tournament results and statistics. Add an overview card for each player showing tournaments played, win/loss record, event results, recent tournament table, streaks, and performance percentages, with filters by category and season.
-3. Simple hidden or unpublished tournament state. Allow a tournament to be excluded from the public view without introducing a complete lifecycle.
-
-Tournaments with status `draft` are hidden from public listings. Use the ‘show drafts’ button on the tournament list page to view them.
-4. Scheduled backups with retention and restore verification. Keep them disabled by default and enable them only when a clear retention policy exists.
-5. Optional moderation workflow for results. Only if required by the tournament workflow.
+3. Scheduled backups with retention and restore verification. Keep them disabled by default and enable them only when a clear retention policy exists.
+4. Optional moderation workflow for results. Only if required by the tournament workflow.
 
 ## License and Attribution
 

@@ -19,12 +19,15 @@ This document lists only unfinished product, operational, and maintainability wo
 - OpenGotha metadata and match records are returned through typed `GothaTournamentPayload`, `GothaPlayer`, and `GothaMatch` dataclasses while preserving legacy mapping access for existing import consumers.
 - Standings positions remain unique and sequential with deterministic tiebreak resolution.
 - The dev-only pairing demo generator supports reproducible scenarios and includes Swiss/category variants.
+- Draft tournaments are hidden from public listings, while administrators can opt to show them in the tournament list.
+- Administrators can activate or deactivate players; inactive players are excluded from rankings and tournament participant selection.
 - Application-generated dates and times use UTC-5 by default; administrators can assign valid IANA timezones to individual accounts, and unset or invalid preferences fall back safely to UTC-5.
 - Full rating recomputation and incremental replay process same-day matches by round, treating unknown rounds as round 1.
 - Login rate-limit thresholds are environment-configurable through `config.py`, with defaults of five attempts in sixty seconds.
 - Account profile and password recovery are available: users can save email, language, theme, timezone, and password at `/admin/profile`; recovery uses configurable SMTP, hashed expiring tokens, single-use consumption, and generic responses.
 - Public reporting is available at `/reports` with inclusive calendar periods, All time defaults, player filtering, games-based selector ordering, opponent/country/club aggregates, and shared server-side totals.
 - Reports can be exported as CSV or localized PDF; PDF exports include centered headings, the selected player and period in the filename, and preserve the active filters.
+- Admin tournament actions support asynchronous panel refresh with redirect fallback for non-AJAX clients.
 
 ## Verified implementation status
 
@@ -79,14 +82,7 @@ Confirmed in code:
 
 ### P1 — Admin and platform
 
-1. Simple hidden/unpublished tournament status
-   - Minimal `Hidden` or `Draft` flag on tournament entities
-   - Optional public listing exclusion without full lifecycle management
-   - Lower priority than audit/import work; no need for a full preflight workflow
-
-2. Player activation and status management
-   - Allow administrators to deactivate players
-   - Define how inactive players affect rankings, imports, and tournament participation
+No remaining P1 items.
 
 ### P2 — Reporting and analytics
 
@@ -120,12 +116,10 @@ Confirmed in code:
 
 The login rate-limit settings, typed OpenGotha payload, explicit tournament-delete modal, per-account timezone preferences, account profile/recovery, date-bounded reporting, and PDF reporting were completed and are no longer part of the remaining backlog. The next recommended sequence is:
 
-1. Add hidden/unpublished tournament visibility.
-2. Add player activation/status management if operationally needed.
-3. Add named seasons if the reporting workflow requires them.
-4. Add scheduled backups with retention and restore verification.
-5. Add result moderation only if the tournament workflow requires it.
-6. Consider replay observability and tournament preflight after the core workflows are settled.
+1. Add named seasons if the reporting workflow requires them.
+2. Add scheduled backups with retention and restore verification.
+3. Add result moderation only if the tournament workflow requires it.
+4. Consider replay observability and tournament preflight after the core workflows are settled.
 
 ## Documentation rules
 
