@@ -27,6 +27,7 @@ from services.rating_service import recompute_ratings
 from services.settings_service import migrate_application_settings_schema
 from routes.public import glicko_to_category, register_public_routes
 from routes.admin import register_admin_routes
+from services.pairing_service import format_rank_category
 
 csrf = CSRFProtect()
 
@@ -76,6 +77,7 @@ def create_app(test_config=None, auto_init=True):
             "glicko_to_category": glicko_to_category,
             "translations": TRANSLATIONS,
             "format_match_result": format_match_result,
+            "format_rank_category": format_rank_category,
         }
 
     @app_instance.url_build_error_handlers.append
@@ -504,7 +506,7 @@ def migrate_config_schema(conn):
 
 def migrate_tournament_schema(conn):
     """Create or upgrade tournament tables before any tournament queries run."""
-    schema_version = 3
+    schema_version = 4
     current_version = conn.execute("PRAGMA user_version").fetchone()[0]
     if current_version >= schema_version:
         return
@@ -580,6 +582,8 @@ def migrate_tournament_schema(conn):
             "tournament_type": "TEXT NOT NULL DEFAULT 'swiss'",
             "pairing_system": "TEXT NOT NULL DEFAULT 'swiss'",
             "acceleration_scheme": "TEXT NOT NULL DEFAULT '50:1,25:0.5,25:0'",
+            "acceleration_rounds": "INTEGER NOT NULL DEFAULT 2",
+            "category_rounds": "INTEGER NOT NULL DEFAULT 0",
             "bye_points": "REAL NOT NULL DEFAULT 1",
             "absent_points": "REAL NOT NULL DEFAULT 0",
             "handicap_enabled": "INTEGER NOT NULL DEFAULT 0",

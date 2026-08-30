@@ -87,6 +87,8 @@ from services.category_service import get_category_config, update_category_confi
 from services.pairing_service import (
     DEFAULT_ACCELERATION_CATEGORIES,
     DEFAULT_ACCELERATION_FLOORS,
+    DEFAULT_ACCELERATION_ROUNDS,
+    DEFAULT_CATEGORY_ROUNDS,
     DEFAULT_ACCELERATION_SCHEME,
     acceleration_category_settings,
     serialize_acceleration_categories,
@@ -1387,6 +1389,8 @@ def admin_update_tournament_settings(tournament_id):
     apply_auto_handicap = request.form.get("apply_auto_handicap") == "1"
     number_of_categories = request.form.get("number_of_categories")
     category_floors = request.form.getlist("category_floor")
+    acceleration_rounds = request.form.get("acceleration_rounds")
+    category_rounds = request.form.get("category_rounds")
 
     if not name or bye_points not in {0.0, 0.5, 1.0} or absent_points not in {0.0, 0.5, 1.0}:
         flash(TRANSLATIONS[lang]["error"])
@@ -1396,10 +1400,15 @@ def admin_update_tournament_settings(tournament_id):
     tournament_columns = {
         row[1] for row in conn.execute("PRAGMA table_info(tournaments)").fetchall()
     }
-    acceleration_column = ", acceleration_scheme" if "acceleration_scheme" in tournament_columns else ""
+    optional_columns = [
+        column for column in (
+            "acceleration_scheme", "acceleration_rounds", "category_rounds"
+        ) if column in tournament_columns
+    ]
+    optional_select = f", {', '.join(optional_columns)}" if optional_columns else ""
     try:
         current_tournament = conn.execute(
-            f"SELECT pairing_system{acceleration_column} FROM tournaments WHERE id = ?",
+            f"SELECT pairing_system{optional_select} FROM tournaments WHERE id = ?",
             (tournament_id,),
         ).fetchone()
         if current_tournament is None:
@@ -1431,6 +1440,28 @@ def admin_update_tournament_settings(tournament_id):
                 flash(TRANSLATIONS[lang]["error"])
                 return redirect(url_for("admin_tournament_settings", tournament_id=tournament_id, lang=lang))
 
+        try:
+            acceleration_rounds = (
+                DEFAULT_ACCELERATION_ROUNDS
+                if acceleration_rounds in (None, "")
+                else int(acceleration_rounds)
+            )
+            category_rounds = (
+                DEFAULT_CATEGORY_ROUNDS
+                if category_rounds in (None, "")
+                else int(category_rounds)
+            )
+            if (
+                acceleration_rounds < 0
+                or category_rounds < 0
+                or acceleration_rounds > rounds
+                or category_rounds > rounds
+            ):
+                raise ValueError
+        except (TypeError, ValueError):
+            flash(TRANSLATIONS[lang]["error"])
+            return redirect(url_for("admin_tournament_settings", tournament_id=tournament_id, lang=lang))
+
         update_fields = [
             "name = ?", "location = ?", "rounds = ?", "bye_points = ?",
             "absent_points = ?", "handicap_enabled = ?",
@@ -1439,6 +1470,12 @@ def admin_update_tournament_settings(tournament_id):
         if "acceleration_scheme" in tournament_columns:
             update_fields.append("acceleration_scheme = ?")
             update_values.append(acceleration_scheme)
+        if "acceleration_rounds" in tournament_columns:
+            update_fields.append("acceleration_rounds = ?")
+            update_values.append(acceleration_rounds)
+        if "category_rounds" in tournament_columns:
+            update_fields.append("category_rounds = ?")
+            update_values.append(category_rounds)
         update_values.append(tournament_id)
         updated = conn.execute(
             f"UPDATE tournaments SET {', '.join(update_fields)} WHERE id = ?",
@@ -1483,6 +1520,16 @@ def admin_tournament_settings(tournament_id):
         tournament=tournament,
         acceleration_categories=acceleration_category_settings(
             tournament["acceleration_scheme"] if "acceleration_scheme" in tournament.keys() else None
+        ),
+        acceleration_rounds=(
+            tournament["acceleration_rounds"]
+            if "acceleration_rounds" in tournament.keys()
+            else DEFAULT_ACCELERATION_ROUNDS
+        ),
+        category_rounds=(
+            tournament["category_rounds"]
+            if "category_rounds" in tournament.keys()
+            else DEFAULT_CATEGORY_ROUNDS
         ),
         lang=lang,
         translations=TRANSLATIONS[lang],

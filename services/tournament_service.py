@@ -11,6 +11,8 @@ from services.common import current_date, current_timestamp
 from services.helpers import normalize_key, normalize_text
 from services.import_gotha import GothaPlayer, GothaTournamentPayload
 from services.pairing_service import (
+    DEFAULT_ACCELERATION_ROUNDS,
+    DEFAULT_CATEGORY_ROUNDS,
     acceleration_for_rank,
     mcmahon_initial_score,
     mcmahon_score_from_rank,
@@ -141,6 +143,29 @@ def normalize_tournament_rounds(rounds):
 
 def _table_columns(conn, table_name):
     return {row["name"] for row in conn.execute(f"PRAGMA table_info({table_name})").fetchall()}
+
+
+def _pairing_policy(tournament, round_number):
+    acceleration_rounds = (
+        int(tournament["acceleration_rounds"])
+        if "acceleration_rounds" in tournament.keys() and tournament["acceleration_rounds"] is not None
+        else DEFAULT_ACCELERATION_ROUNDS
+    )
+    category_rounds = (
+        int(tournament["category_rounds"])
+        if "category_rounds" in tournament.keys() and tournament["category_rounds"] is not None
+        else DEFAULT_CATEGORY_ROUNDS
+    )
+    return {
+        "acceleration_active": (
+            tournament["pairing_system"] == "accelerated_swiss"
+            and round_number <= max(0, acceleration_rounds)
+        ),
+        "category_strict": (
+            tournament["pairing_system"] == "swiss_cat"
+            and (category_rounds == 0 or round_number <= max(0, category_rounds))
+        ),
+    }
 
 
 def _rank_value(value, default=0):
@@ -1333,7 +1358,7 @@ def create_tournament_from_gotha(
     return tournament_id, metadata.to_dict(), matched
 
 
-def _participant_state(conn, tournament_id):
+def _participant_state(conn, tournament_id, acceleration_scheme=None, acceleration_active=False):
     participants = conn.execute(
         "SELECT * FROM tournament_participants WHERE tournament_id = ? ORDER BY seed_rank, id",
         (tournament_id,),
@@ -1348,13 +1373,27 @@ def _participant_state(conn, tournament_id):
         """,
         (tournament_id,),
     ).fetchall()
+    seed_order = sorted(
+        participants,
+        key=lambda row: (-float(row["seed_rating"] or 0), row["player_id"]),
+    )
+    seed_ranks = {row["player_id"]: rank for rank, row in enumerate(seed_order, 1)}
     state = {
         row["player_id"]: {
             "id": row["player_id"],
             "rating": row["seed_rating"],
             "score": row["score"],
             "initial_score": row["initial_score"],
-            "acceleration": row["acceleration"],
+            "acceleration": (
+                acceleration_for_rank(
+                    seed_ranks[row["player_id"]],
+                    len(participants),
+                    scheme=acceleration_scheme,
+                    player_rank=round(category_value(row["seed_rating"] or DEFAULT_RATING)),
+                )
+                if acceleration_active
+                else 0.0
+            ),
             "category": row["category"],
             "opponents": set(),
             "colors": {"white": 0, "black": 0},
@@ -1393,10 +1432,24 @@ def generate_next_round(conn, tournament_id):
     if tournament["rounds"] and round_number > tournament["rounds"]:
         raise ValueError("All tournament rounds have already been generated")
 
-    state = _participant_state(conn, tournament_id)
+    pairing_policy = _pairing_policy(tournament, round_number)
+    state = _participant_state(
+        conn,
+        tournament_id,
+        acceleration_scheme=(
+            tournament["acceleration_scheme"]
+            if "acceleration_scheme" in tournament.keys()
+            else None
+        ),
+        acceleration_active=pairing_policy["acceleration_active"],
+    )
     if len(state) < 2:
         raise ValueError("At least two tournament players are required")
-    pairings = pair_players(list(state.values()), tournament["pairing_system"])
+    pairings = pair_players(
+        list(state.values()),
+        tournament["pairing_system"],
+        category_strict=pairing_policy["category_strict"],
+    )
     conn.execute(
         "INSERT INTO tournament_rounds (tournament_id, round_number, status) VALUES (?, ?, 'scheduled')",
         (tournament_id, round_number),
@@ -1528,13 +1581,30 @@ def pair_selected_players(conn, tournament_id, round_id, player_ids):
         return
 
     tournament = conn.execute(
-        "SELECT pairing_system FROM tournaments WHERE id = ?", (tournament_id,)
+        "SELECT * FROM tournaments WHERE id = ?", (tournament_id,)
     ).fetchone()
-    state = _participant_state(conn, tournament_id)
+    current_round = conn.execute(
+        "SELECT round_number FROM tournament_rounds WHERE id = ?", (round_id,)
+    ).fetchone()[0]
+    pairing_policy = _pairing_policy(tournament, current_round)
+    state = _participant_state(
+        conn,
+        tournament_id,
+        acceleration_scheme=(
+            tournament["acceleration_scheme"]
+            if "acceleration_scheme" in tournament.keys()
+            else None
+        ),
+        acceleration_active=pairing_policy["acceleration_active"],
+    )
     players = [state[player_id] for player_id in selected if player_id in state]
     # Route through pair_players so already-played opponents are avoided
     # wherever a valid pairing exists, instead of pairing by seed order alone.
-    pairings = pair_players(players, tournament["pairing_system"])
+    pairings = pair_players(
+        players,
+        tournament["pairing_system"],
+        category_strict=pairing_policy["category_strict"],
+    )
     for pairing in pairings:
         if pairing["is_bye"]:
             set_round_player_status(conn, tournament_id, round_id, pairing["white_player_id"], "bye")
@@ -1602,17 +1672,8 @@ def add_participant(conn, tournament_id, player_id):
         return
 
     seed_rank = participant_count + 1
-    if tournament["pairing_system"] == "accelerated_swiss":
-        initial_score = 0.0
-        acceleration = acceleration_for_rank(
-            seed_rank,
-            participant_count + 1,
-            scheme=tournament["acceleration_scheme"] if "acceleration_scheme" in tournament.keys() else None,
-            player_rank=round(category_value(player["rating"] or DEFAULT_RATING)),
-        )
-    else:
-        initial_score = 0.0
-        acceleration = 0.0
+    initial_score = 0.0
+    acceleration = 0.0
 
     conn.execute(
         """
@@ -1927,7 +1988,7 @@ def process_tournament_round_matches(conn, tournament_id, round_id=None, match_d
 
 def get_tournament_standings(conn, tournament_id):
     tournament = conn.execute(
-        "SELECT tournament_type FROM tournaments WHERE id = ?", (tournament_id,)
+        "SELECT * FROM tournaments WHERE id = ?", (tournament_id,)
     ).fetchone()
     if tournament is None:
         raise ValueError("Tournament not found")
@@ -1985,14 +2046,59 @@ def get_tournament_standings(conn, tournament_id):
         """,
         (tournament_id,),
     ).fetchall()
-    games = games + list(absent_rows)
+    games = games + [
+        {
+            "white_player_id": row["white_player_id"],
+            "black_player_id": row["black_player_id"],
+            "result": row["result"],
+            "is_bye": row["is_bye"],
+            "is_absent": row["is_absent"],
+            "round_number": row["round_number"],
+        }
+        for row in absent_rows
+    ]
+    scored_rounds = [
+        game["round_number"]
+        for game in games
+        if game.get("result") or game.get("is_bye") or game.get("is_absent")
+    ]
+    current_round = max(scored_rounds, default=0)
+    acceleration_rounds = (
+        int(tournament["acceleration_rounds"])
+        if "acceleration_rounds" in tournament.keys() and tournament["acceleration_rounds"] is not None
+        else DEFAULT_ACCELERATION_ROUNDS
+    )
+    acceleration_active = (
+        tournament["pairing_system"] == "accelerated_swiss"
+        and 1 <= current_round <= acceleration_rounds
+    )
+    if tournament["pairing_system"] == "accelerated_swiss":
+        seed_order = sorted(
+            players,
+            key=lambda player: (-float(player["rating"] or 0), player["id"]),
+        )
+        for seed_rank, player in enumerate(seed_order, 1):
+            player["acceleration"] = (
+                acceleration_for_rank(
+                    seed_rank,
+                    len(players),
+                    scheme=(
+                        tournament["acceleration_scheme"]
+                        if "acceleration_scheme" in tournament.keys()
+                        else None
+                    ),
+                    player_rank=round(category_value(player["rating"] or DEFAULT_RATING)),
+                )
+                if acceleration_active
+                else 0.0
+            )
     settings = conn.execute(
         "SELECT bye_points, absent_points FROM tournaments WHERE id = ?", (tournament_id,)
     ).fetchone()
     return calculate_standings(
         players,
         games,
-        tournament["tournament_type"],
+        tournament["pairing_system"],
         bye_points=settings["bye_points"] if settings else 1.0,
         absent_points=settings["absent_points"] if settings else 0.0,
     )

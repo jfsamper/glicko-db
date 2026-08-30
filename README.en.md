@@ -27,6 +27,7 @@ Glicko DB is a Flask and SQLite application for managing a Go community's player
   - `Werkzeug>=3.0`
   - `openpyxl>=3.1`
   - `reportlab>=4.0`
+  - `Pillow==11.3.0` (required by ReportLab for PDF generation)
   - `tzdata>=2024.1` (Windows time zone data)
 
 ## Local run
@@ -138,6 +139,21 @@ Run the regression suite:
 ```powershell
 pytest -q
 ```
+
+### Installation on Linux hosting
+
+Use Python 3.10 or later and create a new virtual environment before installing:
+
+```bash
+python3.11 -m venv .venv
+.venv/bin/python -m pip install --upgrade pip
+.venv/bin/python -m pip install --only-binary=Pillow -r requirements.txt
+```
+
+If this command reports that no compatible Pillow wheel exists, the Python version,
+architecture, or Linux distribution selected by the host is unsupported. Select Python
+3.10+ x86_64 in the hosting panel; do not compile Pillow without the system development
+libraries for Python, JPEG, zlib, and freetype.
 
 Tests cover ratings and charts, player filters, language support, backups, tournament migrations, pairing, standings, OpenGotha compatibility, and public tournament pages.
 

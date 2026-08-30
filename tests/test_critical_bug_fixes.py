@@ -711,7 +711,9 @@ def test_migrate_tournament_schema_applies_new_columns_to_previous_version(tmp_p
     assert conn.execute("SELECT rounds FROM tournaments WHERE id = 1").fetchone()[0] == 1
     assert conn.execute("SELECT handicap_enabled FROM tournaments WHERE id = 1").fetchone()[0] == 0
     assert conn.execute("SELECT acceleration_scheme FROM tournaments WHERE id = 1").fetchone()[0] == "50:1,25:0.5,25:0"
-    assert conn.execute("PRAGMA user_version").fetchone()[0] == 3
+    assert conn.execute("SELECT acceleration_rounds FROM tournaments WHERE id = 1").fetchone()[0] == 2
+    assert conn.execute("SELECT category_rounds FROM tournaments WHERE id = 1").fetchone()[0] == 0
+    assert conn.execute("PRAGMA user_version").fetchone()[0] == 4
     conn.close()
 
 
@@ -746,7 +748,9 @@ def test_accelerated_settings_persist_category_floor_configuration(tmp_path, mon
             "absent_points": "0",
             "handicap_enabled": "0",
             "number_of_categories": "3",
-            "category_floor": ["2", "-5"],
+            "category_floor": ["3 dan", "16 kyu"],
+            "acceleration_rounds": "1",
+            "category_rounds": "0",
         },
     )
 
@@ -754,7 +758,10 @@ def test_accelerated_settings_persist_category_floor_configuration(tmp_path, mon
     conn = sqlite3.connect(db_path)
     assert conn.execute(
         "SELECT acceleration_scheme FROM tournaments WHERE id = 1"
-    ).fetchone()[0] == "categories:3;floors:2,-5"
+    ).fetchone()[0] == "categories:3;floors:2,-16"
+    assert conn.execute(
+        "SELECT acceleration_rounds, category_rounds FROM tournaments WHERE id = 1"
+    ).fetchone() == (1, 0)
     conn.close()
 
 

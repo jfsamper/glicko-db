@@ -3,5 +3,7 @@ Flask-WTF>=1.2
 Werkzeug>=3.0
 openpyxl>=3.1
 reportlab>=4.0
+# Keep a release with prebuilt wheels for the supported Python 3.10+ runtimes.
+Pillow==11.3.0
 networkx>=3.2
 tzdata>=2024.1

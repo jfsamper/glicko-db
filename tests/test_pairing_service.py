@@ -2,7 +2,9 @@ import pytest
 
 from services.pairing_service import (
     acceleration_for_rank,
+    format_rank_category,
     parse_acceleration_categories,
+    parse_rank_category,
     mcmahon_initial_score,
     mcmahon_score_from_rank,
     pair_players,
@@ -142,6 +144,40 @@ def test_acceleration_categories_round_trip_and_apply_rank_floors():
     assert acceleration_for_rank(1, 8, scheme=scheme, player_rank=1) == 1.0
     assert acceleration_for_rank(1, 8, scheme=scheme, player_rank=-2) == 0.5
     assert acceleration_for_rank(1, 8, scheme=scheme, player_rank=-6) == 0.0
+
+
+@pytest.mark.parametrize(
+    ("category", "rank"),
+    [("1 dan", 0), ("3 dan", 2), ("16 kyu", -16), (" 3 DAN ", 2)],
+)
+def test_rank_category_labels_convert_to_rank_units(category, rank):
+    assert parse_rank_category(category) == rank
+    assert format_rank_category(rank) == category.strip().lower()
+
+
+def test_swiss_by_category_keeps_pairings_inside_strict_sections():
+    players = make_players(6)
+    for index, player in enumerate(players):
+        player["category"] = "3D" if index < 2 else "5K"
+
+    pairings = pair_players(players, "swiss_cat")
+
+    assert all(
+        pairing["is_bye"]
+        or players[pairing["white_player_id"] - 1]["category"]
+        == players[pairing["black_player_id"] - 1]["category"]
+        for pairing in pairings
+    )
+    assert sum(pairing["is_bye"] for pairing in pairings) == 0
+
+
+def test_swiss_by_category_rejects_multiple_odd_sections():
+    players = make_players(6)
+    for index, player in enumerate(players):
+        player["category"] = "3D" if index < 1 else ("5K" if index < 2 else "10K")
+
+    with pytest.raises(ValueError, match="odd-sized category"):
+        pair_players(players, "swiss_cat")
 
 
 @pytest.mark.parametrize(

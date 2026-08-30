@@ -20,6 +20,12 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 
 from config import DB_PATH, DEFAULT_RATING
+from services.pairing_service import (
+    acceleration_for_rank,
+    mcmahon_initial_score,
+    pair_players,
+)
+from services.standings_service import calculate_standings
 from services.tournament_service import add_participant, delete_tournament, generate_next_round
 
 PREFIX = "DEMO-PAIRING-"
@@ -28,7 +34,6 @@ DEFAULT_SEED = 20260813
 PLAYER_COUNTS = (12, 17, 24, 31)
 EXTRA_SCENARIOS = (
     ("accelerated_swiss", 17, 1),
-    ("swiss_cat", 18, 1),
 )
 DEFAULT_DRAW_RATE = 0.02
 
@@ -80,6 +85,47 @@ def choose_result(rng, white_rating, black_rating, draw_rate=DEFAULT_DRAW_RATE):
     return stronger_result if rng.random() < 0.85 else weaker_result
 
 
+def verify_documented_examples():
+    """Validate the small deterministic examples used by pairing documentation."""
+    players = [
+        {
+            "id": index,
+            "name": f"Example {index}",
+            "rating": rating,
+            "score": 0,
+            "initial_score": 0,
+            "acceleration": 0,
+            "opponents": set(),
+            "colors": {"white": 0, "black": 0},
+        }
+        for index, rating in enumerate((2400, 2200, 2000, 1800), 1)
+    ]
+    swiss_pairings = pair_players(players, "swiss")
+    swiss_pairs = {
+        frozenset((pairing["white_player_id"], pairing["black_player_id"]))
+        for pairing in swiss_pairings
+    }
+    assert swiss_pairs == {frozenset((1, 3)), frozenset((2, 4))}
+
+    mcmahon_players = [dict(player, initial_score=score) for player, score in zip(players, (2, 1, 0, 0))]
+    mcmahon_standings = calculate_standings(mcmahon_players, [], tournament_type="mcmahon")
+    assert [row["id"] for row in mcmahon_standings] == [1, 2, 3, 4]
+    assert [row["primary_score"] for row in mcmahon_standings] == [2.0, 1.0, 0.0, 0.0]
+
+    accelerated_players = [
+        dict(player, acceleration=acceleration_for_rank(rank, len(players)))
+        for rank, player in enumerate(players, 1)
+    ]
+    accelerated_standings = calculate_standings(
+        accelerated_players,
+        [],
+        tournament_type="accelerated_swiss",
+    )
+    assert accelerated_standings[0]["primary_score"] == 1.0
+    assert accelerated_standings[0]["acceleration"] == 1.0
+    print("Verified documented Swiss, McMahon, and Accelerated Swiss examples.")
+
+
 def create_tournament(
     conn,
     tournament_type,
@@ -93,23 +139,33 @@ def create_tournament(
     Returns (tournament_id, rounds_created, results_created)."""
     name = f"{PREFIX}{tournament_type.upper()}-{count:02d}-{index:02d}"
     pairing_system = tournament_type
+    table_columns = {row[1] for row in conn.execute("PRAGMA table_info(tournaments)").fetchall()}
+    insert_columns = [
+        "name", "short_name", "location", "rounds", "tournament_type", "pairing_system",
+        "bye_points", "absent_points", "placement_criteria",
+    ]
+    insert_values = [
+        name, name, "Local test data", rounds, tournament_type, pairing_system,
+        1, 0, "MMS,SOSM,SOSOSM" if tournament_type == "mcmahon" else "NBW,SOSW,SOSOSW",
+    ]
+    optional_values = {
+        "acceleration_scheme": "50:1,25:0.5,25:0",
+        "acceleration_rounds": 2,
+        "category_rounds": 0,
+        "mm_bar": 8,
+        "mm_floor": -30,
+        "mm_zero": 0,
+    }
+    for column, value in optional_values.items():
+        if column in table_columns:
+            insert_columns.append(column)
+            insert_values.append(value)
+    insert_columns.extend(["status", "source_format"])
+    insert_values.extend(["draft", "local pairing test"])
+    placeholders = ", ".join("?" for _ in insert_values)
     conn.execute(
-        """
-        INSERT INTO tournaments
-            (name, short_name, location, rounds, tournament_type, pairing_system,
-               bye_points, absent_points, placement_criteria, mm_bar, mm_floor,
-               mm_zero, status, source_format)
-           VALUES (?, ?, ?, ?, ?, ?, 1, 0, ?, 8, -30, 0, 'draft', 'local pairing test')
-        """,
-        (
-            name,
-            name,
-            "Local test data",
-            rounds,
-            tournament_type,
-            pairing_system,
-            "MMS,SOSM,SOSOSM" if tournament_type == "mcmahon" else "NBW,SOSW,SOSOSW",
-        ),
+        f"INSERT INTO tournaments ({', '.join(insert_columns)}) VALUES ({placeholders})",
+        insert_values,
     )
     tournament_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
     players = choose_players(conn, count, index * 3)
@@ -194,6 +250,7 @@ def main(argv=None):
         raise ValueError("--draw-rate must be between 0 and 1")
 
     plan, rounds = build_plan(args.seed, args.rounds)
+    verify_documented_examples()
 
     if args.dry_run:
         print(f"Dry run: would create {len(plan)} tournament scenarios in {args.output}.")

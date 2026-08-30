@@ -64,6 +64,10 @@
           <legend>{{ translations.acceleration_categories }}</legend>
           <div class="filter-grid">
             <div class="filter-item">
+              <label for="acceleration_rounds">{{ translations.acceleration_rounds }}</label>
+              <input id="acceleration_rounds" name="acceleration_rounds" type="number" min="0" max="{{ tournament.rounds }}" value="{{ acceleration_rounds }}" required>
+            </div>
+            <div class="filter-item">
               <label for="number_of_categories">{{ translations.acceleration_category_count }}</label>
               <input id="number_of_categories" name="number_of_categories" type="number" min="1" max="10" value="{{ category_count }}" required>
             </div>
@@ -72,9 +76,20 @@
             {% for index in range(category_count - 1) %}
               <div class="filter-item">
                 <label for="acceleration_floor_{{ index }}">{{ translations.acceleration_category_floor }} {{ index + 1 }}</label>
-                <input id="acceleration_floor_{{ index }}" name="category_floor" type="number" min="-30" max="8" step="1" value="{{ category_floors[index] if index < category_floors|length else -30 }}" required>
+                <input id="acceleration_floor_{{ index }}" name="category_floor" type="text" inputmode="text" placeholder="3 dan" value="{{ format_rank_category(category_floors[index]) if index < category_floors|length else '30 kyu' }}" required>
               </div>
             {% endfor %}
+          </div>
+        </fieldset>
+      {% endif %}
+      {% if tournament.pairing_system == 'swiss_cat' %}
+        <fieldset class="settings-section" id="category-sections">
+          <legend>{{ translations.category_sections }}</legend>
+          <div class="filter-grid">
+            <div class="filter-item">
+              <label for="category_rounds">{{ translations.category_rounds }}</label>
+              <input id="category_rounds" name="category_rounds" type="number" min="0" max="{{ tournament.rounds }}" value="{{ category_rounds }}" required>
+            </div>
           </div>
         </fieldset>
       {% endif %}
@@ -114,12 +129,11 @@
         const input = document.createElement("input");
         input.id = `acceleration_floor_${index}`;
         input.name = "category_floor";
-        input.type = "number";
-        input.min = "-30";
-        input.max = "8";
-        input.step = "1";
+        input.type = "text";
+        input.inputMode = "text";
+        input.placeholder = "3 dan";
         input.required = true;
-        input.value = values[index] || "-30";
+        input.value = values[index] || "30 kyu";
         item.append(label, input);
         floors.append(item);
       }

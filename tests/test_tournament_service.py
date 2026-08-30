@@ -12,6 +12,8 @@ from scripts.dev_only.create_pairing_test_tournaments import (
 )
 from services.tournament_service import (
     _materialize_pending_players,
+    _pairing_policy,
+    _participant_state,
     _recalculate_mcmahon_seeds,
     _suggest_player_name,
     add_participant,
@@ -174,6 +176,72 @@ def test_suggest_player_name_uses_token_overlap_for_reordered_names():
     assert _suggest_player_name("Burgos Juan", conn) == "Juan Felipe Burgos"
     assert _suggest_player_name("Henao Brandal", conn) == "Brandal Henao"
     assert _suggest_player_name("Espinosa Santiago", conn) == "Santiago Espinosa"
+
+
+def test_acceleration_policy_uses_rating_seed_and_expires_after_opening_rounds():
+    conn = create_db()
+    conn.execute("ALTER TABLE tournaments ADD COLUMN acceleration_rounds INTEGER NOT NULL DEFAULT 2")
+    conn.execute("ALTER TABLE tournaments ADD COLUMN category_rounds INTEGER NOT NULL DEFAULT 0")
+    conn.execute("ALTER TABLE tournaments ADD COLUMN acceleration_scheme TEXT NOT NULL DEFAULT '50:1,25:0.5,25:0'")
+    tournament_id = create_manual_tournament(conn, rounds=4, pairing_system="accelerated_swiss")
+    ratings = (1200, 1500, 1800, 2100)
+    for player_id, rating in enumerate(ratings, 1):
+        conn.execute(
+            "INSERT INTO players (id, first_name, last_name, display_name, rating, active) VALUES (?, ?, ?, ?, ?, 1)",
+            (player_id, "First", str(player_id), f"First {player_id}", rating),
+        )
+    for player_id in reversed(range(1, 5)):
+        add_participant(conn, tournament_id, player_id)
+    conn.commit()
+
+    tournament = conn.execute("SELECT * FROM tournaments WHERE id = ?", (tournament_id,)).fetchone()
+    assert _pairing_policy(tournament, 1)["acceleration_active"] is True
+    assert _pairing_policy(tournament, 3)["acceleration_active"] is False
+    opening_state = _participant_state(
+        conn,
+        tournament_id,
+        acceleration_scheme=tournament["acceleration_scheme"],
+        acceleration_active=True,
+    )
+    later_state = _participant_state(
+        conn,
+        tournament_id,
+        acceleration_scheme=tournament["acceleration_scheme"],
+        acceleration_active=False,
+    )
+    assert opening_state[4]["acceleration"] == 1.0
+    assert opening_state[1]["acceleration"] == 0.0
+    assert all(player["acceleration"] == 0.0 for player in later_state.values())
+
+
+def test_accelerated_standings_drop_virtual_points_after_acceleration_rounds():
+    conn = create_db()
+    conn.execute("ALTER TABLE tournaments ADD COLUMN acceleration_rounds INTEGER NOT NULL DEFAULT 2")
+    conn.execute("ALTER TABLE tournaments ADD COLUMN acceleration_scheme TEXT NOT NULL DEFAULT '50:1,25:0.5,25:0'")
+    tournament_id = create_manual_tournament(conn, rounds=3, pairing_system="accelerated_swiss")
+    for player_id, rating in enumerate((1200, 1500, 1800, 2100), 1):
+        conn.execute(
+            "INSERT INTO players (id, first_name, last_name, display_name, rating, active) VALUES (?, ?, ?, ?, ?, 1)",
+            (player_id, "First", str(player_id), f"First {player_id}", rating),
+        )
+    for player_id in range(1, 5):
+        add_participant(conn, tournament_id, player_id)
+    conn.commit()
+
+    for expected_round in (1, 2, 3):
+        round_id, pairings = generate_next_round(conn, tournament_id)
+        assert conn.execute(
+            "SELECT round_number FROM tournament_rounds WHERE id = ?", (round_id,)
+        ).fetchone()[0] == expected_round
+        conn.execute(
+            "UPDATE tournament_pairings SET result = '1-0' WHERE round_id = ? AND is_bye = 0",
+            (round_id,),
+        )
+        conn.commit()
+        standings = get_tournament_standings(conn, tournament_id)
+        top_seed = next(row for row in standings if row["id"] == 4)
+        expected_virtual = 1.0 if expected_round <= 2 else 0.0
+        assert top_seed["primary_score"] - top_seed["score"] == expected_virtual
 
 
 def test_opengotha_import_persists_fuzzy_player_suggestion():

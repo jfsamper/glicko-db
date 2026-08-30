@@ -1,6 +1,7 @@
 """Deterministic tournament pairing algorithms compatible with OpenGotha concepts."""
 
 from collections import defaultdict
+import re
 
 import networkx as nx
 
@@ -13,6 +14,25 @@ DEFAULT_ACCELERATION_FLOORS = (0, -5)
 MIN_CATEGORY_RANK = -30
 MAX_CATEGORY_RANK = 8
 MAX_ACCELERATION_CATEGORIES = 10
+DEFAULT_ACCELERATION_ROUNDS = 2
+DEFAULT_CATEGORY_ROUNDS = 0
+
+
+def format_rank_category(rank):
+    """Format an integer rank unit as a Go category label."""
+    rank = int(rank)
+    return f"{abs(rank)} kyu" if rank < 0 else f"{rank + 1} dan"
+
+
+def parse_rank_category(category):
+    """Parse a Go category label into an integer rank unit."""
+    if not isinstance(category, str):
+        raise ValueError("Acceleration category floors must use dan or kyu labels")
+    match = re.fullmatch(r"(\d+)\s*(dan|kyu)", category.strip(), re.IGNORECASE)
+    if not match or int(match.group(1)) < 1:
+        raise ValueError("Acceleration category floors must use dan or kyu labels")
+    value, label = int(match.group(1)), match.group(2).lower()
+    return value - 1 if label == "dan" else -value
 
 
 def _player_id(player):
@@ -63,7 +83,9 @@ def _sort_key(player, system):
     )
 
 
-def _can_pair(first, second):
+def _can_pair(first, second, category_strict=False):
+    if category_strict and _value(first, "category", "") != _value(second, "category", ""):
+        return False
     return _player_id(second) not in _played(first) and _player_id(first) not in _played(second)
 
 
@@ -78,7 +100,7 @@ def _color_assignment(first, second):
     return _player_id(first), _player_id(second)
 
 
-def _pair_group(group):
+def _pair_group(group, category_strict=False):
     """Pair a score group, floating the last player when necessary."""
     remaining = list(group)
     pairings = []
@@ -87,7 +109,7 @@ def _pair_group(group):
     while remaining:
         first = remaining.pop(0)
         partner_index = next(
-            (index for index, candidate in enumerate(remaining) if _can_pair(first, candidate)),
+            (index for index, candidate in enumerate(remaining) if _can_pair(first, candidate, category_strict)),
             None,
         )
         if partner_index is None:
@@ -146,10 +168,11 @@ def _choose_bye(players, system):
     )[0]
 
 
-def _groups(players, system):
+def _groups(players, system, category_strict=False):
     grouped = defaultdict(list)
     for player in sorted(players, key=lambda item: _sort_key(item, system)):
-        grouped[_effective_score(player, system)].append(player)
+        group_key = (_value(player, "category", ""), _effective_score(player, system)) if category_strict else _effective_score(player, system)
+        grouped[group_key].append(player)
     return [grouped[key] for key in sorted(grouped, reverse=True)]
 
 
@@ -268,7 +291,7 @@ def _pair_weight(first, second, players, system, positions, seed_system=None):
     )
 
 
-def _pair_without_repeats(players, system, seed_system=None):
+def _pair_without_repeats(players, system, seed_system=None, category_strict=False):
     """Find a maximum-weight legal matching, as OpenGotha does."""
     ordered_players = sorted(players, key=lambda item: _sort_key(item, system))
     positions = _pairing_positions(ordered_players, system)
@@ -276,7 +299,7 @@ def _pair_without_repeats(players, system, seed_system=None):
     graph.add_nodes_from(_player_id(player) for player in ordered_players)
     for index, first in enumerate(ordered_players):
         for second in ordered_players[index + 1 :]:
-            if _can_pair(first, second):
+            if _can_pair(first, second, category_strict):
                 graph.add_edge(
                     _player_id(first),
                     _player_id(second),
@@ -297,7 +320,7 @@ def _pair_without_repeats(players, system, seed_system=None):
     return sorted(pairs, key=lambda pairing: (str(pairing["white_player_id"]), str(pairing["black_player_id"])))
 
 
-def pair_players(players, system="swiss", seed_system=None):
+def pair_players(players, system="swiss", seed_system=None, category_strict=None):
     """Generate one deterministic round of pairings.
 
     Each player should contain ``id``, ``rating``, ``score``, ``opponents`` and
@@ -306,21 +329,78 @@ def pair_players(players, system="swiss", seed_system=None):
     """
     if system not in PAIRING_SYSTEMS:
         raise ValueError(f"Unknown pairing system: {system}")
+    if category_strict is None:
+        category_strict = system == "swiss_cat"
 
     working_players = list(players)
+    if category_strict:
+        pairings = []
+        grouped_players = defaultdict(list)
+        for player in working_players:
+            grouped_players[_value(player, "category", "")].append(player)
+        odd_categories = [
+            category for category, category_players in grouped_players.items()
+            if len(category_players) % 2
+        ]
+        if len(odd_categories) > 1:
+            raise ValueError(
+                "Strict category pairing requires at most one odd-sized category"
+            )
+        bye_category = odd_categories[0] if odd_categories else None
+        for category in sorted(grouped_players, key=str.casefold):
+            category_players = grouped_players[category]
+            category_bye = None
+            if category == bye_category:
+                category_bye_player = _choose_bye(category_players, system)
+                category_players = [
+                    player for player in category_players if player is not category_bye_player
+                ]
+                category_bye = _assign_bye([category_bye_player], system)
+
+            category_pairings = _pair_without_repeats(
+                category_players, system, seed_system, category_strict=True
+            )
+            if category_pairings is None:
+                category_groups = _groups(category_players, system, category_strict=True)
+                category_pairings = []
+                floating = []
+                for group in category_groups:
+                    group_pairings, group_floats = _pair_group(
+                        floating + group, category_strict=True
+                    )
+                    category_pairings.extend(group_pairings)
+                    floating = group_floats
+                while len(floating) > 1:
+                    first = floating.pop(0)
+                    second = floating.pop(0)
+                    white_id, black_id = _color_assignment(first, second)
+                    category_pairings.append(
+                        {
+                            "white_player_id": white_id,
+                            "black_player_id": black_id,
+                            "is_bye": False,
+                        }
+                    )
+                if floating:
+                    raise ValueError("Strict category pairing left an unpaired player")
+            pairings.extend(category_pairings)
+            if category_bye:
+                pairings.append(category_bye)
+        return pairings
+
     bye = None
     if len(working_players) % 2:
         bye_player = _choose_bye(working_players, system)
         working_players.remove(bye_player)
         bye = _assign_bye([bye_player], system)
 
-    pairings = _pair_without_repeats(working_players, system, seed_system)
+    pairings = _pair_without_repeats(working_players, system, seed_system, category_strict)
     floating = []
     if pairings is None:
-        groups = _groups(working_players, system)
+        groups = _groups(working_players, system, category_strict)
         pairings = []
         for group in groups:
-            group_pairings, group_floats = _pair_group(floating + group)
+            group_pairings, group_floats = _pair_group(floating + group, category_strict)
             pairings.extend(group_pairings)
             floating = group_floats
 
@@ -331,9 +411,12 @@ def pair_players(players, system="swiss", seed_system=None):
         while len(floating) > 1:
             first = floating.pop(0)
             partner_index = next(
-                (index for index, candidate in enumerate(floating) if _can_pair(first, candidate)),
-                0,
+                (index for index, candidate in enumerate(floating) if _can_pair(first, candidate, category_strict)),
+                None,
             )
+            if partner_index is None:
+                floating.insert(0, first)
+                break
             second = floating.pop(partner_index)
             white_id, black_id = _color_assignment(first, second)
             pairings.append(
@@ -343,6 +426,9 @@ def pair_players(players, system="swiss", seed_system=None):
                     "is_bye": False,
                 }
             )
+
+    if floating and category_strict:
+        raise ValueError("Strict category pairing cannot pair all players within their categories")
 
     if bye:
         pairings.append(bye)
@@ -398,10 +484,13 @@ def validate_acceleration_categories(number_of_categories, floors):
 
     normalized_floors = []
     for floor in floor_values:
+        if isinstance(floor, str) and not re.fullmatch(r"[+-]?\d+(?:\.0+)?", floor.strip()):
+            normalized_floors.append(parse_rank_category(floor))
+            continue
         try:
             numeric_floor = float(floor)
         except (TypeError, ValueError) as exc:
-            raise ValueError("Acceleration category floors must be integers") from exc
+            raise ValueError("Acceleration category floors must use dan or kyu labels") from exc
         if not numeric_floor.is_integer():
             raise ValueError("Acceleration category floors must be integers")
         normalized_floors.append(int(numeric_floor))

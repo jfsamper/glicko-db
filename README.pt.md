@@ -27,6 +27,7 @@ Glicko DB é uma aplicação Flask e SQLite para gerenciar jogadores, ratings, p
   - `Werkzeug>=3.0`
   - `openpyxl>=3.1`
   - `reportlab>=4.0`
+  - `Pillow==11.3.0` (necessário pelo ReportLab para geração de PDF)
   - `tzdata>=2024.1` (dados de fuso horário no Windows)
 
 ## Execução local
@@ -138,6 +139,21 @@ Execute a suíte de regressão:
 ```powershell
 pytest -q
 ```
+
+### Instalação em hospedagem Linux
+
+Use Python 3.10 ou posterior e crie um ambiente virtual novo antes da instalação:
+
+```bash
+python3.11 -m venv .venv
+.venv/bin/python -m pip install --upgrade pip
+.venv/bin/python -m pip install --only-binary=Pillow -r requirements.txt
+```
+
+Se esse comando informar que não existe uma wheel compatível do Pillow, a versão do
+Python, a arquitetura ou a distribuição Linux escolhida pela hospedagem não é compatível.
+Selecione Python 3.10+ x86_64 no painel da hospedagem; não compile o Pillow sem as
+bibliotecas de desenvolvimento do sistema para Python, JPEG, zlib e freetype.
 
 Os testes cobrem ratings e gráficos, filtros de jogadores, suporte a idiomas, backups, migrações de torneios, emparelhamento, classificação, compatibilidade com OpenGotha e páginas públicas de torneios.
 
