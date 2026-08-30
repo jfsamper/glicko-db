@@ -2,9 +2,13 @@ import pytest
 
 from services.pairing_service import (
     acceleration_for_rank,
+    parse_acceleration_categories,
     mcmahon_initial_score,
     mcmahon_score_from_rank,
     pair_players,
+    serialize_acceleration_categories,
+    validate_acceleration_categories,
+    validate_acceleration_scheme,
 )
 
 
@@ -117,6 +121,41 @@ def test_acceleration_and_mcmahon_seeding_points_are_deterministic():
     assert acceleration_for_rank(8, 8) == 0.0
     assert mcmahon_initial_score(1, 8) == 1.0
     assert mcmahon_initial_score(8, 8) == 0.0
+
+
+def test_acceleration_scheme_can_configure_seed_bands():
+    scheme = validate_acceleration_scheme("25:2,25:1,50:0")
+
+    assert [acceleration_for_rank(rank, 8, scheme=scheme) for rank in (1, 2, 3, 4, 5, 8)] == [2.0, 2.0, 1.0, 1.0, 0.0, 0.0]
+
+
+def test_acceleration_scheme_rejects_incomplete_bands():
+    with pytest.raises(ValueError, match="total 100"):
+        validate_acceleration_scheme("50:1,25:0.5")
+
+
+def test_acceleration_categories_round_trip_and_apply_rank_floors():
+    scheme = serialize_acceleration_categories(3, (0, -5))
+
+    assert scheme == "categories:3;floors:0,-5"
+    assert parse_acceleration_categories(scheme) == (3, (0, -5))
+    assert acceleration_for_rank(1, 8, scheme=scheme, player_rank=1) == 1.0
+    assert acceleration_for_rank(1, 8, scheme=scheme, player_rank=-2) == 0.5
+    assert acceleration_for_rank(1, 8, scheme=scheme, player_rank=-6) == 0.0
+
+
+@pytest.mark.parametrize(
+    "category_count, floors, message",
+    [
+        (0, [], "between 1 and"),
+        (3, [0], "one floor"),
+        (3, [0, 0], "descend"),
+        (2, [9], "between -30 and 8"),
+    ],
+)
+def test_acceleration_categories_reject_invalid_floor_configurations(category_count, floors, message):
+    with pytest.raises(ValueError, match=message):
+        validate_acceleration_categories(category_count, floors)
 
 
 def test_mcmahon_score_from_rank_rewards_higher_seeds():
@@ -272,6 +311,58 @@ def test_swiss_cat_pairing_prioritizes_same_category_groups():
     pairings = pair_players(players, system="swiss_cat")
 
     assert len(pairings) == 2
+    assert {frozenset((p["white_player_id"], p["black_player_id"])) for p in pairings} == {
+        frozenset((1, 2)),
+        frozenset((3, 4)),
+    }
+
+
+def test_swiss_uses_split_and_slip_seeding_within_a_score_group():
+    players = make_players(4)
+
+    pairings = pair_players(players, "swiss")
+
+    assert {frozenset((p["white_player_id"], p["black_player_id"])) for p in pairings} == {
+        frozenset((1, 3)),
+        frozenset((2, 4)),
+    }
+
+
+def test_pair_players_supports_split_and_fold_seeding():
+    players = make_players(4)
+
+    pairings = pair_players(players, "swiss", seed_system="split_fold")
+
+    assert {frozenset((p["white_player_id"], p["black_player_id"])) for p in pairings} == {
+        frozenset((1, 4)),
+        frozenset((2, 3)),
+    }
+
+
+def test_weighted_matching_keeps_a_complete_legal_pairing():
+    players = make_players(4)
+    players[1]["opponents"] = {3}
+    players[2]["opponents"] = {2, 4}
+    players[3]["opponents"] = {1, 3}
+
+    pairings = pair_players(players, "swiss")
+
+    assert {frozenset((p["white_player_id"], p["black_player_id"])) for p in pairings} == {
+        frozenset((1, 3)),
+        frozenset((2, 4)),
+    }
+
+
+def test_swiss_cat_matching_prefers_intra_category_edges():
+    players = [
+        {"id": 1, "name": "A1", "rating": 2000, "score": 1, "category": "1D", "opponents": set(), "colors": {"white": 0, "black": 0}},
+        {"id": 2, "name": "A2", "rating": 1900, "score": 1, "category": "1D", "opponents": set(), "colors": {"white": 0, "black": 0}},
+        {"id": 3, "name": "B1", "rating": 1800, "score": 1, "category": "1K", "opponents": set(), "colors": {"white": 0, "black": 0}},
+        {"id": 4, "name": "B2", "rating": 1700, "score": 1, "category": "1K", "opponents": set(), "colors": {"white": 0, "black": 0}},
+    ]
+
+    pairings = pair_players(players, "swiss_cat")
+
     assert {frozenset((p["white_player_id"], p["black_player_id"])) for p in pairings} == {
         frozenset((1, 2)),
         frozenset((3, 4)),

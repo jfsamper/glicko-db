@@ -113,6 +113,27 @@ def test_player_selector_is_ordered_by_total_games():
     conn.close()
 
 
+def test_player_report_is_ordered_by_total_games():
+    conn = create_report_db()
+    conn.execute(
+        "INSERT INTO players VALUES (?, ?, ?, ?, ?, ?)",
+        (3, "Cara", 1500, 1500, "FR", "Club C"),
+    )
+    conn.executemany(
+        "INSERT INTO matches (id, match_date, white_player_id, black_player_id, result, event) VALUES (?, ?, ?, ?, ?, ?)",
+        [
+            (4, "2026-01-03", 1, 3, "0-1", "League"),
+            (5, "2026-01-04", 1, 3, "0-1", "League"),
+        ],
+    )
+
+    report = build_date_report(conn, date(2026, 1, 1), date(2026, 1, 4))
+
+    assert [player["display_name"] for player in report["players"]] == ["Alice", "Cara", "Bob"]
+    assert [player["games"] for player in report["players"]] == [4, 2, 2]
+    conn.close()
+
+
 def test_duplicate_tournament_pairing_is_counted_once_and_export_contains_range():
     conn = create_report_db()
     conn.execute("ALTER TABLE matches ADD COLUMN tournament_pairing_id INTEGER")

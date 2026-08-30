@@ -84,6 +84,15 @@ from services.player_service import (
 )
 from services.rating_service import get_dirty_date, get_rating_config, mark_dirty, recompute_ratings, update_from_latest_snapshot, update_rating_config
 from services.category_service import get_category_config, update_category_config
+from services.pairing_service import (
+    DEFAULT_ACCELERATION_CATEGORIES,
+    DEFAULT_ACCELERATION_FLOORS,
+    DEFAULT_ACCELERATION_SCHEME,
+    acceleration_category_settings,
+    serialize_acceleration_categories,
+    validate_acceleration_categories,
+    validate_acceleration_scheme,
+)
 from services.tournament_service import (
     SUPPORTED_SYSTEMS,
     _materialize_pending_players,
@@ -707,6 +716,16 @@ def admin_profile():
         return redirect(url_for("admin_login", lang=lang))
 
     if request.method == "POST":
+        if request.form.get("logout") == "1":
+            log_admin_action(
+                "logout",
+                "auth",
+                {"status": "success"},
+                user_id=user["id"],
+            )
+            session.clear()
+            return redirect(url_for("index", lang=lang))
+
         email = (request.form.get("email") or "").strip()
         language = (request.form.get("language") or "").strip()
         theme = (request.form.get("theme") or "").strip()
@@ -1185,7 +1204,17 @@ def admin_tournaments():
                 bye_points = request.form.get("bye_points", 1.0, type=float)
                 absent_points = request.form.get("absent_points", 0.0, type=float)
                 handicap_enabled = 1 if request.form.get("handicap_enabled") == "1" else 0
-                if bye_points not in {0.0, 0.5, 1.0} or absent_points not in {0.0, 0.5, 1.0}:
+                try:
+                    acceleration_scheme = validate_acceleration_scheme(
+                        request.form.get("acceleration_scheme", DEFAULT_ACCELERATION_SCHEME)
+                    )
+                except (TypeError, ValueError):
+                    acceleration_scheme = None
+                if (
+                    bye_points not in {0.0, 0.5, 1.0}
+                    or absent_points not in {0.0, 0.5, 1.0}
+                    or acceleration_scheme is None
+                ):
                     flash(translations["error"])
                     bye_points = absent_points = None
                 if bye_points is None:
@@ -1201,7 +1230,7 @@ def admin_tournaments():
                 tournament_columns = {
                     row[1] for row in conn.execute("PRAGMA table_info(tournaments)").fetchall()
                 }
-                tournament_values = (
+                tournament_values = [
                     name,
                     request.form.get("location", "").strip(),
                     rounds,
@@ -1209,27 +1238,24 @@ def admin_tournaments():
                     pairing_system,
                     bye_points,
                     absent_points,
-                )
+                ]
+                insert_columns = [
+                    "name", "location", "rounds", "tournament_type", "pairing_system",
+                    "bye_points", "absent_points",
+                ]
+                if "acceleration_scheme" in tournament_columns:
+                    insert_columns.append("acceleration_scheme")
+                    tournament_values.append(acceleration_scheme)
                 if "handicap_enabled" in tournament_columns:
-                    conn.execute(
-                        """
-                        INSERT INTO tournaments
-                            (name, location, rounds, tournament_type, pairing_system,
-                            bye_points, absent_points, handicap_enabled, status, created_at)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'draft', ?)
-                        """,
-                        (*tournament_values, handicap_enabled, current_timestamp()),
-                    )
-                else:
-                    conn.execute(
-                        """
-                        INSERT INTO tournaments
-                            (name, location, rounds, tournament_type, pairing_system,
-                            bye_points, absent_points, status, created_at)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, 'draft', ?)
-                        """,
-                        (*tournament_values, current_timestamp()),
-                    )
+                    insert_columns.append("handicap_enabled")
+                    tournament_values.append(handicap_enabled)
+                insert_columns.extend(["status", "created_at"])
+                tournament_values.extend(["draft", current_timestamp()])
+                placeholders = ", ".join("?" for _ in insert_columns)
+                conn.execute(
+                    f"INSERT INTO tournaments ({', '.join(insert_columns)}) VALUES ({placeholders})",
+                    tournament_values,
+                )
                 tournament_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
                 conn.commit()
                 log_admin_action(
@@ -1359,20 +1385,64 @@ def admin_update_tournament_settings(tournament_id):
     absent_points = request.form.get("absent_points", type=float)
     handicap_enabled = request.form.get("handicap_enabled") == "1"
     apply_auto_handicap = request.form.get("apply_auto_handicap") == "1"
+    number_of_categories = request.form.get("number_of_categories")
+    category_floors = request.form.getlist("category_floor")
 
     if not name or bye_points not in {0.0, 0.5, 1.0} or absent_points not in {0.0, 0.5, 1.0}:
         flash(TRANSLATIONS[lang]["error"])
         return redirect(url_for("admin_tournament_settings", tournament_id=tournament_id, lang=lang))
 
     conn = get_db()
+    tournament_columns = {
+        row[1] for row in conn.execute("PRAGMA table_info(tournaments)").fetchall()
+    }
+    acceleration_column = ", acceleration_scheme" if "acceleration_scheme" in tournament_columns else ""
     try:
+        current_tournament = conn.execute(
+            f"SELECT pairing_system{acceleration_column} FROM tournaments WHERE id = ?",
+            (tournament_id,),
+        ).fetchone()
+        if current_tournament is None:
+            flash(TRANSLATIONS[lang]["error"])
+            return redirect(url_for("admin_tournaments", lang=lang))
+
+        acceleration_scheme = (
+            current_tournament["acceleration_scheme"]
+            if "acceleration_scheme" in tournament_columns
+            else DEFAULT_ACCELERATION_SCHEME
+        ) or DEFAULT_ACCELERATION_SCHEME
+        if current_tournament["pairing_system"] == "accelerated_swiss":
+            if number_of_categories is None:
+                number_of_categories, category_floors = acceleration_category_settings(acceleration_scheme)
+            try:
+                category_count, normalized_floors = validate_acceleration_categories(
+                    number_of_categories, category_floors
+                )
+                if (category_count, normalized_floors) == (
+                    DEFAULT_ACCELERATION_CATEGORIES,
+                    DEFAULT_ACCELERATION_FLOORS,
+                ):
+                    acceleration_scheme = DEFAULT_ACCELERATION_SCHEME
+                else:
+                    acceleration_scheme = serialize_acceleration_categories(
+                        category_count, normalized_floors
+                    )
+            except (TypeError, ValueError):
+                flash(TRANSLATIONS[lang]["error"])
+                return redirect(url_for("admin_tournament_settings", tournament_id=tournament_id, lang=lang))
+
+        update_fields = [
+            "name = ?", "location = ?", "rounds = ?", "bye_points = ?",
+            "absent_points = ?", "handicap_enabled = ?",
+        ]
+        update_values = [name, location, rounds, bye_points, absent_points, int(handicap_enabled)]
+        if "acceleration_scheme" in tournament_columns:
+            update_fields.append("acceleration_scheme = ?")
+            update_values.append(acceleration_scheme)
+        update_values.append(tournament_id)
         updated = conn.execute(
-            """
-            UPDATE tournaments
-            SET name = ?, location = ?, rounds = ?, bye_points = ?, absent_points = ?, handicap_enabled = ?
-            WHERE id = ?
-            """,
-            (name, location, rounds, bye_points, absent_points, int(handicap_enabled), tournament_id),
+            f"UPDATE tournaments SET {', '.join(update_fields)} WHERE id = ?",
+            update_values,
         ).rowcount
         if not updated:
             flash(TRANSLATIONS[lang]["error"])
@@ -1411,6 +1481,9 @@ def admin_tournament_settings(tournament_id):
     return render_template(
         "admin/tournament_settings.html",
         tournament=tournament,
+        acceleration_categories=acceleration_category_settings(
+            tournament["acceleration_scheme"] if "acceleration_scheme" in tournament.keys() else None
+        ),
         lang=lang,
         translations=TRANSLATIONS[lang],
     )
@@ -1604,17 +1677,17 @@ def admin_export_tournament_results(tournament_id):
     lang = get_language(request.args.get("lang"))
     conn = get_db()
     try:
-        csv_text = export_tournament_results(conn, tournament_id)
+        xml_text = export_tournament_results(conn, tournament_id)
     except ValueError as exc:
         flash(f"{TRANSLATIONS[lang]['error']}: {exc}")
         conn.close()
         return redirect(url_for("admin_tournament", tournament_id=tournament_id, lang=lang))
     conn.close()
     return Response(
-        csv_text,
-        content_type="text/csv; charset=utf-8",
+        xml_text,
+        content_type="application/xml; charset=utf-8",
         headers={
-            "Content-Disposition": f"attachment; filename=tournament_{tournament_id}_results.csv"
+            "Content-Disposition": f"attachment; filename=tournament_{tournament_id}.xml"
         },
     )
 

@@ -3,4 +3,5 @@ Flask-WTF>=1.2
 Werkzeug>=3.0
 openpyxl>=3.1
 reportlab>=4.0
+networkx>=3.2
 tzdata>=2024.1

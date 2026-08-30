@@ -92,6 +92,26 @@ def test_profile_persists_preferences_and_changes_password(tmp_path, monkeypatch
     assert "Meu perfil" in response.get_data(as_text=True)
 
 
+def test_profile_logout_button_clears_session_and_redirects(tmp_path, monkeypatch):
+    app, _db_path, user_id = make_account_app(tmp_path, monkeypatch)
+    client = app.test_client()
+    authenticate_client(client, user_id)
+
+    response = client.post(
+        "/admin/profile?lang=en",
+        data={"logout": "1"},
+    )
+
+    assert response.status_code == 302
+    assert response.headers["Location"].endswith("/?lang=en")
+    with client.session_transaction() as session:
+        assert session.get("user_id") is None
+
+    protected_response = client.get("/admin/profile?lang=en")
+    assert protected_response.status_code == 302
+    assert "/admin/login" in protected_response.headers["Location"]
+
+
 def test_anonymous_preferences_are_saved_in_cookies(tmp_path, monkeypatch):
     app, _db_path, _user_id = make_account_app(tmp_path, monkeypatch)
     client = app.test_client()

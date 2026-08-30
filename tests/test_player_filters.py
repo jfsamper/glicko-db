@@ -267,7 +267,7 @@ def test_recent_form_only_includes_players_with_matches_in_last_90_days(monkeypa
         assert recent_players == ["Alice", "Bob"]
 
 
-def test_rankings_recent_form_hides_players_without_recent_matches(monkeypatch):
+def test_rankings_hides_players_without_games(monkeypatch):
     with tempfile.TemporaryDirectory() as tmpdir:
         db_path = Path(tmpdir) / "players.db"
 
@@ -334,9 +334,9 @@ def test_rankings_recent_form_hides_players_without_recent_matches(monkeypatch):
         response = client.get("/rankings")
         html = response.get_data(as_text=True)
 
-        assert "<strong>Alice</strong>" in html
-        assert "<strong>Bob</strong>" in html
-        assert "<strong>Charlie</strong>" not in html
+        assert ">Alice</a>" in html
+        assert ">Bob</a>" in html
+        assert ">Charlie</a>" not in html
 
 
 def test_load_rankings_supports_last_active_filter(monkeypatch):

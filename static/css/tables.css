@@ -10,7 +10,8 @@
   padding: 0.75rem;
   border-bottom: 1px solid var(--border);
   text-align: center;
-  overflow-wrap: anywhere;
+  overflow-wrap: normal;
+  word-break: normal;
 }
 
 .table-stack a {
@@ -20,6 +21,11 @@
 
 .table-stack a:hover {
   text-decoration: underline;
+}
+
+.player-performance-table th:nth-child(2),
+.player-performance-table td:nth-child(2) {
+  width: 24%;
 }
 
 .standings-table {
@@ -34,6 +40,20 @@
 .standings-rank-label {
   width: 4.25rem;
   min-width: 4.25rem;
+  padding-left: 0;
+  padding-right: 0.4rem;
+  white-space: nowrap;
+}
+
+.standings-category {
+  width: 15%;
+  min-width: 7rem;
+  text-align: left;
+}
+
+.standings-category-label {
+  width: 2.5rem;
+  min-width: 2.5rem;
   padding-left: 0;
   padding-right: 0.4rem;
   white-space: nowrap;
@@ -124,4 +144,28 @@
   gap: 1rem;
   padding: 0.5rem 0;
   border-bottom: 1px solid var(--border-soft);
+}
+
+@media (max-width: 720px) {
+  .panel,
+  .card {
+    max-width: 100%;
+    overflow-x: auto;
+  }
+
+  .table-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .table-stack {
+    width: max-content;
+    min-width: 100%;
+    table-layout: auto;
+  }
+
+  .table-stack th,
+  .table-stack td {
+    white-space: nowrap;
+  }
 }

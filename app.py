@@ -155,6 +155,7 @@ def init_db():
             rounds INTEGER NOT NULL DEFAULT 1,
             tournament_type TEXT NOT NULL DEFAULT 'swiss',
             pairing_system TEXT NOT NULL DEFAULT 'swiss',
+            acceleration_scheme TEXT NOT NULL DEFAULT '50:1,25:0.5,25:0',
             bye_points REAL NOT NULL DEFAULT 1,
             absent_points REAL NOT NULL DEFAULT 0,
             handicap_enabled INTEGER NOT NULL DEFAULT 0,
@@ -503,7 +504,7 @@ def migrate_config_schema(conn):
 
 def migrate_tournament_schema(conn):
     """Create or upgrade tournament tables before any tournament queries run."""
-    schema_version = 2
+    schema_version = 3
     current_version = conn.execute("PRAGMA user_version").fetchone()[0]
     if current_version >= schema_version:
         return
@@ -515,6 +516,7 @@ def migrate_tournament_schema(conn):
             begin_date TEXT, end_date TEXT, rounds INTEGER NOT NULL DEFAULT 1,
             tournament_type TEXT NOT NULL DEFAULT 'swiss',
             pairing_system TEXT NOT NULL DEFAULT 'swiss',
+            acceleration_scheme TEXT NOT NULL DEFAULT '50:1,25:0.5,25:0',
             bye_points REAL NOT NULL DEFAULT 1,
             absent_points REAL NOT NULL DEFAULT 0,
             handicap_enabled INTEGER NOT NULL DEFAULT 0,
@@ -577,6 +579,7 @@ def migrate_tournament_schema(conn):
             "rounds": "INTEGER NOT NULL DEFAULT 1",
             "tournament_type": "TEXT NOT NULL DEFAULT 'swiss'",
             "pairing_system": "TEXT NOT NULL DEFAULT 'swiss'",
+            "acceleration_scheme": "TEXT NOT NULL DEFAULT '50:1,25:0.5,25:0'",
             "bye_points": "REAL NOT NULL DEFAULT 1",
             "absent_points": "REAL NOT NULL DEFAULT 0",
             "handicap_enabled": "INTEGER NOT NULL DEFAULT 0",

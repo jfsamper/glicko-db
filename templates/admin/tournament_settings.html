@@ -57,6 +57,27 @@
           <input type="hidden" name="apply_auto_handicap" value="0">
         </div>
       </div>
+      {% if tournament.pairing_system == 'accelerated_swiss' %}
+        {% set category_count = acceleration_categories[0] %}
+        {% set category_floors = acceleration_categories[1] %}
+        <fieldset class="settings-section" id="acceleration-categories">
+          <legend>{{ translations.acceleration_categories }}</legend>
+          <div class="filter-grid">
+            <div class="filter-item">
+              <label for="number_of_categories">{{ translations.acceleration_category_count }}</label>
+              <input id="number_of_categories" name="number_of_categories" type="number" min="1" max="10" value="{{ category_count }}" required>
+            </div>
+          </div>
+          <div id="category-floors" class="filter-grid">
+            {% for index in range(category_count - 1) %}
+              <div class="filter-item">
+                <label for="acceleration_floor_{{ index }}">{{ translations.acceleration_category_floor }} {{ index + 1 }}</label>
+                <input id="acceleration_floor_{{ index }}" name="category_floor" type="number" min="-30" max="8" step="1" value="{{ category_floors[index] if index < category_floors|length else -30 }}" required>
+              </div>
+            {% endfor %}
+          </div>
+        </fieldset>
+      {% endif %}
       <div class="filter-actions">
         <button type="submit" class="button">{{ translations.save_changes }}</button>
       </div>
@@ -73,6 +94,34 @@
     form.addEventListener("submit", () => {
       if (handicap.checked) {
         applyAuto.value = window.confirm("{{ translations.handicap_apply_existing_confirmation }}") ? "1" : "0";
+      }
+    });
+
+    const categoryCount = document.getElementById("number_of_categories");
+    const floors = document.getElementById("category-floors");
+    if (!categoryCount || !floors) return;
+
+    categoryCount.addEventListener("input", () => {
+      const count = Math.max(1, Math.min(10, Number.parseInt(categoryCount.value, 10) || 1));
+      const values = Array.from(floors.querySelectorAll("input[name='category_floor']"), (input) => input.value);
+      floors.replaceChildren();
+      for (let index = 0; index < count - 1; index += 1) {
+        const item = document.createElement("div");
+        item.className = "filter-item";
+        const label = document.createElement("label");
+        label.htmlFor = `acceleration_floor_${index}`;
+        label.textContent = `{{ translations.acceleration_category_floor }} ${index + 1}`;
+        const input = document.createElement("input");
+        input.id = `acceleration_floor_${index}`;
+        input.name = "category_floor";
+        input.type = "number";
+        input.min = "-30";
+        input.max = "8";
+        input.step = "1";
+        input.required = true;
+        input.value = values[index] || "-30";
+        item.append(label, input);
+        floors.append(item);
       }
     });
   })();

@@ -55,7 +55,7 @@ def test_pairing_changes_with_system_and_rating_seed():
     )
     assert all(not pairing["is_bye"] for pairing in swiss + accelerated + mcmahon)
     assert {frozenset((p["white_player_id"], p["black_player_id"])) for p in swiss} == {
-        frozenset((1, 2)), frozenset((3, 4))
+        frozenset((1, 3)), frozenset((2, 4))
     }
     assert len({
         tuple(sorted((p["white_player_id"], p["black_player_id"])))

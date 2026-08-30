@@ -142,6 +142,25 @@ button {
   text-align: center;
 }
 
+.report-season-filter {
+  text-align: center;
+}
+
+.report-season-filter .filter-grid {
+  display: flex;
+  justify-content: center;
+}
+
+.report-season-filter .filter-item {
+  align-items: center;
+  max-width: 280px;
+}
+
+.report-season-filter select {
+  text-align: center;
+  text-align-last: center;
+}
+
 .filter-item input:focus,
 .filter-item select:focus {
   outline: 2px solid rgba(47, 128, 237, 0.2);

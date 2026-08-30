@@ -519,6 +519,14 @@
   color: var(--text);
 }
 
+@media (max-width: 720px) {
+  .player-profile-summary,
+  .player-profile-chart,
+  .player-profile-chart .chart-meta {
+    display: none !important;
+  }
+}
+
 @media (max-width: 900px) {
   .paired-tables-card,
   .round-results-card {

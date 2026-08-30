@@ -1,13 +1,12 @@
 """Tournament persistence and OpenGotha-compatible metadata import."""
 
-import csv
 from difflib import SequenceMatcher
-from io import StringIO
+from datetime import datetime
 from pathlib import Path
 import xml.etree.ElementTree as ET
 
 from config import DEFAULT_RATING, GLICKO_K, GLICKO_M
-from services.category_service import glicko_to_category, suggested_handicap_stones
+from services.category_service import category_value, glicko_to_category, suggested_handicap_stones
 from services.common import current_date, current_timestamp
 from services.helpers import normalize_key, normalize_text
 from services.import_gotha import GothaPlayer, GothaTournamentPayload
@@ -154,6 +153,14 @@ def _rank_value(value, default=0):
         return int(value)
     except (TypeError, ValueError):
         return default
+
+
+def _rank_label(value, default="30K"):
+    try:
+        numeric_value = int(value)
+    except (TypeError, ValueError):
+        return default
+    return f"{numeric_value + 1}D" if numeric_value >= 0 else f"{abs(numeric_value)}K"
 
 
 def _mms_offset(value, default=0):
@@ -746,15 +753,43 @@ def _refresh_tournament_completion_state(conn, tournament_id, round_id=None):
 
 
 def export_tournament_results(conn, tournament_id):
-    """Return tournament pairings as a CSV string for export."""
+    """Return a tournament as an OpenGotha-compatible XML document."""
     tournament = conn.execute(
-        "SELECT id, name FROM tournaments WHERE id = ?",
+        "SELECT * FROM tournaments WHERE id = ?",
         (tournament_id,),
     ).fetchone()
     if tournament is None:
         raise ValueError("Tournament not found")
 
-    rows = conn.execute(
+    participant_rows = conn.execute(
+        """
+        SELECT
+            tp.player_id,
+            tp.seed_rank,
+            tp.seed_rating,
+            tp.category,
+            player.first_name,
+            player.last_name,
+            player.display_name,
+            player.rating
+        FROM tournament_participants tp
+        JOIN players player ON player.id = tp.player_id
+        WHERE tp.tournament_id = ?
+        ORDER BY tp.seed_rank, tp.id
+        """,
+        (tournament_id,),
+    ).fetchall()
+
+    pending_rows = conn.execute(
+        """
+        SELECT id, display_name, rating, rank, category, source_key
+        FROM tournament_pending_players
+        WHERE tournament_id = ?
+        ORDER BY rank, id
+        """,
+        (tournament_id,),
+    ).fetchall()
+    pairing_rows = conn.execute(
         """
         SELECT
             r.round_number,
@@ -764,7 +799,8 @@ def export_tournament_results(conn, tournament_id):
             COALESCE(white.display_name, p.white_player_name) AS white_name,
             COALESCE(black.display_name, p.black_player_name) AS black_name,
             p.result,
-            p.is_bye
+            p.is_bye,
+            p.handicap_stones
         FROM tournament_pairings p
         JOIN tournament_rounds r ON r.id = p.round_id
         LEFT JOIN players white ON white.id = p.white_player_id
@@ -775,35 +811,285 @@ def export_tournament_results(conn, tournament_id):
         (tournament_id,),
     ).fetchall()
 
-    output = StringIO()
-    output.write("\ufeff")
-    writer = csv.writer(output)
-    writer.writerow([
-        "tournament_id",
-        "tournament_name",
-        "round_number",
-        "board_number",
-        "white_player_id",
-        "black_player_id",
-        "white_player",
-        "black_player",
-        "result",
-        "is_bye",
-    ])
-    for row in rows:
-        writer.writerow([
-            tournament_id,
-            tournament["name"],
-            row["round_number"],
-            row["board_number"],
-            row["white_player_id"],
-            row["black_player_id"],
-            row["white_name"],
-            row["black_name"] or "",
-            row["result"] or "",
-            row["is_bye"],
-        ])
-    return output.getvalue()
+    root = ET.Element(
+        "Tournament",
+        {
+            "dataVersion": "200",
+            "gothaVersion": "300",
+            "gothaMinorVersion": "00",
+            "saveDT": datetime.now().strftime("%Y%m%d%H%M%S"),
+            "externalIPAddress": "127.0.0.1",
+            "remoteUUID": "00000000-0000-0000-0000-000000000000",
+            "runningMode": "---",
+            "fullVersionNumber": "---",
+            "privateTournament": "false",
+        },
+    )
+
+    player_keys = {}
+    name_keys = {}
+    used_keys = set()
+    players_element = ET.SubElement(root, "Players")
+
+    def add_player(player_id, display_name, rating, category, seed_rank, first_name=None, last_name=None, source_key=None):
+        first_name = str(first_name or "").strip()
+        last_name = str(last_name or "").strip()
+        display_name = str(display_name or "").strip()
+        if not first_name and not last_name and display_name:
+            parts = display_name.split(" ", 1)
+            first_name = parts[0]
+            last_name = parts[1] if len(parts) > 1 else ""
+        base_key = normalize_key(source_key or f"{last_name}{first_name}")
+        base_key = base_key or f"player{player_id or len(used_keys) + 1}"
+        player_key = base_key
+        suffix = 2
+        while player_key in used_keys:
+            player_key = f"{base_key}{suffix}"
+            suffix += 1
+        used_keys.add(player_key)
+        if player_id is not None:
+            player_keys[player_id] = player_key
+        if display_name:
+            name_keys[normalize_key(display_name)] = player_key
+        try:
+            numeric_rating = float(rating or DEFAULT_RATING)
+        except (TypeError, ValueError):
+            numeric_rating = float(DEFAULT_RATING)
+        rank_label = str(category or "").strip() or _category_for_rating(conn, numeric_rating)
+        ET.SubElement(
+            players_element,
+            "Player",
+            {
+                "name": last_name,
+                "firstName": first_name,
+                "userName": "",
+                "country": "",
+                "club": "",
+                "egfPin": "",
+                "ffgLicence": "",
+                "ffgLicenceStatus": "",
+                "agaId": "",
+                "agaExpirationDate": "",
+                "rank": rank_label,
+                "rating": f"{numeric_rating:g}",
+                "ratingOrigin": "INI",
+                "grade": rank_label,
+                "smmsCorrection": "0",
+                "participating": "1" * max(20, int(tournament["rounds"] or 1)),
+                "registeringStatus": "FIN",
+            },
+        )
+
+    for row in participant_rows:
+        add_player(
+            row["player_id"],
+            row["display_name"],
+            row["seed_rating"] or row["rating"],
+            row["category"],
+            row["seed_rank"],
+            row["first_name"],
+            row["last_name"],
+        )
+    for row in pending_rows:
+        add_player(
+            None,
+            row["display_name"],
+            row["rating"],
+            row["category"],
+            row["rank"],
+            source_key=row["source_key"],
+        )
+
+    for row in pairing_rows:
+        for player_id, player_name in (
+            (row["white_player_id"], row["white_name"]),
+            (row["black_player_id"], row["black_name"]),
+        ):
+            if player_id is not None and player_id not in player_keys:
+                player = conn.execute(
+                    "SELECT id, first_name, last_name, display_name, rating FROM players WHERE id = ?",
+                    (player_id,),
+                ).fetchone()
+                if player is not None:
+                    add_player(
+                        player["id"],
+                        player["display_name"],
+                        player["rating"],
+                        "",
+                        0,
+                        player["first_name"],
+                        player["last_name"],
+                    )
+            elif player_id is None and normalize_key(player_name) not in name_keys:
+                add_player(None, player_name, DEFAULT_RATING, "", 0)
+
+    games_element = ET.SubElement(root, "Games")
+    bye_rows = []
+    result_codes = {
+        "1-0": "RESULT_WHITEWINS",
+        "0-1": "RESULT_BLACKWINS",
+        "1/2-1/2": "RESULT_EQUAL",
+    }
+    for row in pairing_rows:
+        white_key = player_keys.get(row["white_player_id"]) or name_keys.get(normalize_key(row["white_name"]))
+        black_key = player_keys.get(row["black_player_id"]) or name_keys.get(normalize_key(row["black_name"]))
+        if row["is_bye"]:
+            if white_key:
+                bye_rows.append((row["round_number"], white_key))
+            continue
+        if not white_key or not black_key:
+            continue
+        ET.SubElement(
+            games_element,
+            "Game",
+            {
+                "blackPlayer": black_key,
+                "handicap": str(row["handicap_stones"] or 0),
+                "knownColor": "true",
+                "result": result_codes.get(row["result"], "RESULT_UNKNOWN"),
+                "roundNumber": str(row["round_number"]),
+                "tableNumber": str(row["board_number"]),
+                "whitePlayer": white_key,
+            },
+        )
+
+    bye_players_element = ET.SubElement(root, "ByePlayers")
+    for round_number, player_key in bye_rows:
+        ET.SubElement(
+            bye_players_element,
+            "ByePlayer",
+            {"roundNumber": str(round_number), "player": player_key},
+        )
+
+    rounds = normalize_tournament_rounds(tournament["rounds"])
+    bye_points = float(tournament["bye_points"] or 0)
+    absent_points = float(tournament["absent_points"] or 0)
+    tournament_columns = set(tournament.keys())
+    mm_floor = tournament["mm_floor"] if "mm_floor" in tournament_columns else -30
+    mm_bar = tournament["mm_bar"] if "mm_bar" in tournament_columns else 8
+    mm_zero = tournament["mm_zero"] if "mm_zero" in tournament_columns else 30
+    tournament_parameters = ET.SubElement(root, "TournamentParameterSet")
+    general = ET.SubElement(
+        tournament_parameters,
+        "GeneralParameterSet",
+        {
+            "shortName": str(tournament["short_name"] or tournament["name"] or "tournament"),
+            "name": str(tournament["name"] or ""),
+            "location": str(tournament["location"] or ""),
+            "director": "",
+            "beginDate": str(tournament["begin_date"] or ""),
+            "endDate": str(tournament["end_date"] or tournament["begin_date"] or ""),
+            "bInternetGame": "false",
+            "basicTime": "0",
+            "complementaryTimeSystem": "SUDDENDEATH",
+            "stdByoYomiTime": "30",
+            "nbMovesCanTime": "15",
+            "canByoYomiTime": "300",
+            "fischerTime": "0",
+            "size": "19",
+            "komi": "7.5",
+            "numberOfRounds": str(rounds),
+            "numberOfCategories": "1",
+            "numberOfBZHGroups": "1",
+            "genMMFloor": _rank_label(mm_floor, "30K"),
+            "genMMBar": _rank_label(mm_bar, "9D"),
+            "genMMZero": str(mm_zero if mm_zero is not None else 30),
+            "genNBW2ValueAbsent": str(round(absent_points * 2)),
+            "genNBW2ValueBye": str(round(bye_points * 2)),
+            "genMMS2ValueAbsent": str(round(absent_points * 2)),
+            "genMMS2ValueBye": str(round(bye_points * 2)),
+            "genRoundDownNBWMMS": "true",
+            "genCountNotPlayedGamesAsHalfPoint": "false",
+        },
+    )
+    categories = ET.SubElement(general, "Categories")
+    ET.SubElement(categories, "Category", {"number": "1", "lowerLimit": "30K"})
+    bzh_groups = ET.SubElement(general, "BZHGroups")
+    ET.SubElement(bzh_groups, "BZHGroup", {"number": "1", "lowerLimit": "30K"})
+
+    handicap_enabled = bool(tournament["handicap_enabled"] or 0) if "handicap_enabled" in tournament.keys() else True
+    ET.SubElement(
+        tournament_parameters,
+        "HandicapParameterSet",
+        {
+            "hdBase": "RANK",
+            "hdNoHdRankThreshold": "1D",
+            "hdCorrection": "0",
+            "hdCeiling": "9" if handicap_enabled else "0",
+        },
+    )
+
+    placement = ET.SubElement(tournament_parameters, "PlacementParameterSet")
+    placement_criteria = [
+        criterion.strip() for criterion in str(tournament["placement_criteria"] or "NBW").split(",") if criterion.strip()
+    ] or ["NBW"]
+    criteria_element = ET.SubElement(placement, "PlacementCriteria")
+    for number, criterion in enumerate(placement_criteria, 1):
+        ET.SubElement(criteria_element, "PlacementCriterion", {"number": str(number), "name": criterion})
+
+    pairing_system = str(tournament["pairing_system"] or "swiss")
+    ET.SubElement(
+        tournament_parameters,
+        "PairingParameterSet",
+        {
+            "paiStandardNX1Factor": "0.5",
+            "paiBaAvoidDuplGame": "500000000000000",
+            "paiBaRandom": "0",
+            "paiBaDeterministic": "true",
+            "paiBaBalanceWB": "1000000",
+            "paiMaAvoidMixingCategories": "0",
+            "paiMaMinimizeScoreDifference": "100000000000",
+            "paiMaDUDDWeight": "100000000",
+            "paiMaCompensateDUDD": "true",
+            "paiMaDUDDUpperMode": "MID",
+            "paiMaDUDDLowerMode": "MID",
+            "paiMaMaximizeSeeding": "5000000",
+            "paiMaLastRoundForSeedSystem1": "2",
+            "paiMaSeedSystem1": "SPLITANDSLIP" if pairing_system == "accelerated_swiss" else "SPLITANDFOLD",
+            "paiMaSeedSystem2": "SPLITANDFOLD",
+            "paiMaAdditionalPlacementCritSystem1": "RATING",
+            "paiMaAdditionalPlacementCritSystem2": "NULL",
+            "paiSeBarThresholdActive": "true",
+            "paiSeRankThreshold": "4D",
+            "paiSeNbWinsThresholdActive": "true",
+            "paiSeDefSecCrit": "100000000000",
+            "paiSeMinimizeHandicap": "0",
+            "paiSeAvoidSameGeo": "0",
+            "paiSePreferMMSDiffRatherThanSameCountry": "0",
+            "paiSePreferMMSDiffRatherThanSameClubsGroup": "0",
+            "paiSePreferMMSDiffRatherThanSameClub": "0",
+        },
+    )
+    ET.SubElement(
+        tournament_parameters,
+        "DPParameterSet",
+        {
+            "playerSortType": "name",
+            "gameFormat": "full",
+            "showPlayerGrade": "true",
+            "showPlayerCountry": "false",
+            "showPlayerClub": "true",
+            "showByePlayer": "true",
+            "showNotPairedPlayers": "true",
+            "showNotParticipatingPlayers": "false",
+            "showNotFinallyRegisteredPlayers": "false",
+            "displayNPPlayers": "false",
+            "displayNumCol": "true",
+            "displayPlCol": "true",
+            "displayCoCol": "true",
+            "displayClCol": "true",
+            "displayIndGamesInMatches": "true",
+        },
+    )
+    ET.SubElement(
+        tournament_parameters,
+        "PublishParameterSet",
+        {"print": "true", "exportToLocalFile": "true", "htmlAutoScroll": "false"},
+    )
+
+    ET.indent(root, space="  ")
+    xml_body = ET.tostring(root, encoding="unicode", short_empty_elements=True)
+    return "\ufeff<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n" + xml_body + "\n"
 
 
 def create_tournament_from_gotha(
@@ -925,7 +1211,16 @@ def create_tournament_from_gotha(
             )
         else:
             initial_score = 0
-        acceleration = acceleration_for_rank(rank, len(metadata["players"])) if pairing_system == "accelerated_swiss" else 0
+        acceleration = (
+            acceleration_for_rank(
+                rank,
+                len(metadata["players"]),
+                scheme=metadata.get("acceleration_scheme"),
+                player_rank=rank,
+            )
+            if pairing_system == "accelerated_swiss"
+            else 0
+        )
         seed_rating = player["rating"] if player["rating"] is not None else (participant["rating"] or 0)
         participant_columns = {row["name"] for row in conn.execute("PRAGMA table_info(tournament_participants)").fetchall()}
         if pairing_system == "mcmahon" and "mc_seeds_calculated" in participant_columns:
@@ -1250,6 +1545,8 @@ def pair_selected_players(conn, tournament_id, round_id, player_ids):
 def add_participant(conn, tournament_id, player_id):
     tournament_columns = _table_columns(conn, "tournaments")
     select_sql = "SELECT pairing_system, tournament_type"
+    if "acceleration_scheme" in tournament_columns:
+        select_sql += ", acceleration_scheme"
     if {"mm_bar", "mm_floor", "mm_zero"}.issubset(tournament_columns):
         select_sql += ", mm_bar, mm_floor, mm_zero"
     select_sql += " FROM tournaments WHERE id = ?"
@@ -1307,7 +1604,12 @@ def add_participant(conn, tournament_id, player_id):
     seed_rank = participant_count + 1
     if tournament["pairing_system"] == "accelerated_swiss":
         initial_score = 0.0
-        acceleration = acceleration_for_rank(seed_rank, participant_count + 1)
+        acceleration = acceleration_for_rank(
+            seed_rank,
+            participant_count + 1,
+            scheme=tournament["acceleration_scheme"] if "acceleration_scheme" in tournament.keys() else None,
+            player_rank=round(category_value(player["rating"] or DEFAULT_RATING)),
+        )
     else:
         initial_score = 0.0
         acceleration = 0.0

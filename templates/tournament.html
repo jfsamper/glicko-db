@@ -72,7 +72,7 @@
     {% if standings %}
       <table class="table-stack standings-table">
         <thead>
-          <tr><th class="standings-rank">N°</th><th class="standings-player">{{ translations.player }}</th>{% for round in rounds|reverse %}<th class="standings-round">R{{ round.round_number }}</th>{% endfor %}<th>{{ translations.score }}</th>{% if tournament.tournament_type == 'mcmahon' %}<th>{{ translations.mms or 'MMS' }}</th>{% endif %}<th>{{ translations.wins }}</th><th>{{ translations.sos }}</th><th>{{ translations.sosos }}</th></tr>
+          <tr><th class="standings-rank">N°</th><th class="standings-player">{{ translations.player }}</th><th class="standings-category">{{ translations.category }}</th>{% for round in rounds|reverse %}<th class="standings-round">R{{ round.round_number }}</th>{% endfor %}<th>{{ translations.score }}</th>{% if tournament.tournament_type == 'mcmahon' %}<th>{{ translations.mms or 'MMS' }}</th>{% endif %}<th>{{ translations.wins }}</th><th>{{ translations.sos }}</th><th>{{ translations.sosos }}</th></tr>
         </thead>
         <tbody>
           {% for row in standings %}
@@ -80,11 +80,12 @@
               <td class="standings-rank">{{ row.rank }}</td>
               <td class="standings-player">
                 {% if row.id and row.id > 0 %}
-                  <a href="{{ url_for('player_profile', id=row.id, lang=lang) }}">{{ row.name }}{% if row.rank_label %} ({{ row.rank_label }}){% endif %}</a>
+                  <a href="{{ url_for('player_profile', id=row.id, lang=lang) }}">{{ row.name }}</a>
                 {% else %}
-                  {{ row.name }}{% if row.rank_label %} ({{ row.rank_label }}){% endif %}
+                  {{ row.name }}
                 {% endif %}
               </td>
+              <td class="standings-category">{% if row.rank_label %} {{ row.rank_label }}{% endif %}</td>
               {% for round in rounds|reverse %}<td class="standings-round">{% for item in row.round_results if item.round == round.round_number %}{{ item.opponent }}{{ item.result }}{% else %}-{% endfor %}</td>{% endfor %}<td>{{ row.primary_score }}</td>{% if tournament.tournament_type == 'mcmahon' %}<td>{{ row.mms }}</td>{% endif %}<td>{{ row.wins }}</td><td>{{ row.sos }}</td><td>{{ row.sosos }}</td>
             </tr>
           {% endfor %}

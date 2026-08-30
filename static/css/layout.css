@@ -71,29 +71,70 @@ footer {
   align-items: center;
   gap: 1rem;
   flex-wrap: wrap;
+  position: relative;
+  z-index: 20;
 }
 
 .top-actions {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 0.75rem;
   flex-wrap: wrap;
 }
 
 nav a,
-.sidebar-nav a,
 .text-link {
   color: inherit;
   text-decoration: none;
 }
 
-nav a {
+.top-nav {
+  position: relative;
+}
+
+.top-nav-menu {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0.3rem;
+  list-style: none;
+  background: rgba(255, 255, 255, 0.09);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 12px;
+  box-shadow: 0 8px 20px rgba(15, 29, 45, 0.18);
+}
+
+.top-nav-link {
+  display: block;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  color: #f8fafc;
+  font-size: 0.92rem;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+}
+
+.top-nav-link:hover,
+.top-nav-link:focus-visible,
+.top-nav-link.is-active {
+  background: var(--accent);
+  border-color: rgba(255, 255, 255, 0.24);
   color: white;
-  margin-right: 0.75rem;
+  text-decoration: none;
+}
+
+.top-nav-link:hover {
+  transform: translateY(-1px);
+}
+
+.top-nav-toggle {
+  display: none;
 }
 
 nav a:hover,
-.sidebar-nav a:hover,
 .text-link:hover {
   text-decoration: underline;
 }
@@ -102,6 +143,14 @@ nav a:hover,
   display: grid;
   grid-template-columns: 240px minmax(0, 1fr);
   min-height: calc(100vh - 180px);
+}
+
+.page-shell > *,
+.content-area,
+.card-grid,
+.panel,
+.card {
+  min-width: 0;
 }
 
 .sidebar {
@@ -134,21 +183,6 @@ nav a:hover,
 
 .sidebar-block.small p {
   margin-bottom: 0;
-}
-
-.sidebar-nav {
-  display: grid;
-  gap: 0.45rem;
-}
-
-.sidebar-nav a {
-  color: white;
-  padding: 0.45rem 0.65rem;
-  border-radius: 8px;
-}
-
-.sidebar-nav a:hover {
-  background: rgba(255,255,255,0.08);
 }
 
 .content-area {
@@ -357,5 +391,155 @@ nav a:hover,
 
   .card-grid.two-up {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  header,
+  footer {
+    padding: 0.85rem 1rem;
+  }
+
+  .topbar {
+    align-items: center;
+  }
+
+  .topbar .brand {
+    min-width: 0;
+  }
+
+  .topbar .brand:first-child {
+    flex: 0 0 auto;
+  }
+
+  .topbar .brand:nth-child(2) {
+    flex: 1 1 9rem;
+    text-align: center;
+  }
+
+  .topbar .brand:nth-child(2) h1 {
+    margin: 0;
+    font-size: 1.3rem;
+  }
+
+  .topbar .brand:nth-child(2) p {
+    margin: 0.15rem 0 0;
+    font-size: 0.8rem;
+  }
+
+  .topbar .logo {
+    width: 5rem;
+    height: auto;
+  }
+
+  .top-actions {
+    margin-left: auto;
+  }
+
+  .top-nav-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-height: 44px;
+    padding: 0.6rem 0.8rem;
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .top-nav-toggle:hover,
+  .top-nav-toggle:focus-visible {
+    background: var(--accent);
+  }
+
+  .top-nav-toggle-icon {
+    display: grid;
+    gap: 3px;
+    width: 1.1rem;
+  }
+
+  .top-nav-toggle-icon span {
+    display: block;
+    height: 2px;
+    border-radius: 2px;
+    background: currentColor;
+  }
+
+  .top-nav-menu {
+    position: absolute;
+    top: calc(100% + 0.65rem);
+    right: 0;
+    display: grid;
+    width: min(18rem, calc(100vw - 1.5rem));
+    gap: 0.25rem;
+    padding: 0.55rem;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(-0.5rem);
+    visibility: hidden;
+    transition: opacity 0.16s ease, transform 0.16s ease, visibility 0.16s ease;
+  }
+
+  .top-nav.is-open .top-nav-menu {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0);
+    visibility: visible;
+  }
+
+  .top-nav-menu li {
+    min-width: 0;
+  }
+
+  .top-nav-link {
+    color: var(--text);
+    white-space: normal;
+  }
+
+  .content-area {
+    padding: 0.75rem;
+  }
+
+  .panel,
+  .card {
+    padding: 0.75rem;
+  }
+
+  .panel-header > div:last-child {
+    display: flex;
+    width: 100%;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .panel-header > div:last-child .button {
+    flex: 1 1 10rem;
+    text-align: center;
+  }
+
+  .sidebar {
+    padding: 0.85rem 0.75rem;
+  }
+
+  .pagination-row {
+    align-items: stretch;
+  }
+
+  .pagination-row .button,
+  .pagination-row select {
+    flex: 1 1 8rem;
+    text-align: center;
+  }
+
+  .rankings-form-card {
+    display: none;
   }
 }

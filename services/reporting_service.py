@@ -110,6 +110,16 @@ def _normalized_date(value):
     return None
 
 
+def list_report_seasons(conn):
+    """Return calendar years represented by valid match dates."""
+    seasons = set()
+    for row in conn.execute("SELECT match_date FROM matches").fetchall():
+        match_date = _normalized_date(row["match_date"])
+        if match_date is not None:
+            seasons.add(match_date.year)
+    return sorted(seasons, reverse=True)
+
+
 def _result_for_player(result, is_white):
     if result == "1/2-1/2":
         return "draw"
@@ -303,7 +313,7 @@ def build_date_report(conn, start_date=None, end_date=None, selected_player_id=N
         )
         player_rows.append(row)
 
-    player_rows.sort(key=lambda row: (-row["wins"], -(row["win_percentage"] or 0), -row["games"], row["display_name"].casefold()))
+    player_rows.sort(key=lambda row: (-row["games"], -(row["win_percentage"] or 0), -row["wins"], row["display_name"].casefold()))
     for rank, row in enumerate(player_rows, 1):
         row["rank"] = rank
     selector_players = sorted(

@@ -3,17 +3,16 @@
 
 <section class="panel">
   <p class="note" style="text-align: right;">{{ translations.source_note }}</p>
+  
   <div class="panel-header centered-header">
     <div>
       <h2>{{ translations.rankings_heading }}</h2>
       <p>{{ translations.rankings_subtitle }}</p>
     </div>
-    
   </div>
   
 
-  <div class="card-grid rankings-grid">
-    <article class="card rankings-table-card">
+  <article class="card rankings-table-card">
       <h3>{{ translations.table_heading }}</h3>
       <p class="muted">{{ translations.recent_results }}</p>
       <table class="table-stack">
@@ -63,21 +62,7 @@
           {% endif %}
         </div>
       {% endif %}
-    </article>
-    
-    <article class="card rankings-form-card">
-      <h3>{{ translations.recent_form }}</h3>
-      <div class="mini-list">
-        {% for player in rankings[:20] %}
-        {% if player.recent_results %}
-          <div class="mini-row">
-            <strong>{{ player.display_name }}</strong>
-            <span>{{ player.recent_results }}</span>
-          </div>
-        {% endif %}
-        {% endfor %}
-      </div>
-    </article>
-  </div>
+  </article>
+
 </section>
 {% endblock %}

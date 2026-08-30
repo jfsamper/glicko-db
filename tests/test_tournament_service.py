@@ -1,7 +1,6 @@
-import csv
-import io
 import random
 import sqlite3
+import xml.etree.ElementTree as ET
 from pathlib import Path
 
 from config import GLICKO_M
@@ -33,6 +32,7 @@ from services.tournament_service import (
     set_round_player_status,
     unpair,
 )
+from services.helpers import normalize_key
 from services.import_gotha import GothaPlayer, GothaTournamentPayload
 
 
@@ -586,7 +586,7 @@ def test_pending_resolution_updates_canonical_display_name_before_materializatio
     assert participant_display_name == "Juan Felipe Burgos"
 
 
-def test_export_tournament_results_starts_with_utf8_bom():
+def test_export_tournament_results_returns_opengotha_xml():
     conn = create_db()
     conn.execute(
         "INSERT INTO tournaments (name, rounds, pairing_system, tournament_type) VALUES (?, ?, ?, ?)",
@@ -618,8 +618,17 @@ def test_export_tournament_results_starts_with_utf8_bom():
 
     assert exported.startswith("\ufeff")
     assert exported.encode("utf-8").startswith(b"\xef\xbb\xbf")
-    assert "João Silva" in exported
-    assert "Ana Müller" in exported
+    root = ET.fromstring(exported.lstrip("\ufeff"))
+    assert root.tag == "Tournament"
+    players = root.findall("./Players/Player")
+    assert {player.get("firstName") for player in players} == {"João", "Ana"}
+    game = root.find("./Games/Game")
+    assert game is not None
+    assert game.get("result") == "RESULT_WHITEWINS"
+    white = next(player for player in players if player.get("firstName") == "João")
+    black = next(player for player in players if player.get("firstName") == "Ana")
+    assert game.get("whitePlayer") == normalize_key(white.get("name") + white.get("firstName"))
+    assert game.get("blackPlayer") == normalize_key(black.get("name") + black.get("firstName"))
 
 
 def test_pairing_scenario_generator_uses_current_tournament_logic():
@@ -1223,7 +1232,7 @@ def test_tournament_marks_completed_after_final_round_results():
     assert conn.execute("SELECT status FROM tournaments WHERE id = ?", (tournament_id,)).fetchone()[0] == "completed"
 
 
-def test_export_tournament_results_generates_csv_rows():
+def test_export_tournament_results_generates_opengotha_games():
     conn = create_db()
     seed_players(conn)
     tournament_id = create_manual_tournament(conn, rounds=3, pairing_system="swiss")
@@ -1238,12 +1247,10 @@ def test_export_tournament_results_generates_csv_rows():
     ).fetchone()[0]
     set_pairing_result(conn, tournament_id, pairing_id, "1-0")
 
-    csv_text = export_tournament_results(conn, tournament_id)
-    rows = list(csv.reader(io.StringIO(csv_text)))
-    header = rows[0]
+    xml_text = export_tournament_results(conn, tournament_id)
+    root = ET.fromstring(xml_text.lstrip("\ufeff"))
+    games = root.findall("./Games/Game")
 
-    assert "round_number" in header
-    assert "white_player_id" in header
-    assert "black_player_id" in header
-    assert "1-0" in csv_text
-    assert int(rows[1][header.index("white_player_id")]) == 1
+    assert len(games) == 5
+    assert any(game.get("result") == "RESULT_WHITEWINS" for game in games)
+    assert root.find("./TournamentParameterSet/GeneralParameterSet").get("numberOfRounds") == "3"

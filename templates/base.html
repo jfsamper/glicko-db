@@ -10,6 +10,7 @@
     <script src="https://cdn.bootcss.com/noUiSlider/15.8.1/nouislider.js"></script>
   </head>
   <body>
+    {% set current_endpoint = (request.endpoint or '').rsplit('.', 1)[-1] %}
     <header class="topbar">
       <div class="brand">
         <a href="{{ url_for('index', lang=lang) }}"><img src="{{ url_for('static', filename='favicon.svg') }}" alt="Logo" class="logo" width="200px" style="background-color: var(--border); border-radius: 50%;" /></a>
@@ -18,18 +19,26 @@
         <h1 class="centered-header">{{ translations.title }}</h1>
         <p>{{ translations.database }} {{translations.subtitle}}</p>
       </div>
-      <div class="top-actions" style="display: flex; align-items: center;">
-        <nav>
-          <a href="{{ url_for('index', lang=lang) }}">{{ translations.home }}</a>
-          <a href="{{ url_for('rankings', lang=lang) }}">{{ translations.rankings }}</a>
-          <a href="{{ url_for('tournaments', lang=lang) }}">{{ translations.tournaments_title }}</a>
-          <a href="{{ url_for('matches', lang=lang) }}">{{ translations.games }}</a>
-          <a href="{{ url_for('players', lang=lang) }}">{{ translations.players }}</a>
-          <a href="{{ url_for('reports', lang=lang) }}">{{ translations.get('reports_title', 'Reports') }}</a>
-          <a href="{{ url_for('category_converter', lang=lang) }}">{{ translations.category }}</a>
-          {% if session.get('user_id') %}
-          <a href="{{ url_for('admin_profile', lang=lang) }}">{{ translations.profile_title }}</a>
-          {% endif %}
+      <div class="top-actions">
+        <nav class="top-nav" aria-label="Primary navigation">
+          <button class="top-nav-toggle" type="button" aria-expanded="false" aria-controls="top-nav-menu">
+            <span class="top-nav-toggle-icon" aria-hidden="true"><span></span><span></span><span></span></span>
+            <span>{{ translations.get('menu', 'Menu') }}</span>
+          </button>
+          <ul class="top-nav-menu" id="top-nav-menu">
+            <li><a class="top-nav-link{% if current_endpoint == 'index' %} is-active{% endif %}" href="{{ url_for('index', lang=lang) }}"{% if current_endpoint == 'index' %} aria-current="page"{% endif %}>{{ translations.home }}</a></li>
+            <li><a class="top-nav-link{% if current_endpoint == 'rankings' %} is-active{% endif %}" href="{{ url_for('rankings', lang=lang) }}"{% if current_endpoint == 'rankings' %} aria-current="page"{% endif %}>{{ translations.rankings }}</a></li>
+            <li><a class="top-nav-link{% if current_endpoint in ['tournaments', 'public_tournament'] %} is-active{% endif %}" href="{{ url_for('tournaments', lang=lang) }}"{% if current_endpoint in ['tournaments', 'public_tournament'] %} aria-current="page"{% endif %}>{{ translations.tournaments_title }}</a></li>
+            <li><a class="top-nav-link{% if current_endpoint in ['matches', 'admin_matches'] %} is-active{% endif %}" href="{{ url_for('matches', lang=lang) }}"{% if current_endpoint in ['matches', 'admin_matches'] %} aria-current="page"{% endif %}>{{ translations.games }}</a></li>
+            <li><a class="top-nav-link{% if current_endpoint == 'players' %} is-active{% endif %}" href="{{ url_for('players', lang=lang) }}"{% if current_endpoint == 'players' %} aria-current="page"{% endif %}>{{ translations.players }}</a></li>
+            <li><a class="top-nav-link{% if current_endpoint in ['reports', 'report_export', 'report_export_pdf_file'] %} is-active{% endif %}" href="{{ url_for('reports', lang=lang) }}"{% if current_endpoint in ['reports', 'report_export', 'report_export_pdf_file'] %} aria-current="page"{% endif %}>{{ translations.get('reports_title', 'Reports') }}</a></li>
+            <li><a class="top-nav-link{% if current_endpoint == 'category_converter' %} is-active{% endif %}" href="{{ url_for('category_converter', lang=lang) }}"{% if current_endpoint == 'category_converter' %} aria-current="page"{% endif %}>{{ translations.category }}</a></li>
+            {% if session.get('user_id') %}
+            <li><a class="top-nav-link{% if current_endpoint == 'admin_profile' %} is-active{% endif %}" href="{{ url_for('admin_profile', lang=lang) }}"{% if current_endpoint == 'admin_profile' %} aria-current="page"{% endif %}>{{ translations.profile_title }}</a></li>
+            {% else %}
+            <li><a class="top-nav-link{% if current_endpoint == 'admin_login' %} is-active{% endif %}" href="{{ url_for('admin_login', lang=lang) }}"{% if current_endpoint == 'admin_login' %} aria-current="page"{% endif %}>{{ translations.login_button }}</a></li>
+            {% endif %}
+          </ul>
         </nav>
         <div id="floating-controls">
         <button id="lang-toggle" type="button">ENG</button>
@@ -46,15 +55,6 @@
           <a href="mailto:contacto@colombiago.org">contacto@colombiago.org</a>
           <a href="https://colombiago.org">colombiago.org</a>
         </div>
-        <nav class="sidebar-nav">
-          <a href="{{ url_for('index', lang=lang) }}">{{ translations.home }}</a>
-          <a href="{{ url_for('rankings', lang=lang) }}">{{ translations.rankings }}</a>
-          <a href="{{ url_for('tournaments', lang=lang) }}">{{ translations.tournaments_title }}</a>
-          <a href="{{ url_for('matches', lang=lang) }}">{{ translations.games }}</a>
-          <a href="{{ url_for('players', lang=lang) }}">{{ translations.players }}</a>
-          <a href="{{ url_for('reports', lang=lang) }}">{{ translations.get('reports_title', 'Reports') }}</a>
-          <a href="{{ url_for('category_converter', lang=lang) }}">{{ translations.category }}</a>
-        </nav>
         <div class="sidebar-block small">
           <h4>{{ translations.report_results }}</h4>
           <p>{{ translations.report_results_help }} <a href="{{ url_for('admin_login', lang=lang) }}">{{ translations.here }}.</a></p>
@@ -189,6 +189,50 @@
       });
       window.location = url.toString();
     });
+
+    const topNav = document.querySelector(".top-nav");
+    const topNavToggle = document.querySelector(".top-nav-toggle");
+    let topNavCloseTimer;
+
+    function closeTopNav() {
+      if (!topNav || !topNavToggle) return;
+      topNav.classList.remove("is-open");
+      topNavToggle.setAttribute("aria-expanded", "false");
+      window.clearTimeout(topNavCloseTimer);
+    }
+
+    function scheduleTopNavClose() {
+      window.clearTimeout(topNavCloseTimer);
+      if (window.matchMedia("(max-width: 720px)").matches) {
+        topNavCloseTimer = window.setTimeout(closeTopNav, 5000);
+      }
+    }
+
+    if (topNav && topNavToggle) {
+      topNavToggle.addEventListener("click", (event) => {
+        event.stopPropagation();
+        const isOpen = topNav.classList.toggle("is-open");
+        topNavToggle.setAttribute("aria-expanded", String(isOpen));
+        if (isOpen) scheduleTopNavClose();
+        else window.clearTimeout(topNavCloseTimer);
+      });
+
+      topNav.querySelectorAll(".top-nav-link").forEach((link) => {
+        link.addEventListener("click", closeTopNav);
+      });
+
+      document.addEventListener("click", (event) => {
+        if (!topNav.contains(event.target)) closeTopNav();
+      });
+
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape") closeTopNav();
+      });
+
+      window.addEventListener("resize", () => {
+        if (!window.matchMedia("(max-width: 720px)").matches) closeTopNav();
+      });
+    }
     </script>
   </body>
   <script>

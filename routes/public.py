@@ -19,6 +19,7 @@ from services.reporting_service import (
     build_date_report,
     export_report_csv,
     export_report_pdf,
+    list_report_seasons,
     resolve_report_range,
 )
 from services.player_service import (
@@ -208,11 +209,21 @@ def save_preferences():
 
 
 def _report_request():
+    season = request.args.get("season", "").strip()
     period = request.args.get("period", "all_time")
+    if season:
+        if not (season.isdigit() and len(season) == 4):
+            raise ValueError("Invalid report season")
+        period = "year"
+        start_value = f"{season}-01-01"
+        end_value = f"{season}-12-31"
+    else:
+        start_value = request.args.get("start_date")
+        end_value = request.args.get("end_date")
     start_date, end_date = resolve_report_range(
         period,
-        request.args.get("start_date"),
-        request.args.get("end_date"),
+        start_value,
+        end_value,
     )
     conn = get_db()
     try:
@@ -244,18 +255,33 @@ def _report_filename_part(value):
 @public_bp.route("/reports")
 def reports():
     lang = get_language(request.args.get("lang"))
-    period = request.args.get("period", "all_time")
+    season = request.args.get("season", "").strip()
+    period = "year" if season else request.args.get("period", "all_time")
+    page = parse_page_number(request.args.get("page"), default=1)
+    page_size = parse_page_size(request.args.get("page_size"), default=25)
+    conn = get_db()
+    try:
+        report_seasons = list_report_seasons(conn)
+    finally:
+        conn.close()
     try:
         report = _report_request()
     except ValueError as exc:
         return Response(str(exc), status=400)
+    total_count = len(report["players"])
+    page_details = pagination_details(total_count, page, page_size)
+    report["players"] = report["players"][(page_details["page"] - 1) * page_details["page_size"]:page_details["page"] * page_details["page_size"]]
     return render_template(
         "reports.html",
         lang=lang,
         translations=TRANSLATIONS[lang],
         report=report,
         period=period,
-        period_label=_report_period_label(period, report, TRANSLATIONS[lang]),
+        season=season,
+        report_seasons=report_seasons,
+        period_label=season or _report_period_label(period, report, TRANSLATIONS[lang]),
+        total_count=total_count,
+        **page_details,
     )
 
 
@@ -278,7 +304,8 @@ def report_export():
 @public_bp.route("/reports/export.pdf")
 def report_export_pdf_file():
     lang = get_language(request.args.get("lang"))
-    period = request.args.get("period", "all_time")
+    season = request.args.get("season", "").strip()
+    period = "year" if season else request.args.get("period", "all_time")
     try:
         report = _report_request()
     except ValueError as exc:
@@ -288,13 +315,14 @@ def report_export_pdf_file():
         None,
     )
     player_part = _report_filename_part(selected_player["display_name"]) if selected_player else "all-players"
+    period_label = season or _report_period_label(period, report, TRANSLATIONS[lang])
     period_part = (
         f"{report['start_date'] or 'start'}_to_{report['end_date'] or 'end'}"
         if period == "custom"
-        else _report_filename_part(_report_period_label(period, report, TRANSLATIONS[lang]))
+        else _report_filename_part(period_label)
     )
     return Response(
-        export_report_pdf(report, TRANSLATIONS[lang], _report_period_label(period, report, TRANSLATIONS[lang])),
+        export_report_pdf(report, TRANSLATIONS[lang], period_label),
         content_type="application/pdf",
         headers={"Content-Disposition": f"attachment; filename=report_{player_part}_{period_part}.pdf"},
     )

@@ -7,41 +7,24 @@
       <p>{{ period_label }}</p>
     </div>
     <div>
-      <a class="button" href="{{ url_for('report_export', lang=lang, period=period, start_date=report.start_date, end_date=report.end_date, player_id=report.selected_player_id) }}">{{ translations.get('export_report', 'Export CSV') }}</a>
-      <a class="button" href="{{ url_for('report_export_pdf_file', lang=lang, period=period, start_date=report.start_date, end_date=report.end_date, player_id=report.selected_player_id) }}">{{ translations.get('export_report_pdf', 'Export PDF') }}</a>
+      <a class="button" href="{{ url_for('report_export', lang=lang, period=period, season=season, start_date=report.start_date, end_date=report.end_date, player_id=report.selected_player_id) }}">{{ translations.get('export_report_csv', 'Export CSV') }}</a>
+      <a class="button" href="{{ url_for('report_export_pdf_file', lang=lang, period=period, season=season, start_date=report.start_date, end_date=report.end_date, player_id=report.selected_player_id) }}">{{ translations.get('export_report_pdf', 'Export PDF') }}</a>
     </div>
   </div>
 
-  <form method="get" class="filter-form">
+  <form method="get" class="filter-form report-season-filter">
     <input type="hidden" name="lang" value="{{ lang }}">
     <div class="filter-grid">
-      <div class="filter-item wide">
-        <label for="report-player">{{ translations.get('report_player', 'Player') }}</label>
-        <select id="report-player" name="player_id">
-          <option value="">{{ translations.get('all_players', 'All players') }}</option>
-          {% for player in report.selector_players %}
-            <option value="{{ player.player_id }}" {% if report.selected_player_id == player.player_id %}selected{% endif %}>{{ player.display_name }}</option>
+      <div class="filter-item">
+        <label for="report-season">{{ translations.get('season', 'Season') }}</label>
+        <select id="report-season" name="season" onchange="this.form.submit()">
+          <option value="" {% if not season %}selected{% endif %}>{{ translations.get('all_seasons', 'All seasons') }}</option>
+          {% for year in report_seasons %}
+            <option value="{{ year }}" {% if season == year|string %}selected{% endif %}>{{ year }}</option>
           {% endfor %}
         </select>
-      </div>
-      <div class="filter-item">
-        <label for="report-period">{{ translations.get('report_period', 'Period') }}</label>
-        <select id="report-period" name="period">
-          {% for value, label in [('year', translations.get('period_year', 'This year')), ('quarter', translations.get('period_quarter', 'This quarter')), ('month', translations.get('period_month', 'This month')), ('custom', translations.get('period_custom', 'Custom')), ('all_time', translations.get('period_all_time', 'All time'))] %}
-            <option value="{{ value }}" {% if period == value %}selected{% endif %}>{{ label }}</option>
-          {% endfor %}
-        </select>
-      </div>
-      <div class="filter-item">
-        <label for="report-start">{{ translations.get('report_start_date', 'Start date') }}</label>
-        <input id="report-start" type="date" name="start_date" value="{{ report.start_date or '' }}">
-      </div>
-      <div class="filter-item">
-        <label for="report-end">{{ translations.get('report_end_date', 'End date') }}</label>
-        <input id="report-end" type="date" name="end_date" value="{{ report.end_date or '' }}">
       </div>
     </div>
-    <div class="filter-actions"><button type="submit" class="button">{{ translations.get('apply_filters', 'Apply') }}</button></div>
   </form>
 
   <div class="stats-grid">
@@ -57,24 +40,44 @@
   </div>
 
   <article class="card">
-    <h3>{{ translations.get('report_players', 'Player performance') }}</h3>
+    <h3>{{ translations.get('report_players', 'Player performance') }}{% if season %} - {{ season }}{% endif %}</h3>
     <div class="table-wrapper">
-      <table class="table-stack">
-        <thead><tr><th>{{ translations.get('position', 'Rank') }}</th><th>{{ translations.get('player', 'Player') }}</th><th>{{ translations.get('games', 'Games') }}</th><th>{{ translations.get('wins', 'Wins') }}</th><th>{{ translations.get('losses', 'Losses') }}</th><th>{{ translations.get('draws', 'Draws') }}</th><th>{{ translations.get('win_pct', 'Win percentage') }}</th><th>{{ translations.get('rating_change_points', 'Rating points') }}</th><th>{{ translations.get('rating_change_percentage', 'Rating %') }}</th><th>{{ translations.get('export_report', 'Export') }}</th></tr></thead>
+      <table class="table-stack player-performance-table">
+        <thead><tr><th>{{ translations.get('position', 'Rank') }}</th><th>{{ translations.get('player', 'Player') }}</th><th>{{ translations.get('games', 'Games') }}</th><th>{{ translations.get('wins', 'Wins') }}</th><th>{{ translations.get('losses', 'Losses') }}</th><th>{{ translations.get('win_pct', 'Win percentage') }}</th><th>{{ translations.get('rating_change_points', 'Rating points') }}</th><th>{{ translations.get('rating_change_percentage', 'Rating %') }}</th><th>{{ translations.get('export_report', 'Export') }}</th></tr></thead>
         <tbody>
         {% for player in report.players %}
           <tr>
             <td>{{ player.rank }}</td>
             <td><a href="{{ url_for('player_profile', id=player.player_id, lang=lang) }}">{{ player.display_name }}</a></td>
-            <td>{{ player.games }}</td><td>{{ player.wins }}</td><td>{{ player.losses }}</td><td>{{ player.draws }}</td><td>{{ player.win_percentage }}%</td>
+            <td>{{ player.games }}</td><td>{{ player.wins }}</td><td>{{ player.losses }}</td><td>{{ player.win_percentage }}%</td>
             <td>{{ '%+.2f'|format(player.rating_change_points) if player.rating_change_points is not none else '-' }}</td>
             <td>{{ '%+.1f'|format(player.rating_change_percentage) ~ '%' if player.rating_change_percentage is not none else '-' }}</td>
-            <td><a class="button compact-button" href="{{ url_for('report_export', lang=lang, period=period, start_date=report.start_date, end_date=report.end_date, player_id=player.player_id) }}">{{ translations.get('export_report', 'Export') }}</a></td>
+            <td><a class="button compact-button" href="{{ url_for('report_export_pdf_file', lang=lang, period=period, season=season, start_date=report.start_date, end_date=report.end_date, player_id=player.player_id) }}">{{ translations.get('export_report_pdf', 'Export PDF') }}</a></td>
           </tr>
-        {% else %}<tr><td colspan="10">{{ translations.get('report_empty', 'No games in this period.') }}</td></tr>{% endfor %}
+        {% else %}<tr><td colspan="9">{{ translations.get('report_empty', 'No games in this period.') }}</td></tr>{% endfor %}
         </tbody>
       </table>
     </div>
+    {% if total_count > page_size %}
+      <div class="pagination-summary">
+        {{ translations.get('showing_results', 'Showing') }} {{ result_start }}-{{ result_end }} {{ translations.get('of_label', 'of') }} {{ total_count }}
+      </div>
+      <div class="pagination-row">
+        <label for="report-page-size">{{ translations.get('page_size_label', 'Results per page') }}</label>
+        <select id="report-page-size" onchange="window.location.href = this.value">
+          {% for option in [25, 50, 100] %}
+            <option value="{{ url_for('reports', lang=lang, period=period, season=season, start_date=report.start_date, end_date=report.end_date, player_id=report.selected_player_id, page=1, page_size=option) }}" {% if page_size == option %}selected{% endif %}>{{ option }}</option>
+          {% endfor %}
+        </select>
+        {% if page > 1 %}
+          <a class="button secondary" href="{{ url_for('reports', lang=lang, period=period, season=season, start_date=report.start_date, end_date=report.end_date, player_id=report.selected_player_id, page=page - 1, page_size=page_size) }}">{{ translations.get('prev_page', 'Previous') }}</a>
+        {% endif %}
+        <span aria-label="{{ translations.get('page_label', 'Page') }} {{ page }}">{{ translations.get('page_label', 'Page') }} {{ page }} {{ translations.get('of_label', 'of') }} {{ total_pages }}</span>
+        {% if page < total_pages %}
+          <a class="button" href="{{ url_for('reports', lang=lang, period=period, season=season, start_date=report.start_date, end_date=report.end_date, player_id=report.selected_player_id, page=page + 1, page_size=page_size) }}">{{ translations.get('next_page', 'Next') }}</a>
+        {% endif %}
+      </div>
+    {% endif %}
   </article>
 
   {% if report.selected_player_id %}
@@ -100,7 +103,7 @@
         {% endfor %}
       </select>
       <div class="filter-actions">
-        <button type="submit" class="button">{{ translations.get('export_report', 'Export CSV') }}</button>
+        <button type="submit" class="button">{{ translations.get('export_report_csv', 'Export CSV') }}</button>
         <button type="submit" class="button secondary" formaction="{{ url_for('report_export_pdf_file', lang=lang) }}">{{ translations.get('export_report_pdf', 'Export PDF') }}</button>
       </div>
     </form>
