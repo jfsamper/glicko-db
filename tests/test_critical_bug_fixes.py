@@ -713,7 +713,7 @@ def test_migrate_tournament_schema_applies_new_columns_to_previous_version(tmp_p
     assert conn.execute("SELECT acceleration_scheme FROM tournaments WHERE id = 1").fetchone()[0] == "50:1,25:0.5,25:0"
     assert conn.execute("SELECT acceleration_rounds FROM tournaments WHERE id = 1").fetchone()[0] == 2
     assert conn.execute("SELECT category_rounds FROM tournaments WHERE id = 1").fetchone()[0] == 0
-    assert conn.execute("PRAGMA user_version").fetchone()[0] == 4
+    assert conn.execute("PRAGMA user_version").fetchone()[0] == 5
     conn.close()
 
 
@@ -743,6 +743,7 @@ def test_accelerated_settings_persist_category_floor_configuration(tmp_path, mon
         data={
             "name": "Accelerated",
             "location": "",
+            "description": "Club championship",
             "rounds": "4",
             "bye_points": "1",
             "absent_points": "0",
@@ -762,6 +763,9 @@ def test_accelerated_settings_persist_category_floor_configuration(tmp_path, mon
     assert conn.execute(
         "SELECT acceleration_rounds, category_rounds FROM tournaments WHERE id = 1"
     ).fetchone() == (1, 0)
+    assert conn.execute(
+        "SELECT description FROM tournaments WHERE id = 1"
+    ).fetchone()[0] == "Club championship"
     conn.close()
 
 
@@ -1884,6 +1888,7 @@ def test_admin_import_commit_passes_reconciliation_decisions(monkeypatch, tmp_pa
             "preview_file": "preview.xml",
             "metadata_decision": "accept",
             "metadata_name": "Edited name",
+            "metadata_description": "Edited description",
             "metadata_begin_date": "2026-01-21",
             "metadata_rounds": "3",
             "metadata_pairing_system": "swiss",
@@ -1894,6 +1899,7 @@ def test_admin_import_commit_passes_reconciliation_decisions(monkeypatch, tmp_pa
     assert response.status_code == 302
     assert captured["player_decisions"] == {"keyone": "new"}
     assert captured["metadata_overrides"]["name"] == "Edited name"
+    assert captured["metadata_overrides"]["description"] == "Edited description"
     assert captured["metadata_overrides"]["rounds"] == 3
 
 

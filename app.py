@@ -152,6 +152,7 @@ def init_db():
             name TEXT NOT NULL DEFAULT '',
             short_name TEXT,
             location TEXT,
+            description TEXT,
             begin_date TEXT,
             end_date TEXT,
             rounds INTEGER NOT NULL DEFAULT 1,
@@ -506,7 +507,7 @@ def migrate_config_schema(conn):
 
 def migrate_tournament_schema(conn):
     """Create or upgrade tournament tables before any tournament queries run."""
-    schema_version = 4
+    schema_version = 5
     current_version = conn.execute("PRAGMA user_version").fetchone()[0]
     if current_version >= schema_version:
         return
@@ -514,7 +515,7 @@ def migrate_tournament_schema(conn):
         """
         CREATE TABLE IF NOT EXISTS tournaments (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL DEFAULT '', short_name TEXT, location TEXT,
+            name TEXT NOT NULL DEFAULT '', short_name TEXT, location TEXT, description TEXT,
             begin_date TEXT, end_date TEXT, rounds INTEGER NOT NULL DEFAULT 1,
             tournament_type TEXT NOT NULL DEFAULT 'swiss',
             pairing_system TEXT NOT NULL DEFAULT 'swiss',
@@ -577,7 +578,7 @@ def migrate_tournament_schema(conn):
     required_columns = {
         "tournaments": {
             "name": "TEXT NOT NULL DEFAULT ''", "short_name": "TEXT",
-            "location": "TEXT", "begin_date": "TEXT", "end_date": "TEXT",
+            "location": "TEXT", "description": "TEXT", "begin_date": "TEXT", "end_date": "TEXT",
             "rounds": "INTEGER NOT NULL DEFAULT 1",
             "tournament_type": "TEXT NOT NULL DEFAULT 'swiss'",
             "pairing_system": "TEXT NOT NULL DEFAULT 'swiss'",

@@ -323,6 +323,16 @@ def test_opengotha_metadata_and_pairing_parameters_are_read():
     assert metadata["pairing_system"] == "swiss"
 
 
+def test_opengotha_description_is_read_from_general_metadata(tmp_path):
+    source = XML_PATH.read_text(encoding="utf-8")
+    xml_path = tmp_path / "described-tournament.xml"
+    xml_path.write_text(source.replace('location="bogota"', 'location="bogota" description="Annual club championship"'), encoding="utf-8")
+
+    metadata = read_gotha_tournament(xml_path)
+
+    assert metadata["description"] == "Annual club championship"
+
+
 def test_opengotha_metadata_uses_typed_payload_with_mapping_compatibility():
     metadata = read_gotha_tournament(XML_PATH)
 

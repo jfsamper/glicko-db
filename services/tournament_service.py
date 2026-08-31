@@ -331,6 +331,13 @@ def read_gotha_tournament(
         placement_criteria=",".join(
             criterion.get("name", "NULL") for criterion in placement_criteria
         ),
+        description=(
+            general.get("description")
+            or general.get("detail")
+            or general.findtext("Description")
+            or general.findtext("Detail")
+            or ""
+        ).strip(),
     )
 
 
@@ -1001,6 +1008,7 @@ def export_tournament_results(conn, tournament_id):
             "shortName": str(tournament["short_name"] or tournament["name"] or "tournament"),
             "name": str(tournament["name"] or ""),
             "location": str(tournament["location"] or ""),
+            "description": str(tournament["description"] or "") if "description" in tournament.keys() else "",
             "director": "",
             "beginDate": str(tournament["begin_date"] or ""),
             "endDate": str(tournament["end_date"] or tournament["begin_date"] or ""),
@@ -1156,6 +1164,9 @@ def create_tournament_from_gotha(
         metadata["bye_points"], metadata["absent_points"],
         metadata["placement_criteria"],
     ]
+    if "description" in tournament_columns:
+        insert_columns.insert(3, "description")
+        insert_values.insert(3, metadata.get("description", ""))
     if {"mm_bar", "mm_floor", "mm_zero"}.issubset(tournament_columns):
         insert_columns.extend(["mm_bar", "mm_floor", "mm_zero"])
         insert_values.extend([

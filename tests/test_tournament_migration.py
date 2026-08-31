@@ -22,6 +22,7 @@ def test_migration_creates_missing_tournament_tables():
         for row in conn.execute("SELECT name FROM sqlite_master WHERE type = 'table'")
     }
     assert "tournament_type" in table_columns(conn, "tournaments")
+    assert "description" in table_columns(conn, "tournaments")
     assert "is_bye" in table_columns(conn, "tournament_pairings")
     indexes = {row[0] for row in conn.execute("SELECT name FROM sqlite_master WHERE type = 'index'")}
     assert "idx_tournament_round_players_round_status" in indexes
@@ -87,7 +88,7 @@ def test_migration_upgrades_partial_legacy_tournament_tables():
     migrate_tournament_schema(conn)
 
     assert {
-        "tournament_type", "pairing_system", "status", "rounds", "created_at"
+        "tournament_type", "pairing_system", "description", "status", "rounds", "created_at"
     } <= table_columns(conn, "tournaments")
     assert {"seed_rating", "initial_score", "received_bye"} <= table_columns(conn, "tournament_participants")
     assert {"tournament_id", "player_id"} <= table_columns(conn, "tournament_participants")

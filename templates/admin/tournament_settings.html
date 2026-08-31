@@ -33,6 +33,10 @@
           <label for="tournament_location">{{ translations.location }}</label>
           <input id="tournament_location" name="location" value="{{ tournament.location or '' }}">
         </div>
+        <div class="filter-item wide">
+          <label for="tournament_description">{{ translations.tournament_description }}</label>
+          <textarea id="tournament_description" name="description" rows="4">{{ tournament.description or '' }}</textarea>
+        </div>
         <div class="filter-item">
           <label for="tournament_begin_date">{{ translations.report_start_date }}</label>
           <input id="tournament_begin_date" name="begin_date" type="date" value="{{ tournament.begin_date or '' }}">

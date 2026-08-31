@@ -6,6 +6,7 @@
       <h2>{{ tournament.name }}</h2>
       <p>{{ translations.tournament_type }}: {{ translations.get(tournament.tournament_type, tournament.tournament_type) }}</p>
       <p>{{ translations.location }}: {{ tournament.location or '' }}</p>
+      {% if tournament.description %}<p class="tournament-description">{{ tournament.description }}</p>{% endif %}
       <p>{{ translations.date }}: {{ tournament.begin_date or '' }}{% if tournament.end_date and tournament.end_date != tournament.begin_date %} - {{ tournament.end_date }}{% endif %}</p>
       <p>{{ translations.handicap_tournament_label }}: {{ translations.handicap_status_enabled if tournament.handicap_enabled else translations.handicap_status_disabled }}</p>
     </div>

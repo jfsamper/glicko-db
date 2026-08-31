@@ -76,6 +76,7 @@ class GothaTournamentPayload:
     mm_floor: int
     mm_zero: int
     placement_criteria: str
+    description: str = ""
 
     def __getitem__(self, field_name: str) -> Any:
         try:

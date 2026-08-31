@@ -926,6 +926,7 @@ def admin_import():
                 }
                 metadata_overrides = {
                     "name": (request.form.get("metadata_name") or "").strip(),
+                    "description": (request.form.get("metadata_description") or "").strip(),
                     "short_name": (request.form.get("metadata_short_name") or "").strip(),
                     "location": (request.form.get("metadata_location") or "").strip(),
                     "begin_date": (request.form.get("metadata_begin_date") or "").strip(),
@@ -934,6 +935,8 @@ def admin_import():
                     "pairing_system": (request.form.get("metadata_pairing_system") or "").strip(),
                 }
                 metadata_overrides = {key: value for key, value in metadata_overrides.items() if value not in (None, "")}
+                if "metadata_description" in request.form:
+                    metadata_overrides["description"] = (request.form.get("metadata_description") or "").strip()
                 conn = get_db()
                 try:
                     if request.form.get("metadata_decision") == "reject":
@@ -1249,6 +1252,9 @@ def admin_tournaments():
                     "name", "location", "rounds", "tournament_type", "pairing_system",
                     "bye_points", "absent_points",
                 ]
+                if "description" in tournament_columns:
+                    insert_columns.insert(1, "description")
+                    tournament_values.insert(1, request.form.get("description", "").strip())
                 if "acceleration_scheme" in tournament_columns:
                     insert_columns.append("acceleration_scheme")
                     tournament_values.append(acceleration_scheme)
@@ -1386,6 +1392,7 @@ def admin_update_tournament_settings(tournament_id):
     lang = get_language(request.args.get("lang"))
     name = request.form.get("name", "").strip()
     location = request.form.get("location", "").strip()
+    description = request.form.get("description")
     begin_date = request.form.get("begin_date")
     end_date = request.form.get("end_date")
     rounds = normalize_tournament_rounds(request.form.get("rounds", 1, type=int))
@@ -1408,7 +1415,7 @@ def admin_update_tournament_settings(tournament_id):
     }
     optional_columns = [
         column for column in (
-            "begin_date", "end_date", "acceleration_scheme", "acceleration_rounds", "category_rounds"
+            "description", "begin_date", "end_date", "acceleration_scheme", "acceleration_rounds", "category_rounds"
         ) if column in tournament_columns
     ]
     optional_select = f", {', '.join(optional_columns)}" if optional_columns else ""
@@ -1425,6 +1432,8 @@ def admin_update_tournament_settings(tournament_id):
             begin_date = current_tournament["begin_date"] if "begin_date" in current_tournament.keys() else ""
         if end_date is None:
             end_date = current_tournament["end_date"] if "end_date" in current_tournament.keys() else ""
+        if description is None:
+            description = current_tournament["description"] if "description" in current_tournament.keys() else ""
         try:
             begin_date = parse_date_value(begin_date) if begin_date else None
             end_date = parse_date_value(end_date) if end_date else None
@@ -1492,6 +1501,9 @@ def admin_update_tournament_settings(tournament_id):
         if "end_date" in tournament_columns:
             update_fields.append("end_date = ?")
             update_values.append(end_date)
+        if "description" in tournament_columns:
+            update_fields.append("description = ?")
+            update_values.append(description)
         if "acceleration_scheme" in tournament_columns:
             update_fields.append("acceleration_scheme = ?")
             update_values.append(acceleration_scheme)

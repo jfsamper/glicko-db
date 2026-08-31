@@ -123,6 +123,7 @@ def build_import_preview(conn, xml_path):
     return {
         "metadata": {
             "name": metadata.get("name"),
+            "description": metadata.get("description", ""),
             "begin_date": metadata.get("begin_date"),
             "rounds": metadata.get("rounds"),
             "pairing_system": metadata.get("pairing_system"),

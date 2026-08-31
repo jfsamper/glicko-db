@@ -401,6 +401,7 @@ def test_public_tournament_detail_uses_public_status_helper(monkeypatch, tmp_pat
             name TEXT NOT NULL DEFAULT '',
             short_name TEXT,
             location TEXT,
+            description TEXT,
             begin_date TEXT,
             end_date TEXT,
             rounds INTEGER NOT NULL DEFAULT 1,
@@ -463,8 +464,8 @@ def test_public_tournament_detail_uses_public_status_helper(monkeypatch, tmp_pat
         """
     )
     conn.execute(
-        "INSERT INTO tournaments (id, name, status, source_format) VALUES (?, ?, ?, ?)",
-        (5, "Spring Open", "draft", "OpenGotha XML"),
+        "INSERT INTO tournaments (id, name, description, status, source_format) VALUES (?, ?, ?, ?, ?)",
+        (5, "Spring Open", "Annual club championship", "draft", "OpenGotha XML"),
     )
     conn.commit()
 
@@ -484,6 +485,7 @@ def test_public_tournament_detail_uses_public_status_helper(monkeypatch, tmp_pat
     assert response.status_code == 200
     assert response.data == b"ok"
     assert captured["tournament"]["public_status"] == "draft"
+    assert captured["tournament"]["description"] == "Annual club championship"
     conn.close()
 
 

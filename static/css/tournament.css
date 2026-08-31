@@ -13,6 +13,10 @@
   margin: 1rem 0;
 }
 
+.tournament-actions .button {
+  line-height: 1.5;
+}
+
 .tournament-summary {
   display: flex;
   flex-wrap: wrap;
