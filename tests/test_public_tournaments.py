@@ -42,6 +42,25 @@ def test_public_navigation_keeps_reports_link_and_sidebar_login_link():
     assert 'class="sidebar-nav"' not in body
 
 
+def test_logged_in_sidebar_links_back_to_admin_menu(monkeypatch, tmp_path):
+    db_path = tmp_path / "sidebar_user.db"
+    monkeypatch.setattr(config, "DB_PATH", str(db_path))
+    monkeypatch.setattr(common, "DB_PATH", str(db_path))
+
+    app.testing = True
+    client = app.test_client()
+    conftest.set_admin_session(client, db_path)
+
+    response = client.get("/admin?lang=en")
+
+    assert response.status_code == 200
+    body = response.get_data(as_text=True)
+    assert "Welcome, admin" in body
+    assert 'href="/admin?lang=en"' in body
+    assert "Admin Menu" in body
+    assert "Report results" not in body
+
+
 def test_public_tournament_index_supports_sort_by_name(monkeypatch, tmp_path):
     db_path = tmp_path / "sorted_tournaments.db"
     monkeypatch.setattr(config, "DB_PATH", str(db_path))
@@ -87,6 +106,84 @@ def test_public_tournament_index_supports_sort_by_name(monkeypatch, tmp_path):
     body = response.get_data(as_text=True)
     assert body.index("Alpha Cup") < body.index("Beta Masters")
     assert body.index("Beta Masters") < body.index("Zulu Open")
+
+
+def test_public_tournament_search_matches_name_description_and_linked_match(monkeypatch, tmp_path):
+    db_path = tmp_path / "searchable_tournaments.db"
+    monkeypatch.setattr(config, "DB_PATH", str(db_path))
+    monkeypatch.setattr(common, "DB_PATH", str(db_path))
+
+    conn = sqlite3.connect(db_path)
+    conn.executescript(
+        """
+        CREATE TABLE players (
+            id INTEGER PRIMARY KEY,
+            display_name TEXT NOT NULL
+        );
+        CREATE TABLE tournaments (
+            id INTEGER PRIMARY KEY,
+            name TEXT NOT NULL,
+            description TEXT,
+            rounds INTEGER NOT NULL DEFAULT 1,
+            tournament_type TEXT,
+            pairing_system TEXT,
+            status TEXT NOT NULL DEFAULT 'completed',
+            created_at TEXT,
+            begin_date TEXT,
+            bye_points REAL,
+            absent_points REAL
+        );
+        CREATE TABLE tournament_rounds (
+            id INTEGER PRIMARY KEY,
+            tournament_id INTEGER NOT NULL,
+            round_number INTEGER NOT NULL
+        );
+        CREATE TABLE tournament_pairings (
+            id INTEGER PRIMARY KEY,
+            round_id INTEGER NOT NULL
+        );
+        CREATE TABLE matches (
+            id INTEGER PRIMARY KEY,
+            match_date TEXT NOT NULL,
+            white_player_id INTEGER NOT NULL,
+            black_player_id INTEGER NOT NULL,
+            result TEXT NOT NULL,
+            event TEXT,
+            notes TEXT,
+            round_number INTEGER NOT NULL DEFAULT 0,
+            tournament_pairing_id INTEGER
+        );
+        INSERT INTO players (id, display_name) VALUES
+            (1, 'Alice Stone'), (2, 'Bob Lee');
+        INSERT INTO tournaments
+            (id, name, description, tournament_type, pairing_system, begin_date)
+        VALUES
+            (1, 'Spring Open', 'Annual club championship', 'swiss', 'swiss', '2026-04-01'),
+            (2, 'Summer Cup', 'Regional invitational', 'swiss', 'swiss', '2026-06-01');
+        INSERT INTO tournament_rounds (id, tournament_id, round_number) VALUES
+            (11, 1, 1), (22, 2, 1);
+        INSERT INTO tournament_pairings (id, round_id) VALUES (101, 11), (202, 22);
+        INSERT INTO matches
+            (id, match_date, white_player_id, black_player_id, result, event, notes, tournament_pairing_id)
+        VALUES
+            (1001, '2026-04-01', 1, 2, '1-0', 'Spring Open', 'Final round', 101),
+            (2002, '2026-06-01', 2, 1, '0-1', 'Summer Cup', 'Regional final', 202);
+        """
+    )
+    conn.commit()
+    conn.close()
+
+    client = app.test_client()
+    for search_term, expected, absent in (
+        ("Annual", "Spring Open", "Summer Cup"),
+        ("Alice Stone", "Spring Open", "Autumn League"),
+        ("Regional final", "Summer Cup", "Spring Open"),
+    ):
+        response = client.get(f"/tournaments?lang=en&search={search_term}")
+        assert response.status_code == 200
+        body = response.get_data(as_text=True)
+        assert expected in body
+        assert absent not in body
 
 
 def test_admin_can_update_imported_tournament_status(monkeypatch, tmp_path):
@@ -195,6 +292,64 @@ def test_public_matches_support_sort_by_white_player(monkeypatch, tmp_path):
     body = response.get_data(as_text=True)
     assert body.index("Alice vs Charlie") < body.index("Bob vs Alice")
     assert body.index("Bob vs Alice") < body.index("Charlie vs Bob")
+
+
+def test_matches_filter_by_date_range_and_player_on_public_and_admin_pages(monkeypatch, tmp_path):
+    db_path = tmp_path / "filtered_matches.db"
+    monkeypatch.setattr(config, "DB_PATH", str(db_path))
+    monkeypatch.setattr(common, "DB_PATH", str(db_path))
+
+    conn = sqlite3.connect(db_path)
+    conn.executescript(
+        """
+        CREATE TABLE players (id INTEGER PRIMARY KEY, display_name TEXT NOT NULL);
+        CREATE TABLE matches (
+            id INTEGER PRIMARY KEY,
+            match_date TEXT NOT NULL,
+            white_player_id INTEGER NOT NULL,
+            black_player_id INTEGER NOT NULL,
+            result TEXT NOT NULL,
+            event TEXT,
+            notes TEXT,
+            round_number INTEGER NOT NULL DEFAULT 0
+        );
+        INSERT INTO players (id, display_name) VALUES (1, 'Alice'), (2, 'Bob'), (3, 'Carol');
+        INSERT INTO matches
+            (id, match_date, white_player_id, black_player_id, result, event)
+        VALUES
+            (1, '2026-08-01', 1, 2, '1-0', 'before-range'),
+            (2, '2026-08-10', 2, 3, '1-0', 'selected-match'),
+            (3, '2026-08-20', 1, 3, '0-1', 'after-range');
+        """
+    )
+    conn.commit()
+    conn.close()
+
+    query = "date_from=2026-08-05&date_to=2026-08-15&player_id=2&lang=en"
+    response = app.test_client().get(f"/matches?{query}")
+
+    assert response.status_code == 200
+    body = response.get_data(as_text=True)
+    assert "selected-match" in body
+    assert "before-range" not in body
+    assert "after-range" not in body
+    assert 'name="date_from"' in body
+    assert 'value="2026-08-05"' in body
+    assert 'name="player_id"' in body
+    assert 'value="2" selected' in body
+    assert "date_from=2026-08-05" in body
+    assert "player_id=2" in body
+
+    with app.test_client() as admin_client:
+        conftest.set_admin_session(admin_client, db_path)
+        response = admin_client.get(f"/admin/matches?{query}")
+
+    assert response.status_code == 200
+    body = response.get_data(as_text=True)
+    assert "selected-match" in body
+    assert "before-range" not in body
+    assert "after-range" not in body
+    assert 'value="2" selected' in body
 
 
 def test_public_matches_order_same_day_rounds_before_pagination(monkeypatch, tmp_path):

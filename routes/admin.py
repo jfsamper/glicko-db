@@ -26,7 +26,13 @@ from flask import (
 )
 from werkzeug.security import check_password_hash, generate_password_hash
 
-from routes.public import glicko_to_category, parse_tournament_order, parse_tournament_sort
+from routes.public import (
+    _match_filter_sql,
+    _parse_match_filters,
+    glicko_to_category,
+    parse_tournament_order,
+    parse_tournament_sort,
+)
 from services.common import (
     TRANSLATIONS,
     authenticate_user,
@@ -1110,9 +1116,14 @@ def admin_matches():
     if page_size <= 0:
         return Response("page_size must be positive", status=400)
     page_size = min(page_size, 100)
+    date_from, date_to, player_id = _parse_match_filters(request.args)
+    filter_sql, filter_params = _match_filter_sql(date_from, date_to, player_id)
 
     conn = get_db()
-    total_count = conn.execute("SELECT COUNT(*) FROM matches").fetchone()[0]
+    total_count = conn.execute(
+        f"SELECT COUNT(*) FROM matches m {filter_sql}",
+        filter_params,
+    ).fetchone()[0]
     page_details = pagination_details(total_count, page, page_size)
     page = page_details["page"]
     page_size = page_details["page_size"]
@@ -1136,10 +1147,15 @@ def admin_matches():
         FROM matches m
         JOIN players p_white ON p_white.id = m.white_player_id
         JOIN players p_black ON p_black.id = m.black_player_id
+        {filter_sql}
         {order_sql}
         LIMIT ? OFFSET ?
         """,
-        (page_size, (page - 1) * page_size),
+        (*filter_params, page_size, (page - 1) * page_size),
+    ).fetchall()
+
+    match_players = conn.execute(
+        "SELECT id, display_name FROM players ORDER BY display_name"
     ).fetchall()
 
     conn.close()
@@ -1152,6 +1168,10 @@ def admin_matches():
         total_count=total_count,
         sort=sort_key,
         order=sort_order,
+        date_from=date_from,
+        date_to=date_to,
+        player_id=player_id,
+        match_players=match_players,
         **page_details,
     )
 

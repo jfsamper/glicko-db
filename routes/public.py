@@ -55,6 +55,41 @@ def _parse_match_order(order_value):
     return value if value in {"asc", "desc"} else "desc"
 
 
+def _parse_match_filters(args):
+    date_from = (args.get("date_from") or "").strip()
+    date_to = (args.get("date_to") or "").strip()
+    for date_name in ("date_from", "date_to"):
+        date_value = date_from if date_name == "date_from" else date_to
+        if date_value:
+            try:
+                datetime.strptime(date_value, "%Y-%m-%d")
+            except ValueError:
+                if date_name == "date_from":
+                    date_from = ""
+                else:
+                    date_to = ""
+
+    player_id = (args.get("player_id") or "").strip()
+    if not player_id.isdigit():
+        player_id = ""
+    return date_from, date_to, player_id
+
+
+def _match_filter_sql(date_from, date_to, player_id):
+    clauses = []
+    params = []
+    if date_from:
+        clauses.append("m.match_date >= ?")
+        params.append(date_from)
+    if date_to:
+        clauses.append("m.match_date <= ?")
+        params.append(date_to)
+    if player_id:
+        clauses.append("(m.white_player_id = ? OR m.black_player_id = ?)")
+        params.extend([int(player_id), int(player_id)])
+    return ("WHERE " + " AND ".join(clauses)) if clauses else "", params
+
+
 TEAM_ROLE_ALIASES = {
     "Presidente": ["cruz, carlos", "carlos cruz"],
     "Secretario": ["gaitan, carlos", "carlos gaitan"],
@@ -502,11 +537,14 @@ def matches():
     page_size = parse_page_size(request.args.get("page_size"), default=25)
     sort_key = _parse_match_sort(request.args.get("sort"))
     sort_order = _parse_match_order(request.args.get("order"))
+    date_from, date_to, player_id = _parse_match_filters(request.args)
+    filter_sql, filter_params = _match_filter_sql(date_from, date_to, player_id)
 
     conn = get_db()
 
     total_count = conn.execute(
-        "SELECT COUNT(*) FROM matches"
+        f"SELECT COUNT(*) FROM matches m {filter_sql}",
+        filter_params,
     ).fetchone()[0]
 
     order_clause = MATCH_SORT_FIELDS[sort_key]
@@ -530,10 +568,15 @@ def matches():
             ON p_white.id = m.white_player_id
         JOIN players p_black
             ON p_black.id = m.black_player_id
+        {filter_sql}
         {order_sql}
         LIMIT ? OFFSET ?
         """,
-        (page_size, (page - 1) * page_size),
+        (*filter_params, page_size, (page - 1) * page_size),
+    ).fetchall()
+
+    match_players = conn.execute(
+        "SELECT id, display_name FROM players ORDER BY display_name"
     ).fetchall()
 
     conn.close()
@@ -546,6 +589,10 @@ def matches():
         total_count=total_count,
         sort=sort_key,
         order=sort_order,
+        date_from=date_from,
+        date_to=date_to,
+        player_id=player_id,
+        match_players=match_players,
         **pagination_details(total_count, page, page_size),
     )
 
@@ -554,6 +601,7 @@ def matches():
 def tournaments():
     lang = get_language(request.args.get("lang"))
     show_drafts = show_drafts_requested()
+    search_term = request.args.get("search", "").strip()
     page = parse_page_number(request.args.get("page"), default=1)
     page_size = parse_page_size(request.args.get("page_size"), default=25)
     sort_key = parse_tournament_sort(request.args.get("sort"))
@@ -571,8 +619,72 @@ def tournaments():
     has_participant_tables = {"tournament_participants", "tournament_pending_players"}.issubset(participant_tables)
     participant_count_expr = "0" if not has_participant_tables else "(SELECT COUNT(*) FROM tournament_participants WHERE tournament_id = t.id) + (SELECT COUNT(*) FROM tournament_pending_players WHERE tournament_id = t.id)"
     sort_expr = TOURNAMENT_SORT_FIELDS[sort_key] if sort_key != "participants" else participant_count_expr
+    tournament_columns = {
+        row[1] for row in conn.execute("PRAGMA table_info(tournaments)").fetchall()
+    }
+    tournament_tables = {
+        row[0] for row in conn.execute(
+            "SELECT name FROM sqlite_master WHERE type = 'table'"
+        ).fetchall()
+    }
+    match_columns = {
+        row[1] for row in conn.execute("PRAGMA table_info(matches)").fetchall()
+    } if "matches" in tournament_tables else set()
+    has_linked_match_tables = {
+        "matches", "tournament_pairings", "tournament_rounds"
+    }.issubset(tournament_tables)
+    search_conditions = []
+    search_params = []
+    if search_term:
+        search_pattern = f"%{search_term}%"
+        search_conditions.append("LOWER(t.name) LIKE LOWER(?)")
+        search_params.append(search_pattern)
+        if "description" in tournament_columns:
+            search_conditions.append("LOWER(COALESCE(t.description, '')) LIKE LOWER(?)")
+            search_params.append(search_pattern)
+        match_conditions = []
+        for column in ("event", "notes", "result", "match_date"):
+            if column in match_columns:
+                match_conditions.append(f"LOWER(COALESCE(m.{column}, '')) LIKE LOWER(?)")
+                search_params.append(search_pattern)
+        if has_linked_match_tables and {"tournament_pairing_id"}.issubset(match_columns) and match_conditions:
+            search_conditions.append(
+                """
+                EXISTS (
+                    SELECT 1
+                    FROM matches m
+                    JOIN tournament_pairings tp ON tp.id = m.tournament_pairing_id
+                    JOIN tournament_rounds tr ON tr.id = tp.round_id
+                    WHERE tr.tournament_id = t.id
+                      AND ({})
+                )
+                """.format(" OR ".join(match_conditions))
+            )
+        if has_linked_match_tables and {"tournament_pairing_id"}.issubset(match_columns) and "display_name" in {
+            row[1] for row in conn.execute("PRAGMA table_info(players)").fetchall()
+        }:
+            search_conditions.append(
+                """
+                EXISTS (
+                    SELECT 1
+                    FROM matches m
+                    JOIN tournament_pairings tp ON tp.id = m.tournament_pairing_id
+                    JOIN tournament_rounds tr ON tr.id = tp.round_id
+                    JOIN players p_white ON p_white.id = m.white_player_id
+                    JOIN players p_black ON p_black.id = m.black_player_id
+                    WHERE tr.tournament_id = t.id
+                      AND (LOWER(p_white.display_name) LIKE LOWER(?)
+                           OR LOWER(p_black.display_name) LIKE LOWER(?))
+                )
+                """
+            )
+            search_params.extend((search_pattern, search_pattern))
+    where_clause = status_filter
+    if search_conditions:
+        where_clause = f"{where_clause} AND ({' OR '.join(search_conditions)})"
     total_count = conn.execute(
-        f"SELECT COUNT(*) FROM tournaments t WHERE {status_filter}"
+        f"SELECT COUNT(*) FROM tournaments t WHERE {where_clause}",
+        search_params,
     ).fetchone()[0]
     page_details = pagination_details(total_count, page, page_size)
     page = page_details["page"]
@@ -590,11 +702,11 @@ def tournaments():
                  END AS public_status,
                  {participant_count_expr} AS participant_count
         FROM tournaments t
-        WHERE {status_filter}
+        WHERE {where_clause}
         ORDER BY {sort_expr} {sort_order.upper()}, t.id DESC
         LIMIT ? OFFSET ?
         """,
-        (page_size, (page - 1) * page_size),
+        (*search_params, page_size, (page - 1) * page_size),
     ).fetchall()
     conn.close()
     tournaments = [dict(tournament) for tournament in tournaments]
@@ -604,6 +716,7 @@ def tournaments():
         translations=TRANSLATIONS[lang],
         tournaments=tournaments,
         show_drafts=show_drafts,
+        search_term=search_term,
         sort=sort_key,
         order=sort_order,
         total_count=total_count,

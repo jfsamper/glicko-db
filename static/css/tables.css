@@ -37,6 +37,34 @@
   min-width: 3rem;
 }
 
+.position-medal {
+  font-weight: 700;
+}
+
+.position-gold {
+  color: #8a6a00;
+}
+
+.position-silver {
+  color: #66717a;
+}
+
+.position-copper {
+  color: #965a35;
+}
+
+[data-theme="dark"] .position-gold {
+  color: #f0c85a;
+}
+
+[data-theme="dark"] .position-silver {
+  color: #c4ccd3;
+}
+
+[data-theme="dark"] .position-copper {
+  color: #d99a70;
+}
+
 .standings-rank-label {
   width: 4.25rem;
   min-width: 4.25rem;

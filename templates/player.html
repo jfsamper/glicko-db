@@ -187,8 +187,8 @@
 <section class="panel">
   <div class="panel-header centered-header"><h3>{{ translations.tournament_overview }}</h3></div>
   {% if tournaments %}
-    <table class="table-stack"><thead><tr><th>{{ translations.tournament_name }}</th><th>{{ translations.date }}</th><th>{{ translations.pairing_system }}</th><th>{{ translations.score }}</th><th>{{ translations.final_position }}</th></tr></thead>
-      <tbody>{% for tournament in tournaments %}<tr><td><a href="{{ url_for('tournament_page', tournament_id=tournament.id, lang=lang) }}">{{ tournament.name }}</a></td><td>{{ tournament.begin_date }}</td><td>{{ tournament.pairing_system }}</td><td>{{ tournament.score }}</td><td>{{ tournament.final_position }}</td></tr>{% endfor %}</tbody>
+    <table class="table-stack"><thead><tr><th>{{ translations.final_position }}</th><th>{{ translations.date }}</th><th>{{ translations.tournament_name }}</th><th>{{ translations.score }}</th><th>{{ translations.pairing_system }}</th></tr></thead>
+      <tbody>{% for tournament in tournaments %}<tr><td class="{% if tournament.final_position|int == 1 %}position-medal position-gold{% elif tournament.final_position|int == 2 %}position-medal position-silver{% elif tournament.final_position|int == 3 %}position-medal position-copper{% endif %}">{{ tournament.final_position }}</td><td>{{ tournament.begin_date }}</td><td><a href="{{ url_for('tournament_page', tournament_id=tournament.id, lang=lang) }}">{{ tournament.name }}</a></td><td>{{ tournament.score }}</td><td>{{ tournament.pairing_system }}</td></tr>{% endfor %}</tbody>
     </table>
   {% else %}<p class="muted">{{ translations.no_tournament_history }}</p>{% endif %}
   {% if total_tournaments > 10 %}

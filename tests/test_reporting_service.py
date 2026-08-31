@@ -1,6 +1,10 @@
 import sqlite3
 from datetime import date
 
+from reportlab.graphics.shapes import Drawing
+from reportlab.lib.pagesizes import A4
+
+import services.reporting_service as reporting_service
 from services.reporting_service import (
     build_date_report,
     export_report_csv,
@@ -161,3 +165,141 @@ def test_rating_change_uses_snapshot_on_start_date():
 
     assert alice["rating_change_points"] == 50.0
     conn.close()
+
+
+def test_player_rating_chart_respects_selected_report_period():
+    conn = create_report_db()
+    conn.execute(
+        "INSERT INTO rating_snapshots (id, player_id, snapshot_date, rating) VALUES (?, ?, ?, ?)",
+        (5, 1, "2026-01-01", 1550),
+    )
+
+    report = build_date_report(conn, "2026-01-01", "2026-01-02", selected_player_id=1)
+
+    assert [point["date"] for point in report["rating_chart"]["points"]] == [
+        "2026-01-01",
+        "2026-01-02",
+    ]
+    conn.close()
+
+
+def test_pdf_player_table_includes_rating_changes_in_portrait_layout(monkeypatch):
+    captured = {"tables": []}
+
+    class FakeDocument:
+        def __init__(self, _output, **kwargs):
+            captured["pagesize"] = kwargs["pagesize"]
+
+        def build(self, _story):
+            captured["story"] = _story
+            return None
+
+    def capture_table(rows, col_widths=None, separator_columns=(), cell_padding=5, header_font_size=8):
+        captured["tables"].append((rows, col_widths))
+        captured["separators"] = separator_columns
+        return object()
+
+    monkeypatch.setattr(reporting_service, "SimpleDocTemplate", FakeDocument)
+    monkeypatch.setattr(reporting_service, "_pdf_table", capture_table)
+
+    report = {
+        "start_date": "2026-01-01",
+        "end_date": "2026-01-31",
+        "summary": {"games": 1, "players": 1},
+        "players": [
+            {
+                "rank": 1,
+                "display_name": "Alice",
+                "games": 1,
+                "wins": 1,
+                "losses": 0,
+                "draws": 0,
+                "win_percentage": 100.0,
+                "rating_change_points": 100.0,
+                "rating_change_percentage": 6.7,
+            }
+        ],
+        "selected_player_id": 1,
+        "opponents": [],
+        "rating_chart": {
+            "points": [{"x": 24, "y": 100, "date": "2026-01-01", "rating": 1500}],
+            "min_rating": 1480,
+            "max_rating": 1520,
+        },
+    }
+
+    reporting_service.export_report_pdf(report, {"reports_title": "Reports"})
+
+    assert captured["pagesize"] == A4
+    player_rows, player_widths = captured["tables"][1]
+    assert player_rows[0][-2:] == ["Rating points", "Rating %"]
+    assert player_rows[1][-2:] == ["+100.00", "+6.7%"]
+    assert player_widths is not None
+    assert any(isinstance(item, Drawing) for item in captured["story"])
+
+
+def test_pdf_rating_chart_uses_categories_for_axis_labels(monkeypatch):
+    monkeypatch.setattr(
+        reporting_service,
+        "glicko_to_category",
+        lambda rating: f"category-{rating:g}",
+    )
+
+    drawing = reporting_service._pdf_rating_chart(
+        {
+            "points": [{"x": 24, "y": 100, "date": "2026-01-01", "rating": 1500}],
+            "min_rating": 1000,
+            "max_rating": 2000,
+        }
+    )
+
+    axis_labels = [
+        item.text
+        for item in drawing.contents
+        if isinstance(item, reporting_service.String)
+    ]
+    assert "category-1000" in axis_labels
+    assert "category-1500" in axis_labels
+    assert "category-2000" in axis_labels
+
+
+def test_pdf_opponent_table_is_two_up_without_draws_column(monkeypatch):
+    captured = {}
+
+    def capture_table(rows, col_widths=None, separator_columns=(), cell_padding=5, header_font_size=8):
+        captured["rows"] = rows
+        captured["col_widths"] = col_widths
+        captured["separators"] = separator_columns
+        captured["cell_padding"] = cell_padding
+        captured["header_font_size"] = header_font_size
+        return object()
+
+    monkeypatch.setattr(reporting_service, "_pdf_table", capture_table)
+    labels = {
+        "opponent": "Opponent",
+        "games": "Games",
+        "wins": "Wins",
+        "losses": "Losses",
+        "win_percentage": "Win percentage",
+    }
+    opponents = [
+        {"display_name": "Alice", "games": 3, "wins": 2, "losses": 1, "win_percentage": 66.7},
+        {"display_name": "Bob", "games": 2, "wins": 1, "losses": 1, "win_percentage": 50.0},
+        {"display_name": "Carol", "games": 1, "wins": 0, "losses": 1, "win_percentage": 0.0},
+    ]
+
+    reporting_service._pdf_opponent_table(opponents, labels)
+
+    assert captured["rows"][0] == [
+        "Opponent", "Games", "Wins", "Losses", "%", "",
+        "Opponent", "Games", "Wins", "Losses", "%",
+    ]
+    assert all(len(row) == 11 for row in captured["rows"])
+    assert captured["rows"][-1][-5:] == ["", "", "", "", ""]
+    assert len(captured["col_widths"]) == 11
+    assert abs(sum(captured["col_widths"]) / reporting_service.mm - 194) < 1e-9
+    assert captured["col_widths"][5] < captured["col_widths"][1]
+    assert captured["cell_padding"] == 3
+    assert captured["header_font_size"] == 7
+    assert captured["separators"] == (5,)
+    assert "Draws" not in captured["rows"][0]

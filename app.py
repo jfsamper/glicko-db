@@ -15,6 +15,7 @@ from services.common import (
     bootstrap_default_admin_account,
     get_language,
     get_db,
+    get_current_user,
     migrate_audit_log_schema,
     migrate_auth_schema,
     refresh_stats,
@@ -74,6 +75,7 @@ def create_app(test_config=None, auto_init=True):
 
         return {
             "current_lang": current_lang,
+            "current_user": get_current_user(),
             "glicko_to_category": glicko_to_category,
             "translations": TRANSLATIONS,
             "format_match_result": format_match_result,

@@ -1,29 +1,71 @@
 {% set current_sort = request.args.get('sort', 'date') %}
 {% set current_order = request.args.get('order', 'desc') %}
-{% set base_query_args = {'lang': lang, 'page': 1, 'page_size': page_size} %}
+{% set matches_endpoint = 'matches' if not admin_mode else 'admin_matches' %}
+{% set base_query_args = {'lang': lang, 'page': 1, 'page_size': page_size, 'date_from': date_from, 'date_to': date_to, 'player_id': player_id} %}
+
+<form method="get" class="filter-form">
+  <input type="hidden" name="lang" value="{{ lang }}">
+
+  <div class="filter-panel">
+    <div class="filter-header">
+      <h3>{{ translations.search }}</h3>
+    </div>
+
+    <div class="filter-grid">
+      <div class="filter-item compact">
+        <label for="matches-date-from">{{ translations.audit_date_from }}</label>
+        <input id="matches-date-from" name="date_from" type="date" value="{{ date_from }}">
+      </div>
+
+      <div class="filter-item compact">
+        <label for="matches-date-to">{{ translations.audit_date_to }}</label>
+        <input id="matches-date-to" name="date_to" type="date" value="{{ date_to }}">
+      </div>
+
+      <div class="filter-item wide">
+        <label for="matches-player">{{ translations.player }}</label>
+        <select id="matches-player" name="player_id">
+          <option value="">{{ translations.all_players }}</option>
+          {% for player in match_players %}
+            <option value="{{ player.id }}" {% if player_id == player.id|string %}selected{% endif %}>{{ player.display_name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+
+    <div class="filter-actions">
+      <button type="submit" class="button">
+        {{ translations.search }}
+      </button>
+      <a class="button secondary" href="{{ url_for(matches_endpoint, lang=lang) }}">
+        {{ translations.clear_search }}
+      </a>
+    </div>
+  </div>
+</form>
 
 <table class="table-stack">
 
   <thead>
     <tr>
       <th>
-        <a href="{{ url_for('matches' if not admin_mode else 'admin_matches', **dict(base_query_args, sort='date', order='asc' if current_sort == 'date' and current_order == 'desc' else 'desc')) }}">
+        <a href="{{ url_for(matches_endpoint, **dict(base_query_args, sort='date', order='asc' if current_sort == 'date' and current_order == 'desc' else 'desc')) }}">
           {{translations.date}}
         </a>
       </th>
       <th>{{translations.time_round}}</th>
       <th>
-        <a href="{{ url_for('matches' if not admin_mode else 'admin_matches', **dict(base_query_args, sort='white', order='asc' if current_sort != 'white' or current_order == 'desc' else 'desc')) }}">
+        <a href="{{ url_for(matches_endpoint, **dict(base_query_args, sort='white', order='asc' if current_sort != 'white' or current_order == 'desc' else 'desc')) }}">
           {{translations.white}}
         </a>
       </th>
       <th>
-        <a href="{{ url_for('matches' if not admin_mode else 'admin_matches', **dict(base_query_args, sort='black', order='asc' if current_sort != 'black' or current_order == 'desc' else 'desc')) }}">
+        <a href="{{ url_for(matches_endpoint, **dict(base_query_args, sort='black', order='asc' if current_sort != 'black' or current_order == 'desc' else 'desc')) }}">
           {{translations.black}}
         </a>
       </th>
       <th>
-        <a href="{{ url_for('matches' if not admin_mode else 'admin_matches', **dict(base_query_args, sort='result', order='asc' if current_sort != 'result' or current_order == 'desc' else 'desc')) }}">
+        <a href="{{ url_for(matches_endpoint, **dict(base_query_args, sort='result', order='asc' if current_sort != 'result' or current_order == 'desc' else 'desc')) }}">
           {{translations.winner}}
         </a>
       </th>
@@ -111,15 +153,15 @@
     <label for="matches-page-size">{{ translations.page_size_label }}</label>
     <select id="matches-page-size" onchange="window.location.href = this.value">
       {% for option in [10, 25, 50, 100] %}
-        <option value="{{ url_for('matches' if not admin_mode else 'admin_matches', lang=lang, page=1, page_size=option) }}" {% if page_size == option %}selected{% endif %}>{{ option }}</option>
+        <option value="{{ url_for(matches_endpoint, **dict(base_query_args, page=1, page_size=option, sort=current_sort, order=current_order)) }}" {% if page_size == option %}selected{% endif %}>{{ option }}</option>
       {% endfor %}
     </select>
     {% if page > 1 %}
-      <a class="button secondary" href="{{ url_for('matches' if not admin_mode else 'admin_matches', lang=lang, page=page - 1, page_size=page_size) }}">{{ translations.prev_page }}</a>
+      <a class="button secondary" href="{{ url_for(matches_endpoint, **dict(base_query_args, page=page - 1, page_size=page_size, sort=current_sort, order=current_order)) }}">{{ translations.prev_page }}</a>
     {% endif %}
     <span aria-label="{{ translations.page_label }} {{ page }}">{{ translations.page_label }} {{ page }} {{ translations.of_label }} {{ total_pages }}</span>
     {% if total_count == 0 or page * page_size < total_count %}
-      <a class="button" href="{{ url_for('matches' if not admin_mode else 'admin_matches', lang=lang, page=page + 1, page_size=page_size) }}">{{ translations.next_page }}</a>
+      <a class="button" href="{{ url_for(matches_endpoint, **dict(base_query_args, page=page + 1, page_size=page_size, sort=current_sort, order=current_order)) }}">{{ translations.next_page }}</a>
     {% endif %}
   </div>
 {% endif %}

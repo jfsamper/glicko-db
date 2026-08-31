@@ -6,12 +6,14 @@ from datetime import date, datetime
 from io import BytesIO, StringIO
 
 from reportlab.lib import colors
-from reportlab.lib.pagesizes import A4, landscape
+from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib.units import mm
+from reportlab.graphics.shapes import Circle, Drawing, Line, PolyLine, Rect, String
 from reportlab.platypus import SimpleDocTemplate, Spacer, Table, TableStyle, Paragraph
 
 from config import GLICKO_K, GLICKO_M
+from services.common import build_rating_chart_data
 from services.common import server_date as configured_server_date
 from services.rating_service import glicko_to_category
 
@@ -324,6 +326,28 @@ def build_date_report(conn, start_date=None, end_date=None, selected_player_id=N
     selected_player_id = int(selected_player_id) if selected_player_id not in (None, "") else None
     selected_player = next((row for row in player_rows if row["player_id"] == selected_player_id), None)
     visible_player_rows = [selected_player] if selected_player is not None else player_rows
+    rating_chart = build_rating_chart_data([])
+    if selected_player is not None:
+        snapshot_rows = conn.execute(
+            "SELECT snapshot_date, rating FROM rating_snapshots WHERE player_id = ? ORDER BY snapshot_date, id",
+            (selected_player_id,),
+        ).fetchall()
+        period_snapshots = []
+        for snapshot in snapshot_rows:
+            snapshot_date = _normalized_date(snapshot["snapshot_date"])
+            if snapshot_date is None:
+                continue
+            if start_date is not None and snapshot_date < start_date:
+                continue
+            if end_date is not None and snapshot_date > end_date:
+                continue
+            period_snapshots.append(
+                {
+                    "snapshot_date": snapshot_date.isoformat(),
+                    "rating": float(snapshot["rating"]),
+                }
+            )
+        rating_chart = build_rating_chart_data(period_snapshots)
     summary["players"] = len(player_rows)
     if selected_player is not None:
         summary["players"] = 1
@@ -346,6 +370,7 @@ def build_date_report(conn, start_date=None, end_date=None, selected_player_id=N
         "countries": sorted(country_records.values(), key=lambda item: (-item["games"], item["display_name"].casefold())),
         "clubs": sorted(club_records.values(), key=lambda item: (-item["games"], item["display_name"].casefold())),
         "selected_player_id": selected_player_id,
+        "rating_chart": rating_chart,
         "excluded_games": excluded_games,
     }
 
@@ -385,9 +410,9 @@ def export_report_pdf(report, translations=None, period_label=None):
     output = BytesIO()
     document = SimpleDocTemplate(
         output,
-        pagesize=landscape(A4),
-        rightMargin=12 * mm,
-        leftMargin=12 * mm,
+        pagesize=A4,
+        rightMargin=8 * mm,
+        leftMargin=8 * mm,
         topMargin=12 * mm,
         bottomMargin=12 * mm,
     )
@@ -404,6 +429,8 @@ def export_report_pdf(report, translations=None, period_label=None):
         "losses": translations.get("losses", "Losses"),
         "draws": translations.get("draws", "Draws"),
         "win_percentage": translations.get("win_pct", "Win percentage"),
+        "rating_change_points": translations.get("rating_change_points", "Rating points"),
+        "rating_change_percentage": translations.get("rating_change_percentage", "Rating %"),
         "rank": translations.get("position", "Rank"),
         "player": translations.get("player", "Player"),
         "opponent": translations.get("opponent", "Opponent"),
@@ -423,19 +450,39 @@ def export_report_pdf(report, translations=None, period_label=None):
         Spacer(1, 6 * mm),
         Paragraph(translations.get("report_players", "Player performance"), _pdf_text_style(styles["Heading2"])),
         _pdf_table(
-            [[labels["rank"], labels["player"], labels["games"], labels["wins"], labels["losses"], labels["draws"], labels["win_percentage"]]]
-            + [[row["rank"], row["display_name"], row["games"], row["wins"], row["losses"], row["draws"], row["win_percentage"]] for row in report["players"]]
+            [[labels["rank"], labels["player"], labels["games"], labels["wins"], labels["losses"], labels["draws"], labels["win_percentage"], labels["rating_change_points"], labels["rating_change_percentage"]]]
+            + [
+                [
+                    row["rank"],
+                    row["display_name"],
+                    row["games"],
+                    row["wins"],
+                    row["losses"],
+                    row["draws"],
+                    row["win_percentage"] if row["win_percentage"] is not None else "",
+                    f"{row['rating_change_points']:+.2f}" if row["rating_change_points"] is not None else "",
+                    f"{row['rating_change_percentage']:+.1f}%" if row["rating_change_percentage"] is not None else "",
+                ]
+                for row in report["players"]
+            ],
+            col_widths=[22 * mm, 38 * mm, 18 * mm, 18 * mm, 18 * mm, 18 * mm, 24 * mm, 26 * mm, 24 * mm],
         ),
     ]
+    rating_chart = report.get("rating_chart") or {}
+    if report.get("selected_player_id") is not None and rating_chart.get("points"):
+        story.extend(
+            [
+                Spacer(1, 5 * mm),
+                Paragraph(translations.get("chart_title", "Rating history"), _pdf_text_style(styles["Heading2"])),
+                _pdf_rating_chart(rating_chart),
+            ]
+        )
     if report["selected_player_id"] is not None:
         story.extend(
             [
                 Spacer(1, 6 * mm),
                 Paragraph(translations.get("opponent_records", "Results vs opponents"), _pdf_text_style(styles["Heading2"])),
-                _pdf_table(
-                    [[labels["opponent"], labels["games"], labels["wins"], labels["losses"], labels["draws"], labels["win_percentage"]]]
-                    + [[row["display_name"], row["games"], row["wins"], row["losses"], row["draws"], row["win_percentage"]] for row in report["opponents"]]
-                ),
+                _pdf_opponent_table(report["opponents"], labels),
             ]
         )
     document.build(story)
@@ -447,18 +494,101 @@ def _pdf_text_style(style):
     return style
 
 
-def _pdf_table(rows):
-    table = Table(rows, repeatRows=1)
-    table.setStyle(
-        TableStyle(
+def _pdf_rating_chart(rating_chart):
+    width = 180 * mm
+    height = 62 * mm
+    plot_left = 14 * mm
+    plot_right = width - 6 * mm
+    plot_bottom = 12 * mm
+    plot_top = height - 8 * mm
+    plot_width = plot_right - plot_left
+    plot_height = plot_top - plot_bottom
+    drawing = Drawing(width, height)
+    drawing.add(Rect(0, 0, width, height, fillColor=colors.HexColor("#f4f7f8"), strokeColor=None))
+    drawing.add(Line(plot_left, plot_bottom, plot_right, plot_bottom, strokeColor=colors.HexColor("#6b7c82")))
+    drawing.add(Line(plot_left, plot_bottom, plot_left, plot_top, strokeColor=colors.HexColor("#6b7c82")))
+
+    points = rating_chart["points"]
+    source_width = 620
+    source_height = 220
+
+    def chart_x(point):
+        return plot_left + (point["x"] / source_width) * plot_width
+
+    def chart_y(point):
+        return plot_bottom + ((source_height - point["y"]) / source_height) * plot_height
+
+    line_points = [(chart_x(point), chart_y(point)) for point in points]
+    if len(line_points) > 1:
+        drawing.add(PolyLine(line_points, strokeColor=colors.HexColor("#1f4e5f"), strokeWidth=1.5))
+    for x, y in line_points:
+        drawing.add(Circle(x, y, 2.5, fillColor=colors.HexColor("#d97706"), strokeColor=colors.HexColor("#1f4e5f")))
+
+    for point in points[::max(1, len(points) // 3)]:
+        drawing.add(String(chart_x(point), 3, point["date"], fontName="Helvetica", fontSize=6, fillColor=colors.HexColor("#405158")))
+    min_rating = rating_chart["min_rating"]
+    max_rating = rating_chart["max_rating"]
+    midpoint_rating = (min_rating + max_rating) / 2
+    label_color = colors.HexColor("#405158")
+    drawing.add(String(plot_left, plot_top + 2, glicko_to_category(max_rating), fontName="Helvetica", fontSize=6, fillColor=label_color))
+    drawing.add(String(plot_left, (plot_bottom + plot_top) / 2, glicko_to_category(midpoint_rating), fontName="Helvetica", fontSize=6, fillColor=label_color))
+    drawing.add(String(plot_left, plot_bottom - 8, glicko_to_category(min_rating), fontName="Helvetica", fontSize=6, fillColor=label_color))
+    return drawing
+
+
+def _pdf_opponent_table(opponents, labels):
+    fields = [
+        labels["opponent"],
+        labels["games"],
+        labels["wins"],
+        labels["losses"],
+        "%",
+    ]
+    rows = [fields + [""] + fields]
+    for index in range(0, len(opponents), 2):
+        row = []
+        for opponent in opponents[index:index + 2]:
+            row.extend(
+                [
+                    opponent["display_name"],
+                    opponent["games"],
+                    opponent["wins"],
+                    opponent["losses"],
+                    opponent["win_percentage"] if opponent["win_percentage"] is not None else "",
+                ]
+            )
+            if len(row) == len(fields):
+                row.append("")
+        if len(opponents[index:index + 2]) == 1:
+            row.extend([""] * len(fields))
+        rows.append(row)
+    return _pdf_table(
+        rows,
+        col_widths=[36 * mm, 14 * mm, 16 * mm, 16 * mm, 12.5 * mm, 5 * mm, 36 * mm, 14 * mm, 16 * mm, 16 * mm, 12.5 * mm],
+        separator_columns=(5,),
+        cell_padding=3,
+        header_font_size=7,
+    )
+
+
+def _pdf_table(rows, col_widths=None, separator_columns=(), cell_padding=5, header_font_size=8):
+    table = Table(rows, colWidths=col_widths, repeatRows=1)
+    table_style = [
+        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#1f4e5f")),
+        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+        ("GRID", (0, 0), (-1, -1), 0.25, colors.HexColor("#b8c4c8")),
+        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+        ("FONTSIZE", (0, 0), (-1, -1), 8),
+        ("FONTSIZE", (0, 0), (-1, 0), header_font_size),
+        ("PADDING", (0, 0), (-1, -1), cell_padding),
+    ]
+    for column in separator_columns:
+        table_style.extend(
             [
-                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#1f4e5f")),
-                ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
-                ("GRID", (0, 0), (-1, -1), 0.25, colors.HexColor("#b8c4c8")),
-                ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-                ("FONTSIZE", (0, 0), (-1, -1), 8),
-                ("PADDING", (0, 0), (-1, -1), 5),
+                ("BACKGROUND", (column, 0), (column, -1), colors.white),
+                ("LINEBEFORE", (column, 0), (column, -1), 1, colors.HexColor("#1f4e5f")),
+                ("LINEAFTER", (column, 0), (column, -1), 1, colors.HexColor("#1f4e5f")),
             ]
         )
-    )
+    table.setStyle(TableStyle(table_style))
     return table

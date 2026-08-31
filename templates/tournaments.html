@@ -8,32 +8,49 @@
     </div>
   </div>
 
-  <form method="get" class="filter-form" style="margin-bottom: 1rem;">
+  <form method="get" class="filter-form">
     <input type="hidden" name="lang" value="{{ lang }}">
     {% if show_drafts %}
       <input type="hidden" name="show_drafts" value="1">
     {% endif %}
-    <div class="filter-actions" style="gap: 0.75rem; flex-wrap: wrap;">
-      <label for="sort" style="margin: 0;">{{ translations.sort_label }}</label>
-      <select id="sort" name="sort">
-        <option value="date" {% if request.args.get('sort', 'date') == 'date' %}selected{% endif %}>{{ translations.date }}</option>
-        <option value="name" {% if request.args.get('sort', 'date') == 'name' %}selected{% endif %}>{{ translations.name_label }}</option>
-        <option value="status" {% if request.args.get('sort', 'date') == 'status' %}selected{% endif %}>{{ translations.status }}</option>
-        <option value="participants" {% if request.args.get('sort', 'date') == 'participants' %}selected{% endif %}>{{ translations.players }}</option>
-      </select>
-      <select id="order" name="order">
-        <option value="desc" {% if request.args.get('order', 'desc') == 'desc' %}selected{% endif %}>{{ translations.desc_label }}</option>
-        <option value="asc" {% if request.args.get('order', 'desc') == 'asc' %}selected{% endif %}>{{ translations.asc_label }}</option>
-      </select>
-      {% if total_count is defined and total_count > 10 %}
-        <label for="page_size" style="margin: 0;">{{ translations.page_size_label }}</label>
-        <select id="page_size" name="page_size">
-          {% for option in [10, 25, 50, 100] %}
-            <option value="{{ option }}" {% if page_size == option %}selected{% endif %}>{{ option }}</option>
-          {% endfor %}
-        </select>
-      {% endif %}
-      <button type="submit" class="button small">{{ translations.search if translations.search else 'Apply' }}</button>
+
+    <div class="filter-panel">
+      <div class="filter-header">
+        <h3>{{ translations.search }}</h3>
+      </div>
+
+      <div class="filter-grid">
+        <div class="filter-item wide">
+          <input id="tournament-search" name="search" type="search" value="{{ search_term }}" placeholder="{{ translations.search_placeholder }}">
+        </div>
+
+        <div class="filter-item compact">
+          <label for="sort">{{ translations.sort_label }}</label>
+          <select id="sort" name="sort">
+            <option value="date" {% if request.args.get('sort', 'date') == 'date' %}selected{% endif %}>{{ translations.date }}</option>
+            <option value="name" {% if request.args.get('sort', 'date') == 'name' %}selected{% endif %}>{{ translations.name_label }}</option>
+            <option value="status" {% if request.args.get('sort', 'date') == 'status' %}selected{% endif %}>{{ translations.status }}</option>
+            <option value="participants" {% if request.args.get('sort', 'date') == 'participants' %}selected{% endif %}>{{ translations.players }}</option>
+          </select>
+        </div>
+
+        <div class="filter-item compact">
+          <label for="order">{{ translations.order_label }}</label>
+          <select id="order" name="order">
+            <option value="desc" {% if request.args.get('order', 'desc') == 'desc' %}selected{% endif %}>{{ translations.desc_label }}</option>
+            <option value="asc" {% if request.args.get('order', 'desc') == 'asc' %}selected{% endif %}>{{ translations.asc_label }}</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="filter-actions">
+        <button type="submit" class="button">
+          {{ translations.search }}
+        </button>
+        <a class="button secondary" href="{{ url_for('tournaments', lang=lang, show_drafts=1 if show_drafts else None) }}">
+          {{ translations.clear_search }}
+        </a>
+      </div>
     </div>
   </form>
 
@@ -55,9 +72,9 @@
 
   <div class="filter-actions" style="gap: 0.75rem; flex-wrap: wrap; margin-top: 1rem;">
     {% if show_drafts %}
-      <a class="button small" href="{{ url_for('tournaments', lang=lang) }}">{{ translations.hide_drafts if translations.hide_drafts else 'Hide drafts' }}</a>
+      <a class="button small" href="{{ url_for('tournaments', lang=lang, search=search_term) }}">{{ translations.hide_drafts if translations.hide_drafts else 'Hide drafts' }}</a>
     {% else %}
-      <a class="button small" href="{{ url_for('tournaments', lang=lang, show_drafts=1) }}">{{ translations.show_drafts if translations.show_drafts else 'Show drafts' }}</a>
+      <a class="button small" href="{{ url_for('tournaments', lang=lang, show_drafts=1, search=search_term) }}">{{ translations.show_drafts if translations.show_drafts else 'Show drafts' }}</a>
     {% endif %}
   </div>
 
@@ -66,9 +83,15 @@
       {{ translations.showing_results }} {{ result_start }}-{{ result_end }} {{ translations.of_label }} {{ total_count }}
     </div>
     <div class="pagination-row">
-      {% if page > 1 %}<a class="button secondary" href="{{ url_for('tournaments', lang=lang, show_drafts=1 if show_drafts else None, sort=sort, order=order, page=page - 1, page_size=page_size) }}">{{ translations.prev_page }}</a>{% endif %}
+      <label for="tournaments-page-size">{{ translations.page_size_label }}</label>
+      <select id="tournaments-page-size" onchange="window.location.href = this.value">
+        {% for option in [10, 25, 50, 100] %}
+          <option value="{{ url_for('tournaments', lang=lang, show_drafts=1 if show_drafts else None, search=search_term, sort=sort, order=order, page=1, page_size=option) }}" {% if page_size == option %}selected{% endif %}>{{ option }}</option>
+        {% endfor %}
+      </select>
+      {% if page > 1 %}<a class="button secondary" href="{{ url_for('tournaments', lang=lang, show_drafts=1 if show_drafts else None, search=search_term, sort=sort, order=order, page=page - 1, page_size=page_size) }}">{{ translations.prev_page }}</a>{% endif %}
       <span aria-label="{{ translations.page_label }} {{ page }}">{{ translations.page_label }} {{ page }} {{ translations.of_label }} {{ total_pages }}</span>
-      {% if page < total_pages %}<a class="button" href="{{ url_for('tournaments', lang=lang, show_drafts=1 if show_drafts else None, sort=sort, order=order, page=page + 1, page_size=page_size) }}">{{ translations.next_page }}</a>{% endif %}
+      {% if page < total_pages %}<a class="button" href="{{ url_for('tournaments', lang=lang, show_drafts=1 if show_drafts else None, search=search_term, sort=sort, order=order, page=page + 1, page_size=page_size) }}">{{ translations.next_page }}</a>{% endif %}
     </div>
   {% endif %}
 </section>

@@ -78,7 +78,7 @@
         <tbody>
           {% for row in standings %}
             <tr>
-              <td class="standings-rank">{{ row.rank }}</td>
+              <td class="standings-rank{% if row.rank|int == 1 %} position-medal position-gold{% elif row.rank|int == 2 %} position-medal position-silver{% elif row.rank|int == 3 %} position-medal position-copper{% endif %}">{{ row.rank }}</td>
               <td class="standings-player">
                 {% if row.id and row.id > 0 %}
                   <a href="{{ url_for('player_profile', id=row.id, lang=lang) }}">{{ row.name }}</a>
