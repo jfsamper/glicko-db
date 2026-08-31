@@ -1782,13 +1782,129 @@ def manual_pair(conn, tournament_id, round_id, white_player_id, black_player_id,
     conn.commit()
 
 
+def update_pairing(conn, tournament_id, pairing_id, white_player_id, black_player_id):
+    pairing = conn.execute(
+        """
+        SELECT p.round_id, p.white_player_id AS old_white_player_id,
+               p.black_player_id AS old_black_player_id
+        FROM tournament_pairings p
+        JOIN tournament_rounds r ON r.id = p.round_id
+        WHERE p.id = ? AND r.tournament_id = ? AND p.is_bye = 0
+        """,
+        (pairing_id, tournament_id),
+    ).fetchone()
+    if pairing is None or white_player_id == black_player_id:
+        raise ValueError("Invalid pairing")
+
+    participant_ids = {
+        row[0]
+        for row in conn.execute(
+            "SELECT player_id FROM tournament_participants WHERE tournament_id = ?",
+            (tournament_id,),
+        ).fetchall()
+    }
+    if white_player_id not in participant_ids or black_player_id not in participant_ids:
+        raise ValueError("Both players must be in the tournament")
+
+    occupied = conn.execute(
+        """
+        SELECT 1 FROM tournament_pairings
+        WHERE round_id = ? AND id != ?
+          AND (white_player_id IN (?, ?) OR black_player_id IN (?, ?))
+        """,
+        (pairing["round_id"], pairing_id, white_player_id, black_player_id, white_player_id, black_player_id),
+    ).fetchone()
+    if occupied:
+        raise ValueError("A player is already paired in this round")
+
+    conn.execute(
+        """
+        UPDATE tournament_pairings
+        SET white_player_id = ?, black_player_id = ?
+        WHERE id = ?
+        """,
+        (white_player_id, black_player_id, pairing_id),
+    )
+    conn.execute(
+        """
+        DELETE FROM tournament_round_players
+        WHERE round_id = ? AND player_id IN (?, ?)
+        """,
+        (pairing["round_id"], pairing["old_white_player_id"], pairing["old_black_player_id"]),
+    )
+    conn.executemany(
+        "INSERT OR REPLACE INTO tournament_round_players (round_id, player_id, status) VALUES (?, ?, 'paired')",
+        [(pairing["round_id"], white_player_id), (pairing["round_id"], black_player_id)],
+    )
+    sync_pairing_match(conn, tournament_id, pairing_id)
+    _refresh_tournament_completion_state(conn, tournament_id, pairing["round_id"])
+    conn.commit()
+
+
+def sync_match_pairing(conn, match_id, white_player_id, black_player_id, result, handicap_stones):
+    """Propagate editable match fields back to its tournament pairing."""
+    ensure_tournament_match_identity(conn)
+    pairing_tables = {
+        row[0]
+        for row in conn.execute(
+            "SELECT name FROM sqlite_master WHERE type = 'table' AND name IN ('tournament_pairings', 'tournament_rounds')"
+        ).fetchall()
+    }
+    if len(pairing_tables) != 2:
+        return None
+    pairing = conn.execute(
+        """
+        SELECT p.id, p.round_id, r.tournament_id
+        FROM matches m
+        JOIN tournament_pairings p ON p.id = m.tournament_pairing_id
+        JOIN tournament_rounds r ON r.id = p.round_id
+        WHERE m.id = ?
+        """,
+        (match_id,),
+    ).fetchone()
+    if pairing is None:
+        return None
+    if result not in VALID_TOURNAMENT_RESULTS:
+        raise ValueError("Invalid tournament result")
+    participant_ids = {
+        row[0]
+        for row in conn.execute(
+            "SELECT player_id FROM tournament_participants WHERE tournament_id = ?",
+            (pairing["tournament_id"],),
+        ).fetchall()
+    }
+    if (
+        white_player_id == black_player_id
+        or white_player_id not in participant_ids
+        or black_player_id not in participant_ids
+    ):
+        raise ValueError("Both players must be in the tournament")
+    occupied = conn.execute(
+        """
+        SELECT 1 FROM tournament_pairings
+        WHERE round_id = ? AND id != ?
+          AND (white_player_id IN (?, ?) OR black_player_id IN (?, ?))
+        """,
+        (pairing["round_id"], pairing["id"], white_player_id, black_player_id, white_player_id, black_player_id),
+    ).fetchone()
+    if occupied:
+        raise ValueError("A player is already paired in this round")
+    conn.execute(
+        """
+        UPDATE tournament_pairings
+        SET white_player_id = ?, black_player_id = ?, result = ?, handicap_stones = ?
+        WHERE id = ?
+        """,
+        (white_player_id, black_player_id, result, handicap_stones or 0, pairing["id"]),
+    )
+    _refresh_tournament_completion_state(conn, pairing["tournament_id"], pairing["round_id"])
+    return pairing["tournament_id"]
+
+
 def update_pairing_handicap(conn, tournament_id, pairing_id, handicap_stones):
     """Lets a tournament director override the auto-suggested handicap for
-    an existing, not-yet-materialized pairing. Once a pairing's result has
-    already been processed into the matches table, editing the handicap
-    here does NOT retroactively touch that match -- the match row's own
-    handicap_stones would need a normal match edit + mark_dirty/replay,
-    same as editing any other match field.
+    an existing pairing. If the pairing has been materialized, the linked
+    match is updated as well.
     """
     if handicap_stones is None:
         raise ValueError("handicap_stones is required")
@@ -1811,6 +1927,7 @@ def update_pairing_handicap(conn, tournament_id, pairing_id, handicap_stones):
     ).rowcount
     if not updated:
         raise ValueError("Pairing not found")
+    sync_pairing_match(conn, tournament_id, pairing_id)
     conn.commit()
 
 
@@ -1835,7 +1952,171 @@ def unpair(conn, tournament_id, pairing_id):
             "DELETE FROM tournament_round_players WHERE round_id = ? AND player_id IN (?, ?)",
             (pairing["round_id"], pairing["white_player_id"], pairing["black_player_id"]),
         )
+        ensure_tournament_match_identity(conn)
+        conn.execute(
+            "DELETE FROM matches WHERE tournament_pairing_id = ?",
+            (pairing_id,),
+        )
+        _refresh_tournament_completion_state(conn, tournament_id, pairing["round_id"])
     conn.commit()
+
+
+def sync_pairing_match(conn, tournament_id, pairing_id):
+    """Keep the materialized match for a pairing synchronized with its source."""
+    ensure_tournament_match_identity(conn)
+    pairing = conn.execute(
+        """
+        SELECT p.id, p.white_player_id, p.black_player_id, p.result,
+               p.is_bye, p.handicap_stones, r.round_number, t.name,
+               t.begin_date, t.end_date
+        FROM tournament_pairings p
+        JOIN tournament_rounds r ON r.id = p.round_id
+        JOIN tournaments t ON t.id = r.tournament_id
+        WHERE p.id = ? AND r.tournament_id = ?
+        """,
+        (pairing_id, tournament_id),
+    ).fetchone()
+    if pairing is None:
+        raise ValueError("Pairing not found")
+
+    existing = conn.execute(
+        "SELECT id, match_date, event, notes, round_number FROM matches WHERE tournament_pairing_id = ?",
+        (pairing_id,),
+    ).fetchone()
+    valid_game = (
+        not pairing["is_bye"]
+        and pairing["white_player_id"] is not None
+        and pairing["black_player_id"] is not None
+        and pairing["result"] in VALID_TOURNAMENT_RESULTS
+    )
+    if not valid_game:
+        if existing is not None:
+            conn.execute("DELETE FROM matches WHERE id = ?", (existing["id"],))
+        return False
+
+    match_date = (
+        existing["match_date"]
+        if existing is not None
+        else pairing["begin_date"] or pairing["end_date"] or current_date().isoformat()
+    )
+    event = (
+        existing["event"]
+        if existing is not None and existing["event"]
+        else pairing["name"]
+    )
+    notes = (
+        existing["notes"]
+        if existing is not None and existing["notes"] is not None
+        else str(pairing["round_number"])
+    )
+    match_round = (
+        existing["round_number"]
+        if existing is not None and existing["round_number"] is not None
+        else pairing["round_number"]
+    )
+    handicap_stones = pairing["handicap_stones"] or 0
+    if existing is None:
+        conn.execute(
+            """
+            INSERT INTO matches
+                (match_date, white_player_id, black_player_id, result, event,
+                 notes, round_number, tournament_pairing_id, handicap_stones)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                match_date,
+                pairing["white_player_id"],
+                pairing["black_player_id"],
+                pairing["result"],
+                event,
+                notes,
+                match_round,
+                pairing_id,
+                handicap_stones,
+            ),
+        )
+    else:
+        conn.execute(
+            """
+            UPDATE matches
+            SET match_date = ?, white_player_id = ?, black_player_id = ?,
+                result = ?, event = ?, notes = ?, round_number = ?,
+                handicap_stones = ?
+            WHERE id = ?
+            """,
+            (
+                match_date,
+                pairing["white_player_id"],
+                pairing["black_player_id"],
+                pairing["result"],
+                event,
+                notes,
+                match_round,
+                handicap_stones,
+                existing["id"],
+            ),
+        )
+    return True
+
+
+def sync_tournament_matches(conn, tournament_id, name=None, match_date=None):
+    """Propagate edited tournament metadata to all materialized matches."""
+    if conn.execute(
+        "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'matches'"
+    ).fetchone() is None:
+        return 0
+    ensure_tournament_match_identity(conn)
+    fields = []
+    values = []
+    if name is not None:
+        fields.append("event = ?")
+        values.append(name)
+    if match_date:
+        fields.append("match_date = ?")
+        values.append(match_date)
+    if not fields:
+        return 0
+    values.append(tournament_id)
+    return conn.execute(
+        f"""
+        UPDATE matches AS m
+        SET {', '.join(fields)}
+        WHERE m.tournament_pairing_id IN (
+            SELECT p.id
+            FROM tournament_pairings p
+            JOIN tournament_rounds r ON r.id = p.round_id
+            WHERE r.tournament_id = ?
+        )
+        """,
+        values,
+    ).rowcount
+
+
+def save_tournament_matches(conn, tournament_id):
+    """Materialize and synchronize every completed pairing in a tournament."""
+    tournament = conn.execute(
+        "SELECT id FROM tournaments WHERE id = ?",
+        (tournament_id,),
+    ).fetchone()
+    if tournament is None:
+        raise ValueError("Tournament not found")
+
+    pairing_ids = conn.execute(
+        """
+        SELECT p.id
+        FROM tournament_pairings p
+        JOIN tournament_rounds r ON r.id = p.round_id
+        WHERE r.tournament_id = ?
+        ORDER BY r.round_number, p.board_number
+        """,
+        (tournament_id,),
+    ).fetchall()
+    saved = 0
+    for pairing in pairing_ids:
+        if sync_pairing_match(conn, tournament_id, pairing["id"]):
+            saved += 1
+    _refresh_tournament_completion_state(conn, tournament_id)
+    return saved
 
 
 def set_pairing_result(conn, tournament_id, pairing_id, result):
@@ -1866,6 +2147,7 @@ def set_pairing_result(conn, tournament_id, pairing_id, result):
     ).rowcount
     if not updated:
         raise ValueError("Pairing not found")
+    sync_pairing_match(conn, tournament_id, pairing_id)
     _refresh_tournament_completion_state(conn, tournament_id, pairing["round_id"])
     conn.commit()
 

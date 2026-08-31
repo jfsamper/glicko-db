@@ -34,6 +34,14 @@
           <input id="tournament_location" name="location" value="{{ tournament.location or '' }}">
         </div>
         <div class="filter-item">
+          <label for="tournament_begin_date">{{ translations.report_start_date }}</label>
+          <input id="tournament_begin_date" name="begin_date" type="date" value="{{ tournament.begin_date or '' }}">
+        </div>
+        <div class="filter-item">
+          <label for="tournament_end_date">{{ translations.report_end_date }}</label>
+          <input id="tournament_end_date" name="end_date" type="date" value="{{ tournament.end_date or '' }}">
+        </div>
+        <div class="filter-item">
           <label for="tournament_rounds">{{ translations.rounds }}</label>
           <input id="tournament_rounds" name="rounds" type="number" min="1" value="{{ tournament.rounds }}" required>
         </div>

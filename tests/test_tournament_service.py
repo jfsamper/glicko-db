@@ -30,9 +30,13 @@ from services.tournament_service import (
     remove_participant,
     read_gotha_tournament,
     _refresh_tournament_completion_state,
+    save_tournament_matches,
     set_pairing_result,
     set_round_player_status,
+    sync_match_pairing,
+    sync_tournament_matches,
     unpair,
+    update_pairing,
 )
 from services.helpers import normalize_key
 from services.import_gotha import GothaPlayer, GothaTournamentPayload
@@ -1223,6 +1227,87 @@ def test_process_tournament_round_matches_inserts_completed_pairings_into_rating
     ).fetchall()
     assert all(row["notes"] == str(round_number) for row in matches)
     assert all(row["round_number"] == round_number for row in matches)
+
+
+def test_completed_pairing_and_materialized_match_stay_in_sync():
+    conn = create_db()
+    seed_players(conn)
+    tournament_id = create_manual_tournament(conn, rounds=1, pairing_system="swiss")
+    conn.execute(
+        "UPDATE tournaments SET status = 'completed', begin_date = '2026-08-20' WHERE id = ?",
+        (tournament_id,),
+    )
+    for player_id in (1, 2, 3):
+        add_participant(conn, tournament_id, player_id)
+    conn.execute(
+        "INSERT INTO tournament_rounds (id, tournament_id, round_number, status) VALUES (1, ?, 1, 'completed')",
+        (tournament_id,),
+    )
+    conn.execute(
+        "INSERT INTO tournament_pairings (id, round_id, board_number, white_player_id, black_player_id, result) VALUES (10, 1, 1, 1, 2, '1-0')"
+    )
+    conn.commit()
+
+    set_pairing_result(conn, tournament_id, 10, "1/2-1/2")
+    match = conn.execute(
+        "SELECT match_date, event, white_player_id, black_player_id, result FROM matches WHERE tournament_pairing_id = 10"
+    ).fetchone()
+    assert tuple(match) == ("2026-08-20", "Manual tournament", 1, 2, "1/2-1/2")
+
+    update_pairing(conn, tournament_id, 10, 2, 3)
+    match = conn.execute(
+        "SELECT white_player_id, black_player_id FROM matches WHERE tournament_pairing_id = 10"
+    ).fetchone()
+    assert tuple(match) == (2, 3)
+
+    sync_tournament_matches(conn, tournament_id, name="Completed Open", match_date="2026-08-21")
+    match = conn.execute(
+        "SELECT match_date, event FROM matches WHERE tournament_pairing_id = 10"
+    ).fetchone()
+    assert tuple(match) == ("2026-08-21", "Completed Open")
+
+    sync_match_pairing(conn, match_id=1, white_player_id=3, black_player_id=2, result="0-1", handicap_stones=0)
+    pairing = conn.execute(
+        "SELECT white_player_id, black_player_id, result FROM tournament_pairings WHERE id = 10"
+    ).fetchone()
+    assert tuple(pairing) == (3, 2, "0-1")
+
+    set_pairing_result(conn, tournament_id, 10, "")
+    assert conn.execute("SELECT 1 FROM matches WHERE tournament_pairing_id = 10").fetchone() is None
+
+
+def test_save_tournament_matches_materializes_all_completed_pairings():
+    conn = create_db()
+    seed_players(conn)
+    tournament_id = create_manual_tournament(conn, rounds=2, pairing_system="swiss")
+    conn.execute(
+        "UPDATE tournaments SET begin_date = '2026-08-20' WHERE id = ?",
+        (tournament_id,),
+    )
+    for player_id in (1, 2, 3, 4):
+        add_participant(conn, tournament_id, player_id)
+    conn.executemany(
+        "INSERT INTO tournament_rounds (id, tournament_id, round_number, status) VALUES (?, ?, ?, 'completed')",
+        [(1, tournament_id, 1), (2, tournament_id, 2)],
+    )
+    conn.executemany(
+        """
+        INSERT INTO tournament_pairings
+            (id, round_id, board_number, white_player_id, black_player_id, result)
+        VALUES (?, ?, 1, ?, ?, '1-0')
+        """,
+        [(10, 1, 1, 2), (20, 2, 3, 4)],
+    )
+    conn.commit()
+
+    assert save_tournament_matches(conn, tournament_id) == 2
+    matches = conn.execute(
+        "SELECT tournament_pairing_id, match_date, event FROM matches ORDER BY tournament_pairing_id"
+    ).fetchall()
+    assert [tuple(row) for row in matches] == [
+        (10, "2026-08-20", "Manual tournament"),
+        (20, "2026-08-20", "Manual tournament"),
+    ]
 
 
 def test_set_pairing_result_rejects_invalid_and_bye_outcomes():

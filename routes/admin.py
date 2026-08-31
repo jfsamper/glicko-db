@@ -112,10 +112,14 @@ from services.tournament_service import (
     remove_participant,
     get_tournament_standings,
     TOURNAMENT_STATUSES,
+    save_tournament_matches,
     unpair,
     set_pairing_result,
     set_round_player_status,
     pair_selected_players,
+    sync_match_pairing,
+    sync_tournament_matches,
+    update_pairing,
     update_tournament_handicaps,
     update_pairing_handicap,
 )
@@ -1382,6 +1386,8 @@ def admin_update_tournament_settings(tournament_id):
     lang = get_language(request.args.get("lang"))
     name = request.form.get("name", "").strip()
     location = request.form.get("location", "").strip()
+    begin_date = request.form.get("begin_date")
+    end_date = request.form.get("end_date")
     rounds = normalize_tournament_rounds(request.form.get("rounds", 1, type=int))
     bye_points = request.form.get("bye_points", type=float)
     absent_points = request.form.get("absent_points", type=float)
@@ -1402,7 +1408,7 @@ def admin_update_tournament_settings(tournament_id):
     }
     optional_columns = [
         column for column in (
-            "acceleration_scheme", "acceleration_rounds", "category_rounds"
+            "begin_date", "end_date", "acceleration_scheme", "acceleration_rounds", "category_rounds"
         ) if column in tournament_columns
     ]
     optional_select = f", {', '.join(optional_columns)}" if optional_columns else ""
@@ -1414,6 +1420,19 @@ def admin_update_tournament_settings(tournament_id):
         if current_tournament is None:
             flash(TRANSLATIONS[lang]["error"])
             return redirect(url_for("admin_tournaments", lang=lang))
+
+        if begin_date is None:
+            begin_date = current_tournament["begin_date"] if "begin_date" in current_tournament.keys() else ""
+        if end_date is None:
+            end_date = current_tournament["end_date"] if "end_date" in current_tournament.keys() else ""
+        try:
+            begin_date = parse_date_value(begin_date) if begin_date else None
+            end_date = parse_date_value(end_date) if end_date else None
+            if begin_date and end_date and begin_date > end_date:
+                raise ValueError
+        except ValueError:
+            flash(TRANSLATIONS[lang]["error"])
+            return redirect(url_for("admin_tournament_settings", tournament_id=tournament_id, lang=lang))
 
         acceleration_scheme = (
             current_tournament["acceleration_scheme"]
@@ -1467,6 +1486,12 @@ def admin_update_tournament_settings(tournament_id):
             "absent_points = ?", "handicap_enabled = ?",
         ]
         update_values = [name, location, rounds, bye_points, absent_points, int(handicap_enabled)]
+        if "begin_date" in tournament_columns:
+            update_fields.append("begin_date = ?")
+            update_values.append(begin_date)
+        if "end_date" in tournament_columns:
+            update_fields.append("end_date = ?")
+            update_values.append(end_date)
         if "acceleration_scheme" in tournament_columns:
             update_fields.append("acceleration_scheme = ?")
             update_values.append(acceleration_scheme)
@@ -1484,13 +1509,39 @@ def admin_update_tournament_settings(tournament_id):
         if not updated:
             flash(TRANSLATIONS[lang]["error"])
         else:
+            has_matches = conn.execute(
+                "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'matches'"
+            ).fetchone() is not None
+            old_match_dates = []
+            if has_matches:
+                old_match_dates = conn.execute(
+                    """
+                    SELECT m.match_date
+                    FROM matches m
+                    JOIN tournament_pairings p ON p.id = m.tournament_pairing_id
+                    JOIN tournament_rounds r ON r.id = p.round_id
+                    WHERE r.tournament_id = ?
+                    """,
+                    (tournament_id,),
+                ).fetchall()
             update_tournament_handicaps(
                 conn,
                 tournament_id,
                 handicap_enabled,
                 apply_auto_handicap=apply_auto_handicap,
             )
+            updated_matches = sync_tournament_matches(
+                conn,
+                tournament_id,
+                name=name,
+                match_date=begin_date,
+            )
             conn.commit()
+            if updated_matches and begin_date:
+                for row in old_match_dates:
+                    mark_dirty(row["match_date"])
+                mark_dirty(begin_date)
+                refresh_stats()
             log_admin_action(
                 "tournament_settings_updated",
                 "tournament",
@@ -2088,14 +2139,62 @@ def admin_pair_selected_players(tournament_id):
         conn.close()
     return redirect_or_json(url_for("admin_tournament", tournament_id=tournament_id, lang=lang, round_id=request.form.get("round_id", type=int)))
 
+@admin_bp.route("/admin/tournaments/<int:tournament_id>/pairing-edit", methods=["POST"])
+def admin_edit_pairing(tournament_id):
+    if not admin_required():
+        return redirect(url_for("admin_login", lang=get_language(request.args.get("lang"))))
+    lang = get_language(request.args.get("lang"))
+    conn = get_db()
+    pairing_id = request.form.get("pairing_id", type=int)
+    round_id = request.form.get("round_id", type=int)
+    previous_dates = conn.execute(
+        "SELECT match_date FROM matches WHERE tournament_pairing_id = ?",
+        (pairing_id,),
+    ).fetchall()
+    try:
+        update_pairing(
+            conn,
+            tournament_id,
+            pairing_id,
+            request.form.get("white_player_id", type=int),
+            request.form.get("black_player_id", type=int),
+        )
+        log_admin_action(
+            "tournament_pairing_updated",
+            "tournament_pairing",
+            {"tournament_id": tournament_id, "pairing_id": pairing_id},
+            user_id=session.get("user_id"),
+        )
+        refresh_stats()
+        current_dates = conn.execute(
+            "SELECT match_date FROM matches WHERE tournament_pairing_id = ?",
+            (pairing_id,),
+        ).fetchall()
+        for row in previous_dates + current_dates:
+            mark_dirty(row["match_date"])
+        update_from_latest_snapshot()
+        flash(TRANSLATIONS[lang]["success"])
+    except ValueError as exc:
+        conn.rollback()
+        flash(f"{TRANSLATIONS[lang]['error']}: {exc}")
+    finally:
+        conn.close()
+    return redirect_or_json(
+        url_for("admin_tournament", tournament_id=tournament_id, lang=lang, round_id=round_id)
+    )
+
 @admin_bp.route("/admin/tournaments/<int:tournament_id>/unpair", methods=["POST"])
 def admin_unpair(tournament_id):
     if not admin_required():
         return redirect(url_for("admin_login", lang=get_language(request.args.get("lang"))))
     lang = get_language(request.args.get("lang"))
     conn = get_db()
+    pairing_id = request.form.get("pairing_id", type=int)
+    previous_dates = conn.execute(
+        "SELECT match_date FROM matches WHERE tournament_pairing_id = ?",
+        (pairing_id,),
+    ).fetchall()
     try:
-        pairing_id = request.form.get("pairing_id", type=int)
         unpair(conn, tournament_id, pairing_id)
         log_admin_action(
             "tournament_pairing_removed",
@@ -2103,6 +2202,10 @@ def admin_unpair(tournament_id):
             {"tournament_id": tournament_id, "pairing_id": pairing_id},
             user_id=session.get("user_id"),
         )
+        refresh_stats()
+        for row in previous_dates:
+            mark_dirty(row["match_date"])
+        update_from_latest_snapshot()
         flash(TRANSLATIONS[lang]["success"])
     except ValueError as exc:
         flash(f"{TRANSLATIONS[lang]['error']}: {exc}")
@@ -2116,17 +2219,34 @@ def admin_set_tournament_result(tournament_id):
         return redirect(url_for("admin_login", lang=get_language(request.args.get("lang"))))
     lang = get_language(request.args.get("lang"))
     conn = get_db()
+    pairing_id = request.form.get("pairing_id", type=int)
+    previous_dates = conn.execute(
+        """
+        SELECT m.match_date
+        FROM matches m
+        WHERE m.tournament_pairing_id = ?
+        """,
+        (pairing_id,),
+    ).fetchall()
     try:
         set_pairing_result(
             conn,
             tournament_id,
-            request.form.get("pairing_id", type=int),
+            pairing_id,
             request.form.get("result", ""),
         )
+        current_dates = conn.execute(
+            "SELECT match_date FROM matches WHERE tournament_pairing_id = ?",
+            (pairing_id,),
+        ).fetchall()
+        refresh_stats()
+        for row in previous_dates + current_dates:
+            mark_dirty(row["match_date"])
+        update_from_latest_snapshot()
         log_admin_action(
             "tournament_result_updated",
             "tournament_pairing",
-            {"tournament_id": tournament_id, "pairing_id": request.form.get("pairing_id", type=int)},
+            {"tournament_id": tournament_id, "pairing_id": pairing_id},
             user_id=session.get("user_id"),
         )
         flash(TRANSLATIONS[lang]["success"])
@@ -2154,6 +2274,50 @@ def admin_generate_tournament_round(tournament_id):
         )
         flash(TRANSLATIONS[lang]["success"])
     except ValueError as exc:
+        flash(f"{TRANSLATIONS[lang]['error']}: {exc}")
+    finally:
+        conn.close()
+    return redirect_or_json(url_for("admin_tournament", tournament_id=tournament_id, lang=lang))
+
+@admin_bp.route("/admin/tournaments/<int:tournament_id>/save", methods=["POST"])
+def admin_save_tournament(tournament_id):
+    if not admin_required():
+        return redirect(
+            url_for("admin_login", lang=get_language(request.args.get("lang")))
+        )
+    lang = get_language(request.args.get("lang"))
+    conn = get_db()
+    try:
+        saved = save_tournament_matches(conn, tournament_id)
+        conn.commit()
+        if saved:
+            refresh_stats()
+            earliest = conn.execute(
+                """
+                SELECT MIN(m.match_date)
+                FROM matches m
+                JOIN tournament_pairings p ON p.id = m.tournament_pairing_id
+                JOIN tournament_rounds r ON r.id = p.round_id
+                WHERE r.tournament_id = ?
+                """,
+                (tournament_id,),
+            ).fetchone()[0]
+            if earliest:
+                mark_dirty(earliest)
+                update_from_latest_snapshot()
+        log_admin_action(
+            "tournament_saved",
+            "tournament",
+            {"tournament_id": tournament_id, "matches_saved": saved},
+            user_id=session.get("user_id"),
+        )
+        flash(f"{TRANSLATIONS[lang]['success']} ({saved} matches)")
+    except ValueError as exc:
+        conn.rollback()
+        flash(f"{TRANSLATIONS[lang]['error']}: {exc}")
+    except sqlite3.DatabaseError as exc:
+        conn.rollback()
+        logger.exception("Tournament save failed for %s", tournament_id)
         flash(f"{TRANSLATIONS[lang]['error']}: {exc}")
     finally:
         conn.close()
@@ -2367,6 +2531,14 @@ def admin_edit_match():
                     """,
                     (match_date.strip(), w_id, b_id, result, event, notes, normalize_round_note(raw_notes), handicap_stones, match_id),
                 )
+                sync_match_pairing(
+                    conn,
+                    match_id,
+                    w_id,
+                    b_id,
+                    result,
+                    handicap_stones,
+                )
                 conn.commit()
                 refresh_stats()
                 mark_dirty(match["match_date"])
@@ -2379,6 +2551,9 @@ def admin_edit_match():
                     {"match_id": match_id},
                     user_id=session.get("user_id"),
                 )
+            except ValueError as exc:
+                conn.rollback()
+                flash(f"{TRANSLATIONS[lang]['error']}: {exc}")
             except sqlite3.DatabaseError as exc:
                 logger.exception("Match %s was saved, but post-save statistics refresh failed; restoring backup.", match_id)
                 backup_path = get_latest_valid_backup_path()

@@ -45,6 +45,10 @@
     <div class="tournament-actions">
       <a class="button" href="{{ url_for('admin_tournament_settings', tournament_id=tournament.id, lang=lang) }}">{{ translations.settings }}</a>
       <a class="button" href="{{ url_for('admin_tournament_players', tournament_id=tournament.id, lang=lang) }}">{{ translations.player_management }}</a>
+      <form method="post" action="{{ url_for('admin_save_tournament', tournament_id=tournament.id, lang=lang) }}" class="inline-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        <button type="submit" class="button">{{ translations.save_changes }}</button>
+      </form>
       <a class="button" href="{{ url_for('admin_export_tournament_results', tournament_id=tournament.id, lang=lang) }}">{{ translations.export_results }}</a>
     </div>
     {% if pending_players %}
@@ -92,30 +96,6 @@
         </ul>
         <small>{{ translations.pending_new_players_hint }}</small>
       </div>
-    {% endif %}
-    {% if selected_round_id %}
-    <form method="post" action="{{ url_for('admin_process_tournament_round', tournament_id=tournament.id, lang=lang) }}" class="filter-form" data-async-admin-action="1">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-      <div class="filter-panel">
-        <div class="filter-header">
-          <h3>{{ translations.process_matches }}</h3>
-        </div>
-        <input type="hidden" name="round_id" value="{{ selected_round_id }}">
-        <div class="filter-grid">
-          <div class="filter-item">
-            <label for="process_match_date">{{ translations.match_date_label }}</label>
-            <input id="process_match_date" type="date" name="match_date" value="{{ tournament.begin_date or '' }}">
-          </div>
-          <div class="filter-item">
-            <label for="process_event">{{ translations.event_label }}</label>
-            <input id="process_event" type="text" name="event" value="{{ tournament.name }}" placeholder="{{ translations.event_label }}">
-          </div>
-        </div>
-        <div class="filter-actions">
-          <button type="submit" class="button">{{ translations.process_matches }}</button>
-        </div>
-      </div>
-    </form>
     {% endif %}
   </div>
   
