@@ -38,6 +38,7 @@ from services.tournament_service import (
     unpair,
     update_pairing,
 )
+from services.pairing_service import default_acceleration_rounds
 from services.helpers import normalize_key
 from services.import_gotha import GothaPlayer, GothaTournamentPayload
 
@@ -158,7 +159,14 @@ def create_manual_tournament(conn, rounds=5, pairing_system="swiss", name="Manua
         "INSERT INTO tournaments (name, rounds, pairing_system, tournament_type) VALUES (?, ?, ?, ?)",
         (name, rounds, pairing_system, pairing_system),
     )
-    return conn.execute("SELECT last_insert_rowid()").fetchone()[0]
+    tournament_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
+    columns = {row[1] for row in conn.execute("PRAGMA table_info(tournaments)").fetchall()}
+    if "acceleration_rounds" in columns:
+        conn.execute(
+            "UPDATE tournaments SET acceleration_rounds = ? WHERE id = ?",
+            (default_acceleration_rounds(rounds), tournament_id),
+        )
+    return tournament_id
 
 
 def test_suggest_player_name_uses_token_overlap_for_reordered_names():
@@ -184,7 +192,7 @@ def test_suggest_player_name_uses_token_overlap_for_reordered_names():
 
 def test_acceleration_policy_uses_rating_seed_and_expires_after_opening_rounds():
     conn = create_db()
-    conn.execute("ALTER TABLE tournaments ADD COLUMN acceleration_rounds INTEGER NOT NULL DEFAULT 2")
+    conn.execute("ALTER TABLE tournaments ADD COLUMN acceleration_rounds INTEGER NOT NULL DEFAULT 1")
     conn.execute("ALTER TABLE tournaments ADD COLUMN category_rounds INTEGER NOT NULL DEFAULT 0")
     conn.execute("ALTER TABLE tournaments ADD COLUMN acceleration_scheme TEXT NOT NULL DEFAULT '34:2,33:1,33:0'")
     tournament_id = create_manual_tournament(conn, rounds=4, pairing_system="accelerated_swiss")
@@ -220,7 +228,7 @@ def test_acceleration_policy_uses_rating_seed_and_expires_after_opening_rounds()
 
 def test_accelerated_standings_drop_virtual_points_after_acceleration_rounds():
     conn = create_db()
-    conn.execute("ALTER TABLE tournaments ADD COLUMN acceleration_rounds INTEGER NOT NULL DEFAULT 2")
+    conn.execute("ALTER TABLE tournaments ADD COLUMN acceleration_rounds INTEGER NOT NULL DEFAULT 1")
     conn.execute("ALTER TABLE tournaments ADD COLUMN acceleration_scheme TEXT NOT NULL DEFAULT '34:2,33:1,33:0'")
     tournament_id = create_manual_tournament(conn, rounds=3, pairing_system="accelerated_swiss")
     for player_id, rating in enumerate((1200, 1500, 1800, 2100), 1):
@@ -250,7 +258,7 @@ def test_accelerated_standings_drop_virtual_points_after_acceleration_rounds():
 
 def test_accelerated_pairing_uses_first_round_results_for_second_round():
     conn = create_db()
-    conn.execute("ALTER TABLE tournaments ADD COLUMN acceleration_rounds INTEGER NOT NULL DEFAULT 2")
+    conn.execute("ALTER TABLE tournaments ADD COLUMN acceleration_rounds INTEGER NOT NULL DEFAULT 1")
     conn.execute("ALTER TABLE tournaments ADD COLUMN acceleration_scheme TEXT NOT NULL DEFAULT '34:2,33:1,33:0'")
     tournament_id = create_manual_tournament(conn, rounds=3, pairing_system="accelerated_swiss")
     ratings = (2100, 2050, 2000, 1950, 1900, 1850, 1800, 1750)
@@ -360,7 +368,7 @@ def test_opengotha_accelerated_import_persists_default_go_acceleration_scheme():
     conn = create_db()
     seed_players(conn)
     conn.execute("ALTER TABLE tournaments ADD COLUMN acceleration_scheme TEXT NOT NULL DEFAULT '34:2,33:1,33:0'")
-    conn.execute("ALTER TABLE tournaments ADD COLUMN acceleration_rounds INTEGER NOT NULL DEFAULT 2")
+    conn.execute("ALTER TABLE tournaments ADD COLUMN acceleration_rounds INTEGER NOT NULL DEFAULT 1")
     conn.execute("ALTER TABLE tournaments ADD COLUMN category_rounds INTEGER NOT NULL DEFAULT 0")
 
     tournament_id, metadata, _ = create_tournament_from_gotha(
@@ -375,7 +383,7 @@ def test_opengotha_accelerated_import_persists_default_go_acceleration_scheme():
     assert stored["tournament_type"] == "accelerated_swiss"
     assert stored["pairing_system"] == "accelerated_swiss"
     assert stored["acceleration_scheme"] == "34:2,33:1,33:0"
-    assert stored["acceleration_rounds"] == 2
+    assert stored["acceleration_rounds"] == 3
 
 
 def test_opengotha_metadata_and_pairing_parameters_are_read():
@@ -390,7 +398,7 @@ def test_opengotha_metadata_and_pairing_parameters_are_read():
     assert metadata["placement_criteria"] == "NBW,SOSW,SOSOSW,NULL,NULL,NULL"
     assert metadata["pairing_system"] == "swiss"
     assert metadata["acceleration_scheme"] == "34:2,33:1,33:0"
-    assert metadata["acceleration_rounds"] == 2
+    assert metadata["acceleration_rounds"] == 3
     assert metadata["category_rounds"] == 0
 
 

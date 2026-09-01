@@ -94,10 +94,10 @@ from services.pairing_service import (
     ACCELERATION_SCHEMES,
     DEFAULT_ACCELERATION_CATEGORIES,
     DEFAULT_ACCELERATION_FLOORS,
-    DEFAULT_ACCELERATION_ROUNDS,
     DEFAULT_CATEGORY_ROUNDS,
     DEFAULT_ACCELERATION_SCHEME,
     acceleration_category_settings,
+    default_acceleration_rounds,
     parse_rank_category,
     serialize_acceleration_categories,
     validate_acceleration_categories,
@@ -992,8 +992,11 @@ def admin_import():
                 }
                 if metadata_overrides["pairing_system"] == "accelerated_swiss":
                     metadata_overrides["acceleration_scheme"] = acceleration_scheme_from_form(request.form)
+                    metadata_rounds = request.form.get("metadata_rounds", type=int) or 1
                     metadata_overrides["acceleration_rounds"] = request.form.get(
-                        "metadata_acceleration_rounds", DEFAULT_ACCELERATION_ROUNDS, type=int
+                        "metadata_acceleration_rounds",
+                        default_acceleration_rounds(metadata_rounds),
+                        type=int,
                     )
                 if metadata_overrides["pairing_system"] == "swiss_cat":
                     metadata_overrides["category_rounds"] = request.form.get(
@@ -1354,6 +1357,9 @@ def admin_tournaments():
                 if "acceleration_scheme" in tournament_columns:
                     insert_columns.append("acceleration_scheme")
                     tournament_values.append(acceleration_scheme)
+                if pairing_system == "accelerated_swiss" and "acceleration_rounds" in tournament_columns:
+                    insert_columns.append("acceleration_rounds")
+                    tournament_values.append(default_acceleration_rounds(rounds))
                 if "handicap_enabled" in tournament_columns:
                     insert_columns.append("handicap_enabled")
                     tournament_values.append(handicap_enabled)
@@ -1564,7 +1570,7 @@ def admin_update_tournament_settings(tournament_id):
 
         try:
             acceleration_rounds = (
-                DEFAULT_ACCELERATION_ROUNDS
+                default_acceleration_rounds(rounds)
                 if acceleration_rounds in (None, "")
                 else int(acceleration_rounds)
             )
@@ -1693,7 +1699,8 @@ def admin_tournament_settings(tournament_id):
         acceleration_rounds=(
             tournament["acceleration_rounds"]
             if "acceleration_rounds" in tournament.keys()
-            else DEFAULT_ACCELERATION_ROUNDS
+            and tournament["acceleration_rounds"] is not None
+            else default_acceleration_rounds(tournament["rounds"])
         ),
         category_rounds=(
             tournament["category_rounds"]

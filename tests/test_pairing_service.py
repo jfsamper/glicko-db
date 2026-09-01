@@ -2,6 +2,7 @@ import pytest
 
 from services.pairing_service import (
     acceleration_for_rank,
+    default_acceleration_rounds,
     format_rank_category,
     parse_acceleration_categories,
     parse_rank_category,
@@ -123,6 +124,14 @@ def test_acceleration_and_mcmahon_seeding_points_are_deterministic():
     assert acceleration_for_rank(8, 8) == 0.0
     assert mcmahon_initial_score(1, 8) == 1.0
     assert mcmahon_initial_score(8, 8) == 0.0
+
+
+@pytest.mark.parametrize(
+    ("total_rounds", "expected_acceleration_rounds"),
+    [(1, 1), (2, 1), (3, 2), (4, 2), (5, 3), (6, 3), (7, 4)],
+)
+def test_acceleration_rounds_default_to_ceiling_half(total_rounds, expected_acceleration_rounds):
+    assert default_acceleration_rounds(total_rounds) == expected_acceleration_rounds
 
 
 def test_acceleration_scheme_can_configure_seed_bands():

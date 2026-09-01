@@ -22,6 +22,7 @@ sys.path.insert(0, str(ROOT))
 from config import DB_PATH, DEFAULT_RATING
 from services.pairing_service import (
     acceleration_for_rank,
+    default_acceleration_rounds,
     mcmahon_initial_score,
     pair_players,
 )
@@ -150,7 +151,7 @@ def create_tournament(
     ]
     optional_values = {
         "acceleration_scheme": "34:2,33:1,33:0",
-        "acceleration_rounds": 2,
+        "acceleration_rounds": default_acceleration_rounds(rounds),
         "category_rounds": 0,
         "mm_bar": 8,
         "mm_floor": -30,

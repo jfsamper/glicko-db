@@ -84,7 +84,7 @@
         </div>
         <div class="filter-item import-accelerated-setting">
           <label for="metadata_acceleration_rounds">{{ translations.acceleration_rounds }}</label>
-          <input id="metadata_acceleration_rounds" name="metadata_acceleration_rounds" type="number" min="0" max="{{ preview.metadata.rounds or 1 }}" form="commit-preview-form" value="{{ preview.metadata.acceleration_rounds or 2 }}">
+          <input id="metadata_acceleration_rounds" name="metadata_acceleration_rounds" type="number" min="0" max="{{ preview.metadata.rounds or 1 }}" form="commit-preview-form" value="{{ preview.metadata.acceleration_rounds if preview.metadata.acceleration_rounds is not none else ((preview.metadata.rounds|int + 1) // 2) }}">
         </div>
         <div class="filter-item import-accelerated-setting">
           <label for="metadata_acceleration_scheme_choice">{{ translations.acceleration_scheme }}</label>

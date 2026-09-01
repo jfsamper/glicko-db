@@ -711,7 +711,7 @@ def test_migrate_tournament_schema_applies_new_columns_to_previous_version(tmp_p
     assert conn.execute("SELECT rounds FROM tournaments WHERE id = 1").fetchone()[0] == 1
     assert conn.execute("SELECT handicap_enabled FROM tournaments WHERE id = 1").fetchone()[0] == 0
     assert conn.execute("SELECT acceleration_scheme FROM tournaments WHERE id = 1").fetchone()[0] == "34:2,33:1,33:0"
-    assert conn.execute("SELECT acceleration_rounds FROM tournaments WHERE id = 1").fetchone()[0] == 2
+    assert conn.execute("SELECT acceleration_rounds FROM tournaments WHERE id = 1").fetchone()[0] == 1
     assert conn.execute("SELECT category_rounds FROM tournaments WHERE id = 1").fetchone()[0] == 0
     assert conn.execute("PRAGMA user_version").fetchone()[0] == 6
     conn.close()

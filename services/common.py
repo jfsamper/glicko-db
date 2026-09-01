@@ -258,7 +258,7 @@ TRANSLATIONS = {
         "invalid_reset_token": "El enlace no es válido o ya expiró",
         "invalid_password": "Contraseña incorrecta",
         "welcome_user": "Bienvenido",
-        "admin_menu_link": "Menú de administración",
+        "admin_menu_link": "Menú de Admin",
         "admin_heading": "Administración",
         "admin_tournament_operations_heading": "Operaciones de torneos",
         "admin_data_management_heading": "Gestión de datos",

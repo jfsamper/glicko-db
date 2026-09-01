@@ -28,8 +28,17 @@ DEFAULT_ACCELERATION_FLOORS = (0, -5)
 MIN_CATEGORY_RANK = -30
 MAX_CATEGORY_RANK = 8
 MAX_ACCELERATION_CATEGORIES = 10
-DEFAULT_ACCELERATION_ROUNDS = 2
+DEFAULT_ACCELERATION_ROUNDS = 1
 DEFAULT_CATEGORY_ROUNDS = 0
+
+
+def default_acceleration_rounds(total_rounds):
+    """Return half of the tournament length, rounded up, with a minimum of one."""
+    try:
+        normalized_rounds = max(1, int(total_rounds))
+    except (TypeError, ValueError):
+        normalized_rounds = 1
+    return max(1, (normalized_rounds + 1) // 2)
 
 
 def format_rank_category(rank):

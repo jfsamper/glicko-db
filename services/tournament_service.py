@@ -12,9 +12,9 @@ from services.helpers import normalize_key, normalize_text
 from services.import_gotha import GothaPlayer, GothaTournamentPayload
 from services.pairing_service import (
     DEFAULT_ACCELERATION_SCHEME,
-    DEFAULT_ACCELERATION_ROUNDS,
     DEFAULT_CATEGORY_ROUNDS,
     acceleration_for_rank,
+    default_acceleration_rounds,
     mcmahon_initial_score,
     mcmahon_score_from_rank,
     pair_players,
@@ -157,7 +157,7 @@ def _pairing_policy(tournament, round_number):
     acceleration_rounds = (
         int(tournament["acceleration_rounds"])
         if "acceleration_rounds" in tournament.keys() and tournament["acceleration_rounds"] is not None
-        else DEFAULT_ACCELERATION_ROUNDS
+        else default_acceleration_rounds(tournament["rounds"] if "rounds" in tournament.keys() else 1)
     )
     category_rounds = (
         int(tournament["category_rounds"])
@@ -315,19 +315,20 @@ def read_gotha_tournament(
         if tournament_type == "mcmahon" and mm_zero not in (None, "")
         else 30
     )
+    tournament_rounds = normalize_tournament_rounds(general.get("numberOfRounds") or 1)
     return GothaTournamentPayload(
         name=general.get("name", Path(xml_path).stem),
         short_name=general.get("shortName", Path(xml_path).stem),
         location=general.get("location", ""),
         begin_date=general.get("beginDate", ""),
         end_date=general.get("endDate", ""),
-        rounds=normalize_tournament_rounds(general.get("numberOfRounds") or 1),
+        rounds=tournament_rounds,
         players=players,
         pairing_parameters=dict(pairing_parameters.attrib) if pairing_parameters is not None else {},
         tournament_type=tournament_type,
         pairing_system=pairing_system,
         acceleration_scheme=DEFAULT_ACCELERATION_SCHEME,
-        acceleration_rounds=DEFAULT_ACCELERATION_ROUNDS,
+        acceleration_rounds=default_acceleration_rounds(tournament_rounds),
         category_rounds=DEFAULT_CATEGORY_ROUNDS,
         bye_points=(mms2_bye if tournament_type == "mcmahon" else nbw2_bye) / 2,
         absent_points=(mms2_absent if tournament_type == "mcmahon" else nbw2_absent) / 2,
@@ -1164,9 +1165,10 @@ def create_tournament_from_gotha(
         "tournament_type", "pairing_system", "bye_points", "absent_points",
         "placement_criteria",
     ]
+    tournament_rounds = normalize_tournament_rounds(metadata["rounds"])
     insert_values = [
         metadata["name"], metadata["short_name"], metadata["location"],
-        metadata["begin_date"], metadata["end_date"], normalize_tournament_rounds(metadata["rounds"]),
+        metadata["begin_date"], metadata["end_date"], tournament_rounds,
         metadata["tournament_type"], pairing_system,
         metadata["bye_points"], metadata["absent_points"],
         metadata["placement_criteria"],
@@ -1184,7 +1186,12 @@ def create_tournament_from_gotha(
         insert_values.append(metadata.get("acceleration_scheme") or DEFAULT_ACCELERATION_SCHEME)
     if "acceleration_rounds" in tournament_columns:
         insert_columns.append("acceleration_rounds")
-        insert_values.append(int(metadata.get("acceleration_rounds") or DEFAULT_ACCELERATION_ROUNDS))
+        acceleration_rounds = metadata.get("acceleration_rounds")
+        insert_values.append(
+            default_acceleration_rounds(tournament_rounds)
+            if acceleration_rounds in (None, "")
+            else int(acceleration_rounds)
+        )
     if "category_rounds" in tournament_columns:
         insert_columns.append("category_rounds")
         insert_values.append(int(metadata.get("category_rounds") or DEFAULT_CATEGORY_ROUNDS))
@@ -2402,7 +2409,7 @@ def get_tournament_standings(conn, tournament_id):
     acceleration_rounds = (
         int(tournament["acceleration_rounds"])
         if "acceleration_rounds" in tournament.keys() and tournament["acceleration_rounds"] is not None
-        else DEFAULT_ACCELERATION_ROUNDS
+        else default_acceleration_rounds(tournament["rounds"] if "rounds" in tournament.keys() else 1)
     )
     acceleration_active = (
         tournament["pairing_system"] == "accelerated_swiss"

@@ -585,7 +585,7 @@ def migrate_tournament_schema(conn):
             "tournament_type": "TEXT NOT NULL DEFAULT 'swiss'",
             "pairing_system": "TEXT NOT NULL DEFAULT 'swiss'",
             "acceleration_scheme": "TEXT NOT NULL DEFAULT '34:2,33:1,33:0'",
-            "acceleration_rounds": "INTEGER NOT NULL DEFAULT 2",
+            "acceleration_rounds": "INTEGER NOT NULL DEFAULT 1",
             "category_rounds": "INTEGER NOT NULL DEFAULT 0",
             "bye_points": "REAL NOT NULL DEFAULT 1",
             "absent_points": "REAL NOT NULL DEFAULT 0",
