@@ -69,7 +69,7 @@
           <input type="hidden" name="apply_auto_handicap" value="0">
         </div>
       </div>
-      {% if tournament.pairing_system == 'accelerated_swiss' %}
+      {% if tournament.tournament_type == 'accelerated_swiss' %}
         {% set category_count = acceleration_categories[0] %}
         {% set category_floors = acceleration_categories[1] %}
         <fieldset class="settings-section" id="acceleration-categories">
@@ -80,21 +80,53 @@
               <input id="acceleration_rounds" name="acceleration_rounds" type="number" min="0" max="{{ tournament.rounds }}" value="{{ acceleration_rounds }}" required>
             </div>
             <div class="filter-item">
+              <label for="acceleration_scheme_choice">{{ translations.acceleration_scheme }}</label>
+              <select id="acceleration_scheme_choice" name="acceleration_scheme_choice">
+                {% for choice, option in acceleration_scheme_options.items() %}
+                  <option value="{{ choice }}" {% if acceleration_scheme_choice == choice %}selected{% endif %}>{{ option.label }}</option>
+                {% endfor %}
+                <option value="category_limits" {% if acceleration_scheme_choice == 'category_limits' %}selected{% endif %}>{{ translations.acceleration_category_limits }}</option>
+              </select>
+            </div>
+            <div class="filter-item acceleration-category-setting" {% if acceleration_scheme_choice != 'category_limits' %}hidden{% endif %}>
               <label for="number_of_categories">{{ translations.acceleration_category_count }}</label>
-              <input id="number_of_categories" name="number_of_categories" type="number" min="1" max="10" value="{{ category_count }}" required>
+              <input id="number_of_categories" name="number_of_categories" type="number" min="1" max="10" value="{{ category_count }}" {% if acceleration_scheme_choice == 'category_limits' %}required{% endif %}>
             </div>
           </div>
-          <div id="category-floors" class="filter-grid">
+          <div id="category-floors" class="filter-grid acceleration-category-setting" {% if acceleration_scheme_choice != 'category_limits' %}hidden{% endif %}>
             {% for index in range(category_count - 1) %}
               <div class="filter-item">
                 <label for="acceleration_floor_{{ index }}">{{ translations.acceleration_category_floor }} {{ index + 1 }}</label>
-                <input id="acceleration_floor_{{ index }}" name="category_floor" type="text" inputmode="text" placeholder="3 dan" value="{{ format_rank_category(category_floors[index]) if index < category_floors|length else '30 kyu' }}" required>
+                <select id="acceleration_floor_{{ index }}" name="category_floor" {% if acceleration_scheme_choice == 'category_limits' %}required{% endif %}>
+                  {% for rank in range(8, -31, -1) %}
+                    <option value="{{ rank }}" {% if index < category_floors|length and category_floors[index] == rank %}selected{% endif %}>{{ format_rank_category(rank) }}</option>
+                  {% endfor %}
+                </select>
               </div>
             {% endfor %}
           </div>
         </fieldset>
       {% endif %}
-      {% if tournament.pairing_system == 'swiss_cat' %}
+      {% if tournament.tournament_type == 'mcmahon' %}
+        <fieldset class="settings-section" id="mcmahon-settings">
+          <legend>{{ translations.mcmahon_settings }}</legend>
+          <div class="filter-grid">
+            <div class="filter-item">
+              <label for="mm_bar">{{ translations.mcmahon_bar }}</label>
+              <input id="mm_bar" name="mm_bar" type="text" inputmode="text" value="{{ tournament.mm_bar if tournament.mm_bar is not none else 8 }}" required>
+            </div>
+            <div class="filter-item">
+              <label for="mm_floor">{{ translations.mcmahon_floor }}</label>
+              <input id="mm_floor" name="mm_floor" type="text" inputmode="text" value="{{ tournament.mm_floor if tournament.mm_floor is not none else -30 }}" required>
+            </div>
+            <div class="filter-item">
+              <label for="mm_zero">{{ translations.mcmahon_zero }}</label>
+              <input id="mm_zero" name="mm_zero" type="number" min="0" value="{{ tournament.mm_zero if tournament.mm_zero is not none else 0 }}" required>
+            </div>
+          </div>
+        </fieldset>
+      {% endif %}
+      {% if tournament.tournament_type == 'swiss_cat' %}
         <fieldset class="settings-section" id="category-sections">
           <legend>{{ translations.category_sections }}</legend>
           <div class="filter-grid">
@@ -126,11 +158,24 @@
 
     const categoryCount = document.getElementById("number_of_categories");
     const floors = document.getElementById("category-floors");
+    const schemeChoice = document.getElementById("acceleration_scheme_choice");
+    const categorySettings = document.querySelectorAll(".acceleration-category-setting");
+    const updateCategoryVisibility = () => {
+      const showCategories = schemeChoice?.value === "category_limits";
+      categorySettings.forEach((element) => {
+        element.hidden = !showCategories;
+        element.querySelectorAll("input, select").forEach((control) => {
+          control.required = showCategories;
+        });
+      });
+    };
+    schemeChoice?.addEventListener("change", updateCategoryVisibility);
+    updateCategoryVisibility();
     if (!categoryCount || !floors) return;
 
     categoryCount.addEventListener("input", () => {
       const count = Math.max(1, Math.min(10, Number.parseInt(categoryCount.value, 10) || 1));
-      const values = Array.from(floors.querySelectorAll("input[name='category_floor']"), (input) => input.value);
+      const values = Array.from(floors.querySelectorAll("select[name='category_floor']"), (select) => select.value);
       floors.replaceChildren();
       for (let index = 0; index < count - 1; index += 1) {
         const item = document.createElement("div");
@@ -138,15 +183,18 @@
         const label = document.createElement("label");
         label.htmlFor = `acceleration_floor_${index}`;
         label.textContent = `{{ translations.acceleration_category_floor }} ${index + 1}`;
-        const input = document.createElement("input");
-        input.id = `acceleration_floor_${index}`;
-        input.name = "category_floor";
-        input.type = "text";
-        input.inputMode = "text";
-        input.placeholder = "3 dan";
-        input.required = true;
-        input.value = values[index] || "30 kyu";
-        item.append(label, input);
+        const select = document.createElement("select");
+        select.id = `acceleration_floor_${index}`;
+        select.name = "category_floor";
+        select.required = schemeChoice?.value === "category_limits";
+        for (let rank = 8; rank >= -30; rank -= 1) {
+          const option = document.createElement("option");
+          option.value = String(rank);
+          option.textContent = rank >= 0 ? `${rank + 1} dan` : `${Math.abs(rank)} kyu`;
+          option.selected = option.value === (values[index] || "-30");
+          select.append(option);
+        }
+        item.append(label, select);
         floors.append(item);
       }
     });

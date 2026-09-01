@@ -118,8 +118,8 @@ def test_color_balance_prefers_black_for_player_with_more_white_games():
 
 
 def test_acceleration_and_mcmahon_seeding_points_are_deterministic():
-    assert acceleration_for_rank(1, 8) == 1.0
-    assert acceleration_for_rank(6, 8) == 0.5
+    assert acceleration_for_rank(1, 8) == 2.0
+    assert acceleration_for_rank(4, 8) == 1.0
     assert acceleration_for_rank(8, 8) == 0.0
     assert mcmahon_initial_score(1, 8) == 1.0
     assert mcmahon_initial_score(8, 8) == 0.0
@@ -171,13 +171,15 @@ def test_swiss_by_category_keeps_pairings_inside_strict_sections():
     assert sum(pairing["is_bye"] for pairing in pairings) == 0
 
 
-def test_swiss_by_category_rejects_multiple_odd_sections():
+def test_swiss_by_category_allows_one_bye_per_odd_section():
     players = make_players(6)
     for index, player in enumerate(players):
         player["category"] = "3D" if index < 1 else ("5K" if index < 2 else "10K")
 
-    with pytest.raises(ValueError, match="odd-sized category"):
-        pair_players(players, "swiss_cat")
+    pairings = pair_players(players, "swiss_cat")
+
+    assert sum(pairing["is_bye"] for pairing in pairings) == 2
+    assert played_ids(pairings) == {1, 2, 3, 4, 5, 6}
 
 
 @pytest.mark.parametrize(

@@ -149,7 +149,7 @@ def create_tournament(
         1, 0, "MMS,SOSM,SOSOSM" if tournament_type == "mcmahon" else "NBW,SOSW,SOSOSW",
     ]
     optional_values = {
-        "acceleration_scheme": "50:1,25:0.5,25:0",
+        "acceleration_scheme": "34:2,33:1,33:0",
         "acceleration_rounds": 2,
         "category_rounds": 0,
         "mm_bar": 8,

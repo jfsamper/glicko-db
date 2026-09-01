@@ -14,7 +14,7 @@
 
   <div class="panel-header">
     <h2>{{ tournament.name }}</h2>
-    <p>{{ translations.tournament_type }}: {{ translations[tournament.tournament_type] }} | {{ translations.pairing_system }}: {{ translations[tournament.pairing_system] }} | {{ translations.status }}: {{ translations.get(tournament.status, tournament.status) }}</p>
+    <p>{{ translations.tournament_type }}: {{ translations.get(tournament.tournament_type, tournament.tournament_type) }} | {{ translations.status }}: {{ translations.get(tournament.status, tournament.status) }}</p>
   </div>
 
   <div class="card">

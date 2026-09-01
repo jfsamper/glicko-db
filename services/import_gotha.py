@@ -70,6 +70,9 @@ class GothaTournamentPayload:
     pairing_parameters: dict[str, str]
     tournament_type: str
     pairing_system: str
+    acceleration_scheme: str
+    acceleration_rounds: int
+    category_rounds: int
     bye_points: float
     absent_points: float
     mm_bar: int

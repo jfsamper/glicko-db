@@ -59,8 +59,7 @@ instance/
 # Project-specific generated or transient content
 agents/
 .github/copilot-instructions.md
-.tmp_repro.py
-lastnotes.txt
+lastnotes.md
 
 backups/*.zip
 backups/*.tar

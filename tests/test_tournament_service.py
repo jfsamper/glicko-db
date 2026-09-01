@@ -186,7 +186,7 @@ def test_acceleration_policy_uses_rating_seed_and_expires_after_opening_rounds()
     conn = create_db()
     conn.execute("ALTER TABLE tournaments ADD COLUMN acceleration_rounds INTEGER NOT NULL DEFAULT 2")
     conn.execute("ALTER TABLE tournaments ADD COLUMN category_rounds INTEGER NOT NULL DEFAULT 0")
-    conn.execute("ALTER TABLE tournaments ADD COLUMN acceleration_scheme TEXT NOT NULL DEFAULT '50:1,25:0.5,25:0'")
+    conn.execute("ALTER TABLE tournaments ADD COLUMN acceleration_scheme TEXT NOT NULL DEFAULT '34:2,33:1,33:0'")
     tournament_id = create_manual_tournament(conn, rounds=4, pairing_system="accelerated_swiss")
     ratings = (1200, 1500, 1800, 2100)
     for player_id, rating in enumerate(ratings, 1):
@@ -213,7 +213,7 @@ def test_acceleration_policy_uses_rating_seed_and_expires_after_opening_rounds()
         acceleration_scheme=tournament["acceleration_scheme"],
         acceleration_active=False,
     )
-    assert opening_state[4]["acceleration"] == 1.0
+    assert opening_state[4]["acceleration"] == 2.0
     assert opening_state[1]["acceleration"] == 0.0
     assert all(player["acceleration"] == 0.0 for player in later_state.values())
 
@@ -221,7 +221,7 @@ def test_acceleration_policy_uses_rating_seed_and_expires_after_opening_rounds()
 def test_accelerated_standings_drop_virtual_points_after_acceleration_rounds():
     conn = create_db()
     conn.execute("ALTER TABLE tournaments ADD COLUMN acceleration_rounds INTEGER NOT NULL DEFAULT 2")
-    conn.execute("ALTER TABLE tournaments ADD COLUMN acceleration_scheme TEXT NOT NULL DEFAULT '50:1,25:0.5,25:0'")
+    conn.execute("ALTER TABLE tournaments ADD COLUMN acceleration_scheme TEXT NOT NULL DEFAULT '34:2,33:1,33:0'")
     tournament_id = create_manual_tournament(conn, rounds=3, pairing_system="accelerated_swiss")
     for player_id, rating in enumerate((1200, 1500, 1800, 2100), 1):
         conn.execute(
@@ -244,14 +244,14 @@ def test_accelerated_standings_drop_virtual_points_after_acceleration_rounds():
         conn.commit()
         standings = get_tournament_standings(conn, tournament_id)
         top_seed = next(row for row in standings if row["id"] == 4)
-        expected_virtual = 1.0 if expected_round <= 2 else 0.0
+        expected_virtual = 2.0 if expected_round <= 2 else 0.0
         assert top_seed["primary_score"] - top_seed["score"] == expected_virtual
 
 
 def test_accelerated_pairing_uses_first_round_results_for_second_round():
     conn = create_db()
     conn.execute("ALTER TABLE tournaments ADD COLUMN acceleration_rounds INTEGER NOT NULL DEFAULT 2")
-    conn.execute("ALTER TABLE tournaments ADD COLUMN acceleration_scheme TEXT NOT NULL DEFAULT '50:1,25:0.5,25:0'")
+    conn.execute("ALTER TABLE tournaments ADD COLUMN acceleration_scheme TEXT NOT NULL DEFAULT '34:2,33:1,33:0'")
     tournament_id = create_manual_tournament(conn, rounds=3, pairing_system="accelerated_swiss")
     ratings = (2100, 2050, 2000, 1950, 1900, 1850, 1800, 1750)
     for player_id, rating in enumerate(ratings, 1):
@@ -356,6 +356,28 @@ def test_opengotha_import_does_not_create_missing_players_until_processing():
     assert conn.execute("SELECT COUNT(*) FROM tournament_pending_players WHERE tournament_id = ?", (tournament_id,)).fetchone()[0] == 0
 
 
+def test_opengotha_accelerated_import_persists_default_go_acceleration_scheme():
+    conn = create_db()
+    seed_players(conn)
+    conn.execute("ALTER TABLE tournaments ADD COLUMN acceleration_scheme TEXT NOT NULL DEFAULT '34:2,33:1,33:0'")
+    conn.execute("ALTER TABLE tournaments ADD COLUMN acceleration_rounds INTEGER NOT NULL DEFAULT 2")
+    conn.execute("ALTER TABLE tournaments ADD COLUMN category_rounds INTEGER NOT NULL DEFAULT 0")
+
+    tournament_id, metadata, _ = create_tournament_from_gotha(
+        conn, XML_PATH, "accelerated_swiss"
+    )
+
+    stored = conn.execute(
+        "SELECT tournament_type, pairing_system, acceleration_scheme, acceleration_rounds FROM tournaments WHERE id = ?",
+        (tournament_id,),
+    ).fetchone()
+    assert metadata["tournament_type"] == "accelerated_swiss"
+    assert stored["tournament_type"] == "accelerated_swiss"
+    assert stored["pairing_system"] == "accelerated_swiss"
+    assert stored["acceleration_scheme"] == "34:2,33:1,33:0"
+    assert stored["acceleration_rounds"] == 2
+
+
 def test_opengotha_metadata_and_pairing_parameters_are_read():
     metadata = read_gotha_tournament(XML_PATH)
 
@@ -367,6 +389,9 @@ def test_opengotha_metadata_and_pairing_parameters_are_read():
     assert metadata["absent_points"] == 0
     assert metadata["placement_criteria"] == "NBW,SOSW,SOSOSW,NULL,NULL,NULL"
     assert metadata["pairing_system"] == "swiss"
+    assert metadata["acceleration_scheme"] == "34:2,33:1,33:0"
+    assert metadata["acceleration_rounds"] == 2
+    assert metadata["category_rounds"] == 0
 
 
 def test_opengotha_description_is_read_from_general_metadata(tmp_path):

@@ -38,8 +38,8 @@
               <textarea id="description" name="description" rows="3"></textarea>
             </div>
             <div class="filter-item">
-              <label for="pairing_system">{{ translations.pairing_system }}</label>
-              <select id="pairing_system" name="pairing_system">
+              <label for="tournament_type">{{ translations.tournament_type }}</label>
+              <select id="tournament_type" name="tournament_type">
                 <option value="swiss">{{ translations.swiss }}</option>
                 <option value="swiss_cat">{{ translations.swiss_cat }}</option>
                 <option value="accelerated_swiss">{{ translations.accelerated_swiss }}</option>
@@ -118,12 +118,12 @@
     </form>
     {% if tournaments %}
       <table class="table-stack">
-        <thead><tr><th>{{ translations.tournament_name }}</th><th>{{ translations.pairing_system }}</th><th>{{ translations.rounds }}</th><th>{{ translations.status }}</th><th>{{ translations.actions_label }}</th></tr></thead>
+        <thead><tr><th>{{ translations.tournament_name }}</th><th>{{ translations.tournament_type }}</th><th>{{ translations.rounds }}</th><th>{{ translations.status }}</th><th>{{ translations.actions_label }}</th></tr></thead>
         <tbody>
           {% for tournament in tournaments %}
           <tr>
             <td>{{ tournament.name }}</td>
-            <td>{{ translations[tournament.pairing_system] }}</td>
+            <td>{{ translations.get(tournament.tournament_type, tournament.tournament_type) }}</td>
             <td>{{ tournament.rounds }}</td>
             <td>
               <form method="post" action="{{ url_for('admin_update_tournament_status', tournament_id=tournament.id, lang=lang) }}">

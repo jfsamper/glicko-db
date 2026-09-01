@@ -91,12 +91,14 @@ from services.player_service import (
 from services.rating_service import get_dirty_date, get_rating_config, mark_dirty, recompute_ratings, update_from_latest_snapshot, update_rating_config
 from services.category_service import get_category_config, update_category_config
 from services.pairing_service import (
+    ACCELERATION_SCHEMES,
     DEFAULT_ACCELERATION_CATEGORIES,
     DEFAULT_ACCELERATION_FLOORS,
     DEFAULT_ACCELERATION_ROUNDS,
     DEFAULT_CATEGORY_ROUNDS,
     DEFAULT_ACCELERATION_SCHEME,
     acceleration_category_settings,
+    parse_rank_category,
     serialize_acceleration_categories,
     validate_acceleration_categories,
     validate_acceleration_scheme,
@@ -105,6 +107,7 @@ from services.tournament_service import (
     SUPPORTED_SYSTEMS,
     _materialize_pending_players,
     _player_lookup,
+    _recalculate_mcmahon_seeds,
     _suggest_player_name,
     add_participant,
     create_tournament_from_gotha,
@@ -128,6 +131,7 @@ from services.tournament_service import (
     update_pairing,
     update_tournament_handicaps,
     update_pairing_handicap,
+    normalize_tournament_system,
 )
 
 BACKUP_DIR = os.path.join(
@@ -153,6 +157,49 @@ TOURNAMENT_SORT_FIELDS = {
 
 
 logger = logging.getLogger(__name__)
+
+
+def acceleration_scheme_choice(scheme):
+    scheme_text = scheme or DEFAULT_ACCELERATION_SCHEME
+    for choice, option in ACCELERATION_SCHEMES.items():
+        if option["scheme"] == scheme_text:
+            return choice
+    return "category_limits" if str(scheme_text).startswith("categories:") else "go_three_band"
+
+
+def acceleration_scheme_from_form(form):
+    choice = form.get("acceleration_scheme_choice") or "go_three_band"
+    if choice in ACCELERATION_SCHEMES:
+        return ACCELERATION_SCHEMES[choice]["scheme"]
+    if choice == "category_limits":
+        category_count, normalized_floors = validate_acceleration_categories(
+            form.get("number_of_categories"),
+            form.getlist("category_floor"),
+        )
+        return serialize_acceleration_categories(category_count, normalized_floors)
+    return validate_acceleration_scheme(choice)
+
+
+def parse_rank_setting(value, default):
+    text = str(value or "").strip()
+    if not text:
+        return int(default)
+    if any(label in text.lower() for label in ("dan", "kyu")):
+        return parse_rank_category(text)
+    if text.upper().endswith("D"):
+        return int(text[:-1]) - 1
+    if text.upper().endswith("K"):
+        return -int(text[:-1])
+    return int(text)
+
+
+def validate_mcmahon_settings(mm_bar, mm_floor, mm_zero):
+    bar_value = parse_rank_setting(mm_bar, 8)
+    floor_value = parse_rank_setting(mm_floor, -30)
+    zero_value = int(mm_zero if str(mm_zero or "").strip() else 0)
+    if bar_value <= floor_value or zero_value < 0:
+        raise ValueError("Invalid McMahon settings")
+    return bar_value, floor_value, zero_value
 
 
 def _parse_match_sort(sort_value, default_sort="date"):
@@ -938,8 +985,26 @@ def admin_import():
                     "begin_date": (request.form.get("metadata_begin_date") or "").strip(),
                     "end_date": (request.form.get("metadata_end_date") or "").strip(),
                     "rounds": request.form.get("metadata_rounds", type=int),
-                    "pairing_system": (request.form.get("metadata_pairing_system") or "").strip(),
+                    "pairing_system": normalize_tournament_system(
+                        request.form.get("metadata_tournament_type")
+                        or request.form.get("metadata_pairing_system")
+                    ),
                 }
+                if metadata_overrides["pairing_system"] == "accelerated_swiss":
+                    metadata_overrides["acceleration_scheme"] = acceleration_scheme_from_form(request.form)
+                    metadata_overrides["acceleration_rounds"] = request.form.get(
+                        "metadata_acceleration_rounds", DEFAULT_ACCELERATION_ROUNDS, type=int
+                    )
+                if metadata_overrides["pairing_system"] == "swiss_cat":
+                    metadata_overrides["category_rounds"] = request.form.get(
+                        "metadata_category_rounds", DEFAULT_CATEGORY_ROUNDS, type=int
+                    )
+                if metadata_overrides["pairing_system"] == "mcmahon":
+                    metadata_overrides["mm_bar"], metadata_overrides["mm_floor"], metadata_overrides["mm_zero"] = validate_mcmahon_settings(
+                        request.form.get("metadata_mm_bar"),
+                        request.form.get("metadata_mm_floor"),
+                        request.form.get("metadata_mm_zero"),
+                    )
                 metadata_overrides = {key: value for key, value in metadata_overrides.items() if value not in (None, "")}
                 if "metadata_description" in request.form:
                     metadata_overrides["description"] = (request.form.get("metadata_description") or "").strip()
@@ -994,6 +1059,8 @@ def admin_import():
                     translations=TRANSLATIONS[lang],
                     preview=preview,
                     preview_file=filename,
+                    acceleration_scheme_options=ACCELERATION_SCHEMES,
+                    acceleration_scheme_choice=acceleration_scheme_choice(preview["metadata"].get("acceleration_scheme")),
                 )
 
             if extension == ".csv":
@@ -1087,6 +1154,10 @@ def admin_import():
         translations=TRANSLATIONS[lang],
         preview=preview,
         preview_file=preview_file,
+        acceleration_scheme_options=ACCELERATION_SCHEMES,
+        acceleration_scheme_choice=acceleration_scheme_choice(
+            preview["metadata"].get("acceleration_scheme") if preview else None
+        ),
     )
 
 
@@ -1188,7 +1259,10 @@ def admin_tournaments():
 
     if request.method == "POST":
         action = request.form.get("action")
-        pairing_system = request.form.get("pairing_system", "swiss")
+        pairing_system = normalize_tournament_system(
+            request.form.get("tournament_type")
+            or request.form.get("pairing_system", "swiss")
+        )
         if action == "import_opengotha":
             file = request.files.get("file")
             if not file or not (file.filename or "").lower().endswith(".xml"):
@@ -1234,8 +1308,10 @@ def admin_tournaments():
                 absent_points = request.form.get("absent_points", 0.0, type=float)
                 handicap_enabled = 1 if request.form.get("handicap_enabled") == "1" else 0
                 try:
-                    acceleration_scheme = validate_acceleration_scheme(
-                        request.form.get("acceleration_scheme", DEFAULT_ACCELERATION_SCHEME)
+                    acceleration_scheme = (
+                        acceleration_scheme_from_form(request.form)
+                        if pairing_system == "accelerated_swiss"
+                        else DEFAULT_ACCELERATION_SCHEME
                     )
                 except (TypeError, ValueError):
                     acceleration_scheme = None
@@ -1263,7 +1339,7 @@ def admin_tournaments():
                     name,
                     request.form.get("location", "").strip(),
                     rounds,
-                    "mcmahon" if pairing_system == "mcmahon" else ("swiss_cat" if pairing_system == "swiss_cat" else "swiss"),
+                    pairing_system,
                     pairing_system,
                     bye_points,
                     absent_points,
@@ -1424,6 +1500,9 @@ def admin_update_tournament_settings(tournament_id):
     category_floors = request.form.getlist("category_floor")
     acceleration_rounds = request.form.get("acceleration_rounds")
     category_rounds = request.form.get("category_rounds")
+    mm_bar = request.form.get("mm_bar")
+    mm_floor = request.form.get("mm_floor")
+    mm_zero = request.form.get("mm_zero")
 
     if not name or bye_points not in {0.0, 0.5, 1.0} or absent_points not in {0.0, 0.5, 1.0}:
         flash(TRANSLATIONS[lang]["error"])
@@ -1435,13 +1514,14 @@ def admin_update_tournament_settings(tournament_id):
     }
     optional_columns = [
         column for column in (
-            "description", "begin_date", "end_date", "acceleration_scheme", "acceleration_rounds", "category_rounds"
+            "description", "begin_date", "end_date", "acceleration_scheme", "acceleration_rounds", "category_rounds",
+            "mm_bar", "mm_floor", "mm_zero"
         ) if column in tournament_columns
     ]
     optional_select = f", {', '.join(optional_columns)}" if optional_columns else ""
     try:
         current_tournament = conn.execute(
-            f"SELECT pairing_system{optional_select} FROM tournaments WHERE id = ?",
+            f"SELECT pairing_system, tournament_type{optional_select} FROM tournaments WHERE id = ?",
             (tournament_id,),
         ).fetchone()
         if current_tournament is None:
@@ -1463,27 +1543,21 @@ def admin_update_tournament_settings(tournament_id):
             flash(TRANSLATIONS[lang]["error"])
             return redirect(url_for("admin_tournament_settings", tournament_id=tournament_id, lang=lang))
 
+        pairing_system = normalize_tournament_system(current_tournament["pairing_system"])
         acceleration_scheme = (
             current_tournament["acceleration_scheme"]
             if "acceleration_scheme" in tournament_columns
             else DEFAULT_ACCELERATION_SCHEME
         ) or DEFAULT_ACCELERATION_SCHEME
-        if current_tournament["pairing_system"] == "accelerated_swiss":
-            if number_of_categories is None:
-                number_of_categories, category_floors = acceleration_category_settings(acceleration_scheme)
+        if pairing_system == "accelerated_swiss":
             try:
-                category_count, normalized_floors = validate_acceleration_categories(
-                    number_of_categories, category_floors
-                )
-                if (category_count, normalized_floors) == (
-                    DEFAULT_ACCELERATION_CATEGORIES,
-                    DEFAULT_ACCELERATION_FLOORS,
-                ):
-                    acceleration_scheme = DEFAULT_ACCELERATION_SCHEME
-                else:
-                    acceleration_scheme = serialize_acceleration_categories(
-                        category_count, normalized_floors
-                    )
+                acceleration_scheme = acceleration_scheme_from_form(request.form)
+            except (TypeError, ValueError):
+                flash(TRANSLATIONS[lang]["error"])
+                return redirect(url_for("admin_tournament_settings", tournament_id=tournament_id, lang=lang))
+        if pairing_system == "mcmahon":
+            try:
+                mm_bar_value, mm_floor_value, mm_zero_value = validate_mcmahon_settings(mm_bar, mm_floor, mm_zero)
             except (TypeError, ValueError):
                 flash(TRANSLATIONS[lang]["error"])
                 return redirect(url_for("admin_tournament_settings", tournament_id=tournament_id, lang=lang))
@@ -1499,12 +1573,7 @@ def admin_update_tournament_settings(tournament_id):
                 if category_rounds in (None, "")
                 else int(category_rounds)
             )
-            if (
-                acceleration_rounds < 0
-                or category_rounds < 0
-                or acceleration_rounds > rounds
-                or category_rounds > rounds
-            ):
+            if acceleration_rounds < 0 or category_rounds < 0 or acceleration_rounds > rounds or category_rounds > rounds:
                 raise ValueError
         except (TypeError, ValueError):
             flash(TRANSLATIONS[lang]["error"])
@@ -1512,9 +1581,9 @@ def admin_update_tournament_settings(tournament_id):
 
         update_fields = [
             "name = ?", "location = ?", "rounds = ?", "bye_points = ?",
-            "absent_points = ?", "handicap_enabled = ?",
+            "absent_points = ?", "handicap_enabled = ?", "tournament_type = ?", "pairing_system = ?",
         ]
-        update_values = [name, location, rounds, bye_points, absent_points, int(handicap_enabled)]
+        update_values = [name, location, rounds, bye_points, absent_points, int(handicap_enabled), pairing_system, pairing_system]
         if "begin_date" in tournament_columns:
             update_fields.append("begin_date = ?")
             update_values.append(begin_date)
@@ -1524,15 +1593,18 @@ def admin_update_tournament_settings(tournament_id):
         if "description" in tournament_columns:
             update_fields.append("description = ?")
             update_values.append(description)
-        if "acceleration_scheme" in tournament_columns:
+        if pairing_system == "accelerated_swiss" and "acceleration_scheme" in tournament_columns:
             update_fields.append("acceleration_scheme = ?")
             update_values.append(acceleration_scheme)
-        if "acceleration_rounds" in tournament_columns:
+        if pairing_system == "accelerated_swiss" and "acceleration_rounds" in tournament_columns:
             update_fields.append("acceleration_rounds = ?")
             update_values.append(acceleration_rounds)
-        if "category_rounds" in tournament_columns:
+        if pairing_system == "swiss_cat" and "category_rounds" in tournament_columns:
             update_fields.append("category_rounds = ?")
             update_values.append(category_rounds)
+        if pairing_system == "mcmahon" and {"mm_bar", "mm_floor", "mm_zero"}.issubset(tournament_columns):
+            update_fields.extend(["mm_bar = ?", "mm_floor = ?", "mm_zero = ?"])
+            update_values.extend([mm_bar_value, mm_floor_value, mm_zero_value])
         update_values.append(tournament_id)
         updated = conn.execute(
             f"UPDATE tournaments SET {', '.join(update_fields)} WHERE id = ?",
@@ -1568,6 +1640,16 @@ def admin_update_tournament_settings(tournament_id):
                 name=name,
                 match_date=begin_date,
             )
+            if pairing_system == "mcmahon":
+                participant_columns = {
+                    row[1] for row in conn.execute("PRAGMA table_info(tournament_participants)").fetchall()
+                }
+                if "mc_seeds_calculated" in participant_columns:
+                    conn.execute(
+                        "UPDATE tournament_participants SET mc_seeds_calculated = 0 WHERE tournament_id = ?",
+                        (tournament_id,),
+                    )
+                _recalculate_mcmahon_seeds(conn, tournament_id)
             conn.commit()
             if updated_matches and begin_date:
                 for row in old_match_dates:
@@ -1602,6 +1684,10 @@ def admin_tournament_settings(tournament_id):
         "admin/tournament_settings.html",
         tournament=tournament,
         acceleration_categories=acceleration_category_settings(
+            tournament["acceleration_scheme"] if "acceleration_scheme" in tournament.keys() else None
+        ),
+        acceleration_scheme_options=ACCELERATION_SCHEMES,
+        acceleration_scheme_choice=acceleration_scheme_choice(
             tournament["acceleration_scheme"] if "acceleration_scheme" in tournament.keys() else None
         ),
         acceleration_rounds=(

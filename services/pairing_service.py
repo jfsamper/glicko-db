@@ -9,6 +9,20 @@ import networkx as nx
 PAIRING_SYSTEMS = {"swiss", "swiss_cat", "accelerated_swiss", "mcmahon"}
 SEED_SYSTEMS = {"split_random", "split_fold", "split_slip"}
 DEFAULT_ACCELERATION_SCHEME = "34:2,33:1,33:0"
+ACCELERATION_SCHEMES = {
+    "go_three_band": {
+        "scheme": DEFAULT_ACCELERATION_SCHEME,
+        "label": "Go three-band (+2/+1/+0)",
+    },
+    "top_half": {
+        "scheme": "50:1,50:0",
+        "label": "Top half (+1/+0)",
+    },
+    "top_quarter": {
+        "scheme": "25:2,25:1,50:0",
+        "label": "Top quarter pressure (+2/+1/+0)",
+    },
+}
 DEFAULT_ACCELERATION_CATEGORIES = 3
 DEFAULT_ACCELERATION_FLOORS = (0, -5)
 MIN_CATEGORY_RANK = -30
@@ -39,7 +53,7 @@ def _player_id(player):
     return player["id"] if isinstance(player, dict) else player
 
 
-def _value(player, key, default=0):
+def _value(player, key, default=None):
     if isinstance(player, dict):
         return player.get(key, default)
     return default
@@ -338,19 +352,10 @@ def pair_players(players, system="swiss", seed_system=None, category_strict=None
         grouped_players = defaultdict(list)
         for player in working_players:
             grouped_players[_value(player, "category", "")].append(player)
-        odd_categories = [
-            category for category, category_players in grouped_players.items()
-            if len(category_players) % 2
-        ]
-        if len(odd_categories) > 1:
-            raise ValueError(
-                "Strict category pairing requires at most one odd-sized category"
-            )
-        bye_category = odd_categories[0] if odd_categories else None
         for category in sorted(grouped_players, key=str.casefold):
             category_players = grouped_players[category]
             category_bye = None
-            if category == bye_category:
+            if len(category_players) % 2:
                 category_bye_player = _choose_bye(category_players, system)
                 category_players = [
                     player for player in category_players if player is not category_bye_player
@@ -438,7 +443,7 @@ def pair_players(players, system="swiss", seed_system=None, category_strict=None
 
 def _acceleration_bands(scheme):
     if scheme is None:
-        return ((0.5, 1.0), (0.25, 0.5), (0.25, 0.0))
+        scheme = DEFAULT_ACCELERATION_SCHEME
     if not isinstance(scheme, str):
         raise ValueError("Acceleration scheme must be text")
     if scheme.startswith("categories:"):
@@ -561,18 +566,14 @@ def acceleration_for_rank(rank, player_count, scheme=None, player_rank=None):
     """
     if rank <= 0 or player_count <= 1:
         return 0.0
+    if scheme is None:
+        scheme = DEFAULT_ACCELERATION_SCHEME
     if isinstance(scheme, str) and scheme.startswith("categories:") and player_rank is not None:
         category_count, floors = parse_acceleration_categories(scheme)
         category = sum(int(player_rank) < floor for floor in floors)
         if category_count <= 1:
             return 0.0
         return max(0.0, 1.0 - category / (category_count - 1))
-    if scheme is None:
-        if rank <= max(1, player_count // 2):
-            return 1.0
-        if rank <= max(1, (player_count * 3) // 4):
-            return 0.5
-        return 0.0
 
     covered = 0
     for fraction, bonus in _acceleration_bands(scheme):

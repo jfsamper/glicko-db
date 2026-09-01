@@ -28,7 +28,7 @@ from services.rating_service import recompute_ratings
 from services.settings_service import migrate_application_settings_schema
 from routes.public import glicko_to_category, register_public_routes
 from routes.admin import register_admin_routes
-from services.pairing_service import format_rank_category
+from services.pairing_service import DEFAULT_ACCELERATION_SCHEME, format_rank_category
 
 csrf = CSRFProtect()
 
@@ -160,7 +160,7 @@ def init_db():
             rounds INTEGER NOT NULL DEFAULT 1,
             tournament_type TEXT NOT NULL DEFAULT 'swiss',
             pairing_system TEXT NOT NULL DEFAULT 'swiss',
-            acceleration_scheme TEXT NOT NULL DEFAULT '50:1,25:0.5,25:0',
+            acceleration_scheme TEXT NOT NULL DEFAULT '34:2,33:1,33:0',
             bye_points REAL NOT NULL DEFAULT 1,
             absent_points REAL NOT NULL DEFAULT 0,
             handicap_enabled INTEGER NOT NULL DEFAULT 0,
@@ -509,7 +509,7 @@ def migrate_config_schema(conn):
 
 def migrate_tournament_schema(conn):
     """Create or upgrade tournament tables before any tournament queries run."""
-    schema_version = 5
+    schema_version = 6
     current_version = conn.execute("PRAGMA user_version").fetchone()[0]
     if current_version >= schema_version:
         return
@@ -521,7 +521,7 @@ def migrate_tournament_schema(conn):
             begin_date TEXT, end_date TEXT, rounds INTEGER NOT NULL DEFAULT 1,
             tournament_type TEXT NOT NULL DEFAULT 'swiss',
             pairing_system TEXT NOT NULL DEFAULT 'swiss',
-            acceleration_scheme TEXT NOT NULL DEFAULT '50:1,25:0.5,25:0',
+            acceleration_scheme TEXT NOT NULL DEFAULT '34:2,33:1,33:0',
             bye_points REAL NOT NULL DEFAULT 1,
             absent_points REAL NOT NULL DEFAULT 0,
             handicap_enabled INTEGER NOT NULL DEFAULT 0,
@@ -584,7 +584,7 @@ def migrate_tournament_schema(conn):
             "rounds": "INTEGER NOT NULL DEFAULT 1",
             "tournament_type": "TEXT NOT NULL DEFAULT 'swiss'",
             "pairing_system": "TEXT NOT NULL DEFAULT 'swiss'",
-            "acceleration_scheme": "TEXT NOT NULL DEFAULT '50:1,25:0.5,25:0'",
+            "acceleration_scheme": "TEXT NOT NULL DEFAULT '34:2,33:1,33:0'",
             "acceleration_rounds": "INTEGER NOT NULL DEFAULT 2",
             "category_rounds": "INTEGER NOT NULL DEFAULT 0",
             "bye_points": "REAL NOT NULL DEFAULT 1",
@@ -686,11 +686,32 @@ def migrate_tournament_schema(conn):
                 ELSE CAST(rounds AS INTEGER)
             END,
                 tournament_type = CASE
-                    WHEN pairing_system = 'mcmahon' THEN 'mcmahon'
+                    WHEN pairing_system IN ('swiss', 'swiss_cat', 'accelerated_swiss', 'mcmahon') THEN pairing_system
+                    WHEN tournament_type IN ('swiss', 'swiss_cat', 'accelerated_swiss', 'mcmahon') THEN tournament_type
+                    ELSE 'swiss'
+                END,
+                pairing_system = CASE
+                    WHEN pairing_system IN ('swiss', 'swiss_cat', 'accelerated_swiss', 'mcmahon') THEN pairing_system
+                    WHEN tournament_type IN ('swiss', 'swiss_cat', 'accelerated_swiss', 'mcmahon') THEN tournament_type
                     ELSE 'swiss'
                 END
-            WHERE tournament_type IS NULL OR tournament_type = '' OR CAST(rounds AS INTEGER) < 1
+            WHERE tournament_type IS NULL
+               OR tournament_type = ''
+               OR pairing_system IS NULL
+               OR pairing_system = ''
+               OR pairing_system != tournament_type
+               OR CAST(rounds AS INTEGER) < 1
             """
+        )
+        conn.execute(
+            """
+            UPDATE tournaments
+            SET acceleration_scheme = ?
+            WHERE acceleration_scheme IS NULL
+               OR acceleration_scheme = ''
+               OR acceleration_scheme = '50:1,25:0.5,25:0'
+            """,
+            (DEFAULT_ACCELERATION_SCHEME,),
         )
         conn.execute(
             """

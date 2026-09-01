@@ -710,10 +710,10 @@ def test_migrate_tournament_schema_applies_new_columns_to_previous_version(tmp_p
 
     assert conn.execute("SELECT rounds FROM tournaments WHERE id = 1").fetchone()[0] == 1
     assert conn.execute("SELECT handicap_enabled FROM tournaments WHERE id = 1").fetchone()[0] == 0
-    assert conn.execute("SELECT acceleration_scheme FROM tournaments WHERE id = 1").fetchone()[0] == "50:1,25:0.5,25:0"
+    assert conn.execute("SELECT acceleration_scheme FROM tournaments WHERE id = 1").fetchone()[0] == "34:2,33:1,33:0"
     assert conn.execute("SELECT acceleration_rounds FROM tournaments WHERE id = 1").fetchone()[0] == 2
     assert conn.execute("SELECT category_rounds FROM tournaments WHERE id = 1").fetchone()[0] == 0
-    assert conn.execute("PRAGMA user_version").fetchone()[0] == 5
+    assert conn.execute("PRAGMA user_version").fetchone()[0] == 6
     conn.close()
 
 
@@ -748,6 +748,7 @@ def test_accelerated_settings_persist_category_floor_configuration(tmp_path, mon
             "bye_points": "1",
             "absent_points": "0",
             "handicap_enabled": "0",
+            "acceleration_scheme_choice": "category_limits",
             "number_of_categories": "3",
             "category_floor": ["3 dan", "16 kyu"],
             "acceleration_rounds": "1",
@@ -766,6 +767,74 @@ def test_accelerated_settings_persist_category_floor_configuration(tmp_path, mon
     assert conn.execute(
         "SELECT description FROM tournaments WHERE id = 1"
     ).fetchone()[0] == "Club championship"
+    conn.close()
+
+
+def test_mcmahon_settings_persist_and_recalculate_seeds(tmp_path, monkeypatch):
+    db_path = tmp_path / "mcmahon_settings.db"
+    conn = sqlite3.connect(db_path)
+    conn.executescript(
+        """
+        CREATE TABLE players (
+            id INTEGER PRIMARY KEY,
+            first_name TEXT,
+            last_name TEXT,
+            display_name TEXT NOT NULL,
+            active INTEGER DEFAULT 1,
+            rating REAL DEFAULT 1500
+        );
+        """
+    )
+    migrate_tournament_schema(conn)
+    conn.executescript(
+        """
+        INSERT INTO players (id, first_name, last_name, display_name, rating, active)
+        VALUES (1, 'Strong', 'One', 'Strong One', 2100, 1),
+               (2, 'Middle', 'Two', 'Middle Two', 1900, 1);
+        INSERT INTO tournaments (id, name, pairing_system, tournament_type, rounds)
+        VALUES (1, 'McMahon', 'mcmahon', 'mcmahon', 3);
+        INSERT INTO tournament_participants
+            (tournament_id, player_id, seed_rating, seed_rank, category, initial_score, mc_seeds_calculated)
+         VALUES (1, 1, 2100, 1, '1D', 8, 1),
+             (1, 2, 1900, 2, '1K', 7, 1);
+        """
+    )
+    conn.commit()
+    conn.close()
+
+    def fake_get_db():
+        connection = sqlite3.connect(db_path)
+        connection.row_factory = sqlite3.Row
+        return connection
+
+    monkeypatch.setattr(admin_routes, "get_db", fake_get_db)
+    app.testing = True
+    client = app.test_client()
+    conftest.set_admin_session(client, db_path)
+
+    response = client.post(
+        "/admin/tournaments/1/settings?lang=en",
+        data={
+            "name": "McMahon",
+            "location": "",
+            "description": "",
+            "rounds": "3",
+            "bye_points": "1",
+            "absent_points": "0",
+            "handicap_enabled": "0",
+            "mm_bar": "5",
+            "mm_floor": "-10",
+            "mm_zero": "10",
+        },
+    )
+
+    assert response.status_code == 302
+    conn = sqlite3.connect(db_path)
+    rows = conn.execute(
+        "SELECT seed_rank, initial_score FROM tournament_participants WHERE tournament_id = 1 ORDER BY seed_rank"
+    ).fetchall()
+    assert conn.execute("SELECT mm_bar, mm_floor, mm_zero FROM tournaments WHERE id = 1").fetchone() == (5, -10, 10)
+    assert rows == [(1, 15.0), (2, 14.0)]
     conn.close()
 
 

@@ -75,12 +75,40 @@
           <input id="metadata_rounds" name="metadata_rounds" type="number" min="1" form="commit-preview-form" value="{{ preview.metadata.rounds or 1 }}" required>
         </div>
         <div class="filter-item">
-          <label for="metadata_pairing_system">Pairing system</label>
-          <select id="metadata_pairing_system" name="metadata_pairing_system" form="commit-preview-form">
+          <label for="metadata_tournament_type">{{ translations.tournament_type }}</label>
+          <select id="metadata_tournament_type" name="metadata_tournament_type" form="commit-preview-form">
             {% for system in ('swiss', 'accelerated_swiss', 'swiss_cat', 'mcmahon') %}
-              <option value="{{ system }}" {% if preview.metadata.pairing_system == system %}selected{% endif %}>{{ system }}</option>
+              <option value="{{ system }}" {% if preview.metadata.tournament_type == system %}selected{% endif %}>{{ translations.get(system, system) }}</option>
             {% endfor %}
           </select>
+        </div>
+        <div class="filter-item import-accelerated-setting">
+          <label for="metadata_acceleration_rounds">{{ translations.acceleration_rounds }}</label>
+          <input id="metadata_acceleration_rounds" name="metadata_acceleration_rounds" type="number" min="0" max="{{ preview.metadata.rounds or 1 }}" form="commit-preview-form" value="{{ preview.metadata.acceleration_rounds or 2 }}">
+        </div>
+        <div class="filter-item import-accelerated-setting">
+          <label for="metadata_acceleration_scheme_choice">{{ translations.acceleration_scheme }}</label>
+          <select id="metadata_acceleration_scheme_choice" name="acceleration_scheme_choice" form="commit-preview-form">
+            {% for choice, option in acceleration_scheme_options.items() %}
+              <option value="{{ choice }}" {% if acceleration_scheme_choice == choice %}selected{% endif %}>{{ option.label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="filter-item import-category-setting">
+          <label for="metadata_category_rounds">{{ translations.category_rounds }}</label>
+          <input id="metadata_category_rounds" name="metadata_category_rounds" type="number" min="0" max="{{ preview.metadata.rounds or 1 }}" form="commit-preview-form" value="{{ preview.metadata.category_rounds or 0 }}">
+        </div>
+        <div class="filter-item import-mcmahon-setting">
+          <label for="metadata_mm_bar">{{ translations.mcmahon_bar }}</label>
+          <input id="metadata_mm_bar" name="metadata_mm_bar" type="text" form="commit-preview-form" value="{{ preview.metadata.mm_bar if preview.metadata.mm_bar is not none else 8 }}">
+        </div>
+        <div class="filter-item import-mcmahon-setting">
+          <label for="metadata_mm_floor">{{ translations.mcmahon_floor }}</label>
+          <input id="metadata_mm_floor" name="metadata_mm_floor" type="text" form="commit-preview-form" value="{{ preview.metadata.mm_floor if preview.metadata.mm_floor is not none else -30 }}">
+        </div>
+        <div class="filter-item import-mcmahon-setting">
+          <label for="metadata_mm_zero">{{ translations.mcmahon_zero }}</label>
+          <input id="metadata_mm_zero" name="metadata_mm_zero" type="number" min="0" form="commit-preview-form" value="{{ preview.metadata.mm_zero if preview.metadata.mm_zero is not none else 0 }}">
         </div>
       </div>
       {% if preview.metadata_mismatches %}
@@ -160,5 +188,27 @@
   {% endif %}
 
 </section>
+
+{% if preview %}
+<script>
+  (() => {
+    const system = document.getElementById("metadata_tournament_type");
+    const updateMetadataSettings = () => {
+      const value = system?.value || "swiss";
+      document.querySelectorAll(".import-accelerated-setting").forEach((element) => {
+        element.hidden = value !== "accelerated_swiss";
+      });
+      document.querySelectorAll(".import-category-setting").forEach((element) => {
+        element.hidden = value !== "swiss_cat";
+      });
+      document.querySelectorAll(".import-mcmahon-setting").forEach((element) => {
+        element.hidden = value !== "mcmahon";
+      });
+    };
+    system?.addEventListener("change", updateMetadataSettings);
+    updateMetadataSettings();
+  })();
+</script>
+{% endif %}
 
 {% endblock %}

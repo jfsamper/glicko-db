@@ -11,6 +11,7 @@ from services.common import current_date, current_timestamp
 from services.helpers import normalize_key, normalize_text
 from services.import_gotha import GothaPlayer, GothaTournamentPayload
 from services.pairing_service import (
+    DEFAULT_ACCELERATION_SCHEME,
     DEFAULT_ACCELERATION_ROUNDS,
     DEFAULT_CATEGORY_ROUNDS,
     acceleration_for_rank,
@@ -26,6 +27,13 @@ from services.standings_service import calculate_standings
 SUPPORTED_SYSTEMS = {"swiss", "swiss_cat", "accelerated_swiss", "mcmahon"}
 TOURNAMENT_STATUSES = ("draft", "active", "canceled", "completed")
 VALID_TOURNAMENT_RESULTS = {"1-0", "0-1", "1/2-1/2"}
+
+
+def normalize_tournament_system(value, default="swiss"):
+    normalized = str(value or "").strip().lower().replace("-", "_")
+    if normalized == "swiss_by_category":
+        normalized = "swiss_cat"
+    return normalized if normalized in SUPPORTED_SYSTEMS else default
 
 
 def _resolve_gotha_path(xml_path):
@@ -279,25 +287,20 @@ def read_gotha_tournament(
     ]
     explicit_pairing_system = (pairing_system or "").strip().lower()
     if explicit_pairing_system in {"mcmahon", "mc-mahon"}:
-        tournament_type = "mcmahon"
         pairing_system = "mcmahon"
     elif explicit_pairing_system == "swiss_cat":
-        tournament_type = "swiss_cat"
         pairing_system = "swiss_cat"
     elif explicit_pairing_system in {"swiss", "accelerated_swiss"}:
-        tournament_type = "swiss"
         pairing_system = explicit_pairing_system
     else:
         first_criterion = placement_names[0] if placement_names else "NBW"
         if first_criterion == "MMS":
-            tournament_type = "mcmahon"
+            pairing_system = "mcmahon"
         elif first_criterion == "CAT":
-            tournament_type = "swiss_cat"
+            pairing_system = "swiss_cat"
         else:
-            tournament_type = "swiss"
-        pairing_system = "mcmahon" if tournament_type == "mcmahon" else (
-            "swiss_cat" if tournament_type == "swiss_cat" else "swiss"
-        )
+            pairing_system = "swiss"
+    tournament_type = pairing_system
     mm_bar = general.get("genMMBar")
     mm_floor = general.get("genMMFloor")
     mm_zero = general.get("genMMZero")
@@ -323,6 +326,9 @@ def read_gotha_tournament(
         pairing_parameters=dict(pairing_parameters.attrib) if pairing_parameters is not None else {},
         tournament_type=tournament_type,
         pairing_system=pairing_system,
+        acceleration_scheme=DEFAULT_ACCELERATION_SCHEME,
+        acceleration_rounds=DEFAULT_ACCELERATION_ROUNDS,
+        category_rounds=DEFAULT_CATEGORY_ROUNDS,
         bye_points=(mms2_bye if tournament_type == "mcmahon" else nbw2_bye) / 2,
         absent_points=(mms2_absent if tournament_type == "mcmahon" else nbw2_absent) / 2,
         mm_bar=mm_bar_value,
@@ -1135,9 +1141,10 @@ def create_tournament_from_gotha(
     xml_path = _resolve_gotha_path(xml_path)
     metadata = read_gotha_tournament(xml_path)
     metadata.update(metadata_overrides or {})
-    pairing_system = pairing_system or metadata["pairing_system"]
+    pairing_system = normalize_tournament_system(pairing_system or metadata["pairing_system"])
     if pairing_system not in SUPPORTED_SYSTEMS:
         raise ValueError(f"Unknown pairing system: {pairing_system}")
+    metadata.update({"pairing_system": pairing_system, "tournament_type": pairing_system})
 
     duplicate_tournament = conn.execute(
         """
@@ -1172,6 +1179,15 @@ def create_tournament_from_gotha(
         insert_values.extend([
             metadata.get("mm_bar", 8), metadata.get("mm_floor", -30), metadata.get("mm_zero", 30),
         ])
+    if "acceleration_scheme" in tournament_columns:
+        insert_columns.append("acceleration_scheme")
+        insert_values.append(metadata.get("acceleration_scheme") or DEFAULT_ACCELERATION_SCHEME)
+    if "acceleration_rounds" in tournament_columns:
+        insert_columns.append("acceleration_rounds")
+        insert_values.append(int(metadata.get("acceleration_rounds") or DEFAULT_ACCELERATION_ROUNDS))
+    if "category_rounds" in tournament_columns:
+        insert_columns.append("category_rounds")
+        insert_values.append(int(metadata.get("category_rounds") or DEFAULT_CATEGORY_ROUNDS))
     if "handicap_enabled" in tournament_columns:
         has_handicap_game = any(
             int(game.get("handicap") or 0) > 0
