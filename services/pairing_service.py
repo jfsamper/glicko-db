@@ -8,7 +8,7 @@ import networkx as nx
 
 PAIRING_SYSTEMS = {"swiss", "swiss_cat", "accelerated_swiss", "mcmahon"}
 SEED_SYSTEMS = {"split_random", "split_fold", "split_slip"}
-DEFAULT_ACCELERATION_SCHEME = "50:1,25:0.5,25:0"
+DEFAULT_ACCELERATION_SCHEME = "34:2,33:1,33:0"
 DEFAULT_ACCELERATION_CATEGORIES = 3
 DEFAULT_ACCELERATION_FLOORS = (0, -5)
 MIN_CATEGORY_RANK = -30

@@ -770,7 +770,7 @@ def tournament_page(tournament_id):
         LEFT JOIN players white ON white.id = p.white_player_id
         LEFT JOIN players black ON black.id = p.black_player_id
         WHERE p.round_id = ?
-        ORDER BY p.board_number
+        ORDER BY p.is_bye, p.board_number
         """,
         (selected_round_id,),
     ).fetchall() if selected_round_id else []

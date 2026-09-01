@@ -783,6 +783,10 @@ def test_public_tournament_detail_renders_draft_round_results(monkeypatch, tmp_p
         (11, 1, "Alice Example", "Bob Example", "1-0", 0),
     )
     conn.execute(
+        "INSERT INTO tournament_pairings (round_id, board_number, white_player_name, black_player_name, result, is_bye) VALUES (?, ?, ?, ?, ?, ?)",
+        (11, 99, "Charlie Example", "", "1-0", 1),
+    )
+    conn.execute(
         "INSERT INTO tournament_pending_players (tournament_id, display_name, rating, rank) VALUES (?, ?, ?, ?)",
         (1, "Alice Example", 1500, 1),
     )
@@ -800,6 +804,11 @@ def test_public_tournament_detail_renders_draft_round_results(monkeypatch, tmp_p
     body = response.get_data(as_text=True)
     assert "Alice Example" in body
     assert "Bob Example" in body
+    bye_row = body.split('<tr class="bye-pairing-row">', 1)[1].split("</tr>", 1)[0]
+    assert bye_row.count("Charlie Example") == 1
+    assert "99" not in bye_row
+    assert '<td colspan="3" class="pairing-player bye-player">Charlie Example</td>' in bye_row
+    assert '<td class="bye-label">Bye</td>' in bye_row
 
 
 def test_admin_matches_page_supports_pagination_controls():

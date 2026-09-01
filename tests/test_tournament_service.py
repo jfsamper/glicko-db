@@ -248,6 +248,52 @@ def test_accelerated_standings_drop_virtual_points_after_acceleration_rounds():
         assert top_seed["primary_score"] - top_seed["score"] == expected_virtual
 
 
+def test_accelerated_pairing_uses_first_round_results_for_second_round():
+    conn = create_db()
+    conn.execute("ALTER TABLE tournaments ADD COLUMN acceleration_rounds INTEGER NOT NULL DEFAULT 2")
+    conn.execute("ALTER TABLE tournaments ADD COLUMN acceleration_scheme TEXT NOT NULL DEFAULT '50:1,25:0.5,25:0'")
+    tournament_id = create_manual_tournament(conn, rounds=3, pairing_system="accelerated_swiss")
+    ratings = (2100, 2050, 2000, 1950, 1900, 1850, 1800, 1750)
+    for player_id, rating in enumerate(ratings, 1):
+        conn.execute(
+            "INSERT INTO players (id, first_name, last_name, display_name, rating, active) VALUES (?, ?, ?, ?, ?, 1)",
+            (player_id, "First", str(player_id), f"First {player_id}", rating),
+        )
+    for player_id in range(1, 9):
+        add_participant(conn, tournament_id, player_id)
+    conn.commit()
+
+    _, first_pairings = generate_next_round(conn, tournament_id)
+    ratings_by_id = dict(enumerate(ratings, 1))
+    top_group_ids = {1, 2, 3, 4}
+    top_group_winners = []
+    for pairing in first_pairings:
+        if pairing["is_bye"]:
+            continue
+        white_id = pairing["white_player_id"]
+        black_id = pairing["black_player_id"]
+        result = "1-0" if ratings_by_id[white_id] >= ratings_by_id[black_id] else "0-1"
+        conn.execute(
+            "UPDATE tournament_pairings SET result = ? WHERE white_player_id = ? AND black_player_id = ?",
+            (result, white_id, black_id),
+        )
+        if {white_id, black_id} <= top_group_ids:
+            top_group_winners.append(
+                white_id if result == "1-0" else black_id
+            )
+    conn.commit()
+
+    assert len(top_group_winners) == 2
+    _, second_pairings = generate_next_round(conn, tournament_id)
+    second_pairs = {
+        frozenset((pairing["white_player_id"], pairing["black_player_id"]))
+        for pairing in second_pairings
+        if not pairing["is_bye"]
+    }
+
+    assert frozenset(top_group_winners) in second_pairs
+
+
 def test_opengotha_import_persists_fuzzy_player_suggestion():
     conn = create_db()
     conn.execute(

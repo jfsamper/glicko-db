@@ -37,28 +37,24 @@
           <tr><th>{{ translations.board }}</th><th>{{ translations.white }}</th><th>{{ translations.black }}</th><th>{{ translations.result }}</th></tr>
         </thead>
         <tbody>
-          {% for pairing in pairings %}
+          {% for pairing in pairings if not pairing.is_bye %}
             <tr>
               <td>{{ pairing.board_number }}</td>
               <td>
-                {% if pairing.white_player_id %}
-                  <a href="{{ url_for('player_profile', id=pairing.white_player_id, lang=lang) }}">{{ pairing.white_name }}</a>
-                {% else %}
-                  {{ pairing.white_name }}
-                {% endif %}
+                {% if pairing.white_player_id %}<a href="{{ url_for('player_profile', id=pairing.white_player_id, lang=lang) }}">{{ pairing.white_name }}</a>{% else %}{{ pairing.white_name }}{% endif %}
               </td>
               <td>
-                {% if pairing.is_bye %}
-                  {{ translations.bye }}
-                {% elif pairing.black_player_id %}
-                  <a href="{{ url_for('player_profile', id=pairing.black_player_id, lang=lang) }}">{{ pairing.black_name }}</a>
-                {% else %}
-                  {{ pairing.black_name }}
-                {% endif %}
+                {% if pairing.black_player_id %}<a href="{{ url_for('player_profile', id=pairing.black_player_id, lang=lang) }}">{{ pairing.black_name }}</a>{% else %}{{ pairing.black_name }}{% endif %}
               </td>
               <td>
-                {% if pairing.is_bye %}{{ translations.bye }}{% elif pairing.result == '1-0' %}{{ translations.white_wins }}{% elif pairing.result == '0-1' %}{{ translations.black_wins }}{% elif pairing.result == '1/2-1/2' %}{{ translations.draw_result }}{% else %}-{% endif %}
+                {% if pairing.result == '1-0' %}{{ translations.white_wins }}{% elif pairing.result == '0-1' %}{{ translations.black_wins }}{% elif pairing.result == '1/2-1/2' %}{{ translations.draw_result }}{% else %}-{% endif %}
               </td>
+            </tr>
+          {% endfor %}
+          {% for pairing in pairings if pairing.is_bye %}
+            <tr class="bye-pairing-row">
+              <td colspan="3" class="pairing-player bye-player">{{ pairing.white_name }}</td>
+              <td class="bye-label">{{ translations.bye }}</td>
             </tr>
           {% endfor %}
         </tbody>

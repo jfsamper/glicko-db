@@ -1384,6 +1384,12 @@ def _participant_state(conn, tournament_id, acceleration_scheme=None, accelerati
         """,
         (tournament_id,),
     ).fetchall()
+    settings = conn.execute(
+        "SELECT bye_points, absent_points FROM tournaments WHERE id = ?",
+        (tournament_id,),
+    ).fetchone()
+    bye_points = float(settings["bye_points"] if settings and settings["bye_points"] is not None else 1.0)
+    absent_points = float(settings["absent_points"] if settings and settings["absent_points"] is not None else 0.0)
     seed_order = sorted(
         participants,
         key=lambda row: (-float(row["seed_rating"] or 0), row["player_id"]),
@@ -1393,7 +1399,7 @@ def _participant_state(conn, tournament_id, acceleration_scheme=None, accelerati
         row["player_id"]: {
             "id": row["player_id"],
             "rating": row["seed_rating"],
-            "score": row["score"],
+            "score": 0.0,
             "initial_score": row["initial_score"],
             "acceleration": (
                 acceleration_for_rank(
@@ -1419,6 +1425,7 @@ def _participant_state(conn, tournament_id, acceleration_scheme=None, accelerati
             continue
         if row["is_bye"] or black is None:
             state[white]["received_bye"] = True
+            state[white]["score"] += bye_points
             continue
         if black not in state:
             continue
@@ -1426,6 +1433,26 @@ def _participant_state(conn, tournament_id, acceleration_scheme=None, accelerati
         state[black]["opponents"].add(white)
         state[white]["colors"]["white"] += 1
         state[black]["colors"]["black"] += 1
+        if row["result"] == "1-0":
+            state[white]["score"] += 1.0
+        elif row["result"] == "0-1":
+            state[black]["score"] += 1.0
+        elif row["result"] == "1/2-1/2":
+            state[white]["score"] += 0.5
+            state[black]["score"] += 0.5
+
+    absent_players = conn.execute(
+        """
+        SELECT rp.player_id
+        FROM tournament_round_players rp
+        JOIN tournament_rounds r ON r.id = rp.round_id
+        WHERE r.tournament_id = ? AND rp.status = 'absent'
+        """,
+        (tournament_id,),
+    ).fetchall()
+    for row in absent_players:
+        if row["player_id"] in state:
+            state[row["player_id"]]["score"] += absent_points
     return state
 
 
