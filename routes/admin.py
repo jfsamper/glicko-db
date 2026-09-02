@@ -79,6 +79,7 @@ from config import (
     THEME_CHOICES,
     TIMEZONE_CHOICES,
 )
+from services.common import ALLOWED_ROLES
 from services.helpers import normalize_key, normalize_round_note, normalize_round_note_for_storage, parse_date_value
 from services.import_service import build_import_preview, import_gotha_xml, import_workbook_data
 from services.player_service import (
@@ -371,6 +372,19 @@ def require_permission(permission_name):
         return redirect(url_for("admin_login", lang=get_language(request.args.get("lang"))))
     return None
 
+
+def load_players_for_user_link():
+    conn = get_db()
+    try:
+        try:
+            return conn.execute(
+                "SELECT id, display_name FROM players ORDER BY display_name"
+            ).fetchall()
+        except sqlite3.OperationalError:
+            return []
+    finally:
+        conn.close()
+
 def get_backup_path(filename):
     """Return a safe, server-generated backup path or ``None``."""
     if not isinstance(filename, str):
@@ -576,6 +590,10 @@ ADMIN_ROUTE_PERMISSIONS = {
     "admin.admin_audit_review": "admin",
     "admin.admin_settings": "admin",
     "admin.admin_users": "admin",
+    "admin.admin_result_submissions": "operator",
+    "admin.admin_approve_result_submission": "operator",
+    "admin.admin_reject_result_submission": "operator",
+    "admin.admin_report_results": "results_submitter",
     "admin.admin_import": "operator",
     "admin.admin_matches": "operator",
     "admin.admin_tournaments": "operator",
@@ -610,6 +628,7 @@ ADMIN_MENU_SECTIONS = (
         (
             ("admin_backups", "admin_backups_title", "admin_backups_desc", "admin"),
             ("admin_users", "admin_users_title", "admin_users_desc", "admin"),
+            ("admin_result_submissions", "result_submissions_title", "result_submissions_desc", "operator"),
             ("admin_audit_review", "audit_review_heading", "audit_review_desc", "admin"),
             ("admin_settings", "admin_settings_title", "admin_settings_desc", "admin"),
         ),
@@ -623,7 +642,7 @@ def get_required_permission_for_route(endpoint_name):
 
 @admin_bp.before_request
 def admin_auth_check():
-    if request.path in {"/admin/login", "/admin/forgot-password", "/admin/forgot_password"} or (
+    if request.path in {"/admin/login", "/admin/register", "/admin/forgot-password", "/admin/forgot_password"} or (
         request.endpoint
         and request.endpoint.endswith(("admin_login", "admin_forgot_password", "admin_reset_password"))
     ):
@@ -722,6 +741,271 @@ def admin_login():
         lang=lang,
         translations=TRANSLATIONS[lang],
     )
+
+
+@admin_bp.route("/admin/register", methods=["GET", "POST"])
+def admin_register():
+    lang = get_language(request.args.get("lang"))
+    if request.method == "POST":
+        username = (request.form.get("username") or "").strip()
+        password = request.form.get("password") or ""
+        confirm_password = request.form.get("confirm_password") or ""
+        email = (request.form.get("email") or "").strip()
+        if len(password) < 8:
+            flash(TRANSLATIONS[lang]["password_too_short"])
+        elif password != confirm_password:
+            flash(TRANSLATIONS[lang]["password_mismatch"])
+        else:
+            try:
+                create_user_account(
+                    username,
+                    password,
+                    role_name="member",
+                    email=email,
+                )
+                flash(TRANSLATIONS[lang]["account_created_success"])
+                return redirect(url_for("admin_login", lang=lang))
+            except ValueError as exc:
+                message_key = {
+                    "username already exists": "user_username_taken",
+                    "email already exists": "email_taken",
+                    "invalid email": "invalid_email",
+                }.get(str(exc), "error")
+                flash(TRANSLATIONS[lang][message_key])
+
+    return render_template(
+        "admin/register.html",
+        lang=lang,
+        translations=TRANSLATIONS[lang],
+    )
+
+
+@admin_bp.route("/admin/report-results", methods=["GET", "POST"])
+def admin_report_results():
+    permission_error = require_permission("results_submitter")
+    if permission_error is not None:
+        return permission_error
+
+    lang = get_language(request.args.get("lang"))
+    user = get_current_user()
+    conn = get_db()
+    try:
+        if request.method == "POST":
+            player_id = user.get("player_id") if user else None
+            opponent_id = request.form.get("opponent_player_id")
+            color = request.form.get("color", "white")
+            result = (request.form.get("result") or "").strip()
+            match_date = (request.form.get("match_date") or "").strip()
+            event = (request.form.get("event") or "").strip()
+            notes = (request.form.get("notes") or "").strip()
+            if player_id is None:
+                flash(TRANSLATIONS[lang]["player_link_required"])
+            elif color not in {"white", "black"}:
+                flash(TRANSLATIONS[lang]["error"])
+            else:
+                white_player_id = player_id if color == "white" else opponent_id
+                black_player_id = opponent_id if color == "white" else player_id
+                valid, message = validate_match_form_data(
+                    conn,
+                    match_date,
+                    white_player_id,
+                    black_player_id,
+                    result,
+                    lang,
+                )
+                try:
+                    handicap_stones = parse_handicap_stones(request.form.get("handicap_stones"))
+                except ValueError:
+                    valid = False
+                    message = TRANSLATIONS[lang]["error"]
+                if valid:
+                    duplicate = conn.execute(
+                        """
+                        SELECT 1 FROM result_submissions
+                        WHERE submitted_by_user_id = ? AND status = 'pending'
+                          AND match_date = ? AND white_player_id = ?
+                          AND black_player_id = ? AND result = ?
+                        """,
+                        (user["id"], match_date, white_player_id, black_player_id, result),
+                    ).fetchone()
+                    if duplicate is not None:
+                        valid = False
+                        message = TRANSLATIONS[lang]["duplicate_submission"]
+                if valid:
+                    conn.execute(
+                        """
+                        INSERT INTO result_submissions
+                            (submitted_by_user_id, match_date, white_player_id, black_player_id,
+                             result, event, notes, handicap_stones)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                        """,
+                        (user["id"], match_date, white_player_id, black_player_id, result, event, notes, handicap_stones),
+                    )
+                    conn.commit()
+                    log_admin_action(
+                        "result_submitted",
+                        "result_submission",
+                        {"submission_id": conn.execute("SELECT last_insert_rowid()").fetchone()[0]},
+                        user_id=user["id"],
+                    )
+                    flash(TRANSLATIONS[lang]["result_submitted_success"])
+                    return redirect(url_for("admin_report_results", lang=lang))
+                flash(message or TRANSLATIONS[lang]["error"])
+
+        opponents = []
+        if user and user.get("player_id") is not None:
+            opponents = conn.execute(
+                "SELECT id, display_name FROM players WHERE id != ? ORDER BY display_name",
+                (user["player_id"],),
+            ).fetchall()
+        submissions = conn.execute(
+            """
+            SELECT rs.*, p_white.display_name AS white_name, p_black.display_name AS black_name
+            FROM result_submissions rs
+            JOIN players p_white ON p_white.id = rs.white_player_id
+            JOIN players p_black ON p_black.id = rs.black_player_id
+            WHERE rs.submitted_by_user_id = ?
+            ORDER BY rs.created_at DESC, rs.id DESC
+            """,
+            (user["id"],),
+        ).fetchall()
+    finally:
+        conn.close()
+
+    return render_template(
+        "admin/report_results.html",
+        lang=lang,
+        translations=TRANSLATIONS[lang],
+        user=user,
+        opponents=opponents,
+        submissions=submissions,
+    )
+
+
+@admin_bp.route("/admin/result-submissions")
+def admin_result_submissions():
+    permission_error = require_permission("operator")
+    if permission_error is not None:
+        return permission_error
+
+    lang = get_language(request.args.get("lang"))
+    status = request.args.get("status", "pending")
+    if status not in {"pending", "approved", "rejected", "all"}:
+        status = "pending"
+    conn = get_db()
+    try:
+        query = """
+            SELECT rs.*, submitter.username AS submitter_username,
+                   p_white.display_name AS white_name, p_black.display_name AS black_name,
+                   reviewer.username AS reviewer_username
+            FROM result_submissions rs
+            JOIN users submitter ON submitter.id = rs.submitted_by_user_id
+            JOIN players p_white ON p_white.id = rs.white_player_id
+            JOIN players p_black ON p_black.id = rs.black_player_id
+            LEFT JOIN users reviewer ON reviewer.id = rs.reviewed_by_user_id
+        """
+        params = []
+        if status != "all":
+            query += " WHERE rs.status = ?"
+            params.append(status)
+        query += " ORDER BY rs.created_at DESC, rs.id DESC"
+        submissions = conn.execute(query, params).fetchall()
+    finally:
+        conn.close()
+    return render_template(
+        "admin/result_submissions.html",
+        lang=lang,
+        translations=TRANSLATIONS[lang],
+        submissions=submissions,
+        selected_status=status,
+    )
+
+
+@admin_bp.route("/admin/result-submissions/<int:submission_id>/approve", methods=["POST"])
+def admin_approve_result_submission(submission_id):
+    permission_error = require_permission("operator")
+    if permission_error is not None:
+        return permission_error
+    lang = get_language(request.args.get("lang"))
+    conn = get_db()
+    try:
+        submission = conn.execute(
+            "SELECT * FROM result_submissions WHERE id = ? AND status = 'pending'",
+            (submission_id,),
+        ).fetchone()
+        if submission is None:
+            flash(TRANSLATIONS[lang]["submission_not_pending"])
+            return redirect(url_for("admin_result_submissions", lang=lang))
+        now = current_timestamp()
+        match_id = conn.execute(
+            """
+            INSERT INTO matches
+                (match_date, white_player_id, black_player_id, result, event, notes, round_number, handicap_stones)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (submission["match_date"], submission["white_player_id"], submission["black_player_id"],
+             submission["result"], submission["event"], submission["notes"], submission["round_number"],
+             submission["handicap_stones"]),
+        ).lastrowid
+        conn.execute(
+            """
+            UPDATE result_submissions
+            SET status = 'approved', reviewed_by_user_id = ?, reviewed_at = ?, review_notes = ?
+            WHERE id = ? AND status = 'pending'
+            """,
+            (session.get("user_id"), now, request.form.get("review_notes", "").strip(), submission_id),
+        )
+        conn.commit()
+    except sqlite3.DatabaseError:
+        conn.rollback()
+        logger.exception("Could not approve result submission %s", submission_id)
+        flash(TRANSLATIONS[lang]["error"])
+        return redirect(url_for("admin_result_submissions", lang=lang))
+    finally:
+        conn.close()
+    refresh_stats()
+    mark_dirty(submission["match_date"])
+    update_from_latest_snapshot()
+    log_admin_action(
+        "result_submission_approved",
+        "result_submission",
+        {"submission_id": submission_id, "match_id": match_id},
+        user_id=session.get("user_id"),
+    )
+    flash(TRANSLATIONS[lang]["submission_approved"])
+    return redirect(url_for("admin_result_submissions", lang=lang))
+
+
+@admin_bp.route("/admin/result-submissions/<int:submission_id>/reject", methods=["POST"])
+def admin_reject_result_submission(submission_id):
+    permission_error = require_permission("operator")
+    if permission_error is not None:
+        return permission_error
+    lang = get_language(request.args.get("lang"))
+    conn = get_db()
+    try:
+        updated = conn.execute(
+            """
+            UPDATE result_submissions
+            SET status = 'rejected', reviewed_by_user_id = ?, reviewed_at = ?, review_notes = ?
+            WHERE id = ? AND status = 'pending'
+            """,
+            (session.get("user_id"), current_timestamp(), request.form.get("review_notes", "").strip(), submission_id),
+        ).rowcount
+        conn.commit()
+    finally:
+        conn.close()
+    if not updated:
+        flash(TRANSLATIONS[lang]["submission_not_pending"])
+    else:
+        log_admin_action(
+            "result_submission_rejected",
+            "result_submission",
+            {"submission_id": submission_id},
+            user_id=session.get("user_id"),
+        )
+        flash(TRANSLATIONS[lang]["submission_rejected"])
+    return redirect(url_for("admin_result_submissions", lang=lang))
 
 
 @admin_bp.route("/admin/settings", methods=["GET", "POST"])
@@ -3448,23 +3732,30 @@ def admin_users():
                    u.is_active,
                      u.timezone,
                      u.email,
+                    u.player_id,
                    COALESCE(GROUP_CONCAT(r.name, ', '), '') AS role_names
             FROM users u
             LEFT JOIN user_roles ur ON ur.user_id = u.id
             LEFT JOIN roles r ON r.id = ur.role_id
-            GROUP BY u.id, u.username, u.is_active, u.timezone, u.email
+                 GROUP BY u.id, u.username, u.is_active, u.timezone, u.email, u.player_id
             ORDER BY u.username
             """
         ).fetchall()
     finally:
         conn.close()
 
+    player_names = {
+        player["id"]: player["display_name"]
+        for player in load_players_for_user_link()
+    }
+    users = [dict(user, player_name=player_names.get(user["player_id"])) for user in users]
+
     return render_template(
         "admin/users.html",
         lang=lang,
         translations=TRANSLATIONS[lang],
         users=users,
-        roles=["administrator", "tournament_director", "operator"],
+        roles=list(ALLOWED_ROLES),
         timezone_choices=get_timezone_choices(),
         timezone_labels={
             timezone: format_timezone_label(timezone)
@@ -3486,6 +3777,12 @@ def admin_create_user():
         role_name = (request.form.get("role_name") or "operator").strip()
         timezone_name = (request.form.get("timezone") or "").strip()
         email = (request.form.get("email") or "").strip()
+        player_id = request.form.get("player_id") or None
+        if player_id is not None:
+            try:
+                player_id = int(player_id)
+            except ValueError:
+                player_id = None
 
         try:
             user_id = create_user_account(
@@ -3494,6 +3791,7 @@ def admin_create_user():
                 role_name=role_name,
                 timezone_name=timezone_name,
                 email=email,
+                player_id=player_id,
             )
             log_admin_action(
                 "user_created",
@@ -3515,7 +3813,8 @@ def admin_create_user():
         "admin/create_user.html",
         lang=lang,
         translations=TRANSLATIONS[lang],
-        roles=["administrator", "tournament_director", "operator"],
+        roles=list(ALLOWED_ROLES),
+        players=load_players_for_user_link(),
         timezone_choices=get_timezone_choices(),
         timezone_labels={
             timezone: format_timezone_label(timezone)
@@ -3534,7 +3833,7 @@ def admin_edit_user(user_id):
     conn = get_db()
     user = conn.execute(
         """
-        SELECT u.id, u.username, u.is_active, u.timezone, u.email,
+        SELECT u.id, u.username, u.is_active, u.timezone, u.email, u.player_id,
                COALESCE(r.name, 'operator') AS role_name
         FROM users u
         LEFT JOIN user_roles ur ON ur.user_id = u.id
@@ -3557,6 +3856,12 @@ def admin_edit_user(user_id):
         role_name = (request.form.get("role_name") or user["role_name"] or "operator").strip()
         timezone_name = (request.form.get("timezone") or "").strip()
         email = (request.form.get("email") or "").strip()
+        player_id = request.form.get("player_id") or None
+        if player_id is not None:
+            try:
+                player_id = int(player_id)
+            except ValueError:
+                player_id = None
         is_active_raw = request.form.get("is_active", "1")
         is_active = 1 if str(is_active_raw).lower() in {"1", "true", "on", "yes"} else 0
 
@@ -3588,9 +3893,12 @@ def admin_edit_user(user_id):
                 flash(TRANSLATIONS[lang]["email_taken"])
                 return redirect(url_for("admin_edit_user", user_id=user_id, lang=lang))
 
+            if player_id is not None and conn.execute("SELECT 1 FROM players WHERE id = ?", (player_id,)).fetchone() is None:
+                flash(TRANSLATIONS[lang]["error"])
+                return redirect(url_for("admin_edit_user", user_id=user_id, lang=lang))
             conn.execute(
-                "UPDATE users SET username = ?, is_active = ?, timezone = ?, email = ? WHERE id = ?",
-                (username, is_active, timezone_name, email, user_id),
+                "UPDATE users SET username = ?, is_active = ?, timezone = ?, email = ?, player_id = ? WHERE id = ?",
+                (username, is_active, timezone_name, email, player_id, user_id),
             )
             if password:
                 conn.execute(
@@ -3628,7 +3936,8 @@ def admin_edit_user(user_id):
         lang=lang,
         translations=TRANSLATIONS[lang],
         user=user,
-        roles=["administrator", "tournament_director", "operator"],
+        roles=list(ALLOWED_ROLES),
+        players=load_players_for_user_link(),
         timezone_choices=get_timezone_choices(),
         timezone_labels={
             timezone: format_timezone_label(timezone)

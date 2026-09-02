@@ -58,7 +58,10 @@
         <div class="sidebar-block small">
           {% if current_user %}
             <h4>{{ translations.welcome_user }}, {{ current_user.username }}</h4>
-            <p><a href="{{ url_for('admin', lang=lang) }}">{{ translations.admin_menu_link }}</a></p>
+            {% if current_user.role in ['administrator', 'tournament_director', 'operator'] %}
+              <p><a href="{{ url_for('admin', lang=lang) }}">{{ translations.admin_menu_link }}</a></p>
+            {% endif %}
+            <p><a href="{{ url_for('admin_report_results', lang=lang) }}">{{ translations.report_results }}</a></p>
           {% else %}
             <h4>{{ translations.report_results }}</h4>
             <p>{{ translations.report_results_help }} <a href="{{ url_for('admin_login', lang=lang) }}">{{ translations.here }}.</a></p>

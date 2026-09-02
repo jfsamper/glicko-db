@@ -32,6 +32,7 @@
         <th>{{ translations.username_label }}</th>
         <th>{{ translations.email_label }}</th>
         <th>{{ translations.role_label }}</th>
+        <th>{{ translations.linked_player_label }}</th>
         <th>{{ translations.timezone_label }}</th>
         <th>{{ translations.status }}</th>
         <th>{{ translations.actions_label }}</th>
@@ -46,6 +47,7 @@
         <td>{{ user.username }}</td>
         <td>{{ user.email or '-' }}</td>
         <td>{{ user.role_names or '-' }}</td>
+        <td>{{ user.player_name or '-' }}</td>
         <td>{{ timezone_labels.get(user.timezone, user.timezone) if user.timezone else translations.timezone_default }}</td>
         <td>{{ translations.active_label if user.is_active else translations.inactive_label }}</td>
         <td>
@@ -67,7 +69,7 @@
       {% else %}
 
       <tr>
-        <td colspan="6">{{ translations.no_users }}</td>
+        <td colspan="7">{{ translations.no_users }}</td>
       </tr>
 
       {% endfor %}

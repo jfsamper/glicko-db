@@ -51,6 +51,16 @@
         </div>
 
         <div class="filter-item wide">
+          <label for="player_id">{{ translations.linked_player_label }}</label>
+          <select id="player_id" name="player_id">
+            <option value="">-</option>
+            {% for player in players %}
+              <option value="{{ player.id }}">{{ player.display_name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="filter-item wide">
           <label for="timezone">{{ translations.timezone_label }}</label>
           <select id="timezone" name="timezone">
             <option value="">{{ translations.timezone_default }}</option>

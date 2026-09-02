@@ -12,6 +12,7 @@ Glicko DB é uma aplicação Flask e SQLite para gerenciar jogadores, ratings, p
 - Administração de jogadores e partidas com paginação, filtros e ordenação consistente
 - Importação de planilhas Excel, XML do OpenGotha e CSV legado de partidas
 - Criação e edição de torneios, importação do OpenGotha, emparelhamentos, registro de resultados, classificação e exportação
+- Registro de contas de membros e envio de resultados individuais para aprovação administrativa
 - Relatórios públicos por período, iniciando por Todo o período, com filtros por jogador, exportação CSV/PDF traduzida, mudanças de rating e desempenho por oponente, país e clube
 - Sistemas suíço, suíço por categoria, suíço acelerado e McMahon
 - Tratamento de BYE e ausências, cópias de segurança, proteção de restauração e migrações SQLite
@@ -72,7 +73,7 @@ As datas e horas geradas pelo aplicativo usam UTC-5 por padrão. Cada conta pode
 
 Os relatórios em `/reports` usam limites inclusivos `start_date` e `end_date`, e a inclusão no período usa o fuso horário fixo do servidor (UTC-5 por padrão), não o fuso da conta. A visão geral e os relatórios filtrados por jogador começam em Todo o período. A porcentagem de vitórias é vitórias divididas por partidas. Cada linha mostra pontos absolutos, variação percentual do rating e mudança inteira de categoria. O seletor de jogadores é ordenado pelo total de partidas. Os totais são calculados uma vez no servidor e reutilizados na página e nas exportações CSV/PDF; os rótulos e textos do PDF usam o idioma atual, enquanto registros com datas ou resultados inválidos são excluídos e contabilizados. Partidas materializadas de torneios mantêm uma identidade única por emparelhamento para impedir importações ou contagens duplicadas.
 
-A administração usa contas nominadas com três funções: `administrator`, `tournament_director` e `operator`. Quando não existe nenhuma conta, o aplicativo cria um administrador inicial a partir de `ADMIN_PASSWORD` na primeira inicialização; contas adicionais e seus fusos horários são gerenciados em `/admin/users`. Cada usuário pode abrir `/admin/profile` para salvar idioma, tema, fuso horário, e-mail e senha. O link de recuperação em `/admin/login` usa tokens de uso único e respostas que não revelam se um e-mail existe; configure SMTP em produção. Tentativas com falha sofrem limitação; em produção, use HTTPS e senhas fortes e exclusivas. A autorização real se baseia na sessão do usuário e nas permissões. Apenas `administrator` e `operator` podem modificar jogadores, ratings e categorias; `tournament_director` mantém as operações de torneios.
+A administração usa contas nominadas com quatro funções: `administrator`, `tournament_director`, `operator` e `member`. Contas novas recebem a função `member`; um administrador pode vinculá-las manualmente a um jogador em `/admin/users`. Membros só podem enviar partidas que incluam seu jogador vinculado. Diretores, operadores e administradores revisam a fila em `/admin/result-submissions`; apenas resultados aprovados se tornam partidas públicas. Quando não existe nenhuma conta, o aplicativo cria um administrador inicial a partir de `ADMIN_PASSWORD` na primeira inicialização; contas adicionais e seus fusos horários são gerenciados em `/admin/users`. Cada usuário pode abrir `/admin/profile` para salvar idioma, tema, fuso horário, e-mail e senha. O link de recuperação em `/admin/login` usa tokens de uso único e respostas que não revelam se um e-mail existe; configure SMTP em produção. Tentativas com falha sofrem limitação; em produção, use HTTPS e senhas fortes e exclusivas. A autorização real se baseia na sessão do usuário e nas permissões. Apenas `administrator` e `operator` podem modificar jogadores, ratings e categorias; `tournament_director` mantém as operações de torneios.
 Administradores podem ajustar o número máximo de tentativas de login, a janela de limitação e a duração do link de recuperação em `/admin/settings`. Esses valores são armazenados no SQLite, e o botão de restauração recupera os valores iniciais de `config.py`. `ADMIN_PASSWORD`, caminhos e credenciais SMTP continuam sendo configuração do ambiente.
 
 ## Plano do projeto
@@ -112,6 +113,10 @@ Cada emparelhamento recebe uma sugestão automática de handicap em pedras (uma 
 ### Consultar relatórios
 
 Abra `/reports` para escolher ano, trimestre, mês, Todo o período ou período personalizado. A tabela mostra jogadores com partidas válidas no período e permite abrir o desempenho contra cada oponente. Ela também mostra agregados por país e clube do oponente. Os links CSV e PDF preservam os filtros escolhidos e usam os mesmos totais exibidos na tela; o nome do PDF inclui o jogador e o período.
+
+### Relatar resultados
+
+Use `Criar conta` na tela de login e peça a um administrador para vincular a conta a um jogador em `/admin/users`. O formulário aceita apenas partidas que incluam esse jogador vinculado. Os envios ficam pendentes e não afetam classificações, ratings ou relatórios até serem aprovados por um diretor, operador ou administrador em `/admin/result-submissions`. O esquema e os helpers de serviço já fornecem códigos hash com expiração e uso único para um futuro fluxo de aprovação por e-mail; a publicação automática por código permanece desativada até que a política de verificação seja definida.
 
 Quando os resultados da rodada são materializados na tabela principal de partidas, a coluna `event` mantém o nome do torneio ou evento. O campo `notes`, exibido como `Round` na interface, armazena o número da rodada em formato canônico como um inteiro sem rótulo, por exemplo `5` (não `Round 5`). Se a entrada estiver em um formato legado, como `15:00:00`, ela é preservada e convertida em uma rodada numérica. Se nenhum valor numérico for encontrado, o texto é mantido e tratado como `0`.
 
@@ -156,7 +161,7 @@ Python, a arquitetura ou a distribuição Linux escolhida pela hospedagem não �
 Selecione Python 3.10+ x86_64 no painel da hospedagem; não compile o Pillow sem as
 bibliotecas de desenvolvimento do sistema para Python, JPEG, zlib e freetype.
 
-Os testes cobrem ratings e gráficos, filtros de jogadores, suporte a idiomas, backups, migrações de torneios, emparelhamento, classificação, compatibilidade com OpenGotha e páginas públicas de torneios.
+Os testes cobrem ratings e gráficos, filtros de jogadores, suporte a idiomas, backups, migrações de torneios, emparelhamento, classificação, compatibilidade com OpenGotha, moderação de resultados e páginas públicas de torneios.
 
 A ordenação, os filtros e a busca consistentes já estão entregues e validados nas páginas de jogadores, partidas e torneios.
 
@@ -165,7 +170,6 @@ A ordenação, os filtros e a busca consistentes já estão entregues e validado
 1. Melhorias de paginação. Mostrar o total de páginas, o contexto da página atual e uma seleção simples de resultados por página.
 2. Perfil do jogador com resultados e estatísticas de torneios. Adicionar em cada ficha um resumo de torneios disputados, registro de vitórias/derrotas, resultados por evento, tabela de torneios recentes, sequências e porcentagens de desempenho, com filtros por categoria e temporada.
 3. Backups programados com retenção e verificação de restauração. Mantê-los desativados por padrão e habilitá-los apenas quando existir uma política clara de retenção.
-4. Fluxo opcional de moderação de resultados. Somente se for necessário para o processo do torneio.
 
 ## Licença e atribuição
 

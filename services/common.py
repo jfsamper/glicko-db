@@ -29,7 +29,7 @@ from config import (
     PASSWORD_RESET_TTL_SECONDS,
 )
 
-ALLOWED_ROLES = ("administrator", "tournament_director", "operator")
+ALLOWED_ROLES = ("administrator", "tournament_director", "operator", "member")
 AUDIT_RETENTION_DAYS = max(1, int(os.environ.get("AUDIT_RETENTION_DAYS", "730")))
 AUDIT_DETAILS_MAX_BYTES = 2048
 
@@ -265,6 +265,9 @@ TRANSLATIONS = {
         "error": "El cambio falló",
         "no_file": "Elige un archivo",
         "admin_login_heading": "Acceso de administrador",
+        "create_account_button": "Crear cuenta",
+        "create_account_heading": "Crear cuenta de miembro",
+        "account_created_success": "Cuenta creada correctamente. Ya puedes iniciar sesión.",
         "password_label": "Contraseña",
         "login_button": "Ingresar",
         "logout_button": "Cerrar sesión",
@@ -298,6 +301,33 @@ TRANSLATIONS = {
         "invalid_password": "Contraseña incorrecta",
         "welcome_user": "Bienvenido",
         "admin_menu_link": "Menú de Admin",
+        "report_results_title": "Reportar resultados",
+        "report_results_subtitle": "Envía una partida para revisión antes de publicarla.",
+        "player_link_required": "Tu cuenta todavía no está vinculada a un jugador.",
+        "linked_player_label": "Jugador vinculado",
+        "opponent_player_label": "Oponente",
+        "color_label": "Color",
+        "white_side": "Blancas",
+        "black_side": "Negras",
+        "submit_result_button": "Enviar resultado",
+        "result_submitted_success": "Resultado enviado para revisión.",
+        "duplicate_submission": "Ya tienes un envío pendiente para esta partida.",
+        "result_submissions_title": "Resultados por aprobar",
+        "result_submissions_desc": "Revisa y aprueba resultados enviados por miembros.",
+        "review_results_heading": "Revisar resultados enviados",
+        "submitted_by": "Enviado por",
+        "review_note_label": "Nota de revisión",
+        "approve_button": "Aprobar",
+        "reject_button": "Rechazar",
+        "all_statuses": "Todos",
+        "filter_status": "Estado",
+        "pending_status": "Pendiente",
+        "approved_status": "Aprobado",
+        "rejected_status": "Rechazado",
+        "submission_not_pending": "Este resultado ya fue revisado.",
+        "submission_approved": "Resultado aprobado y agregado a las partidas.",
+        "submission_rejected": "Resultado rechazado.",
+        "no_submissions": "No hay resultados enviados.",
         "admin_heading": "Administración",
         "admin_tournament_operations_heading": "Operaciones de torneos",
         "admin_data_management_heading": "Gestión de datos",
@@ -711,6 +741,9 @@ TRANSLATIONS = {
         "no_file": "Please choose a file",
         "edit_subtitle": "Update player rating, RD, and volatility",
         "admin_login_heading": "Admin Login",
+        "create_account_button": "Create account",
+        "create_account_heading": "Create member account",
+        "account_created_success": "Account created. You can now sign in.",
         "password_label": "Password",
         "login_button": "Login",
         "logout_button": "Logout",
@@ -744,6 +777,33 @@ TRANSLATIONS = {
         "invalid_password": "Invalid password",
         "welcome_user": "Welcome",
         "admin_menu_link": "Admin Menu",
+        "report_results_title": "Report results",
+        "report_results_subtitle": "Submit a game for review before it is published.",
+        "player_link_required": "Your account is not linked to a player yet.",
+        "linked_player_label": "Linked player",
+        "opponent_player_label": "Opponent",
+        "color_label": "Color",
+        "white_side": "White",
+        "black_side": "Black",
+        "submit_result_button": "Submit result",
+        "result_submitted_success": "Result submitted for review.",
+        "duplicate_submission": "You already have a pending submission for this game.",
+        "result_submissions_title": "Result moderation",
+        "result_submissions_desc": "Review and approve results submitted by members.",
+        "review_results_heading": "Review submitted results",
+        "submitted_by": "Submitted by",
+        "review_note_label": "Review note",
+        "approve_button": "Approve",
+        "reject_button": "Reject",
+        "all_statuses": "All",
+        "filter_status": "Status",
+        "pending_status": "Pending",
+        "approved_status": "Approved",
+        "rejected_status": "Rejected",
+        "submission_not_pending": "This result has already been reviewed.",
+        "submission_approved": "Result approved and added to matches.",
+        "submission_rejected": "Result rejected.",
+        "no_submissions": "No submitted results.",
         "admin_heading": "Admin",
         "admin_tournament_operations_heading": "Tournament operations",
         "admin_data_management_heading": "Data management",
@@ -1151,6 +1211,9 @@ TRANSLATIONS = {
         "no_file": "Escolha um arquivo",
         "edit_subtitle": "Atualize o rating, o RD e a volatilidade",
         "admin_login_heading": "Login do administrador",
+        "create_account_button": "Criar conta",
+        "create_account_heading": "Criar conta de membro",
+        "account_created_success": "Conta criada. Agora você pode entrar.",
         "password_label": "Senha",
         "login_button": "Entrar",
         "logout_button": "Sair",
@@ -1184,6 +1247,33 @@ TRANSLATIONS = {
         "invalid_password": "Senha inválida",
         "welcome_user": "Bem-vindo",
         "admin_menu_link": "Menu de administração",
+        "report_results_title": "Relatar resultados",
+        "report_results_subtitle": "Envie uma partida para revisão antes de publicá-la.",
+        "player_link_required": "Sua conta ainda não está vinculada a um jogador.",
+        "linked_player_label": "Jogador vinculado",
+        "opponent_player_label": "Oponente",
+        "color_label": "Cor",
+        "white_side": "Brancas",
+        "black_side": "Pretas",
+        "submit_result_button": "Enviar resultado",
+        "result_submitted_success": "Resultado enviado para revisão.",
+        "duplicate_submission": "Você já tem um envio pendente para esta partida.",
+        "result_submissions_title": "Moderação de resultados",
+        "result_submissions_desc": "Revise e aprove resultados enviados por membros.",
+        "review_results_heading": "Revisar resultados enviados",
+        "submitted_by": "Enviado por",
+        "review_note_label": "Nota de revisão",
+        "approve_button": "Aprovar",
+        "reject_button": "Rejeitar",
+        "all_statuses": "Todos",
+        "filter_status": "Status",
+        "pending_status": "Pendente",
+        "approved_status": "Aprovado",
+        "rejected_status": "Rejeitado",
+        "submission_not_pending": "Este resultado já foi revisado.",
+        "submission_approved": "Resultado aprovado e adicionado às partidas.",
+        "submission_rejected": "Resultado rejeitado.",
+        "no_submissions": "Nenhum resultado enviado.",
         "admin_heading": "Administração",
         "admin_tournament_operations_heading": "Operações de torneios",
         "admin_data_management_heading": "Gerenciamento de dados",
@@ -1501,12 +1591,35 @@ def validate_email_address(value):
 
 
 def migrate_auth_schema(conn):
-    """Create the additive auth tables and seed the three built-in roles."""
+    """Create the additive auth tables and seed the built-in roles."""
+    roles_schema = conn.execute(
+        "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'roles'"
+    ).fetchone()
+    if roles_schema is not None and "'member'" not in (roles_schema[0] or ""):
+        foreign_keys_enabled = bool(conn.execute("PRAGMA foreign_keys").fetchone()[0])
+        conn.commit()
+        conn.execute("PRAGMA foreign_keys = OFF")
+        conn.execute("DROP TRIGGER IF EXISTS roles_validate_insert")
+        conn.execute("DROP TRIGGER IF EXISTS roles_validate_update")
+        conn.execute(
+            """
+            CREATE TABLE roles_migrated (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL UNIQUE CHECK(name IN ('administrator', 'tournament_director', 'operator', 'member')),
+                description TEXT
+            )
+            """
+        )
+        conn.execute("INSERT INTO roles_migrated (id, name, description) SELECT id, name, description FROM roles")
+        conn.execute("DROP TABLE roles")
+        conn.execute("ALTER TABLE roles_migrated RENAME TO roles")
+        conn.commit()
+        conn.execute(f"PRAGMA foreign_keys = {'ON' if foreign_keys_enabled else 'OFF'}")
     conn.execute(
         """
         CREATE TABLE IF NOT EXISTS roles (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL UNIQUE CHECK(name IN ('administrator', 'tournament_director', 'operator')),
+            name TEXT NOT NULL UNIQUE CHECK(name IN ('administrator', 'tournament_director', 'operator', 'member')),
             description TEXT
         )
         """
@@ -1517,7 +1630,7 @@ def migrate_auth_schema(conn):
         BEFORE INSERT ON roles
         BEGIN
             SELECT CASE
-                WHEN NEW.name NOT IN ('administrator', 'tournament_director', 'operator')
+                WHEN NEW.name NOT IN ('administrator', 'tournament_director', 'operator', 'member')
                 THEN RAISE(ABORT, 'role name not allowed')
             END;
         END;
@@ -1529,7 +1642,7 @@ def migrate_auth_schema(conn):
         BEFORE UPDATE ON roles
         BEGIN
             SELECT CASE
-                WHEN NEW.name NOT IN ('administrator', 'tournament_director', 'operator')
+                WHEN NEW.name NOT IN ('administrator', 'tournament_director', 'operator', 'member')
                 THEN RAISE(ABORT, 'role name not allowed')
             END;
         END;
@@ -1546,6 +1659,7 @@ def migrate_auth_schema(conn):
             last_login_at TEXT,
             timezone TEXT,
             email TEXT,
+            player_id INTEGER,
             language TEXT DEFAULT 'es',
             theme TEXT DEFAULT 'light'
         )
@@ -1554,9 +1668,10 @@ def migrate_auth_schema(conn):
     user_columns = {
         row[1] for row in conn.execute("PRAGMA table_info(users)").fetchall()
     }
-    for column_name in ("timezone", "email", "language", "theme"):
+    for column_name in ("timezone", "email", "player_id", "language", "theme"):
         if column_name not in user_columns:
-            conn.execute(f"ALTER TABLE users ADD COLUMN {column_name} TEXT")
+            definition = "INTEGER" if column_name == "player_id" else "TEXT"
+            conn.execute(f"ALTER TABLE users ADD COLUMN {column_name} {definition}")
     conn.execute("UPDATE users SET language = 'es' WHERE language IS NULL")
     conn.execute("UPDATE users SET theme = 'light' WHERE theme IS NULL")
     conn.execute(
@@ -1588,13 +1703,109 @@ def migrate_auth_schema(conn):
         "CREATE INDEX IF NOT EXISTS idx_password_reset_tokens_user ON password_reset_tokens (user_id, created_at DESC)"
     )
 
-    for role_name in ("administrator", "tournament_director", "operator"):
+    for role_name in ALLOWED_ROLES:
         conn.execute(
             "INSERT OR IGNORE INTO roles (name, description) VALUES (?, ?)",
             (role_name, role_name),
         )
 
     conn.commit()
+
+
+def migrate_result_submissions_schema(conn):
+    """Create the moderation queue without exposing submissions as live matches."""
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS result_submissions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            submitted_by_user_id INTEGER NOT NULL,
+            match_date TEXT NOT NULL,
+            white_player_id INTEGER NOT NULL,
+            black_player_id INTEGER NOT NULL,
+            result TEXT NOT NULL CHECK(result IN ('1-0', '0-1', '1/2-1/2')),
+            event TEXT,
+            notes TEXT,
+            round_number INTEGER NOT NULL DEFAULT 0,
+            handicap_stones INTEGER NOT NULL DEFAULT 0,
+            status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending', 'approved', 'rejected')),
+            reviewed_by_user_id INTEGER,
+            reviewed_at TEXT,
+            review_notes TEXT,
+            approval_code_hash TEXT UNIQUE,
+            approval_code_expires_at TEXT,
+            approval_code_used_at TEXT,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY(submitted_by_user_id) REFERENCES users(id) ON DELETE CASCADE,
+            FOREIGN KEY(white_player_id) REFERENCES players(id) ON DELETE RESTRICT,
+            FOREIGN KEY(black_player_id) REFERENCES players(id) ON DELETE RESTRICT,
+            FOREIGN KEY(reviewed_by_user_id) REFERENCES users(id) ON DELETE SET NULL,
+            CHECK(white_player_id != black_player_id)
+        )
+        """
+    )
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_result_submissions_status ON result_submissions (status, created_at DESC)"
+    )
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_result_submissions_submitter ON result_submissions (submitted_by_user_id, created_at DESC)"
+    )
+    conn.commit()
+
+
+def create_result_approval_code(submission_id, conn=None, ttl_hours=48):
+    """Create a hashed, expiring code for the future email approval flow."""
+    owns_connection = conn is None
+    conn = conn or get_db()
+    try:
+        raw_code = f"{secrets.randbelow(100000000):08d}"
+        code_hash = hashlib.sha256(raw_code.encode("utf-8")).hexdigest()
+        expires_at = datetime.now(datetime_timezone.utc) + timedelta(hours=ttl_hours)
+        conn.execute(
+            """
+            UPDATE result_submissions
+            SET approval_code_hash = ?, approval_code_expires_at = ?, approval_code_used_at = NULL
+            WHERE id = ? AND status = 'pending'
+            """,
+            (code_hash, _utc_timestamp(expires_at), submission_id),
+        )
+        if owns_connection:
+            conn.commit()
+        return raw_code
+    finally:
+        if owns_connection:
+            conn.close()
+
+
+def consume_result_approval_code(raw_code, conn=None):
+    """Consume a valid email approval code; the caller still performs review policy."""
+    owns_connection = conn is None
+    conn = conn or get_db()
+    try:
+        code_hash = hashlib.sha256((raw_code or "").encode("utf-8")).hexdigest()
+        now = _utc_timestamp(datetime.now(datetime_timezone.utc))
+        row = conn.execute(
+            """
+            SELECT id FROM result_submissions
+            WHERE approval_code_hash = ?
+              AND status = 'pending'
+              AND approval_code_used_at IS NULL
+              AND approval_code_expires_at > ?
+            """,
+            (code_hash, now),
+        ).fetchone()
+        if row is None:
+            return None
+        submission_id = row["id"] if isinstance(row, sqlite3.Row) else row[0]
+        conn.execute(
+            "UPDATE result_submissions SET approval_code_used_at = ? WHERE id = ?",
+            (now, submission_id),
+        )
+        if owns_connection:
+            conn.commit()
+        return submission_id
+    finally:
+        if owns_connection:
+            conn.close()
 
 
 def bootstrap_default_admin_account(conn=None, password=None):
@@ -1641,6 +1852,7 @@ def create_user_account(
     timezone_name=None,
     conn=None,
     email=None,
+    player_id=None,
 ):
     """Create a named user account with a hashed password and role assignment."""
     if not isinstance(username, str) or not username.strip():
@@ -1665,14 +1877,18 @@ def create_user_account(
             raise ValueError("username already exists")
         if email and conn.execute("SELECT 1 FROM users WHERE email = ?", (email,)).fetchone():
             raise ValueError("email already exists")
+        if player_id is not None:
+            player = conn.execute("SELECT id FROM players WHERE id = ?", (player_id,)).fetchone()
+            if player is None:
+                raise ValueError("player not found")
 
         role = conn.execute("SELECT id FROM roles WHERE name = ?", (role_name,)).fetchone()
         if role is None:
             raise ValueError("role not found")
 
         user_id = conn.execute(
-            "INSERT INTO users (username, password_hash, is_active, created_at, timezone, email, language, theme) VALUES (?, ?, 1, ?, ?, ?, 'es', 'light')",
-            (normalized_username, generate_password_hash(password), current_timestamp(), timezone_name, email),
+            "INSERT INTO users (username, password_hash, is_active, created_at, timezone, email, player_id, language, theme) VALUES (?, ?, 1, ?, ?, ?, ?, 'es', 'light')",
+            (normalized_username, generate_password_hash(password), current_timestamp(), timezone_name, email, player_id),
         ).lastrowid
         conn.execute(
             "INSERT INTO user_roles (user_id, role_id) VALUES (?, ?)",
@@ -1706,7 +1922,7 @@ def get_current_user(conn=None):
         user = conn.execute(
             """
                  SELECT u.id, u.username, u.password_hash, u.is_active,
-                     u.email, u.language, u.theme, u.timezone
+                     u.email, u.language, u.theme, u.timezone, u.player_id
             FROM users u
             WHERE u.id = ?
             """,
@@ -1751,6 +1967,8 @@ def user_has_permission(permission_name):
         return role in {"administrator", "tournament_director", "operator"}
     if permission_name == "dashboard":
         return role in {"administrator", "tournament_director", "operator"}
+    if permission_name == "results_submitter":
+        return role in {"administrator", "tournament_director", "operator", "member"}
     return role == "administrator"
 
 
@@ -1768,7 +1986,7 @@ def authenticate_user(username, password, conn=None):
             return None
 
         user = conn.execute(
-            "SELECT id, username, password_hash, is_active, email, language, theme, timezone FROM users WHERE username = ?",
+            "SELECT id, username, password_hash, is_active, email, language, theme, timezone, player_id FROM users WHERE username = ?",
             (username,),
         ).fetchone()
         if user is None or user["is_active"] != 1:

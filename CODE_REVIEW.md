@@ -1,6 +1,6 @@
 # Code Review – glicko-db
 
-This review is intentionally short and action-oriented. The project is currently green: the full suite passes with 337 tests, and the remaining work is mainly follow-up cleanup rather than new production risk.
+This review is intentionally short and action-oriented. The project is currently green: the full suite passes with 342 tests, and the remaining work is mainly follow-up cleanup rather than new production risk.
 
 ## 1. Critical bugs
 
@@ -8,6 +8,7 @@ This review is intentionally short and action-oriented. The project is currently
 - McMahon import correctness: `mm_bar`, `mm_floor`, and `mm_zero` remain in sync with the imported tournament values; wrong baselines are no longer applied during conversion.
 - Date validation: malformed match dates are rejected instead of being silently stored; this prevents follow-on DB errors and 500s during filtering or ranking updates.
 - Admin traceability gate: login/logout and sensitive config/user changes are now recorded in the SQLite `audit_log` table; named-user auth remains enforced.
+- Result publication gate: member submissions are isolated in `result_submissions` and cannot affect live matches, ratings, or reports until an authorized staff member approves them.
 
 ## 2. High-priority issues
 
@@ -16,6 +17,7 @@ This review is intentionally short and action-oriented. The project is currently
 - Rating correctness: recomputation and dirty-state replay are transaction-safe, use UTC-5 application dates, and process same-day matches by round; unknown rounds are treated as round 1.
 - Security baseline: CSRF, secure session cookies, and user-role-based admin access are enforced; only administrators and operators can modify player, rating, and category data; the legacy shared-password bridge has been removed.
 - Account recovery: authenticated users can manage email, language, theme, timezone, and password from their profile; forgotten-password requests use hashed, expiring, single-use tokens and generic responses to avoid email enumeration.
+- Result moderation: the `member` role, self-service registration, manual player linkage, ownership checks, staff approval/rejection, audit events, and post-approval rating refresh are implemented and covered by focused tests. Expiring, hashed, single-use approval-code helpers are scaffolded for a future email flow but are not active.
 
 ## 3. Medium-priority issues
 
@@ -40,7 +42,7 @@ This review is intentionally short and action-oriented. The project is currently
 ## Status summary
 
 - Production blockers: none remaining in the current scope.
-- Current project status: green, with the audit, auth, account profile/recovery, per-account timezone, round-order, tournament-delete modal, typed OpenGotha, reporting, and handicap-games changes completed and validated by 337 tests.
+- Current project status: green, with the audit, auth, account profile/recovery, per-account timezone, round-order, tournament-delete modal, typed OpenGotha, reporting, handicap-games, and result-moderation changes completed and validated by 342 tests.
 
 ## 5. Remaining low-priority follow-ups
 
@@ -64,11 +66,11 @@ The remaining work is narrow and optional rather than production-critical:
 |------|--------|-------|
 | [app.py](app.py) | Reviewed | migration defaults, audit metadata, seed data |
 | [config.py](config.py) | Reviewed | default rating constants, timezone, and SMTP settings |
-| [routes/admin.py](routes/admin.py) | Reviewed | account profile and recovery routes, permissions, and rate limits |
+| [routes/admin.py](routes/admin.py) | Reviewed | account profile/recovery, moderation workflow, permissions, and rate limits |
 | [services/category_service.py](services/category_service.py) | Reviewed | positive validation and updated_at persistence |
 | [services/import_gotha.py](services/import_gotha.py) | Reviewed | typed tournament/participant/match payloads with legacy mapping access |
 | [services/rating_service.py](services/rating_service.py) | Reviewed | dirty-date replay and transaction safety |
 | [services/tournament_service.py](services/tournament_service.py) | Reviewed | typed OpenGotha metadata parser, pending-player cleanup, and export IDs |
 | [templates/admin/tournaments.html](templates/admin/tournaments.html) | Reviewed | explicit tournament-delete modal |
 | [templates/partials/matches_table.html](templates/partials/matches_table.html) | Reviewed | sort control UX follow-up |
-| [tests/](tests) | Reviewed | regression coverage for fixed issues is present |
+| [tests/](tests) | Reviewed | regression coverage for fixed issues and result moderation is present |

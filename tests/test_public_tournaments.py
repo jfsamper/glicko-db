@@ -58,7 +58,7 @@ def test_logged_in_sidebar_links_back_to_admin_menu(monkeypatch, tmp_path):
     assert "Welcome, admin" in body
     assert 'href="/admin?lang=en"' in body
     assert "Admin Menu" in body
-    assert "Report results" not in body
+    assert 'href="/admin/report-results?lang=en"' in body
 
 
 def test_public_tournament_index_supports_sort_by_name(monkeypatch, tmp_path):

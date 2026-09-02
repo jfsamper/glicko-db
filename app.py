@@ -18,6 +18,7 @@ from services.common import (
     get_current_user,
     migrate_audit_log_schema,
     migrate_auth_schema,
+    migrate_result_submissions_schema,
     refresh_stats,
     current_timestamp,
 )
@@ -894,6 +895,7 @@ def initialize_app():
     migrate_tournament_schema(conn)
     migrate_config_schema(conn)
     migrate_auth_schema(conn)
+    migrate_result_submissions_schema(conn)
     migrate_application_settings_schema(conn)
     migrate_audit_log_schema(conn)
     bootstrap_default_admin_account(conn)

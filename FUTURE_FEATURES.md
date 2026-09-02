@@ -28,6 +28,7 @@ This document lists only unfinished product, operational, and maintainability wo
 - Public reporting is available at `/reports` with inclusive calendar periods, All time defaults, player filtering, games-based selector ordering, opponent/country/club aggregates, and shared server-side totals.
 - Reports can be exported as CSV or localized PDF; PDF exports include centered headings, the selected player and period in the filename, and preserve the active filters.
 - Admin tournament actions support asynchronous panel refresh with redirect fallback for non-AJAX clients.
+- Result moderation is available: members submit only for their linked player, and staff approve or reject before publication; hashed expiring approval-code helpers scaffold the future email flow.
 
 ## Verified implementation status
 
@@ -79,6 +80,18 @@ Confirmed in code:
 - `tests/test_profile_and_recovery.py` covers preference persistence, password changes, generic recovery responses, email delivery invocation, and token reuse rejection.
 - SMTP delivery is configured through `MAIL_SERVER`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_USE_TLS`, and `MAIL_FROM`.
 
+### Result moderation workflow
+
+Status: implemented and verified.
+
+Confirmed in code:
+- `services/common.py` adds the `member` role, nullable account-to-player linkage, the isolated `result_submissions` queue, and hashed expiring single-use approval-code helpers.
+- `routes/admin.py` provides member registration and submission plus staff review, approval, rejection, audit logging, and rating refresh after approval.
+- `templates/admin/report_results.html` and `templates/admin/result_submissions.html` provide the member and staff workflows.
+- `tests/test_result_moderation.py` covers registration, member ownership restrictions, pending isolation, approval materialization, and legacy role migration.
+
+The active workflow requires staff approval. Email delivery and automatic approval by code are intentionally scaffolded but disabled until the organization defines identity, recipient, and dispute-verification policy.
+
 ## Remaining implementation backlog
 
 ### P1 — Admin and platform
@@ -97,29 +110,24 @@ No remaining P1 items.
    - Only enable in production when there is a clear retention policy and maintenance schedule
    - Prefer inexpensive cron-style jobs with bounded execution windows and full validation
 
-6. Result moderation workflow
-   - Optional approval process for submitted tournament results
-   - Requires a clear operational policy before implementation
-
-7. Replay and audit observability
+6. Replay and audit observability
    - Add clear operator feedback when rating replay is deferred
    - Expand operational summaries only where they support troubleshooting
 
 ### P4 — Conditional enhancements
 
-8. Tournament preflight and dry-run approval workflow
+7. Tournament preflight and dry-run approval workflow
    - Not required for the current plan
    - Pairings and BYE previews are not necessary in the near term
    - Avoid unnecessary complexity unless a real workflow need appears
 
 ## Technical implementation order
 
-The login rate-limit settings, typed OpenGotha payload, explicit tournament-delete modal, per-account timezone preferences, account profile/recovery, date-bounded reporting, and PDF reporting were completed and are no longer part of the remaining backlog. The next recommended sequence is:
+The login rate-limit settings, typed OpenGotha payload, explicit tournament-delete modal, per-account timezone preferences, account profile/recovery, date-bounded reporting, PDF reporting, and result moderation were completed and are no longer part of the remaining backlog. The next recommended sequence is:
 
 1. Add named seasons if the reporting workflow requires them.
 2. Add scheduled backups with retention and restore verification.
-3. Add result moderation only if the tournament workflow requires it.
-4. Consider replay observability and tournament preflight after the core workflows are settled.
+3. Consider replay observability and tournament preflight after the core workflows are settled.
 
 ## Documentation rules
 
