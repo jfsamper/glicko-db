@@ -44,7 +44,7 @@
           <select id="timezone" name="timezone">
             <option value="">{{ translations.timezone_default }}</option>
             {% for timezone in timezone_choices %}
-              <option value="{{ timezone }}" {% if timezone == user.timezone %}selected{% endif %}>{{ timezone }}</option>
+              <option value="{{ timezone }}" {% if timezone == user.timezone %}selected{% endif %}>{{ timezone_labels.get(timezone, timezone) }}</option>
             {% endfor %}
           </select>
         </div>

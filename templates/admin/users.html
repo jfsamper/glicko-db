@@ -46,7 +46,7 @@
         <td>{{ user.username }}</td>
         <td>{{ user.email or '-' }}</td>
         <td>{{ user.role_names or '-' }}</td>
-        <td>{{ user.timezone or translations.timezone_default }}</td>
+        <td>{{ timezone_labels.get(user.timezone, user.timezone) if user.timezone else translations.timezone_default }}</td>
         <td>{{ translations.active_label if user.is_active else translations.inactive_label }}</td>
         <td>
           <div class="inline-actions">

@@ -92,6 +92,19 @@ def test_profile_persists_preferences_and_changes_password(tmp_path, monkeypatch
     assert "Meu perfil" in response.get_data(as_text=True)
 
 
+def test_profile_timezone_options_display_utc_adjustments(tmp_path, monkeypatch):
+    app, _db_path, user_id = make_account_app(tmp_path, monkeypatch)
+    client = app.test_client()
+    authenticate_client(client, user_id)
+
+    response = client.get("/admin/profile?lang=en")
+    page = response.get_data(as_text=True)
+
+    assert response.status_code == 200
+    assert '<option value="UTC"' in page and '>UTC</option>' in page
+    assert '<option value="America/Bogota"' in page and '>America/Bogota (UTC-5)</option>' in page
+
+
 def test_profile_logout_button_clears_session_and_redirects(tmp_path, monkeypatch):
     app, _db_path, user_id = make_account_app(tmp_path, monkeypatch)
     client = app.test_client()

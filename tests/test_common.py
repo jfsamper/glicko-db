@@ -4,6 +4,8 @@ import warnings
 from pathlib import Path
 import tempfile
 import textwrap
+from datetime import datetime
+from zoneinfo import ZoneInfo
 
 import services.common as common
 import services.helpers as helpers
@@ -17,6 +19,22 @@ def test_application_clock_uses_fixed_utc_minus_five_by_default():
     assert current.utcoffset().total_seconds() == -5 * 60 * 60
     assert common.current_date() == current.date()
     assert common.current_timestamp() == current.replace(tzinfo=None).strftime("%Y-%m-%d %H:%M:%S")
+
+
+def test_timezone_choices_are_unique_sorted_and_prefer_requested_regions():
+    choices = common.get_timezone_choices()
+    offsets = [datetime.now(ZoneInfo(timezone_name)).utcoffset() for timezone_name in choices]
+
+    assert len(choices) == len(set(offsets))
+    assert offsets == sorted(offsets)
+    assert choices[choices.index("America/Mexico_City") + 1 : choices.index("UTC")] == (
+        "America/Bogota",
+        "America/Caracas",
+        "America/Sao_Paulo",
+    )
+    assert "Asia/Shanghai" in choices
+    assert choices[choices.index("Asia/Shanghai") + 1] == "Asia/Seoul"
+    assert "Asia/Tokyo" not in choices
 
 
 def test_application_clock_uses_account_timezone_and_falls_back_for_invalid_values(monkeypatch, tmp_path):

@@ -28,21 +28,17 @@ DEFAULT_VOLATILITY = 0.01
 TAU = 0.5
 DEFAULT_TIMEZONE = timezone(timedelta(hours=-5), name="UTC-05:00")
 TIMEZONE_CHOICES = (
-    "UTC",
-    "America/Bogota",
-    "America/Chicago",
-    "America/Denver",
     "America/Los_Angeles",
     "America/Mexico_City",
-    "America/New_York",
+    "America/Bogota",
+    "America/Caracas",
     "America/Sao_Paulo",
-    "Asia/Seoul",
-    "Asia/Shanghai",
-    "Asia/Tokyo",
-    "Australia/Sydney",
+    "UTC",
     "Europe/London",
     "Europe/Madrid",
-    "Europe/Paris",
+    "Asia/Shanghai",
+    "Asia/Seoul",
+    "Australia/Sydney",
 )
 LANGUAGE_CHOICES = ("es", "en", "pt")
 THEME_CHOICES = ("light", "dark")

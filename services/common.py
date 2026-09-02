@@ -76,6 +76,45 @@ def validate_timezone(timezone_name):
     return timezone_name
 
 
+def format_timezone_label(timezone_name):
+    """Return an IANA timezone name with its current UTC adjustment."""
+    if timezone_name == "UTC":
+        return "UTC"
+    try:
+        zone = ZoneInfo(timezone_name)
+        offset = datetime.now(zone).utcoffset()
+    except (TypeError, ZoneInfoNotFoundError):
+        return timezone_name
+    if offset is None:
+        return timezone_name
+
+    total_minutes = int(offset.total_seconds() // 60)
+    sign = "+" if total_minutes >= 0 else "-"
+    hours, minutes = divmod(abs(total_minutes), 60)
+    adjustment = f"UTC{sign}{hours}"
+    if minutes:
+        adjustment += f":{minutes:02d}"
+    return f"{timezone_name} ({adjustment})"
+
+
+def get_timezone_choices():
+    """Return common timezone choices once per current UTC offset, ascending."""
+    from config import TIMEZONE_CHOICES
+
+    choices_by_offset = {}
+    for timezone_name in TIMEZONE_CHOICES:
+        try:
+            offset = datetime.now(ZoneInfo(timezone_name)).utcoffset()
+        except (TypeError, ZoneInfoNotFoundError):
+            continue
+        if offset is not None:
+            choices_by_offset.setdefault(int(offset.total_seconds()), timezone_name)
+    return tuple(
+        timezone_name
+        for _, timezone_name in sorted(choices_by_offset.items())
+    )
+
+
 def current_datetime(user_id=None):
     return datetime.now(get_configured_timezone(user_id))
 
@@ -505,7 +544,7 @@ TRANSLATIONS = {
         "save_match": "Guardar partida",
         "delete_match_confirmation": "¿Eliminar esta partida? Esta acción no se puede deshacer.",
         "same_player_error": "Blancas y negras deben ser jugadores distintos",
-        "footer": "dbACG 2026",
+        "footer": "bdACG 2026",
         "contact": "Contacto",
         "report_results": "Reportar resultados",
         "report_results_help": "Si organiza torneos, puede reportar los resultados",
@@ -1390,7 +1429,7 @@ TRANSLATIONS = {
         "save_match": "Salvar partida",
         "delete_match_confirmation": "Excluir esta partida? Esta ação não pode ser desfeita.",
         "same_player_error": "Brancas e pretas devem ser jogadores diferentes",
-        "footer": "dbACG 2026",
+        "footer": "bdACG 2026",
         "contact": "Contato",
         "report_results": "Reportar resultados",
         "report_results_help": "Se você organiza torneios, pode reportar os resultados",

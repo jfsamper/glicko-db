@@ -42,6 +42,8 @@ from services.common import (
     get_current_user,
     current_datetime,
     current_timestamp,
+    format_timezone_label,
+    get_timezone_choices,
     get_db,
     get_language,
     log_admin_action,
@@ -773,6 +775,11 @@ def admin_profile():
     user = get_current_user()
     if user is None:
         return redirect(url_for("admin_login", lang=lang))
+    timezone_choices = get_timezone_choices()
+    timezone_labels = {
+        timezone: format_timezone_label(timezone)
+        for timezone in timezone_choices
+    }
 
     if request.method == "POST":
         if request.form.get("logout") == "1":
@@ -812,7 +819,8 @@ def admin_profile():
                 user=user,
                 languages=LANGUAGE_CHOICES,
                 themes=THEME_CHOICES,
-                timezone_choices=TIMEZONE_CHOICES,
+                timezone_choices=timezone_choices,
+                timezone_labels=timezone_labels,
             )
 
         if language not in LANGUAGE_CHOICES:
@@ -872,7 +880,8 @@ def admin_profile():
         user=user,
         languages=LANGUAGE_CHOICES,
         themes=THEME_CHOICES,
-        timezone_choices=TIMEZONE_CHOICES,
+        timezone_choices=timezone_choices,
+        timezone_labels=timezone_labels,
     )
 
 
@@ -3456,7 +3465,11 @@ def admin_users():
         translations=TRANSLATIONS[lang],
         users=users,
         roles=["administrator", "tournament_director", "operator"],
-        timezone_choices=TIMEZONE_CHOICES,
+        timezone_choices=get_timezone_choices(),
+        timezone_labels={
+            timezone: format_timezone_label(timezone)
+            for timezone in get_timezone_choices()
+        },
     )
 
 
@@ -3503,7 +3516,11 @@ def admin_create_user():
         lang=lang,
         translations=TRANSLATIONS[lang],
         roles=["administrator", "tournament_director", "operator"],
-        timezone_choices=TIMEZONE_CHOICES,
+        timezone_choices=get_timezone_choices(),
+        timezone_labels={
+            timezone: format_timezone_label(timezone)
+            for timezone in get_timezone_choices()
+        },
     )
 
 
@@ -3612,7 +3629,11 @@ def admin_edit_user(user_id):
         translations=TRANSLATIONS[lang],
         user=user,
         roles=["administrator", "tournament_director", "operator"],
-        timezone_choices=TIMEZONE_CHOICES,
+        timezone_choices=get_timezone_choices(),
+        timezone_labels={
+            timezone: format_timezone_label(timezone)
+            for timezone in get_timezone_choices()
+        },
     )
 
 
