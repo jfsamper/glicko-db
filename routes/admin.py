@@ -78,6 +78,7 @@ from config import (
     TAU,
     THEME_CHOICES,
     TIMEZONE_CHOICES,
+    RECAPTCHA_SITE_KEY,
 )
 from services.common import ALLOWED_ROLES
 from services.helpers import normalize_key, normalize_round_note, normalize_round_note_for_storage, parse_date_value
@@ -93,6 +94,7 @@ from services.player_service import (
 )
 from services.rating_service import get_dirty_date, get_rating_config, mark_dirty, recompute_ratings, update_from_latest_snapshot, update_rating_config
 from services.category_service import get_category_config, update_category_config
+from services.recaptcha import verify_recaptcha
 from services.pairing_service import (
     ACCELERATION_SCHEMES,
     DEFAULT_ACCELERATION_CATEGORIES,
@@ -751,7 +753,13 @@ def admin_register():
         password = request.form.get("password") or ""
         confirm_password = request.form.get("confirm_password") or ""
         email = (request.form.get("email") or "").strip()
-        if len(password) < 8:
+        if not verify_recaptcha(
+            request.form.get("recaptcha_token"),
+            action="register",
+            remote_ip=request.remote_addr,
+        ):
+            flash(TRANSLATIONS[lang]["recaptcha_failed"])
+        elif len(password) < 8:
             flash(TRANSLATIONS[lang]["password_too_short"])
         elif password != confirm_password:
             flash(TRANSLATIONS[lang]["password_mismatch"])
@@ -777,6 +785,7 @@ def admin_register():
         "admin/register.html",
         lang=lang,
         translations=TRANSLATIONS[lang],
+        recaptcha_site_key=RECAPTCHA_SITE_KEY,
     )
 
 

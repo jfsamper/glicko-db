@@ -68,6 +68,9 @@ The default values are in `config.py`.
 - `DB_PATH`: SQLite database path in `config.py`.
 - `AUDIT_RETENTION_DAYS`: number of days to retain audit events; defaults to `730`.
 - `MAIL_SERVER`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_USE_TLS`, and `MAIL_FROM`: SMTP settings for password recovery; `PASSWORD_RESET_TTL_SECONDS` controls link expiry and defaults to 3600 seconds.
+- `RECAPTCHA_SITE_KEY` and `RECAPTCHA_SECRET_KEY`: Google reCAPTCHA v3 keys for the member registration form. The secret key is verified server-side and must never be exposed to the browser.
+- `RECAPTCHA_MIN_SCORE`: minimum v3 score accepted for registration; defaults to `0.5`.
+- `RECAPTCHA_EXPECTED_HOSTNAME`: optional hostname check for the verification response; leave empty when the key serves multiple configured hostnames.
 
 Application-generated dates and times use UTC-5 by default. Each account can choose an IANA time zone in user management; accounts without a preference keep UTC-5. The timezone selectors show one representative for each commonly used current UTC offset, sorted from lowest to highest. Python uses the system IANA database on Linux, while `tzdata` provides the portable fallback on Windows or minimal Linux images. If an account's stored zone cannot be loaded, display falls back to UTC-05:00. When ratings are calculated, matches on the same day are processed by round number and then insertion order; unknown rounds are treated as round 1.
 

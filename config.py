@@ -13,6 +13,10 @@ MAIL_PASSWORD = os.getenv("MAIL_PASSWORD", "")
 MAIL_USE_TLS = os.getenv("MAIL_USE_TLS", "true").lower() in ("true", "1", "yes")
 MAIL_FROM = os.getenv("MAIL_FROM", "")
 PASSWORD_RESET_TTL_SECONDS = int(os.getenv("PASSWORD_RESET_TTL_SECONDS", "3600"))
+RECAPTCHA_SITE_KEY = os.getenv("RECAPTCHA_SITE_KEY", "")
+RECAPTCHA_SECRET_KEY = os.getenv("RECAPTCHA_SECRET_KEY", "")
+RECAPTCHA_MIN_SCORE = float(os.getenv("RECAPTCHA_MIN_SCORE", "0.5"))
+RECAPTCHA_EXPECTED_HOSTNAME = os.getenv("RECAPTCHA_EXPECTED_HOSTNAME", "")
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 

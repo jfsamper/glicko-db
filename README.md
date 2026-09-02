@@ -70,6 +70,9 @@ Los valores predeterminados están en `config.py`.
 - `DB_PATH`: ubicación de la base de datos SQLite, definida en `config.py`.
 - `AUDIT_RETENTION_DAYS`: número de días para conservar eventos de auditoría; el valor predeterminado es `730`.
 - `MAIL_SERVER`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_USE_TLS` y `MAIL_FROM`: configuración SMTP para recuperación de contraseñas; `PASSWORD_RESET_TTL_SECONDS` controla la caducidad del enlace y usa 3600 segundos por defecto.
+- `RECAPTCHA_SITE_KEY` y `RECAPTCHA_SECRET_KEY`: claves de Google reCAPTCHA v3 para el formulario de registro de miembros. La clave secreta se verifica en el servidor y nunca debe exponerse al navegador.
+- `RECAPTCHA_MIN_SCORE`: puntuación v3 mínima aceptada para el registro; por defecto es `0.5`.
+- `RECAPTCHA_EXPECTED_HOSTNAME`: comprobación opcional del hostname en la respuesta; déjalo vacío si la clave sirve para varios hostnames configurados.
 
 Las fechas y horas generadas por la aplicación usan UTC-5 por defecto. Cada cuenta puede elegir una zona horaria IANA en la gestión de usuarios; las cuentas sin preferencia mantienen UTC-5. Los selectores de zona horaria muestran un representante por cada desplazamiento UTC común actual, ordenado de menor a mayor. Python usa los datos IANA del sistema en Linux y `tzdata` proporciona el respaldo portátil en Windows o en imágenes Linux mínimas. Si no se puede cargar la zona guardada de una cuenta, la presentación vuelve a UTC-5. Al calcular ratings, las partidas del mismo día se procesan por número de ronda y después por su orden de inserción; las rondas desconocidas se tratan como la ronda 1.
 

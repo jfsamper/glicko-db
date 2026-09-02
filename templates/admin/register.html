@@ -8,8 +8,9 @@
   <div class="panel-header">
     <h2>{{ translations.create_account_heading }}</h2>
   </div>
-  <form method="post" class="filter-form">
+  <form method="post" class="filter-form" id="register-form" data-recaptcha-site-key="{{ recaptcha_site_key }}">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+    <input type="hidden" name="recaptcha_token" id="recaptcha-token" />
     <div class="filter-panel">
       <div class="filter-grid">
         <div class="filter-item wide">
@@ -30,10 +31,47 @@
         </div>
       </div>
       <div class="filter-actions">
-        <button type="submit" class="button">{{ translations.create_account_button }}</button>
+        <button type="submit" class="button" id="register-submit">{{ translations.create_account_button }}</button>
         <a href="{{ url_for('admin_login', lang=lang) }}" class="button secondary">{{ translations.cancel_button }}</a>
       </div>
+      {% if recaptcha_site_key %}
+      <p class="recaptcha-notice">
+        {{ translations.recaptcha_notice }}
+        <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer">{{ translations.recaptcha_privacy }}</a>
+        {{ translations.recaptcha_and }}
+        <a href="https://policies.google.com/terms" target="_blank" rel="noopener noreferrer">{{ translations.recaptcha_terms }}</a>.
+      </p>
+      {% endif %}
     </div>
   </form>
 </section>
+{% if recaptcha_site_key %}
+<style>
+  .grecaptcha-badge {
+    visibility: hidden;
+  }
+</style>
+<script src="https://www.google.com/recaptcha/api.js?render={{ recaptcha_site_key }}"></script>
+<script>
+  document.getElementById("register-form").addEventListener("submit", function (event) {
+    const form = this;
+    const submitButton = document.getElementById("register-submit");
+    const siteKey = form.dataset.recaptchaSiteKey;
+    if (form.dataset.recaptchaReady === "true") {
+      return;
+    }
+    event.preventDefault();
+    submitButton.disabled = true;
+    grecaptcha.ready(function () {
+      grecaptcha.execute(siteKey, { action: "register" }).then(function (token) {
+        document.getElementById("recaptcha-token").value = token;
+        form.dataset.recaptchaReady = "true";
+        form.submit();
+      }).catch(function () {
+        submitButton.disabled = false;
+      });
+    });
+  });
+</script>
+{% endif %}
 {% endblock %}

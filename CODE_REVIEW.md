@@ -1,6 +1,6 @@
 # Code Review – glicko-db
 
-This review is intentionally short and action-oriented. The project is currently green: the full suite passes with 342 tests, and the remaining work is mainly follow-up cleanup rather than new production risk.
+This review is intentionally short and action-oriented. The project is currently green: the full suite passes with 344 tests, and the remaining work is mainly follow-up cleanup rather than new production risk.
 
 ## 1. Critical bugs
 
@@ -42,7 +42,7 @@ This review is intentionally short and action-oriented. The project is currently
 ## Status summary
 
 - Production blockers: none remaining in the current scope.
-- Current project status: green, with the audit, auth, account profile/recovery, per-account timezone, round-order, tournament-delete modal, typed OpenGotha, reporting, handicap-games, and result-moderation changes completed and validated by 342 tests.
+- Current project status: green, with the audit, auth, account profile/recovery, per-account timezone, round-order, tournament-delete modal, typed OpenGotha, reporting, handicap-games, result-moderation, and reCAPTCHA registration changes completed and validated by 344 tests.
 
 ## 5. Remaining low-priority follow-ups
 

@@ -335,6 +335,17 @@ nav a:hover,
   border-radius: 8px;
 }
 
+.recaptcha-notice {
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.45;
+  margin: 1rem 0 0;
+}
+
+.recaptcha-notice a {
+  color: inherit;
+}
+
 .centered-header {
   justify-content: center;
   text-align: center;

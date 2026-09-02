@@ -4,6 +4,7 @@ import config
 import app as app_module
 import routes.admin as admin_routes
 import services.common as common
+import services.recaptcha as recaptcha
 from app import create_app
 
 
@@ -72,6 +73,69 @@ def test_registration_creates_member_account(tmp_path, monkeypatch):
             """
         ).fetchone()[0]
     assert role == "member"
+
+
+def test_registration_requires_recaptcha_when_configured(tmp_path, monkeypatch):
+    application, db_path, _ = make_moderation_app(tmp_path, monkeypatch)
+    monkeypatch.setattr(recaptcha, "RECAPTCHA_SECRET_KEY", "test-secret")
+    monkeypatch.setattr(recaptcha, "RECAPTCHA_SITE_KEY", "test-site-key")
+    client = application.test_client()
+
+    response = client.post(
+        "/admin/register?lang=en",
+        data={
+            "username": "blocked-member",
+            "email": "blocked@example.com",
+            "password": "member-password",
+            "confirm_password": "member-password",
+        },
+    )
+
+    assert response.status_code == 200
+    with sqlite3.connect(db_path) as conn:
+        assert conn.execute(
+            "SELECT 1 FROM users WHERE username = 'blocked-member'"
+        ).fetchone() is None
+
+
+def test_recaptcha_verifier_checks_action_score_and_hostname(monkeypatch):
+    class FakeResponse:
+        def __init__(self, payload):
+            self.payload = payload
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, _exc_type, _exc_value, _traceback):
+            return False
+
+        def read(self):
+            import json
+
+            return json.dumps(self.payload).encode("utf-8")
+
+    monkeypatch.setattr(recaptcha, "RECAPTCHA_SECRET_KEY", "test-secret")
+    monkeypatch.setattr(recaptcha, "RECAPTCHA_SITE_KEY", "test-site-key")
+    monkeypatch.setattr(recaptcha, "RECAPTCHA_MIN_SCORE", 0.5)
+    monkeypatch.setattr(recaptcha, "RECAPTCHA_EXPECTED_HOSTNAME", "example.com")
+
+    monkeypatch.setattr(
+        recaptcha,
+        "urlopen",
+        lambda _request, timeout: FakeResponse(
+            {"success": True, "action": "register", "score": 0.9, "hostname": "example.com"}
+        ),
+    )
+    assert recaptcha.verify_recaptcha("token", "register") is True
+
+    for payload in (
+        {"success": False, "action": "register", "score": 0.9, "hostname": "example.com"},
+        {"success": True, "action": "login", "score": 0.9, "hostname": "example.com"},
+        {"success": True, "action": "register", "score": 0.4, "hostname": "example.com"},
+        {"success": True, "action": "register", "score": 0.9, "hostname": "other.example.com"},
+    ):
+        monkeypatch.setattr(recaptcha, "urlopen", lambda _request, timeout, payload=payload: FakeResponse(payload))
+        assert recaptcha.verify_recaptcha("token", "register") is False
 
 
 def test_member_can_submit_only_for_linked_player(tmp_path, monkeypatch):
