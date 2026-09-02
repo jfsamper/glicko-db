@@ -1,6 +1,6 @@
 # Code Review – glicko-db
 
-This review is intentionally short and action-oriented. The project is currently green: the full suite passes with 313 tests, and the remaining work is mainly follow-up cleanup rather than new production risk.
+This review is intentionally short and action-oriented. The project is currently green: the full suite passes with 337 tests, and the remaining work is mainly follow-up cleanup rather than new production risk.
 
 ## 1. Critical bugs
 
@@ -27,6 +27,7 @@ This review is intentionally short and action-oriented. The project is currently
 - Import reliability: fuzzy player matching, round-note normalization, and metadata handling were hardened across workbook and XML imports. OpenGotha tournament metadata and match records now use typed `GothaTournamentPayload`, `GothaPlayer`, and `GothaMatch` dataclasses while preserving legacy mapping access.
 - Handicap games (2026-08): stones-based handicap support landed end-to-end -- `category_service.handicap_points`/`suggested_handicap_stones` (OGS-inspired but using this app's own log category curve rather than a flat points-per-stone constant), auto-suggested/overridable handicap on manual and generated tournament pairings, OGS-style opponent-only rating shift in `rating_service.glicko2_update`, and handicap columns on `matches`/`tournament_pairings` with a defaulting migration. OpenGotha XML import (`import_gotha.py`, `import_service.py`, `tournament_service.create_tournament_from_gotha`) and the CSV importer both read an optional handicap value; missing/invalid values default to 0. Covered by `tests/test_handicap.py`.
 - Date and round consistency: application-generated timestamps use UTC-5 by default or the active account's valid IANA timezone preference, and both rating calculation paths share deterministic date/round ordering. Invalid or unset preferences fall back to UTC-5.
+- Timezone selector usability: account timezone selectors use one curated representative per current UTC offset, sort options ascending, display the UTC adjustment, and preserve raw IANA values for storage.
 - Reporting: public reports default to All time, support player filtering and games-based selector ordering, and provide consistent CSV/PDF exports with localized PDF text and filter-preserving filenames.
 - Tournament operations: draft tournaments are hidden from public listings, inactive players can be managed by administrators, and tournament actions support asynchronous panel refresh with redirect fallback for non-AJAX clients.
 
@@ -39,7 +40,7 @@ This review is intentionally short and action-oriented. The project is currently
 ## Status summary
 
 - Production blockers: none remaining in the current scope.
-- Current project status: green, with the audit, auth, account profile/recovery, per-account timezone, round-order, tournament-delete modal, typed OpenGotha, reporting, and handicap-games changes completed and validated by 313 tests.
+- Current project status: green, with the audit, auth, account profile/recovery, per-account timezone, round-order, tournament-delete modal, typed OpenGotha, reporting, and handicap-games changes completed and validated by 337 tests.
 
 ## 5. Remaining low-priority follow-ups
 

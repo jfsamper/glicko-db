@@ -21,7 +21,7 @@ This document lists only unfinished product, operational, and maintainability wo
 - The dev-only pairing demo generator supports reproducible scenarios and includes Swiss/category variants.
 - Draft tournaments are hidden from public listings, while administrators can opt to show them in the tournament list.
 - Administrators can activate or deactivate players; inactive players are excluded from rankings and tournament participant selection.
-- Application-generated dates and times use UTC-5 by default; administrators can assign valid IANA timezones to individual accounts, and unset or invalid preferences fall back safely to UTC-5.
+- Application-generated dates and times use UTC-5 by default; administrators can assign valid IANA timezones to individual accounts, and unset or invalid preferences fall back safely to UTC-5. Account selectors show one common representative per current UTC offset in ascending order, with Mexico, Colombia, Venezuela, Brazil, China, and South Korea preferred; South Korea represents the shared UTC+9 offset with Japan, and labels include the current adjustment while stored values remain IANA identifiers.
 - Full rating recomputation and incremental replay process same-day matches by round, treating unknown rounds as round 1.
 - Login rate-limit thresholds are environment-configurable through `config.py`, with defaults of five attempts in sixty seconds.
 - Account profile and password recovery are available: users can save email, language, theme, timezone, and password at `/admin/profile`; recovery uses configurable SMTP, hashed expiring tokens, single-use consumption, and generic responses.
@@ -60,6 +60,7 @@ Status: implemented and verified.
 Confirmed in code:
 - `config.py` defines the fixed UTC-5 default timezone and the supported account timezone choices.
 - `services/common.py` migrates the nullable `users.timezone` field, validates IANA timezone names, and resolves each active account's preference for application-generated dates and timestamps.
+- `services/common.py` and `routes/admin.py` build the curated timezone list, deduplicate it by current UTC offset, sort it ascending, and render UTC-adjusted labels without changing submitted IANA values.
 - `routes/admin.py` and the user-management templates allow administrators to create and edit account timezone preferences.
 - `services/rating_service.py` orders both full recomputation and incremental replay by match date, normalized round number, and match id.
 - Missing, zero, or invalid round values are treated as round 1; legacy match tables without a round column remain supported.
@@ -74,7 +75,7 @@ Status: implemented and verified.
 Confirmed in code:
 - `services/common.py` migrates account email, language, and theme fields plus the password-reset token table; only token digests are stored.
 - `routes/admin.py` provides `/admin/profile`, `/admin/forgot-password`, and `/admin/reset-password/<token>` with role checks, password verification, expiry, and one-time token use.
-- `templates/admin/profile.html` lets authenticated users change their email, default language, theme, timezone, and password.
+- `templates/admin/profile.html` lets authenticated users change their email, default language, theme, timezone, and password; timezone options display their current UTC adjustment.
 - `tests/test_profile_and_recovery.py` covers preference persistence, password changes, generic recovery responses, email delivery invocation, and token reuse rejection.
 - SMTP delivery is configured through `MAIL_SERVER`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_USE_TLS`, and `MAIL_FROM`.
 
@@ -95,7 +96,6 @@ No remaining P1 items.
    - Disabled by default to avoid unnecessary server load
    - Only enable in production when there is a clear retention policy and maintenance schedule
    - Prefer inexpensive cron-style jobs with bounded execution windows and full validation
-   - Not a priority for the current roadmap
 
 6. Result moderation workflow
    - Optional approval process for submitted tournament results
