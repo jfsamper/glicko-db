@@ -105,21 +105,20 @@ No remaining P1 items.
 
 ### P3 — Operational enhancements
 
-5. Scheduled backups with retention policy
+4. Scheduled backups with retention policy
    - Disabled by default to avoid unnecessary server load
    - Only enable in production when there is a clear retention policy and maintenance schedule
    - Prefer inexpensive cron-style jobs with bounded execution windows and full validation
 
-6. Replay and audit observability
+5. Replay and audit observability
    - Add clear operator feedback when rating replay is deferred
    - Expand operational summaries only where they support troubleshooting
 
-### P4 — Conditional enhancements
+### P4 — Workflow enhancements
 
-7. Tournament preflight and dry-run approval workflow
-   - Not required for the current plan
-   - Pairings and BYE previews are not necessary in the near term
-   - Avoid unnecessary complexity unless a real workflow need appears
+6. Tournament preflight and dry-run approval workflow
+   - Improve tournament and submission workflow
+   - Evaluate need for pairings and BYE previews
 
 ## Technical implementation order
 
@@ -127,7 +126,7 @@ The login rate-limit settings, typed OpenGotha payload, explicit tournament-dele
 
 1. Add named seasons if the reporting workflow requires them.
 2. Add scheduled backups with retention and restore verification.
-3. Consider replay observability and tournament preflight after the core workflows are settled.
+3. Consider replay observability and tournament preflight.
 
 ## Documentation rules
 
@@ -135,6 +134,3 @@ The login rate-limit settings, typed OpenGotha payload, explicit tournament-dele
 - Link to this roadmap from each README and keep the summary brief.
 - Keep legacy session flags out of current documentation and implementation.
 
-## Current next steps
-
-1. Evaluate named seasons and further reporting refinements after using the date-bounded reports and PDF exports in production.
