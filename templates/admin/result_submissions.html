@@ -32,8 +32,8 @@
     </div>
   </form>
   {% if submissions %}
-    <div class="table-wrap">
-      <table>
+    <div class="table-wrapper result-submissions-table-wrap">
+      <table class="table-stack result-submissions-table">
         <thead><tr><th>{{ translations.date }}</th><th>{{ translations.submitted_by }}</th><th>{{ translations.white }}</th><th>{{ translations.black }}</th><th>{{ translations.result }}</th><th>{{ translations.event_label }}</th><th>{{ translations.actions_label }}</th></tr></thead>
         <tbody>
           {% for submission in submissions %}

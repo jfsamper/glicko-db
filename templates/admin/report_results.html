@@ -10,13 +10,16 @@
   </div>
 
   {% if user.player_id %}
-    <form method="post" class="filter-form">
+        <form method="post" class="filter-form" id="report-results-form"
+          data-my-player-name="{{ user.player_name }}"
+          data-wins-suffix="{{ translations.wins_suffix }}"
+          data-select-player="{{ translations.select_player }}">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
       <div class="filter-panel">
         <div class="filter-grid">
           <div class="filter-item wide">
             <label>{{ translations.linked_player_label }}</label>
-            <input type="text" value="{{ user.username }} (#{{ user.player_id }})" readonly />
+            <input type="text" value="{{ user.username }} ({{ user.player_name }})" readonly />
           </div>
           <div class="filter-item wide">
             <label for="match_date">{{ translations.match_date_label }}</label>
@@ -27,22 +30,26 @@
             <select id="opponent_player_id" name="opponent_player_id" required>
               <option value="">{{ translations.select_player }}</option>
               {% for opponent in opponents %}
-                <option value="{{ opponent.id }}">{{ opponent.display_name }}</option>
+                <option value="{{ opponent.id }}" data-player-name="{{ opponent.display_name }}">{{ opponent.display_name }}</option>
               {% endfor %}
             </select>
           </div>
           <div class="filter-item wide">
-            <label for="color">{{ translations.color_label }}</label>
+            <label for="color">{{ translations.my_color_label }}</label>
             <select id="color" name="color" required>
               <option value="white">{{ translations.white_side }}</option>
               <option value="black">{{ translations.black_side }}</option>
             </select>
           </div>
           <div class="filter-item wide">
+            <label for="handicap_stones">{{ translations.handicap_stones_label }}</label>
+            <input id="handicap_stones" name="handicap_stones" type="number" min="0" max="9" value="0" />
+          </div>
+          <div class="filter-item wide">
             <label for="result">{{ translations.result_label }}</label>
             <select id="result" name="result" required>
-              <option value="1-0">{{ translations.white_wins }}</option>
-              <option value="0-1">{{ translations.black_wins }}</option>
+              <option id="result-white" value="1-0">{{ translations.white_wins }}</option>
+              <option id="result-black" value="0-1">{{ translations.black_wins }}</option>
               <option value="1/2-1/2">{{ translations.draw_result }}</option>
             </select>
           </div>
@@ -53,10 +60,6 @@
           <div class="filter-item wide">
             <label for="notes">{{ translations.notes_label }}</label>
             <textarea id="notes" name="notes"></textarea>
-          </div>
-          <div class="filter-item wide">
-            <label for="handicap_stones">{{ translations.handicap_stones_label }}</label>
-            <input id="handicap_stones" name="handicap_stones" type="number" min="0" max="9" value="0" />
           </div>
         </div>
         <div class="filter-actions">
@@ -70,8 +73,8 @@
 
   <h3>{{ translations.result_submissions_title }}</h3>
   {% if submissions %}
-    <div class="table-wrap">
-      <table>
+    <div class="table-wrapper result-submissions-table-wrap">
+      <table class="table-stack result-submissions-table member-submissions-table">
         <thead><tr><th>{{ translations.date }}</th><th>{{ translations.white }}</th><th>{{ translations.black }}</th><th>{{ translations.result }}</th><th>{{ translations.status }}</th><th>{{ translations.review_note_label }}</th></tr></thead>
         <tbody>
           {% for submission in submissions %}
@@ -91,4 +94,27 @@
     <p>{{ translations.no_submissions }}</p>
   {% endif %}
 </section>
+{% if user.player_id %}
+<script>
+  const reportForm = document.getElementById("report-results-form");
+  const myPlayerName = reportForm.dataset.myPlayerName;
+  const winsSuffix = reportForm.dataset.winsSuffix;
+  const selectPlayerLabel = reportForm.dataset.selectPlayer;
+  const colorSelect = document.getElementById("color");
+  const opponentSelect = document.getElementById("opponent_player_id");
+  const whiteResult = document.getElementById("result-white");
+  const blackResult = document.getElementById("result-black");
+
+  function updateResultLabels() {
+    const opponentName = opponentSelect.options[opponentSelect.selectedIndex]?.dataset.playerName || selectPlayerLabel;
+    const myColor = colorSelect.value;
+    whiteResult.textContent = `${myColor === "white" ? myPlayerName : opponentName} ${winsSuffix} (1-0)`;
+    blackResult.textContent = `${myColor === "black" ? myPlayerName : opponentName} ${winsSuffix} (0-1)`;
+  }
+
+  opponentSelect.addEventListener("change", updateResultLabels);
+  colorSelect.addEventListener("change", updateResultLabels);
+  updateResultLabels();
+</script>
+{% endif %}
 {% endblock %}

@@ -14,7 +14,7 @@ def test_language_priority_order_is_spanish_english_portuguese():
 def test_portuguese_is_supported():
     assert get_language("pt") == "pt"
     assert TRANSLATIONS["pt"]["language"] == "Idioma"
-    assert TRANSLATIONS["pt"]["report_results"] == "Reportar resultados"
+    assert TRANSLATIONS["pt"]["report_results"] == "Reportar Resultados"
 
 
 def test_sorting_labels_are_translated():

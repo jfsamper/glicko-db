@@ -799,6 +799,13 @@ def admin_report_results():
     user = get_current_user()
     conn = get_db()
     try:
+        if user and user.get("player_id") is not None:
+            linked_player = conn.execute(
+                "SELECT display_name FROM players WHERE id = ?",
+                (user["player_id"],),
+            ).fetchone()
+            user["player_name"] = linked_player["display_name"] if linked_player else ""
+
         if request.method == "POST":
             player_id = user.get("player_id") if user else None
             opponent_id = request.form.get("opponent_player_id")

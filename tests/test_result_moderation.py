@@ -151,7 +151,14 @@ def test_member_can_submit_only_for_linked_player(tmp_path, monkeypatch):
 
     assert client.get("/admin").status_code == 403
     assert client.get("/admin/result-submissions").status_code == 403
-    assert client.get("/admin/report-results?lang=en").status_code == 200
+    report_response = client.get("/admin/report-results?lang=en")
+    assert report_response.status_code == 200
+    report_body = report_response.get_data(as_text=True)
+    assert "member (Member Player)" in report_body
+    assert "My color" in report_body
+    assert "Opponent color" not in report_body
+    assert report_body.index("handicap_stones") < report_body.index('id="result"')
+    assert 'data-player-name="Opponent Player"' in report_body
     with sqlite3.connect(db_path) as conn:
         baseline_match_count = conn.execute("SELECT COUNT(*) FROM matches").fetchone()[0]
 

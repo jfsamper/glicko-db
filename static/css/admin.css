@@ -65,6 +65,67 @@ button {
   max-width: none;
 }
 
+.result-submissions-table {
+  width: max-content;
+  min-width: 100%;
+  table-layout: auto;
+}
+
+.result-submissions-table-wrap {
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.result-submissions-table th,
+.result-submissions-table td {
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.result-submissions-table th:first-child,
+.result-submissions-table td:first-child {
+  white-space: nowrap;
+}
+
+.result-submissions-table th:nth-child(5),
+.result-submissions-table td:nth-child(5) {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.result-submissions-table th:last-child,
+.result-submissions-table td:last-child {
+  min-width: 310px;
+  text-align: left;
+}
+
+.member-submissions-table th:last-child,
+.member-submissions-table td:last-child {
+  min-width: 180px;
+  white-space: normal;
+}
+
+.result-submissions-table td:last-child {
+  padding-block: 0.55rem;
+}
+
+.result-submissions-table td:last-child .inline-form {
+  margin: 0.2rem 0;
+}
+
+.result-submissions-table td:last-child input {
+  min-height: 36px;
+  min-width: 150px;
+  padding: 0.45rem 0.65rem;
+}
+
+.result-submissions-table td:last-child button {
+  min-height: 36px;
+  padding: 0.45rem 0.7rem;
+  white-space: nowrap;
+}
+
 .filter-panel {
   background: linear-gradient(180deg, var(--card) 0%, rgba(15, 143, 95, 0.03) 100%);
   border: 1px solid var(--border);
