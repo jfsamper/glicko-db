@@ -92,6 +92,32 @@ def test_profile_persists_preferences_and_changes_password(tmp_path, monkeypatch
     assert "Meu perfil" in response.get_data(as_text=True)
 
 
+def test_member_can_view_and_edit_profile(tmp_path, monkeypatch):
+    app, db_path, user_id = make_account_app(tmp_path, monkeypatch, role_name="member")
+    client = app.test_client()
+    authenticate_client(client, user_id, role_name="member")
+
+    response = client.get("/admin/profile?lang=en")
+    assert response.status_code == 200
+
+    response = client.post(
+        "/admin/profile?lang=en",
+        data={
+            "email": "member-updated@example.com",
+            "language": "en",
+            "theme": "dark",
+            "timezone": "America/Bogota",
+        },
+    )
+    assert response.status_code == 302
+
+    with sqlite3.connect(db_path) as conn:
+        assert conn.execute(
+            "SELECT email, theme, timezone FROM users WHERE id = ?",
+            (user_id,),
+        ).fetchone() == ("member-updated@example.com", "dark", "America/Bogota")
+
+
 def test_profile_timezone_options_display_utc_adjustments(tmp_path, monkeypatch):
     app, _db_path, user_id = make_account_app(tmp_path, monkeypatch)
     client = app.test_client()

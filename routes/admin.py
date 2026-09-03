@@ -595,6 +595,7 @@ ADMIN_ROUTE_PERMISSIONS = {
     "admin.admin_result_submissions": "operator",
     "admin.admin_approve_result_submission": "operator",
     "admin.admin_reject_result_submission": "operator",
+    "admin.admin_profile": "results_submitter",
     "admin.admin_report_results": "results_submitter",
     "admin.admin_import": "operator",
     "admin.admin_matches": "operator",
@@ -659,6 +660,8 @@ def admin_auth_check():
             session["user_language"] = user["language"]
         if user.get("theme"):
             session["user_theme"] = user["theme"]
+        if request.path == "/admin" and user.get("role") == "member":
+            return redirect(url_for("admin_report_results", lang=get_language(request.args.get("lang"))))
         required_permission = get_required_permission_for_route(request.endpoint)
         if not user_has_permission(required_permission):
             from flask import abort
@@ -724,6 +727,8 @@ def admin_login():
                     {"username": user["username"], "role": user.get("role")},
                     user_id=user["id"],
                 )
+                if user.get("role") == "member":
+                    return redirect(url_for("admin_report_results", lang=lang))
                 return redirect(url_for("admin", lang=lang))
         finally:
             conn.close()
@@ -1067,7 +1072,7 @@ def admin_settings():
 
 @admin_bp.route("/admin/profile", methods=["GET", "POST"])
 def admin_profile():
-    permission_error = require_permission("operator")
+    permission_error = require_permission("results_submitter")
     if permission_error is not None:
         return permission_error
 

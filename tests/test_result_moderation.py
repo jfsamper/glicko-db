@@ -98,6 +98,26 @@ def test_registration_requires_recaptcha_when_configured(tmp_path, monkeypatch):
         ).fetchone() is None
 
 
+def test_member_login_redirects_to_report_results(tmp_path, monkeypatch):
+    application, db_path, player_ids = make_moderation_app(tmp_path, monkeypatch)
+    member_id = common.create_user_account(
+        "member-login",
+        "member-password",
+        role_name="member",
+        player_id=player_ids[0],
+    )
+    client = application.test_client()
+
+    response = client.post(
+        "/admin/login?lang=en",
+        data={"username": "member-login", "password": "member-password"},
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 302
+    assert response.headers["Location"].endswith("/admin/report-results?lang=en")
+
+
 def test_recaptcha_verifier_checks_action_score_and_hostname(monkeypatch):
     class FakeResponse:
         def __init__(self, payload):
@@ -149,7 +169,9 @@ def test_member_can_submit_only_for_linked_player(tmp_path, monkeypatch):
     client = application.test_client()
     authenticate(client, member_id, "member")
 
-    assert client.get("/admin").status_code == 403
+    admin_response = client.get("/admin?lang=en", follow_redirects=False)
+    assert admin_response.status_code == 302
+    assert admin_response.headers["Location"].endswith("/admin/report-results?lang=en")
     assert client.get("/admin/result-submissions").status_code == 403
     report_response = client.get("/admin/report-results?lang=en")
     assert report_response.status_code == 200
