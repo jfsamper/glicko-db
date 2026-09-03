@@ -254,6 +254,7 @@ def read_gotha_tournament(
                 category=player.get("grade", ""),
                 country=player.get("country", ""),
                 club=player.get("club", ""),
+                participating=player.get("participating") or "1" * 20,
             )
         )
 
@@ -345,6 +346,16 @@ def read_gotha_tournament(
             or general.findtext("Detail")
             or ""
         ).strip(),
+        bye_players=[
+            (
+                int(bye.get("roundNumber") or 0),
+                normalize_key(bye.get("player") or ""),
+            )
+            for bye in root.findall("ByePlayers/ByePlayer")
+            if (bye.get("roundNumber") or "").isdigit()
+            and int(bye.get("roundNumber") or 0) > 0
+            and normalize_key(bye.get("player") or "")
+        ],
     )
 
 
@@ -622,6 +633,40 @@ def _materialize_pending_players(conn, tournament_id, pending_id=None):
                 0,
             ),
         )
+        participation = (
+            player_row["participating"]
+            if "participating" in player_row.keys() and player_row["participating"]
+            else "1" * 20
+        )
+        round_rows = conn.execute(
+            "SELECT id, round_number FROM tournament_rounds WHERE tournament_id = ?",
+            (tournament_id,),
+        ).fetchall()
+        for round_row in round_rows:
+            pairing = conn.execute(
+                """
+                SELECT is_bye
+                FROM tournament_pairings
+                WHERE round_id = ? AND (white_player_id = ? OR black_player_id = ?)
+                LIMIT 1
+                """,
+                (round_row["id"], player_id, player_id),
+            ).fetchone()
+            if pairing is not None:
+                status = "bye" if pairing["is_bye"] else "paired"
+            elif round_row["round_number"] <= len(participation) and participation[round_row["round_number"] - 1] == "0":
+                status = "absent"
+            else:
+                continue
+            conn.execute(
+                "INSERT OR REPLACE INTO tournament_round_players (round_id, player_id, status) VALUES (?, ?, ?)",
+                (round_row["id"], player_id, status),
+            )
+            if status == "bye":
+                conn.execute(
+                    "UPDATE tournament_participants SET received_bye = 1 WHERE tournament_id = ? AND player_id = ?",
+                    (tournament_id, player_id),
+                )
         created += 1
         materialized_pending_ids.append(player_row["id"])
 
@@ -819,9 +864,14 @@ def export_tournament_results(conn, tournament_id):
         (tournament_id,),
     ).fetchall()
 
+    pending_participation = (
+        "participating"
+        if "participating" in _table_columns(conn, "tournament_pending_players")
+        else "'11111111111111111111' AS participating"
+    )
     pending_rows = conn.execute(
-        """
-        SELECT id, display_name, rating, rank, category, source_key
+        f"""
+        SELECT id, display_name, rating, rank, category, source_key, {pending_participation}
         FROM tournament_pending_players
         WHERE tournament_id = ?
         ORDER BY rank, id
@@ -849,19 +899,28 @@ def export_tournament_results(conn, tournament_id):
         """,
         (tournament_id,),
     ).fetchall()
+    absent_rows = conn.execute(
+        """
+        SELECT trp.player_id, r.round_number
+        FROM tournament_round_players trp
+        JOIN tournament_rounds r ON r.id = trp.round_id
+        WHERE r.tournament_id = ? AND trp.status = 'absent'
+        """,
+        (tournament_id,),
+    ).fetchall()
+    absent_rounds = {}
+    for row in absent_rows:
+        absent_rounds.setdefault(row["player_id"], set()).add(row["round_number"])
 
     root = ET.Element(
         "Tournament",
         {
-            "dataVersion": "200",
-            "gothaVersion": "300",
-            "gothaMinorVersion": "00",
-            "saveDT": datetime.now().strftime("%Y%m%d%H%M%S"),
             "externalIPAddress": "127.0.0.1",
-            "remoteUUID": "00000000-0000-0000-0000-000000000000",
-            "runningMode": "---",
-            "fullVersionNumber": "---",
+            "fullVersionNumber": "3.52.03",
             "privateTournament": "false",
+            "remoteUUID": "00000000-0000-0000-0000-000000000000",
+            "runningMode": "SAL",
+            "saveDT": datetime.now().strftime("%Y%m%d%H%M%S"),
         },
     )
 
@@ -870,7 +929,23 @@ def export_tournament_results(conn, tournament_id):
     used_keys = set()
     players_element = ET.SubElement(root, "Players")
 
-    def add_player(player_id, display_name, rating, category, seed_rank, first_name=None, last_name=None, source_key=None):
+    def opengotha_player_key(last_name, first_name):
+        last_name = normalize_text(last_name).replace(" ", "")
+        first_name = normalize_text(first_name).replace(" ", "")
+        if not last_name or not first_name:
+            return ""
+        return f"{last_name.upper()}{first_name.upper()}"
+
+    def add_player(
+        player_id,
+        display_name,
+        rating,
+        category,
+        seed_rank,
+        first_name=None,
+        last_name=None,
+        participating=None,
+    ):
         first_name = str(first_name or "").strip()
         last_name = str(last_name or "").strip()
         display_name = str(display_name or "").strip()
@@ -878,8 +953,11 @@ def export_tournament_results(conn, tournament_id):
             parts = display_name.split(" ", 1)
             first_name = parts[0]
             last_name = parts[1] if len(parts) > 1 else ""
-        base_key = normalize_key(source_key or f"{last_name}{first_name}")
-        base_key = base_key or f"player{player_id or len(used_keys) + 1}"
+        if not first_name or not last_name:
+            return None
+        base_key = opengotha_player_key(last_name, first_name)
+        if not base_key:
+            return None
         player_key = base_key
         suffix = 2
         while player_key in used_keys:
@@ -895,6 +973,10 @@ def export_tournament_results(conn, tournament_id):
         except (TypeError, ValueError):
             numeric_rating = float(DEFAULT_RATING)
         rank_label = str(category or "").strip() or _category_for_rating(conn, numeric_rating)
+        participation_mask = list((participating or "1" * 20)[:20].ljust(20, "1"))
+        for round_number in absent_rounds.get(player_id, ()):
+            if 1 <= round_number <= 20:
+                participation_mask[round_number - 1] = "0"
         ET.SubElement(
             players_element,
             "Player",
@@ -910,11 +992,11 @@ def export_tournament_results(conn, tournament_id):
                 "agaId": "",
                 "agaExpirationDate": "",
                 "rank": rank_label,
-                "rating": f"{numeric_rating:g}",
+                "rating": str(round(numeric_rating)),
                 "ratingOrigin": "INI",
                 "grade": rank_label,
                 "smmsCorrection": "0",
-                "participating": "1" * max(20, int(tournament["rounds"] or 1)),
+                "participating": "".join(participation_mask),
                 "registeringStatus": "FIN",
             },
         )
@@ -936,7 +1018,7 @@ def export_tournament_results(conn, tournament_id):
             row["rating"],
             row["category"],
             row["rank"],
-            source_key=row["source_key"],
+            participating=row["participating"],
         )
 
     for row in pairing_rows:
@@ -959,7 +1041,7 @@ def export_tournament_results(conn, tournament_id):
                         player["first_name"],
                         player["last_name"],
                     )
-            elif player_id is None and normalize_key(player_name) not in name_keys:
+            elif player_id is None and normalize_key(player_name) and normalize_key(player_name) not in name_keys:
                 add_player(None, player_name, DEFAULT_RATING, "", 0)
 
     games_element = ET.SubElement(root, "Games")
@@ -993,7 +1075,7 @@ def export_tournament_results(conn, tournament_id):
         )
 
     bye_players_element = ET.SubElement(root, "ByePlayers")
-    for round_number, player_key in bye_rows:
+    for round_number, player_key in sorted(set(bye_rows)):
         ET.SubElement(
             bye_players_element,
             "ByePlayer",
@@ -1007,6 +1089,10 @@ def export_tournament_results(conn, tournament_id):
     mm_floor = tournament["mm_floor"] if "mm_floor" in tournament_columns else -30
     mm_bar = tournament["mm_bar"] if "mm_bar" in tournament_columns else 8
     mm_zero = tournament["mm_zero"] if "mm_zero" in tournament_columns else 30
+    try:
+        mm_zero_rank = -int(mm_zero)
+    except (TypeError, ValueError):
+        mm_zero_rank = -30
     tournament_parameters = ET.SubElement(root, "TournamentParameterSet")
     general = ET.SubElement(
         tournament_parameters,
@@ -1015,7 +1101,6 @@ def export_tournament_results(conn, tournament_id):
             "shortName": str(tournament["short_name"] or tournament["name"] or "tournament"),
             "name": str(tournament["name"] or ""),
             "location": str(tournament["location"] or ""),
-            "description": str(tournament["description"] or "") if "description" in tournament.keys() else "",
             "director": "",
             "beginDate": str(tournament["begin_date"] or ""),
             "endDate": str(tournament["end_date"] or tournament["begin_date"] or ""),
@@ -1033,7 +1118,7 @@ def export_tournament_results(conn, tournament_id):
             "numberOfBZHGroups": "1",
             "genMMFloor": _rank_label(mm_floor, "30K"),
             "genMMBar": _rank_label(mm_bar, "9D"),
-            "genMMZero": str(mm_zero if mm_zero is not None else 30),
+            "genMMZero": _rank_label(mm_zero_rank, "30K"),
             "genNBW2ValueAbsent": str(round(absent_points * 2)),
             "genNBW2ValueBye": str(round(bye_points * 2)),
             "genMMS2ValueAbsent": str(round(absent_points * 2)),
@@ -1042,10 +1127,6 @@ def export_tournament_results(conn, tournament_id):
             "genCountNotPlayedGamesAsHalfPoint": "false",
         },
     )
-    categories = ET.SubElement(general, "Categories")
-    ET.SubElement(categories, "Category", {"number": "1", "lowerLimit": "30K"})
-    bzh_groups = ET.SubElement(general, "BZHGroups")
-    ET.SubElement(bzh_groups, "BZHGroup", {"number": "1", "lowerLimit": "30K"})
 
     handicap_enabled = bool(tournament["handicap_enabled"] or 0) if "handicap_enabled" in tournament.keys() else True
     ET.SubElement(
@@ -1053,7 +1134,7 @@ def export_tournament_results(conn, tournament_id):
         "HandicapParameterSet",
         {
             "hdBase": "RANK",
-            "hdNoHdRankThreshold": "1D",
+            "hdNoHdRankThreshold": "1D" if handicap_enabled else "30K",
             "hdCorrection": "0",
             "hdCeiling": "9" if handicap_enabled else "0",
         },
@@ -1087,16 +1168,15 @@ def export_tournament_results(conn, tournament_id):
             "paiMaLastRoundForSeedSystem1": "2",
             "paiMaSeedSystem1": "SPLITANDSLIP" if pairing_system == "accelerated_swiss" else "SPLITANDFOLD",
             "paiMaSeedSystem2": "SPLITANDFOLD",
-            "paiMaAdditionalPlacementCritSystem1": "RATING",
-            "paiMaAdditionalPlacementCritSystem2": "NULL",
+            "paiMaAdditionalPlacementCritSystem1": "Rating",
+            "paiMaAdditionalPlacementCritSystem2": "Rating",
             "paiSeBarThresholdActive": "true",
-            "paiSeRankThreshold": "4D",
+            "paiSeRankThreshold": _rank_label(mm_floor, "30K"),
             "paiSeNbWinsThresholdActive": "true",
-            "paiSeDefSecCrit": "100000000000",
+            "paiSeDefSecCrit": "20000000000000",
             "paiSeMinimizeHandicap": "0",
             "paiSeAvoidSameGeo": "0",
             "paiSePreferMMSDiffRatherThanSameCountry": "0",
-            "paiSePreferMMSDiffRatherThanSameClubsGroup": "0",
             "paiSePreferMMSDiffRatherThanSameClub": "0",
         },
     )
@@ -1105,14 +1185,14 @@ def export_tournament_results(conn, tournament_id):
         "DPParameterSet",
         {
             "playerSortType": "name",
-            "gameFormat": "full",
+            "gameFormat": "short",
             "showPlayerGrade": "true",
             "showPlayerCountry": "false",
             "showPlayerClub": "true",
             "showByePlayer": "true",
             "showNotPairedPlayers": "true",
             "showNotParticipatingPlayers": "false",
-            "showNotFinallyRegisteredPlayers": "false",
+            "showNotFinallyRegisteredPlayers": "true",
             "displayNPPlayers": "false",
             "displayNumCol": "true",
             "displayPlCol": "true",
@@ -1126,6 +1206,13 @@ def export_tournament_results(conn, tournament_id):
         "PublishParameterSet",
         {"print": "true", "exportToLocalFile": "true", "htmlAutoScroll": "false"},
     )
+
+    team_parameters = ET.SubElement(root, "TeamTournamentParameterSet")
+    ET.SubElement(team_parameters, "TeamGeneralParameterSet", {"teamSize": "4"})
+    team_placement = ET.SubElement(team_parameters, "TeamPlacementParameterSet")
+    team_criteria = ET.SubElement(team_placement, "PlacementCriteria")
+    for number, criterion in enumerate(("TEAMP", "BDW", "BDW3U", "BDW2U", "BDW1U", "MNR"), 1):
+        ET.SubElement(team_criteria, "PlacementCriterion", {"name": criterion, "number": str(number)})
 
     ET.indent(root, space="  ")
     xml_body = ET.tostring(root, encoding="unicode", short_empty_elements=True)
@@ -1213,6 +1300,7 @@ def create_tournament_from_gotha(
     )
     tournament_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
     lookup = _player_lookup(conn)
+    pending_player_columns = _table_columns(conn, "tournament_pending_players")
     matched = 0
 
     for participant in metadata["players"]:
@@ -1246,15 +1334,24 @@ def create_tournament_from_gotha(
                 ).fetchone()
             else:
                 suggested = _suggest_player_name(participant["display_name"], conn)
+                pending_columns = [
+                    "tournament_id", "display_name", "suggested_name", "rating",
+                    "rank", "category", "source_key",
+                ]
+                pending_values = [
+                    tournament_id, participant["display_name"], suggested,
+                    participant["rating"], participant["rank"], participant["category"],
+                    source_key,
+                ]
+                if "participating" in pending_player_columns:
+                    pending_columns.append("participating")
+                    pending_values.append(participant["participating"])
+                pending_columns.append("created_at")
+                pending_values.append(current_timestamp())
+                placeholders = ", ".join("?" for _ in pending_values)
                 conn.execute(
-                    """
-                    INSERT OR IGNORE INTO tournament_pending_players
-                        (tournament_id, display_name, suggested_name, rating, rank, category, source_key, created_at)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                    """,
-                    (tournament_id, participant["display_name"], suggested,
-                     participant["rating"], participant["rank"], participant["category"], source_key,
-                     current_timestamp()),
+                    f"INSERT OR IGNORE INTO tournament_pending_players ({', '.join(pending_columns)}) VALUES ({placeholders})",
+                    pending_values,
                 )
                 continue
 
@@ -1305,18 +1402,26 @@ def create_tournament_from_gotha(
     root = ET.parse(xml_path).getroot()
     participant_names = {participant["key"]: participant["display_name"] for participant in metadata["players"]}
     round_ids = {}
+
+    def ensure_round(round_number):
+        round_id = round_ids.get(round_number)
+        if round_id is None:
+            conn.execute(
+                "INSERT OR IGNORE INTO tournament_rounds (tournament_id, round_number, status) VALUES (?, ?, 'completed')",
+                (tournament_id, round_number),
+            )
+            round_id = conn.execute(
+                "SELECT id FROM tournament_rounds WHERE tournament_id = ? AND round_number = ?",
+                (tournament_id, round_number),
+            ).fetchone()[0]
+            round_ids[round_number] = round_id
+        return round_id
+
     for game in root.findall("Games/Game"):
         round_number = int(game.get("roundNumber") or 0)
         if round_number <= 0:
             continue
-        round_id = round_ids.get(round_number)
-        if round_id is None:
-            conn.execute(
-                "INSERT INTO tournament_rounds (tournament_id, round_number, status) VALUES (?, ?, 'completed')",
-                (tournament_id, round_number),
-            )
-            round_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
-            round_ids[round_number] = round_id
+        round_id = ensure_round(round_number)
 
         white_key = normalize_key(game.get("whitePlayer") or "")
         black_key = normalize_key(game.get("blackPlayer") or "")
@@ -1371,7 +1476,7 @@ def create_tournament_from_gotha(
                 handicap_stones,
             ),
         )
-        if is_bye:
+        if is_bye and white_player is not None:
             conn.execute(
                 "INSERT OR REPLACE INTO tournament_round_players (round_id, player_id, status) VALUES (?, ?, 'bye')",
                 (round_id, white_player["id"]),
@@ -1380,6 +1485,67 @@ def create_tournament_from_gotha(
                 "UPDATE tournament_participants SET received_bye = 1 WHERE tournament_id = ? AND player_id = ?",
                 (tournament_id, white_player["id"]),
             )
+
+    for round_number, player_key in metadata.bye_players:
+        if round_number > metadata.rounds:
+            continue
+        round_id = ensure_round(round_number)
+        player = lookup.get(player_key)
+        player_name = participant_names.get(player_key)
+        if player is None and not player_name:
+            continue
+        existing_bye = conn.execute(
+            "SELECT 1 FROM tournament_pairings WHERE round_id = ? AND is_bye = 1",
+            (round_id,),
+        ).fetchone()
+        if existing_bye is None:
+            board_number = conn.execute(
+                "SELECT COALESCE(MAX(board_number), 0) + 1 FROM tournament_pairings WHERE round_id = ?",
+                (round_id,),
+            ).fetchone()[0]
+            conn.execute(
+                """
+                INSERT INTO tournament_pairings
+                    (round_id, board_number, white_player_id, white_player_name, result, is_bye)
+                VALUES (?, ?, ?, ?, NULL, 1)
+                """,
+                (
+                    round_id,
+                    board_number,
+                    player["id"] if player else None,
+                    None if player else player_name,
+                ),
+            )
+        if player is not None:
+            conn.execute(
+                "INSERT OR REPLACE INTO tournament_round_players (round_id, player_id, status) VALUES (?, ?, 'bye')",
+                (round_id, player["id"]),
+            )
+            conn.execute(
+                "UPDATE tournament_participants SET received_bye = 1 WHERE tournament_id = ? AND player_id = ?",
+                (tournament_id, player["id"]),
+            )
+
+    for participant in metadata.players:
+        player = lookup.get(participant.key)
+        for round_number, flag in enumerate(participant.participating[:metadata.rounds], 1):
+            if flag != "0":
+                continue
+            round_id = ensure_round(round_number)
+            if player is None:
+                continue
+            implied = conn.execute(
+                """
+                SELECT 1 FROM tournament_pairings
+                WHERE round_id = ? AND (white_player_id = ? OR black_player_id = ?)
+                """,
+                (round_id, player["id"], player["id"]),
+            ).fetchone()
+            if implied is None:
+                conn.execute(
+                    "INSERT OR REPLACE INTO tournament_round_players (round_id, player_id, status) VALUES (?, ?, 'absent')",
+                    (round_id, player["id"]),
+                )
 
     _refresh_tournament_completion_state(conn, tournament_id)
     # Imported rounds may already be complete in OpenGotha, but the imported

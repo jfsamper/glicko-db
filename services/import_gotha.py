@@ -1,6 +1,6 @@
 # services/import_gotha.py
 """Service for importing tournament data from OpenGotha XML files."""
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from typing import Any, Mapping
 import xml.etree.ElementTree as ET
 import datetime
@@ -18,6 +18,7 @@ class GothaPlayer:
     category: str
     country: str
     club: str
+    participating: str = "1" * 20
 
     def __getitem__(self, field_name: str) -> Any:
         try:
@@ -80,6 +81,7 @@ class GothaTournamentPayload:
     mm_zero: int
     placement_criteria: str
     description: str = ""
+    bye_players: list[tuple[int, str]] = field(default_factory=list)
 
     def __getitem__(self, field_name: str) -> Any:
         try:

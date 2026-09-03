@@ -124,6 +124,7 @@ def create_db():
             rank INTEGER NOT NULL DEFAULT 0,
             category TEXT NOT NULL DEFAULT '',
             source_key TEXT,
+            participating TEXT NOT NULL DEFAULT '11111111111111111111',
             created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
         );
         CREATE TABLE matches (
@@ -400,6 +401,120 @@ def test_opengotha_metadata_and_pairing_parameters_are_read():
     assert metadata["acceleration_scheme"] == "34:2,33:1,33:0"
     assert metadata["acceleration_rounds"] == 3
     assert metadata["category_rounds"] == 0
+
+
+def test_opengotha_bye_and_absence_round_trip(tmp_path):
+    source_path = tmp_path / "attendance.xml"
+    source_path.write_text(
+        """<?xml version="1.0" encoding="UTF-8"?>
+<Tournament>
+  <Players>
+    <Player name="Alpha" firstName="Ana" rating="1500" rank="1D" participating="01111111111111111111" />
+    <Player name="Beta" firstName="Ben" rating="1400" rank="1K" participating="11111111111111111111" />
+  </Players>
+  <Games />
+  <ByePlayers><ByePlayer roundNumber="2" player="ALPHAANA" /></ByePlayers>
+  <TournamentParameterSet>
+    <GeneralParameterSet name="Attendance" shortName="ATT" beginDate="2026-01-01" endDate="2026-01-01" numberOfRounds="3" />
+    <PlacementParameterSet><PlacementCriteria><PlacementCriterion name="NBW" /></PlacementCriteria></PlacementParameterSet>
+  </TournamentParameterSet>
+</Tournament>
+""",
+        encoding="utf-8",
+    )
+
+    def imported_connection():
+        connection = create_db()
+        connection.executemany(
+            "INSERT INTO players (id, first_name, last_name, display_name, rating, active) VALUES (?, ?, ?, ?, ?, 1)",
+            [
+                (1, "Ana", "Alpha", "Ana Alpha", 1500),
+                (2, "Ben", "Beta", "Ben Beta", 1400),
+            ],
+        )
+        connection.commit()
+        return connection
+
+    conn = imported_connection()
+    tournament_id, _, _ = create_tournament_from_gotha(conn, source_path, "swiss")
+    statuses = conn.execute(
+        """
+        SELECT r.round_number, trp.status
+        FROM tournament_round_players trp
+        JOIN tournament_rounds r ON r.id = trp.round_id
+        WHERE r.tournament_id = ? AND trp.player_id = 1
+        ORDER BY r.round_number
+        """,
+        (tournament_id,),
+    ).fetchall()
+    assert [tuple(row) for row in statuses] == [(1, "absent"), (2, "bye")]
+
+    exported = export_tournament_results(conn, tournament_id)
+    exported_root = ET.fromstring(exported.lstrip("\ufeff"))
+    ana = next(
+        player
+        for player in exported_root.findall("./Players/Player")
+        if player.get("firstName") == "Ana"
+    )
+    assert ana.get("participating") == "01111111111111111111"
+    assert exported_root.find("./ByePlayers/ByePlayer").attrib == {
+        "roundNumber": "2",
+        "player": "ALPHAANA",
+    }
+
+    exported_path = tmp_path / "exported.xml"
+    exported_path.write_text(exported.lstrip("\ufeff"), encoding="utf-8")
+    round_trip_conn = imported_connection()
+    round_trip_id, _, _ = create_tournament_from_gotha(
+        round_trip_conn, exported_path, "swiss"
+    )
+    round_trip_statuses = round_trip_conn.execute(
+        """
+        SELECT r.round_number, trp.status
+        FROM tournament_round_players trp
+        JOIN tournament_rounds r ON r.id = trp.round_id
+        WHERE r.tournament_id = ? AND trp.player_id = 1
+        ORDER BY r.round_number
+        """,
+        (round_trip_id,),
+    ).fetchall()
+    assert [tuple(row) for row in round_trip_statuses] == [
+        (1, "absent"),
+        (2, "bye"),
+    ]
+
+    pending_conn = create_db()
+    pending_tournament_id, _, matched = create_tournament_from_gotha(
+        pending_conn, source_path, "swiss"
+    )
+    assert matched == 0
+    pending_player = pending_conn.execute(
+        "SELECT id, participating FROM tournament_pending_players WHERE source_key = ?",
+        (normalize_key("AlphaAna"),),
+    ).fetchone()
+    assert pending_player["participating"] == "01111111111111111111"
+
+    _materialize_pending_players(
+        pending_conn, pending_tournament_id, pending_id=pending_player["id"]
+    )
+    materialized_player_id = pending_conn.execute(
+        "SELECT player_id FROM tournament_participants WHERE tournament_id = ?",
+        (pending_tournament_id,),
+    ).fetchone()[0]
+    materialized_statuses = pending_conn.execute(
+        """
+        SELECT r.round_number, trp.status
+        FROM tournament_round_players trp
+        JOIN tournament_rounds r ON r.id = trp.round_id
+        WHERE r.tournament_id = ? AND trp.player_id = ?
+        ORDER BY r.round_number
+        """,
+        (pending_tournament_id, materialized_player_id),
+    ).fetchall()
+    assert [tuple(row) for row in materialized_statuses] == [
+        (1, "absent"),
+        (2, "bye"),
+    ]
 
 
 def test_opengotha_description_is_read_from_general_metadata(tmp_path):
@@ -749,16 +864,21 @@ def test_pending_resolution_updates_canonical_display_name_before_materializatio
 
 def test_export_tournament_results_returns_opengotha_xml():
     conn = create_db()
+    conn.execute("ALTER TABLE tournaments ADD COLUMN description TEXT")
     conn.execute(
         "INSERT INTO tournaments (name, rounds, pairing_system, tournament_type) VALUES (?, ?, ?, ?)",
-        ("Torneio São Paulo", 1, "swiss", "swiss"),
+        ("Torneio São Paulo", 2, "swiss", "swiss"),
     )
     tournament_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
+    conn.execute(
+        "UPDATE tournaments SET description = ? WHERE id = ?",
+        ("Annual club championship", tournament_id),
+    )
     conn.executemany(
         "INSERT INTO players (id, first_name, last_name, display_name, rating, active) VALUES (?, ?, ?, ?, ?, 1)",
         [
-            (1, "João", "Silva", "João Silva", 1500),
-            (2, "Ana", "Müller", "Ana Müller", 1450),
+            (1, "Fabio", "Moreno", "Fabio Moreno", 1500.6),
+            (2, "João", "Silva", "João Silva", 1450),
         ],
     )
     conn.execute(
@@ -773,6 +893,22 @@ def test_export_tournament_results_returns_opengotha_xml():
         """,
         (1, 1, 1, 2, "1-0"),
     )
+    conn.execute(
+        "INSERT INTO tournament_pending_players (tournament_id, display_name, rating, rank) VALUES (?, ?, ?, ?)",
+        (tournament_id, "", 1500, 1),
+    )
+    conn.execute(
+        "INSERT INTO tournament_rounds (id, tournament_id, round_number, status) VALUES (?, ?, ?, 'scheduled')",
+        (2, tournament_id, 2),
+    )
+    conn.execute(
+        """
+        INSERT INTO tournament_pairings
+            (round_id, board_number, white_player_id, black_player_id, result, is_bye)
+        VALUES (?, ?, ?, NULL, NULL, 1)
+        """,
+        (2, 1, 1),
+    )
     conn.commit()
 
     exported = export_tournament_results(conn, tournament_id)
@@ -781,15 +917,38 @@ def test_export_tournament_results_returns_opengotha_xml():
     assert exported.encode("utf-8").startswith(b"\xef\xbb\xbf")
     root = ET.fromstring(exported.lstrip("\ufeff"))
     assert root.tag == "Tournament"
+    general = root.find("./TournamentParameterSet/GeneralParameterSet")
+    assert general is not None
+    assert general.get("description") is None
+    assert general.get("genMMZero") == "30K"
+    assert general.find("./Categories") is None
+    assert general.find("./BZHGroups") is None
+    display_parameters = root.find("./TournamentParameterSet/DPParameterSet")
+    assert display_parameters is not None
+    assert display_parameters.get("showPlayerGrade") == "true"
+    assert root.find("./TeamTournamentParameterSet/TeamGeneralParameterSet").get("teamSize") == "4"
     players = root.findall("./Players/Player")
-    assert {player.get("firstName") for player in players} == {"João", "Ana"}
+    assert all(player.get("name") and player.get("firstName") for player in players)
+    assert {player.get("firstName") for player in players} == {"Fabio", "João"}
+    assert next(player for player in players if player.get("firstName") == "Fabio").get("rating") == "1501"
     game = root.find("./Games/Game")
     assert game is not None
     assert game.get("result") == "RESULT_WHITEWINS"
-    white = next(player for player in players if player.get("firstName") == "João")
-    black = next(player for player in players if player.get("firstName") == "Ana")
-    assert game.get("whitePlayer") == normalize_key(white.get("name") + white.get("firstName"))
-    assert game.get("blackPlayer") == normalize_key(black.get("name") + black.get("firstName"))
+    white = next(player for player in players if player.get("firstName") == "Fabio")
+    black = next(player for player in players if player.get("firstName") == "João")
+    expected_keys = {
+        "Fabio": "MORENOFABIO",
+        "João": "SILVAJOÃO",
+    }
+    assert game.get("whitePlayer") == expected_keys[white.get("firstName")]
+    assert game.get("blackPlayer") == expected_keys[black.get("firstName")]
+    assert {game.get("whitePlayer"), game.get("blackPlayer")} == {
+        "MORENOFABIO",
+        "SILVAJOÃO",
+    }
+    bye = root.find("./ByePlayers/ByePlayer")
+    assert bye is not None
+    assert bye.get("player") == game.get("whitePlayer")
 
 
 def test_pairing_scenario_generator_uses_current_tournament_logic():

@@ -232,6 +232,7 @@ def init_db():
             rank INTEGER NOT NULL DEFAULT 0,
             category TEXT NOT NULL DEFAULT '',
             source_key TEXT,
+            participating TEXT NOT NULL DEFAULT '11111111111111111111',
             created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
         );
         """
@@ -573,6 +574,7 @@ def migrate_tournament_schema(conn):
             rank INTEGER NOT NULL DEFAULT 0,
             category TEXT NOT NULL DEFAULT '',
             source_key TEXT,
+            participating TEXT NOT NULL DEFAULT '11111111111111111111',
             created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
         );
         """
@@ -630,6 +632,7 @@ def migrate_tournament_schema(conn):
             "rank": "INTEGER NOT NULL DEFAULT 0",
             "category": "TEXT NOT NULL DEFAULT ''",
             "source_key": "TEXT",
+            "participating": "TEXT NOT NULL DEFAULT '11111111111111111111'",
             "created_at": "TEXT",
         },
     }
