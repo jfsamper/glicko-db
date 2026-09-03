@@ -1,5 +1,6 @@
 """Tournament persistence and OpenGotha-compatible metadata import."""
 
+from collections import defaultdict
 from difflib import SequenceMatcher
 from datetime import datetime
 from pathlib import Path
@@ -1559,26 +1560,59 @@ def create_tournament_from_gotha(
 
 
 def _participant_state(conn, tournament_id, acceleration_scheme=None, acceleration_active=False):
+    player_columns = _table_columns(conn, "players")
+    player_name = (
+        "p.display_name AS player_name"
+        if "display_name" in player_columns
+        else "CAST(tp.player_id AS TEXT) AS player_name"
+    )
+    player_country = (
+        "COALESCE(p.country, '') AS player_country"
+        if "country" in player_columns
+        else "'' AS player_country"
+    )
+    player_club = (
+        "COALESCE(p.club, '') AS player_club"
+        if "club" in player_columns
+        else "'' AS player_club"
+    )
     participants = conn.execute(
-        "SELECT * FROM tournament_participants WHERE tournament_id = ? ORDER BY seed_rank, id",
+        f"""
+        SELECT tp.*, {player_name}, {player_country}, {player_club}
+        FROM tournament_participants tp
+        JOIN players p ON p.id = tp.player_id
+        WHERE tp.tournament_id = ?
+        ORDER BY tp.seed_rank, tp.id
+        """,
         (tournament_id,),
     ).fetchall()
     previous = conn.execute(
         """
          SELECT p.white_player_id, p.black_player_id, p.result, p.is_bye,
-             r.round_number
+             p.handicap_stones, r.round_number
         FROM tournament_pairings p
         JOIN tournament_rounds r ON r.id = p.round_id
         WHERE r.tournament_id = ?
+        ORDER BY r.round_number, p.board_number
         """,
         (tournament_id,),
     ).fetchall()
+    tournament_columns = _table_columns(conn, "tournaments")
+    settings_columns = ["bye_points", "absent_points", "pairing_system"]
+    if "acceleration_rounds" in tournament_columns:
+        settings_columns.append("acceleration_rounds")
     settings = conn.execute(
-        "SELECT bye_points, absent_points FROM tournaments WHERE id = ?",
+        f"SELECT {', '.join(settings_columns)} FROM tournaments WHERE id = ?",
         (tournament_id,),
     ).fetchone()
     bye_points = float(settings["bye_points"] if settings and settings["bye_points"] is not None else 1.0)
     absent_points = float(settings["absent_points"] if settings and settings["absent_points"] is not None else 0.0)
+    pairing_system = settings["pairing_system"] if settings else "swiss"
+    acceleration_rounds = (
+        int(settings["acceleration_rounds"] or 0)
+        if settings and "acceleration_rounds" in settings.keys()
+        else 1
+    )
     seed_order = sorted(
         participants,
         key=lambda row: (-float(row["seed_rating"] or 0), row["player_id"]),
@@ -1587,9 +1621,11 @@ def _participant_state(conn, tournament_id, acceleration_scheme=None, accelerati
     state = {
         row["player_id"]: {
             "id": row["player_id"],
+            "name": row["player_name"],
             "rating": row["seed_rating"],
             "score": 0.0,
             "initial_score": row["initial_score"],
+            "seed_acceleration": float(row["acceleration"] or 0),
             "acceleration": (
                 acceleration_for_rank(
                     seed_ranks[row["player_id"]],
@@ -1601,47 +1637,92 @@ def _participant_state(conn, tournament_id, acceleration_scheme=None, accelerati
                 else 0.0
             ),
             "category": row["category"],
+            "country": row["player_country"],
+            "club": row["player_club"],
             "opponents": set(),
             "colors": {"white": 0, "black": 0},
             "received_bye": bool(row["received_bye"]),
+            "draw_up_count": 0,
+            "draw_down_count": 0,
         }
         for row in participants
     }
-    for row in previous:
-        white = row["white_player_id"]
-        black = row["black_player_id"]
-        if white not in state:
-            continue
-        if row["is_bye"] or black is None:
-            state[white]["received_bye"] = True
-            state[white]["score"] += bye_points
-            continue
-        if black not in state:
-            continue
-        state[white]["opponents"].add(black)
-        state[black]["opponents"].add(white)
-        state[white]["colors"]["white"] += 1
-        state[black]["colors"]["black"] += 1
-        if row["result"] == "1-0":
-            state[white]["score"] += 1.0
-        elif row["result"] == "0-1":
-            state[black]["score"] += 1.0
-        elif row["result"] == "1/2-1/2":
-            state[white]["score"] += 0.5
-            state[black]["score"] += 0.5
+    category_strength = {}
+    for player in state.values():
+        category = str(player["category"] or "")
+        category_strength[category] = max(
+            category_strength.get(category, float("-inf")),
+            category_value(player["rating"] or DEFAULT_RATING, k=GLICKO_K, m=GLICKO_M),
+        )
+    category_order = {
+        category: order
+        for order, (category, _) in enumerate(
+            sorted(category_strength.items(), key=lambda item: (-item[1], item[0].casefold()))
+        )
+    }
+    for player in state.values():
+        player["category_order"] = category_order[str(player["category"] or "")]
 
     absent_players = conn.execute(
         """
-        SELECT rp.player_id
+        SELECT rp.player_id, r.round_number
         FROM tournament_round_players rp
         JOIN tournament_rounds r ON r.id = rp.round_id
         WHERE r.tournament_id = ? AND rp.status = 'absent'
         """,
         (tournament_id,),
     ).fetchall()
+    games_by_round = defaultdict(list)
+    for row in previous:
+        games_by_round[row["round_number"]].append(row)
+    absences_by_round = defaultdict(list)
     for row in absent_players:
-        if row["player_id"] in state:
-            state[row["player_id"]]["score"] += absent_points
+        absences_by_round[row["round_number"]].append(row["player_id"])
+
+    def historical_score(player_id, round_number):
+        player = state[player_id]
+        score = player["score"]
+        if pairing_system == "mcmahon":
+            score += float(player["initial_score"] or 0)
+        elif pairing_system == "accelerated_swiss" and round_number <= acceleration_rounds:
+            score += player["seed_acceleration"]
+        return score
+
+    for round_number in sorted(set(games_by_round) | set(absences_by_round)):
+        for row in games_by_round[round_number]:
+            white = row["white_player_id"]
+            black = row["black_player_id"]
+            if white not in state:
+                continue
+            if row["is_bye"] or black is None:
+                state[white]["received_bye"] = True
+                state[white]["score"] += bye_points
+                continue
+            if black not in state:
+                continue
+            white_score = historical_score(white, round_number)
+            black_score = historical_score(black, round_number)
+            if white_score < black_score:
+                state[white]["draw_up_count"] += 1
+                state[black]["draw_down_count"] += 1
+            elif black_score < white_score:
+                state[black]["draw_up_count"] += 1
+                state[white]["draw_down_count"] += 1
+            state[white]["opponents"].add(black)
+            state[black]["opponents"].add(white)
+            if not row["handicap_stones"]:
+                state[white]["colors"]["white"] += 1
+                state[black]["colors"]["black"] += 1
+            if row["result"] == "1-0":
+                state[white]["score"] += 1.0
+            elif row["result"] == "0-1":
+                state[black]["score"] += 1.0
+            elif row["result"] == "1/2-1/2":
+                state[white]["score"] += 0.5
+                state[black]["score"] += 0.5
+        for player_id in absences_by_round[round_number]:
+            if player_id in state:
+                state[player_id]["score"] += absent_points
     return state
 
 

@@ -30,6 +30,10 @@ MAX_CATEGORY_RANK = 8
 MAX_ACCELERATION_CATEGORIES = 10
 DEFAULT_ACCELERATION_ROUNDS = 1
 DEFAULT_CATEGORY_ROUNDS = 0
+AVOID_DUPLICATE_GAME_WEIGHT = 500_000 * 1_000_000_000
+CATEGORY_WEIGHT = 20_000 * 1_000_000_000
+SCORE_DIFFERENCE_WEIGHT = 100 * 1_000_000_000
+DRAW_UP_DOWN_WEIGHT = 100_000_000
 
 
 def default_acceleration_rounds(total_rounds):
@@ -110,6 +114,14 @@ def _can_pair(first, second, category_strict=False):
     if category_strict and _value(first, "category", "") != _value(second, "category", ""):
         return False
     return _player_id(second) not in _played(first) and _player_id(first) not in _played(second)
+
+
+def _is_repeat(first, second):
+    return _player_id(second) in _played(first) or _player_id(first) in _played(second)
+
+
+def _category_allows_pair(first, second, category_strict=False):
+    return not category_strict or _value(first, "category", "") == _value(second, "category", "")
 
 
 def _color_assignment(first, second):
@@ -219,15 +231,15 @@ def _pairing_positions(players, system):
         groups[(category, _effective_score(player, system))].append(player)
 
     positions = {}
-    for group in groups.values():
+    for group_number, group in enumerate(groups.values()):
         for placement, player in enumerate(group):
-            positions[_player_id(player)] = (len(group), placement)
+            positions[_player_id(player)] = (group_number, len(group), placement)
     return positions
 
 
 def _seed_weight(first, second, positions, system, seed_system=None):
-    first_group_size, first_placement = positions[_player_id(first)]
-    second_group_size, second_placement = positions[_player_id(second)]
+    _, first_group_size, first_placement = positions[_player_id(first)]
+    _, second_group_size, second_placement = positions[_player_id(second)]
     if (
         first_group_size != second_group_size
         or first_group_size < 2
@@ -259,16 +271,47 @@ def _seed_weight(first, second, positions, system, seed_system=None):
 def _draw_up_down_weight(first, second, positions, system):
     if _effective_score(first, system) == _effective_score(second, system):
         return 0
-    first_group_size, first_placement = positions[_player_id(first)]
-    second_group_size, second_placement = positions[_player_id(second)]
+    first_group, first_group_size, first_placement = positions[_player_id(first)]
+    second_group, second_group_size, second_placement = positions[_player_id(second)]
+    if abs(first_group - second_group) >= 4:
+        return 0
     first_is_upper = _effective_score(first, system) > _effective_score(second, system)
     upper_size, upper_placement = (first_group_size, first_placement) if first_is_upper else (second_group_size, second_placement)
     lower_size, lower_placement = (second_group_size, second_placement) if first_is_upper else (first_group_size, first_placement)
-    previous_up = sum(int(_value(player, "draw_up_count", 0) or 0) for player in (first, second))
-    previous_down = sum(int(_value(player, "draw_down_count", 0) or 0) for player in (first, second))
-    position_weight = (upper_size - 1 - upper_placement) + lower_placement
-    correction_weight = 2_000_000 if previous_up != previous_down else 0
-    return correction_weight - position_weight * 100_000
+    upper = first if first_is_upper else second
+    lower = second if first_is_upper else first
+    upper_up = int(_value(upper, "draw_up_count", 0) or 0)
+    upper_down = int(_value(upper, "draw_down_count", 0) or 0)
+    lower_up = int(_value(lower, "draw_up_count", 0) or 0)
+    lower_down = int(_value(lower, "draw_down_count", 0) or 0)
+
+    scenario = 2
+    if upper_down > 0:
+        scenario -= 1
+    if lower_up > 0:
+        scenario -= 1
+    if scenario and upper_up > upper_down:
+        scenario += 1
+    if scenario and lower_down > lower_up:
+        scenario += 1
+    scenario = max(0, min(4, scenario))
+
+    scenario_step = DRAW_UP_DOWN_WEIGHT // 5
+
+    def middle_position_weight(group_size, placement):
+        if group_size <= 1:
+            return 0
+        centered = group_size - 1 - abs(2 * placement - group_size + 1)
+        return scenario_step * max(0, centered) // (2 * group_size)
+
+    position_weight = middle_position_weight(
+        upper_size, upper_placement
+    ) + middle_position_weight(lower_size, lower_placement)
+    category_gap = abs(
+        int(_value(first, "category_order", 0) or 0)
+        - int(_value(second, "category_order", 0) or 0)
+    )
+    return (scenario * scenario_step + position_weight) // ((category_gap + 1) ** 4)
 
 
 def _pair_weight(first, second, players, system, positions, seed_system=None):
@@ -279,7 +322,7 @@ def _pair_weight(first, second, players, system, positions, seed_system=None):
         max(_effective_score(player, system) for player in players)
         - min(_effective_score(player, system) for player in players),
     )
-    score_weight = int(100_000_000_000 * _concavity(abs(first_score - second_score) / score_range))
+    score_weight = int(SCORE_DIFFERENCE_WEIGHT * _concavity(abs(first_score - second_score) / score_range))
 
     category_gap = 0
     if system == "swiss_cat":
@@ -287,16 +330,15 @@ def _pair_weight(first, second, players, system, positions, seed_system=None):
         if not category_gap:
             category_gap = 0 if _value(first, "category", "") == _value(second, "category", "") else 1
     category_count = max(1, len({str(_value(player, "category", "")) for player in players}))
-    category_weight = int(20_000_000_000 * _concavity(abs(category_gap) / category_count))
+    category_weight = int(CATEGORY_WEIGHT * _concavity(abs(category_gap) / category_count))
 
-    balance_gap = abs(_color_balance(first) - _color_balance(second))
-    color_weight = max(0, 1_000_000 - balance_gap * 250_000)
+    color_weight = 0
     if _color_balance(first) * _color_balance(second) < 0:
-        color_weight += 1_000_000
-    if (_color_balance(first) == 0 and abs(_color_balance(second)) >= 2) or (
+        color_weight = 1_000_000
+    elif (_color_balance(first) == 0 and abs(_color_balance(second)) >= 2) or (
         _color_balance(second) == 0 and abs(_color_balance(first)) >= 2
     ):
-        color_weight += 500_000
+        color_weight = 500_000
 
     geographic_weight = 0
     if _value(first, "country", "") and _value(first, "country", "") == _value(second, "country", ""):
@@ -314,19 +356,30 @@ def _pair_weight(first, second, players, system, positions, seed_system=None):
     )
 
 
-def _pair_without_repeats(players, system, seed_system=None, category_strict=False):
-    """Find a maximum-weight legal matching, as OpenGotha does."""
+def _maximum_weight_pairing(players, system, seed_system=None, category_strict=False):
+    """Find a complete maximum-weight matching, strongly preferring no rematches."""
     ordered_players = sorted(players, key=lambda item: _sort_key(item, system))
     positions = _pairing_positions(ordered_players, system)
     graph = nx.Graph()
     graph.add_nodes_from(_player_id(player) for player in ordered_players)
     for index, first in enumerate(ordered_players):
         for second in ordered_players[index + 1 :]:
-            if _can_pair(first, second, category_strict):
+            if _category_allows_pair(first, second, category_strict):
+                duplicate_weight = 0 if _is_repeat(first, second) else AVOID_DUPLICATE_GAME_WEIGHT
                 graph.add_edge(
                     _player_id(first),
                     _player_id(second),
-                    weight=_pair_weight(first, second, ordered_players, system, positions, seed_system),
+                    weight=(
+                        duplicate_weight
+                        + _pair_weight(
+                            first,
+                            second,
+                            ordered_players,
+                            system,
+                            positions,
+                            seed_system,
+                        )
+                    ),
                 )
 
     matching = nx.max_weight_matching(graph, maxcardinality=True, weight="weight")
@@ -371,7 +424,7 @@ def pair_players(players, system="swiss", seed_system=None, category_strict=None
                 ]
                 category_bye = _assign_bye([category_bye_player], system)
 
-            category_pairings = _pair_without_repeats(
+            category_pairings = _maximum_weight_pairing(
                 category_players, system, seed_system, category_strict=True
             )
             if category_pairings is None:
@@ -408,7 +461,7 @@ def pair_players(players, system="swiss", seed_system=None, category_strict=None
         working_players.remove(bye_player)
         bye = _assign_bye([bye_player], system)
 
-    pairings = _pair_without_repeats(working_players, system, seed_system, category_strict)
+    pairings = _maximum_weight_pairing(working_players, system, seed_system, category_strict)
     floating = []
     if pairings is None:
         groups = _groups(working_players, system, category_strict)

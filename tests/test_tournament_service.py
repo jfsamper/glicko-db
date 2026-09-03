@@ -227,6 +227,54 @@ def test_acceleration_policy_uses_rating_seed_and_expires_after_opening_rounds()
     assert all(player["acceleration"] == 0.0 for player in later_state.values())
 
 
+def test_participant_state_supplies_pairing_evaluation_inputs():
+    conn = create_db()
+    conn.execute("ALTER TABLE players ADD COLUMN country TEXT")
+    conn.execute("ALTER TABLE players ADD COLUMN club TEXT")
+    tournament_id = create_manual_tournament(conn, rounds=3, pairing_system="mcmahon")
+    conn.executemany(
+        """
+        INSERT INTO players
+            (id, first_name, last_name, display_name, rating, active, country, club)
+        VALUES (?, ?, ?, ?, ?, 1, ?, ?)
+        """,
+        [
+            (1, "Low", "Player", "Low Player", 1500, "CO", "Club A"),
+            (2, "High", "Player", "High Player", 2100, "JP", "Club B"),
+        ],
+    )
+    for player_id in (1, 2):
+        add_participant(conn, tournament_id, player_id)
+    conn.execute(
+        "UPDATE tournament_participants SET initial_score = CASE player_id WHEN 1 THEN 0 ELSE 2 END, category = CASE player_id WHEN 1 THEN '5K' ELSE '1D' END WHERE tournament_id = ?",
+        (tournament_id,),
+    )
+    round_id = conn.execute(
+        "INSERT INTO tournament_rounds (tournament_id, round_number, status) VALUES (?, 1, 'completed')",
+        (tournament_id,),
+    ).lastrowid
+    conn.execute(
+        """
+        INSERT INTO tournament_pairings
+            (round_id, board_number, white_player_id, black_player_id, result, handicap_stones)
+        VALUES (?, 1, 1, 2, '0-1', 2)
+        """,
+        (round_id,),
+    )
+    conn.commit()
+
+    state = _participant_state(conn, tournament_id)
+
+    assert state[1]["name"] == "Low Player"
+    assert state[1]["country"] == "CO"
+    assert state[1]["club"] == "Club A"
+    assert state[2]["category_order"] < state[1]["category_order"]
+    assert state[1]["draw_up_count"] == 1
+    assert state[2]["draw_down_count"] == 1
+    assert state[1]["colors"] == {"white": 0, "black": 0}
+    assert state[2]["colors"] == {"white": 0, "black": 0}
+
+
 def test_accelerated_standings_drop_virtual_points_after_acceleration_rounds():
     conn = create_db()
     conn.execute("ALTER TABLE tournaments ADD COLUMN acceleration_rounds INTEGER NOT NULL DEFAULT 1")
@@ -262,6 +310,10 @@ def test_accelerated_pairing_uses_first_round_results_for_second_round():
     conn.execute("ALTER TABLE tournaments ADD COLUMN acceleration_rounds INTEGER NOT NULL DEFAULT 1")
     conn.execute("ALTER TABLE tournaments ADD COLUMN acceleration_scheme TEXT NOT NULL DEFAULT '34:2,33:1,33:0'")
     tournament_id = create_manual_tournament(conn, rounds=3, pairing_system="accelerated_swiss")
+    conn.execute(
+        "UPDATE tournaments SET acceleration_rounds = 1 WHERE id = ?",
+        (tournament_id,),
+    )
     ratings = (2100, 2050, 2000, 1950, 1900, 1850, 1800, 1750)
     for player_id, rating in enumerate(ratings, 1):
         conn.execute(
@@ -274,8 +326,7 @@ def test_accelerated_pairing_uses_first_round_results_for_second_round():
 
     _, first_pairings = generate_next_round(conn, tournament_id)
     ratings_by_id = dict(enumerate(ratings, 1))
-    top_group_ids = {1, 2, 3, 4}
-    top_group_winners = []
+    first_round_winners = set()
     for pairing in first_pairings:
         if pairing["is_bye"]:
             continue
@@ -286,21 +337,18 @@ def test_accelerated_pairing_uses_first_round_results_for_second_round():
             "UPDATE tournament_pairings SET result = ? WHERE white_player_id = ? AND black_player_id = ?",
             (result, white_id, black_id),
         )
-        if {white_id, black_id} <= top_group_ids:
-            top_group_winners.append(
-                white_id if result == "1-0" else black_id
-            )
+        first_round_winners.add(white_id if result == "1-0" else black_id)
     conn.commit()
 
-    assert len(top_group_winners) == 2
     _, second_pairings = generate_next_round(conn, tournament_id)
-    second_pairs = {
-        frozenset((pairing["white_player_id"], pairing["black_player_id"]))
+
+    assert len(first_round_winners) == 4
+    assert all(
+        (pairing["white_player_id"] in first_round_winners)
+        == (pairing["black_player_id"] in first_round_winners)
         for pairing in second_pairings
         if not pairing["is_bye"]
-    }
-
-    assert frozenset(top_group_winners) in second_pairs
+    )
 
 
 def test_opengotha_import_persists_fuzzy_player_suggestion():

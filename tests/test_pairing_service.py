@@ -1,6 +1,8 @@
 import pytest
 
 from services.pairing_service import (
+    _draw_up_down_weight,
+    _pairing_positions,
     acceleration_for_rank,
     default_acceleration_rounds,
     format_rank_category,
@@ -398,6 +400,42 @@ def test_weighted_matching_keeps_a_complete_legal_pairing():
         frozenset((1, 3)),
         frozenset((2, 4)),
     }
+
+
+def test_weighted_matching_uses_one_rematch_when_required_for_completeness():
+    players = make_players(4)
+    players[1]["opponents"] = {3, 4}
+    players[2]["opponents"] = {2, 4}
+    players[3]["opponents"] = {2, 3}
+
+    pairings = pair_players(players, "swiss")
+    player_by_id = {player["id"]: player for player in players}
+
+    assert len(pairings) == 2
+    assert played_ids(pairings) == {1, 2, 3, 4}
+    assert sum(
+        pairing["black_player_id"]
+        in player_by_id[pairing["white_player_id"]]["opponents"]
+        for pairing in pairings
+    ) == 1
+
+
+def test_draw_up_down_weight_prefers_compensating_previous_floats():
+    compensating = make_players(2)
+    compensating[0].update(score=2, draw_up_count=1, draw_down_count=0)
+    compensating[1].update(score=1, draw_up_count=0, draw_down_count=1)
+    repeated = make_players(2)
+    repeated[0].update(score=2, draw_up_count=0, draw_down_count=1)
+    repeated[1].update(score=1, draw_up_count=1, draw_down_count=0)
+
+    compensating_weight = _draw_up_down_weight(
+        *compensating, _pairing_positions(compensating, "swiss"), "swiss"
+    )
+    repeated_weight = _draw_up_down_weight(
+        *repeated, _pairing_positions(repeated, "swiss"), "swiss"
+    )
+
+    assert compensating_weight > repeated_weight
 
 
 def test_swiss_cat_matching_prefers_intra_category_edges():
