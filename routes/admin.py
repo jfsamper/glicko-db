@@ -597,6 +597,7 @@ ADMIN_ROUTE_PERMISSIONS = {
     "admin.admin_reject_result_submission": "operator",
     "admin.admin_profile": "results_submitter",
     "admin.admin_report_results": "results_submitter",
+    "admin.admin_logout": "results_submitter",
     "admin.admin_import": "operator",
     "admin.admin_matches": "operator",
     "admin.admin_tournaments": "operator",

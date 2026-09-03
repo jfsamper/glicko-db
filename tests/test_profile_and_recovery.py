@@ -151,6 +151,18 @@ def test_profile_logout_button_clears_session_and_redirects(tmp_path, monkeypatc
     assert "/admin/login" in protected_response.headers["Location"]
 
 
+def test_member_can_access_logout_resource(tmp_path, monkeypatch):
+    app, _db_path, user_id = make_account_app(tmp_path, monkeypatch, role_name="member")
+    client = app.test_client()
+    authenticate_client(client, user_id, role_name="member")
+
+    response = client.get("/admin/logout?lang=en", follow_redirects=False)
+
+    assert response.status_code == 302
+    with client.session_transaction() as session:
+        assert session.get("user_id") is None
+
+
 def test_anonymous_preferences_are_saved_in_cookies(tmp_path, monkeypatch):
     app, _db_path, _user_id = make_account_app(tmp_path, monkeypatch)
     client = app.test_client()
