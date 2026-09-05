@@ -710,6 +710,63 @@ def test_next_round_persists_pairings_and_avoids_repeats():
     assert conn.execute("SELECT COUNT(*) FROM tournament_rounds").fetchone()[0] == 2
 
 
+def test_next_round_assigns_boards_by_pairing_leader_score_then_rating():
+    conn = create_db()
+    tournament_id = create_manual_tournament(conn, rounds=2, pairing_system="swiss")
+    ratings = {
+        1: 2200,
+        2: 2100,
+        3: 2050,
+        4: 2000,
+        5: 1950,
+        6: 1900,
+        7: 1850,
+        8: 1800,
+    }
+    for player_id, rating in ratings.items():
+        conn.execute(
+            "INSERT INTO players (id, first_name, last_name, display_name, rating, active) VALUES (?, ?, ?, ?, ?, 1)",
+            (player_id, "Player", str(player_id), f"Player {player_id}", rating),
+        )
+        add_participant(conn, tournament_id, player_id)
+
+    first_round_id = conn.execute(
+        "INSERT INTO tournament_rounds (tournament_id, round_number, status) VALUES (?, 1, 'completed')",
+        (tournament_id,),
+    ).lastrowid
+    conn.executemany(
+        "INSERT INTO tournament_pairings (round_id, board_number, white_player_id, black_player_id, result) VALUES (?, ?, ?, ?, ?)",
+        [
+            (first_round_id, 1, 1, 2, "0-1"),
+            (first_round_id, 2, 3, 4, "0-1"),
+            (first_round_id, 3, 5, 6, "0-1"),
+            (first_round_id, 4, 7, 8, "0-1"),
+        ],
+    )
+    conn.commit()
+
+    second_round_id, _ = generate_next_round(conn, tournament_id)
+    rows = conn.execute(
+        "SELECT board_number, white_player_id, black_player_id, is_bye FROM tournament_pairings WHERE round_id = ? ORDER BY board_number",
+        (second_round_id,),
+    ).fetchall()
+    scores = {player_id: 1 if player_id % 2 == 0 else 0 for player_id in ratings}
+    leaders = [
+        max(
+            (row["white_player_id"], row["black_player_id"]),
+            key=lambda player_id: (scores[player_id], ratings[player_id]),
+        )
+        for row in rows
+        if not row["is_bye"]
+    ]
+
+    assert [row["board_number"] for row in rows] == list(range(1, len(rows) + 1))
+    assert [(scores[player_id], ratings[player_id]) for player_id in leaders] == sorted(
+        ((scores[player_id], ratings[player_id]) for player_id in leaders),
+        reverse=True,
+    )
+
+
 def test_manual_mcmahon_participants_get_seed_initial_scores():
     conn = create_db()
     seed_players(conn)

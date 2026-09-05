@@ -16,6 +16,7 @@ from services.pairing_service import (
     DEFAULT_CATEGORY_ROUNDS,
     acceleration_for_rank,
     default_acceleration_rounds,
+    effective_score_for_player,
     mcmahon_initial_score,
     mcmahon_score_from_rank,
     pair_players,
@@ -1726,6 +1727,78 @@ def _participant_state(conn, tournament_id, acceleration_scheme=None, accelerati
     return state
 
 
+def _pairing_board_sort_key(pairing, state, pairing_system):
+    if pairing["is_bye"]:
+        return (1, 0.0, 0.0, "", 0)
+
+    players = [
+        state[player_id]
+        for player_id in (pairing["white_player_id"], pairing["black_player_id"])
+        if player_id in state
+    ]
+    if not players:
+        return (0, 0.0, 0.0, "", 0)
+
+    strongest = min(
+        players,
+        key=lambda player: (
+            -effective_score_for_player(player, pairing_system),
+            -float(player.get("rating", 0) or 0),
+            str(player.get("name", player["id"])).casefold(),
+            player["id"],
+        ),
+    )
+    return (
+        0,
+        -effective_score_for_player(strongest, pairing_system),
+        -float(strongest.get("rating", 0) or 0),
+        str(strongest.get("name", strongest["id"])).casefold(),
+        strongest["id"],
+    )
+
+
+def _reorder_round_boards(conn, tournament_id, round_id):
+    tournament = conn.execute(
+        "SELECT pairing_system FROM tournaments WHERE id = ?",
+        (tournament_id,),
+    ).fetchone()
+    if tournament is None:
+        raise ValueError("Tournament not found")
+
+    pairings = conn.execute(
+        """
+        SELECT id, is_bye, white_player_id, black_player_id
+        FROM tournament_pairings
+        WHERE round_id = ?
+        """,
+        (round_id,),
+    ).fetchall()
+    if len(pairings) < 2:
+        return
+
+    state = _participant_state(conn, tournament_id)
+    ordered_pairings = sorted(
+        pairings,
+        key=lambda pairing: _pairing_board_sort_key(
+            pairing, state, tournament["pairing_system"]
+        ),
+    )
+    highest_board = conn.execute(
+        "SELECT COALESCE(MAX(board_number), 0) FROM tournament_pairings WHERE round_id = ?",
+        (round_id,),
+    ).fetchone()[0]
+    for offset, pairing in enumerate(pairings, 1):
+        conn.execute(
+            "UPDATE tournament_pairings SET board_number = ? WHERE id = ?",
+            (highest_board + offset, pairing["id"]),
+        )
+    for board_number, pairing in enumerate(ordered_pairings, 1):
+        conn.execute(
+            "UPDATE tournament_pairings SET board_number = ? WHERE id = ?",
+            (board_number, pairing["id"]),
+        )
+
+
 def generate_next_round(conn, tournament_id):
     tournament = conn.execute("SELECT * FROM tournaments WHERE id = ?", (tournament_id,)).fetchone()
     if tournament is None:
@@ -1757,6 +1830,11 @@ def generate_next_round(conn, tournament_id):
         list(state.values()),
         tournament["pairing_system"],
         category_strict=pairing_policy["category_strict"],
+    )
+    pairings.sort(
+        key=lambda pairing: _pairing_board_sort_key(
+            pairing, state, tournament["pairing_system"]
+        )
     )
     conn.execute(
         "INSERT INTO tournament_rounds (tournament_id, round_number, status) VALUES (?, ?, 'scheduled')",
@@ -1843,6 +1921,7 @@ def set_round_player_status(conn, tournament_id, round_id, player_id, status):
             "UPDATE tournament_participants SET received_bye = 1 WHERE tournament_id = ? AND player_id = ?",
             (tournament_id, player_id),
         )
+        _reorder_round_boards(conn, tournament_id, round_id)
     conn.commit()
 
 
@@ -2087,6 +2166,7 @@ def manual_pair(conn, tournament_id, round_id, white_player_id, black_player_id,
         """,
         (round_id, board_number, white_player_id, black_player_id, handicap_stones),
     )
+    _reorder_round_boards(conn, tournament_id, round_id)
     conn.commit()
 
 
