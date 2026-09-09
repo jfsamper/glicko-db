@@ -62,7 +62,7 @@
           <p>{{ translations.tournament_type }}: {{ translations.get(tournament.tournament_type, tournament.tournament_type) }}</p>
           <p>{{ translations.players }}: {{ tournament.participant_count }}</p>
           <p>{{ translations.status }}: {{ translations.get(tournament.public_status, tournament.public_status) }}</p>
-          <a href="{{ url_for('tournament_page', tournament_id=tournament.id, lang=lang, show_drafts=1 if show_drafts else None) }}">{{ translations.open_link }}</a>
+          <p>{{ translations.date }}: {{ tournament.begin_date if tournament.begin_date else '' }} - {{ tournament.end_date if tournament.end_date else '' }}</p>
         </article>
       {% endfor %}
     </div>
