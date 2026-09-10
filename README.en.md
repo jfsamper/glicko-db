@@ -104,8 +104,8 @@ Keep a backup before importing a workbook that replaces the data.
 2. Add participants and choose Swiss, category Swiss, accelerated Swiss, or McMahon.
 3. Generate or manually manage pairings for each round.
 4. From the tournament screen, edit the name, location, round count, BYE points, and absence points.
-5. Enter results by clicking the winning player name or the result text. The text cycles through `-`, `1-0`, `1/2-1/2`, and `0-1`; clicking the selected winner again clears it. The winner is highlighted in bold green.
-6. Record BYEs and absences, generate the next round, review standings, and export results with the administration buttons.
+5. Enter results by clicking the winning player name or the result text. The text cycles through `-`, `1-0`, `1/2-1/2`, `0-1`, `1-!0`, `!0-1`, and `!0-0`; clicking the selected winner again clears it. The last three record Black absent, White absent, or both absent, respectively. They count for tournament standings but never for ratings, player profiles, or player summaries. The winner is highlighted in bold green.
+6. Record BYEs, generate the next round, review standings, and export results with the administration buttons.
 
 Standings positions are always unique and sequential; ties resolve through SOS, SOSOS, SODOS, rating, and name. The pairing algorithm avoids repeating a BYE for a player while another participant has not received one, and imported OpenGotha BYEs are recorded so future rounds respect that history.
 

@@ -11,6 +11,7 @@ import services.common as common
 import services.helpers as helpers
 import services.import_gotha as import_gotha
 import services.rating_service as rating_service
+from services.player_stats import build_player_result_summary
 
 
 def test_application_clock_uses_fixed_utc_minus_five_by_default():
@@ -41,6 +42,7 @@ def test_application_clock_uses_account_timezone_and_falls_back_for_invalid_valu
     db_path = tmp_path / "timezone.db"
     monkeypatch.setattr(common, "DB_PATH", str(db_path))
     conn = sqlite3.connect(db_path)
+    conn.row_factory = sqlite3.Row
     common.migrate_auth_schema(conn)
     user_id = conn.execute(
         "INSERT INTO users (username, password_hash, timezone) VALUES (?, ?, ?)",
@@ -291,6 +293,47 @@ def test_refresh_stats_aggregates_results_and_includes_inactive_players(monkeypa
         (3, 1, 0, 0, 1),
         (4, 0, 0, 0, 0),
     ]
+
+
+def test_absence_results_are_excluded_from_player_stats_and_summaries(monkeypatch, tmp_path):
+    db_path = tmp_path / "ratings.db"
+    conn = sqlite3.connect(db_path)
+    conn.row_factory = sqlite3.Row
+    conn.executescript(
+        """
+        CREATE TABLE players (
+            id INTEGER PRIMARY KEY,
+            games_played INTEGER DEFAULT 0,
+            wins INTEGER DEFAULT 0,
+            losses INTEGER DEFAULT 0,
+            draws INTEGER DEFAULT 0
+        );
+        CREATE TABLE matches (
+            id INTEGER PRIMARY KEY, match_date TEXT,
+            white_player_id INTEGER, black_player_id INTEGER, result TEXT
+        );
+        INSERT INTO players (id) VALUES (1), (2);
+        INSERT INTO matches VALUES
+            (1, '2026-09-01', 1, 2, '1-0'),
+            (2, '2026-09-02', 1, 2, '!0-1'),
+            (3, '2026-09-03', 1, 2, '1-!0'),
+            (4, '2026-09-04', 1, 2, '!0-0');
+        """
+    )
+    conn.commit()
+
+    monkeypatch.setattr(common, "get_db", lambda: sqlite3.connect(db_path))
+    common.refresh_stats()
+
+    rows = conn.execute(
+        "SELECT id, games_played, wins, losses, draws FROM players ORDER BY id"
+    ).fetchall()
+    assert [tuple(row) for row in rows] == [(1, 1, 1, 0, 0), (2, 1, 0, 1, 0)]
+    assert build_player_result_summary(1, conn) == "X"
+    assert rating_service.parse_result("!0-1") is None
+    assert rating_service.parse_result("1-!0") is None
+    assert rating_service.parse_result("!0-0") is None
+    conn.close()
 
 
 def test_mark_dirty_keeps_the_earliest_affected_match_date(monkeypatch, tmp_path):

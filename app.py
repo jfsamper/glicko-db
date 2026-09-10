@@ -129,7 +129,7 @@ def init_db():
             match_date TEXT NOT NULL,
             white_player_id INTEGER NOT NULL,
             black_player_id INTEGER NOT NULL,
-            result TEXT NOT NULL CHECK(result IN ('1-0', '0-1', '1/2-1/2')),
+            result TEXT NOT NULL CHECK(result IN ('1-0', '0-1', '1/2-1/2', '!0-1', '1-!0', '!0-0')),
             event TEXT,
             notes TEXT,
             round_number INTEGER NOT NULL DEFAULT 0,
@@ -315,7 +315,7 @@ def migrate_matches_notes_schema(conn):
             match_date TEXT NOT NULL,
             white_player_id INTEGER NOT NULL,
             black_player_id INTEGER NOT NULL,
-            result TEXT NOT NULL CHECK(result IN ('1-0', '0-1', '1/2-1/2')),
+            result TEXT NOT NULL CHECK(result IN ('1-0', '0-1', '1/2-1/2', '!0-1', '1-!0', '!0-0')),
             event TEXT,
             notes TEXT,
             round_number INTEGER NOT NULL DEFAULT 0,
@@ -353,6 +353,48 @@ def migrate_handicap_schema(conn):
             conn.execute(
                 f"ALTER TABLE {table} ADD COLUMN handicap_stones INTEGER NOT NULL DEFAULT 0"
             )
+    conn.commit()
+
+
+def migrate_match_result_schema(conn):
+    """Allow tournament absence results in existing matches tables."""
+    table_sql = conn.execute(
+        "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'matches'"
+    ).fetchone()
+    if table_sql is None or "'!0-1'" in (table_sql[0] or ""):
+        return
+
+    conn.execute("ALTER TABLE matches RENAME TO matches__legacy_result_values")
+    conn.execute(
+        """
+        CREATE TABLE matches (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            match_date TEXT NOT NULL,
+            white_player_id INTEGER NOT NULL,
+            black_player_id INTEGER NOT NULL,
+            result TEXT NOT NULL CHECK(result IN ('1-0', '0-1', '1/2-1/2', '!0-1', '1-!0', '!0-0')),
+            event TEXT,
+            notes TEXT,
+            round_number INTEGER NOT NULL DEFAULT 0,
+            tournament_pairing_id INTEGER,
+            handicap_stones INTEGER NOT NULL DEFAULT 0,
+            CHECK (white_player_id != black_player_id),
+            FOREIGN KEY (white_player_id) REFERENCES players(id) ON DELETE CASCADE,
+            FOREIGN KEY (black_player_id) REFERENCES players(id) ON DELETE CASCADE
+        )
+        """
+    )
+    conn.execute(
+        """
+        INSERT INTO matches
+            (id, match_date, white_player_id, black_player_id, result, event,
+             notes, round_number, tournament_pairing_id, handicap_stones)
+        SELECT id, match_date, white_player_id, black_player_id, result, event,
+               notes, round_number, tournament_pairing_id, handicap_stones
+        FROM matches__legacy_result_values
+        """
+    )
+    conn.execute("DROP TABLE matches__legacy_result_values")
     conn.commit()
 
 
@@ -904,6 +946,7 @@ def initialize_app():
     bootstrap_default_admin_account(conn)
     ensure_player_schema_columns(conn)
     migrate_matches_notes_schema(conn)
+    migrate_match_result_schema(conn)
     migrate_tournament_match_identity_schema(conn)
     normalize_match_round_values(conn)
     migrate_handicap_schema(conn)

@@ -441,6 +441,7 @@ TRANSLATIONS = {
         "remove_player": "Eliminar jugador",
         "manual_pair": "Emparejamiento manual",
         "unpair": "Desemparejar",
+        "unpair_all": "Desemparejar todos",
         "pair_selected": "Emparejar seleccionados",
         "round_results": "Resultados de la ronda",
         "mark_absent": "Marcar ausente",
@@ -525,6 +526,7 @@ TRANSLATIONS = {
         "last_name_label": "Apellido",
         "slug_label": "Slug",
         "save_changes": "Guardar cambios",
+        "process": "Procesar",
         "change": "Cambio",
         "ratings_heading": "Ratings",
         "refresh_stats_title": "Actualizar estadísticas",
@@ -924,6 +926,7 @@ TRANSLATIONS = {
         "remove_player": "Remove player",
         "manual_pair": "Manual pairing",
         "unpair": "Unpair",
+        "unpair_all": "Unpair all",
         "pair_selected": "Pair selected",
         "round_results": "Round results",
         "mark_absent": "Mark absent",
@@ -1007,6 +1010,7 @@ TRANSLATIONS = {
         "last_name_label": "Last Name",
         "slug_label": "Slug",
         "save_changes": "Save Changes",
+        "process": "Process",
         "ratings_heading": "Ratings",
         "refresh_stats_title": "Refresh Statistics",
         "refresh_stats_desc": "Recalculate wins, losses and games played.",
@@ -1403,6 +1407,7 @@ TRANSLATIONS = {
         "remove_player": "Remover jogador",
         "manual_pair": "Emparelhamento manual",
         "unpair": "Desemparelhar",
+        "unpair_all": "Desemparelhar todos",
         "pair_selected": "Emparelhar selecionados",
         "round_results": "Resultados da rodada",
         "mark_absent": "Marcar ausente",
@@ -1487,6 +1492,7 @@ TRANSLATIONS = {
         "last_name_label": "Sobrenome",
         "slug_label": "Slug",
         "save_changes": "Salvar alterações",
+        "process": "Processar",
         "ratings_heading": "Ratings",
         "refresh_stats_title": "Atualizar estatísticas",
         "refresh_stats_desc": "Recalcule vitórias, derrotas e partidas jogadas.",
@@ -2234,6 +2240,7 @@ def refresh_stats(conn=None):
                 CASE WHEN result = '0-1' THEN 1 ELSE 0 END AS losses,
                 CASE WHEN result NOT IN ('1-0', '0-1') THEN 1 ELSE 0 END AS draws
             FROM matches
+            WHERE result NOT LIKE '!%' AND result NOT LIKE '%!%'
             UNION ALL
             SELECT
                 black_player_id AS player_id,
@@ -2242,6 +2249,7 @@ def refresh_stats(conn=None):
                 CASE WHEN result = '1-0' THEN 1 ELSE 0 END AS losses,
                 CASE WHEN result NOT IN ('1-0', '0-1') THEN 1 ELSE 0 END AS draws
             FROM matches
+            WHERE result NOT LIKE '!%' AND result NOT LIKE '%!%'
         ),
         totals AS (
             SELECT player_id, SUM(games) AS games, SUM(wins) AS wins,

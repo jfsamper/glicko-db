@@ -3,7 +3,7 @@ from datetime import datetime
 from pathlib import Path
 
 import conftest
-from app import app, migrate_matches_notes_schema, migrate_tournament_schema, normalize_match_round_values
+from app import app, migrate_match_result_schema, migrate_matches_notes_schema, migrate_tournament_schema, normalize_match_round_values
 import routes.admin as admin_routes
 import services.common as common
 
@@ -65,6 +65,30 @@ def test_match_round_migration_backfills_numeric_keys_without_replacing_notes():
         (None, 0),
     ]
     conn.close()
+
+
+def test_match_result_migration_preserves_rows_and_allows_absence_results():
+    conn = sqlite3.connect(":memory:")
+    conn.executescript(
+        """
+        CREATE TABLE players (id INTEGER PRIMARY KEY);
+        CREATE TABLE matches (
+            id INTEGER PRIMARY KEY, match_date TEXT NOT NULL,
+            white_player_id INTEGER NOT NULL, black_player_id INTEGER NOT NULL,
+            result TEXT NOT NULL CHECK(result IN ('1-0', '0-1', '1/2-1/2')),
+            event TEXT, notes TEXT, round_number INTEGER NOT NULL DEFAULT 0,
+            tournament_pairing_id INTEGER, handicap_stones INTEGER NOT NULL DEFAULT 0
+        );
+        INSERT INTO matches VALUES (1, '2026-09-01', 1, 2, '1-0', NULL, NULL, 0, NULL, 0);
+        """
+    )
+
+    migrate_match_result_schema(conn)
+    conn.execute(
+        "INSERT INTO matches (match_date, white_player_id, black_player_id, result) VALUES ('2026-09-02', 1, 2, '!0-1')"
+    )
+
+    assert conn.execute("SELECT result FROM matches ORDER BY id").fetchall() == [("1-0",), ("!0-1",)]
 
 
 def test_migration_upgrades_partial_legacy_tournament_tables():

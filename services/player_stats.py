@@ -16,7 +16,7 @@ def summarize_result(player_id, match):
 
 def build_player_result_summary(player_id, conn):
     matches = conn.execute(
-        "SELECT white_player_id, black_player_id, result FROM matches WHERE white_player_id = ? OR black_player_id = ? ORDER BY match_date DESC LIMIT 8",
+        "SELECT white_player_id, black_player_id, result FROM matches WHERE (white_player_id = ? OR black_player_id = ?) AND result NOT LIKE '%!%' ORDER BY match_date DESC LIMIT 8",
         (player_id, player_id),
     ).fetchall()
     return "".join(summarize_result(player_id, match) for match in matches)
@@ -34,7 +34,7 @@ def build_recent_result_summaries(conn, limit=8, days=90):
         """
         SELECT id, match_date, white_player_id, black_player_id, result
         FROM matches
-        WHERE match_date >= ?
+        WHERE match_date >= ? AND result NOT LIKE '%!%'
         ORDER BY match_date DESC, id DESC
         """,
         (cutoff,),

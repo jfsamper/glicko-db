@@ -28,7 +28,7 @@ from services.standings_service import calculate_standings
 
 SUPPORTED_SYSTEMS = {"swiss", "swiss_cat", "accelerated_swiss", "mcmahon"}
 TOURNAMENT_STATUSES = ("draft", "active", "canceled", "completed")
-VALID_TOURNAMENT_RESULTS = {"1-0", "0-1", "1/2-1/2"}
+VALID_TOURNAMENT_RESULTS = {"1-0", "0-1", "1/2-1/2", "!0-1", "1-!0", "!0-0"}
 
 
 def normalize_tournament_system(value, default="swiss"):
@@ -766,8 +766,9 @@ def _round_is_complete(conn, round_id):
     ).fetchone()[0]
     if total_pairings == 0:
         return True
+    result_placeholders = ", ".join("?" for _ in VALID_TOURNAMENT_RESULTS)
     completed_pairings = conn.execute(
-        "SELECT COUNT(*) FROM tournament_pairings WHERE round_id = ? AND is_bye = 0 AND result IN (?, ?, ?)",
+        f"SELECT COUNT(*) FROM tournament_pairings WHERE round_id = ? AND is_bye = 0 AND result IN ({result_placeholders})",
         (round_id, *sorted(VALID_TOURNAMENT_RESULTS)),
     ).fetchone()[0]
     return completed_pairings == total_pairings
@@ -800,8 +801,9 @@ def _refresh_tournament_completion_state(conn, tournament_id, round_id=None):
     if round_row is None:
         return
 
+    result_placeholders = ", ".join("?" for _ in VALID_TOURNAMENT_RESULTS)
     played_pairings = conn.execute(
-        "SELECT COUNT(*) FROM tournament_pairings WHERE round_id = ? AND is_bye = 0 AND result IN (?, ?, ?)",
+        f"SELECT COUNT(*) FROM tournament_pairings WHERE round_id = ? AND is_bye = 0 AND result IN ({result_placeholders})",
         (round_id, *sorted(VALID_TOURNAMENT_RESULTS)),
     ).fetchone()[0]
     total_pairings = conn.execute(
@@ -1883,7 +1885,7 @@ def generate_next_round(conn, tournament_id):
 
 
 def set_round_player_status(conn, tournament_id, round_id, player_id, status):
-    if status not in {"bye", "absent"}:
+    if status != "bye":
         raise ValueError("Invalid round player status")
     valid_round = conn.execute(
         "SELECT 1 FROM tournament_rounds WHERE id = ? AND tournament_id = ?",
@@ -2347,6 +2349,25 @@ def unpair(conn, tournament_id, pairing_id):
         )
         _refresh_tournament_completion_state(conn, tournament_id, pairing["round_id"])
     conn.commit()
+
+
+def unpair_all(conn, tournament_id, round_id):
+    round_row = conn.execute(
+        "SELECT id FROM tournament_rounds WHERE id = ? AND tournament_id = ?",
+        (round_id, tournament_id),
+    ).fetchone()
+    if round_row is None:
+        raise ValueError("Round not found")
+    pairing_ids = [
+        row["id"]
+        for row in conn.execute(
+            "SELECT id FROM tournament_pairings WHERE round_id = ? ORDER BY id",
+            (round_id,),
+        ).fetchall()
+    ]
+    for pairing_id in pairing_ids:
+        unpair(conn, tournament_id, pairing_id)
+    return len(pairing_ids)
 
 
 def sync_pairing_match(conn, tournament_id, pairing_id):

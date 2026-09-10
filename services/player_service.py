@@ -222,7 +222,7 @@ def _player_result_record(player_id, match):
 
 def _summarize_matches_for_period(conn, player_id, start_date=None, end_date=None):
     result = {"wins": 0, "losses": 0, "draws": 0}
-    clauses = ["(white_player_id = ? OR black_player_id = ?)"]
+    clauses = ["(white_player_id = ? OR black_player_id = ?)", "result NOT LIKE '%!%'"]
     params = [player_id, player_id]
 
     if start_date is not None and end_date is not None:
@@ -266,7 +266,7 @@ def load_player(
     season = str(season or "").strip()
     if not (season.isdigit() and len(season) == 4):
         season = ""
-    match_condition = "m.white_player_id = ? OR m.black_player_id = ?"
+    match_condition = "(m.white_player_id = ? OR m.black_player_id = ?) AND m.result NOT LIKE '%!'"
     match_params = [player["id"], player["id"]]
     if season:
         match_condition = f"({match_condition}) AND m.match_date GLOB ?"

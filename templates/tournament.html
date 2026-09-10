@@ -47,7 +47,7 @@
                 {% if pairing.black_player_id %}<a href="{{ url_for('player_profile', id=pairing.black_player_id, lang=lang) }}">{{ pairing.black_name }}</a>{% else %}{{ pairing.black_name }}{% endif %}
               </td>
               <td>
-                {% if pairing.result == '1-0' %}{{ translations.white_wins }}{% elif pairing.result == '0-1' %}{{ translations.black_wins }}{% elif pairing.result == '1/2-1/2' %}{{ translations.draw_result }}{% else %}-{% endif %}
+                {% if pairing.result == '1-0' %}{{ translations.white_wins }}{% elif pairing.result == '0-1' %}{{ translations.black_wins }}{% elif pairing.result == '1/2-1/2' %}{{ translations.draw_result }}{% elif pairing.result in ('!0-1', '1-!0', '!0-0') %}{{ pairing.result }}{% else %}-{% endif %}
               </td>
             </tr>
           {% endfor %}
@@ -83,7 +83,7 @@
                 {% endif %}
               </td>
               <td class="standings-category">{% if row.rank_label %} {{ row.rank_label }}{% endif %}</td>
-              {% for round in rounds|reverse %}<td class="standings-round">{% for item in row.round_results if item.round == round.round_number %}{{ item.opponent }}{{ item.result }}{% else %}-{% endfor %}</td>{% endfor %}<td>{{ row.primary_score }}</td>{% if tournament.tournament_type == 'mcmahon' %}<td>{{ row.mms }}</td>{% endif %}<td>{{ row.wins }}</td><td>{{ row.sos }}</td><td>{{ row.sosos }}</td>
+              {% for round in rounds|reverse %}<td class="standings-round">{% for item in row.round_results if item.round == round.round_number %}{{ item.display if item.display else item.opponent }}{% if not item.display %}{{ item.result }}{% endif %}{% else %}-{% endfor %}</td>{% endfor %}<td>{{ row.primary_score }}</td>{% if tournament.tournament_type == 'mcmahon' %}<td>{{ row.mms }}</td>{% endif %}<td>{{ row.wins }}</td><td>{{ row.sos }}</td><td>{{ row.sosos }}</td>
             </tr>
           {% endfor %}
         </tbody>

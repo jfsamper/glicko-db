@@ -60,12 +60,12 @@ def _matches_in_period(conn, start_date=None, end_date=None):
     normalized_match_date = _normalized_sql_date("match_date")
     if start_date is None and end_date is None:
         return conn.execute(
-            "SELECT id, match_date, white_player_id, black_player_id, result FROM matches ORDER BY match_date, id"
+            "SELECT id, match_date, white_player_id, black_player_id, result FROM matches WHERE result NOT LIKE '%!%' ORDER BY match_date, id"
         ).fetchall()
 
     query = (
         "SELECT id, match_date, white_player_id, black_player_id, result "
-        "FROM matches WHERE "
+        "FROM matches WHERE result NOT LIKE '%!%' AND "
     )
     params = []
     clauses = []
@@ -257,6 +257,7 @@ def build_player_badges(player_id, translations=None, conn=None):
         SELECT substr(match_date, 1, 4) AS year, white_player_id, black_player_id, result
         FROM matches
         WHERE match_date IS NOT NULL
+                      AND result NOT LIKE '%!%'
           AND substr(match_date, 1, 4) GLOB '[0-9][0-9][0-9][0-9]'
         """
     ).fetchall()

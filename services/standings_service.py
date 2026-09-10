@@ -27,10 +27,12 @@ def _value(row, key, default=None):
 def _result_points(result, player_id, white_player_id, black_player_id):
     if result in (None, ""):
         return 0.0, False
-    if result == "1-0":
+    if result in {"1-0", "1-!0"}:
         return (1.0 if player_id == white_player_id else 0.0), True
-    if result == "0-1":
+    if result in {"0-1", "!0-1"}:
         return (1.0 if player_id == black_player_id else 0.0), True
+    if result == "!0-0":
+        return 0.0, True
     if result == "1/2-1/2":
         return 0.5, True
     return 0.0, False
@@ -145,8 +147,13 @@ def calculate_standings(
         if black_id not in rank_by_player:
             continue
         result = _value(game, "result")
-        white_result = "+" if result == "1-0" else "-" if result == "0-1" else "=" if result == "1/2-1/2" else "?"
-        black_result = "+" if result == "0-1" else "-" if result == "1-0" else "=" if result == "1/2-1/2" else "?"
-        standings[white_id]["round_results"].append({"round": round_number, "opponent": rank_by_player[black_id], "result": white_result})
-        standings[black_id]["round_results"].append({"round": round_number, "opponent": rank_by_player[white_id], "result": black_result})
+        white_result = "+" if result in {"1-0", "1-!0"} else "-" if result in {"0-1", "!0-1"} else "=" if result == "1/2-1/2" else "-" if result == "!0-0" else "?"
+        black_result = "+" if result in {"0-1", "!0-1"} else "-" if result in {"1-0", "1-!0", "!0-0"} else "=" if result == "1/2-1/2" else "?"
+        white_round_result = {"round": round_number, "opponent": rank_by_player[black_id], "result": white_result}
+        black_round_result = {"round": round_number, "opponent": rank_by_player[white_id], "result": black_result}
+        if "!" in str(result or ""):
+            white_round_result["display"] = f"!{rank_by_player[black_id]}{white_result}"
+            black_round_result["display"] = f"!{rank_by_player[white_id]}{black_result}"
+        standings[white_id]["round_results"].append(white_round_result)
+        standings[black_id]["round_results"].append(black_round_result)
     return ordered

@@ -15,6 +15,10 @@
   <div class="panel-header">
     <h2>{{ tournament.name }}</h2>
     <p>{{ translations.tournament_type }}: {{ translations.get(tournament.tournament_type, tournament.tournament_type) }} | {{ translations.status }}: {{ translations.get(tournament.status, tournament.status) }}</p>
+    <form method="post" action="{{ url_for('admin_save_tournament', tournament_id=tournament.id, lang=lang) }}" class="inline-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+      <button type="submit" class="button">{{ translations.process }}</button>
+    </form>
   </div>
 
   <div class="card">
@@ -45,10 +49,6 @@
     <div class="tournament-actions">
       <a class="button" href="{{ url_for('admin_tournament_settings', tournament_id=tournament.id, lang=lang) }}">{{ translations.settings }}</a>
       <a class="button" href="{{ url_for('admin_tournament_players', tournament_id=tournament.id, lang=lang) }}">{{ translations.player_management }}</a>
-      <form method="post" action="{{ url_for('admin_save_tournament', tournament_id=tournament.id, lang=lang) }}" class="inline-form">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-        <button type="submit" class="button">{{ translations.save_changes }}</button>
-      </form>
       <a class="button" href="{{ url_for('admin_export_tournament_results', tournament_id=tournament.id, lang=lang) }}">{{ translations.export_results }}</a>
     </div>
     {% if pending_players %}
@@ -151,6 +151,11 @@
     <article class="card paired-tables-card">
       <h3>{{ translations.paired_tables }}</h3>
     {% if selected_pairings %}
+      <form class="inline-form" method="post" action="{{ url_for('admin_unpair_all', tournament_id=tournament.id, lang=lang) }}" data-async-admin-action="1">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        <input type="hidden" name="round_id" value="{{ selected_round_id }}">
+        <button type="submit" class="unpair-button" title="{{ translations.unpair_all }}">{{ translations.unpair_all }}</button>
+      </form>
       <table class="table-stack">
         <thead><tr><th>{{ translations.tournament_round }}</th><th>{{ translations.board }}</th><th>{{ translations.white }}</th><th>{{ translations.black }}</th><th>{{ translations.result }}</th><th>{{ translations.actions_label }}</th></tr></thead>
         <tbody>
@@ -186,9 +191,18 @@
               {% elif pairing.result == '1/2-1/2' %}
                 {% set next_result = '0-1' %}
                 {% set result_label = '1/2-1/2' %}
+              {% elif pairing.result == '0-1' %}
+                {% set next_result = '1-!0' %}
+                {% set result_label = '0-1' %}
+              {% elif pairing.result == '1-!0' %}
+                {% set next_result = '!0-1' %}
+                {% set result_label = '1-!0' %}
+              {% elif pairing.result == '!0-1' %}
+                {% set next_result = '!0-0' %}
+                {% set result_label = '!0-1' %}
               {% else %}
                 {% set next_result = '' %}
-                {% set result_label = '0-1' %}
+                {% set result_label = '!0-0' %}
               {% endif %}
               <form method="post" action="{{ url_for('admin_set_tournament_result', tournament_id=tournament.id, lang=lang) }}" class="pairing-result-form" data-async-admin-action="1">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
@@ -249,33 +263,6 @@
       </form>
     </article>
 
-    <article class="card round-results-card">
-      <h3>{{ translations.round_results }}</h3>
-      {% if selected_round_id and unpaired_players %}
-        <form method="post" action="{{ url_for('admin_set_round_player_status', tournament_id=tournament.id, lang=lang) }}" class="filter-form" data-async-admin-action="1">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-          <div class="filter-panel">
-            <input type="hidden" name="round_id" value="{{ selected_round_id }}">
-            <div class="filter-grid">
-              <div class="filter-item wide">
-                <label for="absent_player_id">{{ translations.player }}</label>
-                <select id="absent_player_id" name="player_id" required>
-                  {% for player in unpaired_players %}<option value="{{ player.player_id }}">{{ player.display_name }}</option>{% endfor %}
-                </select>
-              </div>
-            </div>
-            <div class="filter-actions">
-              <button type="submit" name="status" value="absent" class="button">{{ translations.mark_absent }}</button>
-            </div>
-          </div>
-        </form>
-      {% endif %}
-      {% if absent_players %}
-        <div class="mini-list">
-          {% for player in absent_players %}<div class="mini-row"><strong>{{ player.display_name }}</strong><span>{{ translations.absent }}</span></div>{% endfor %}
-        </div>
-      {% endif %}
-    </article>
   </div>
 
 
@@ -287,7 +274,7 @@
         <tbody>
           {% for row in standings %}
           <tr>
-            <td class="standings-rank">{{ row.rank }}</td><td class="standings-player">{{ row.name }}{% if row.rank_label %} ({{ row.rank_label }}){% endif %}</td>{% for round in rounds|reverse %}<td class="standings-round">{% for item in row.round_results if item.round == round.round_number %}{{ item.opponent }}{{ item.result }}{% else %}-{% endfor %}</td>{% endfor %}<td>{{ row.primary_score }}</td>{% if tournament.tournament_type == 'mcmahon' %}<td>{{ row.mms }}</td>{% endif %}<td>{{ row.wins }}</td><td>{{ row.sos }}</td><td>{{ row.sosos }}</td><td>{{ row.sodos }}</td>
+            <td class="standings-rank">{{ row.rank }}</td><td class="standings-player">{{ row.name }}{% if row.rank_label %} ({{ row.rank_label }}){% endif %}</td>{% for round in rounds|reverse %}<td class="standings-round">{% for item in row.round_results if item.round == round.round_number %}{{ item.display if item.display else item.opponent }}{% if not item.display %}{{ item.result }}{% endif %}{% else %}-{% endfor %}</td>{% endfor %}<td>{{ row.primary_score }}</td>{% if tournament.tournament_type == 'mcmahon' %}<td>{{ row.mms }}</td>{% endif %}<td>{{ row.wins }}</td><td>{{ row.sos }}</td><td>{{ row.sosos }}</td><td>{{ row.sodos }}</td>
           </tr>
           {% endfor %}
         </tbody>

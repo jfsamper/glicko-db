@@ -105,8 +105,8 @@ Conserva una copia de seguridad antes de importar un libro que reemplace los dat
 2. Agrega participantes y elige suizo, suizo por categoría, suizo acelerado o McMahon.
 3. Genera o administra manualmente los emparejamientos de cada ronda.
 4. En la pantalla del torneo puedes editar el nombre, lugar, número de rondas, puntos de BYE y puntos de ausencia.
-5. Registra resultados haciendo clic en el nombre del jugador ganador o en el texto del resultado. El texto recorre `-`, `1-0`, `1/2-1/2` y `0-1`; volver a hacer clic en el ganador lo deselecciona. El ganador queda resaltado en negrita y verde.
-6. Registra descansos y ausencias, genera la siguiente ronda, revisa la clasificación y exporta los resultados con los botones de administración.
+5. Registra resultados haciendo clic en el nombre del jugador ganador o en el texto del resultado. El texto recorre `-`, `1-0`, `1/2-1/2`, `0-1`, `1-!0`, `!0-1` y `!0-0`; volver a hacer clic en el ganador lo deselecciona. Los tres últimos resultados registran la ausencia de negras, la ausencia de blancas o la ausencia de ambos, respectivamente. Cuentan para la clasificación del torneo, pero no para ratings, perfiles ni resúmenes de jugadores. El ganador queda resaltado en negrita y verde.
+6. Registra descansos, genera la siguiente ronda, revisa la clasificación y exporta los resultados con los botones de administración.
 
 Las posiciones de la clasificación son siempre únicas y secuenciales; los empates se resuelven con SOS, SOSOS, SODOS, rating y nombre. El emparejamiento evita repetir el BYE en un mismo jugador mientras otro participante no lo haya recibido, y los BYE importados de OpenGotha quedan registrados para que las rondas futuras respeten ese historial.
 

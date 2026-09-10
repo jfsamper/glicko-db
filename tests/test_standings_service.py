@@ -141,3 +141,21 @@ def test_round_results_use_opponent_final_rank_and_result_marker():
         {"round": 1, "opponent": next(row["rank"] for row in result if row["id"] == 2), "result": "+"},
         {"round": 2, "opponent": next(row["rank"] for row in result if row["id"] == 3), "result": "-"},
     ]
+
+
+def test_round_results_mark_absence_outcomes():
+    games = [
+        {"round_number": 1, "white_player_id": 1, "black_player_id": 2, "result": "1-!0"},
+        {"round_number": 1, "white_player_id": 3, "black_player_id": 4, "result": "!0-1"},
+        {"round_number": 2, "white_player_id": 1, "black_player_id": 3, "result": "!0-0"},
+    ]
+
+    result = calculate_standings(players(), games)
+    player_one = next(row for row in result if row["id"] == 1)
+    player_two = next(row for row in result if row["id"] == 2)
+    player_three = next(row for row in result if row["id"] == 3)
+
+    assert player_one["round_results"][0]["display"] == f"!{player_two['rank']}+"
+    assert player_two["round_results"][0]["display"] == f"!{player_one['rank']}-"
+    assert player_three["round_results"][0]["display"] == f"!{next(row['rank'] for row in result if row['id'] == 4)}-"
+    assert player_one["round_results"][1]["display"] == f"!{player_three['rank']}-"

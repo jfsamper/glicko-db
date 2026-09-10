@@ -128,8 +128,8 @@ from services.tournament_service import (
     TOURNAMENT_STATUSES,
     save_tournament_matches,
     unpair,
+    unpair_all,
     set_pairing_result,
-    set_round_player_status,
     pair_selected_players,
     sync_match_pairing,
     sync_tournament_matches,
@@ -1759,9 +1759,7 @@ def admin_delete_tournament(tournament_id):
 @admin_bp.route("/admin/tournaments/<int:tournament_id>/status", methods=["POST"])
 def admin_update_tournament_status(tournament_id):
     if not admin_required():
-        return redirect(
-            url_for("admin_login", lang=get_language(request.args.get("lang")))
-        )
+        return redirect(url_for("admin_login", lang=get_language(request.args.get("lang"))))
     lang = get_language(request.args.get("lang"))
     status = request.form.get("status", "").strip()
     if status not in TOURNAMENT_STATUSES:
@@ -2423,43 +2421,6 @@ def admin_delete_pending_player(tournament_id):
     destination = "admin_tournament_players" if request.form.get("return_to") == "players" else "admin_tournament"
     return redirect(url_for(destination, tournament_id=tournament_id, lang=lang))
 
-@admin_bp.route("/admin/tournaments/<int:tournament_id>/round-status", methods=["POST"])
-def admin_set_round_player_status(tournament_id):
-    if not admin_required():
-        return redirect(url_for("admin_login", lang=get_language(request.args.get("lang"))))
-    lang = get_language(request.args.get("lang"))
-    conn = get_db()
-    try:
-        round_id = request.form.get("round_id", type=int)
-        player_id = request.form.get("player_id", type=int)
-        status = request.form.get("status", "")
-        set_round_player_status(
-            conn,
-            tournament_id,
-            round_id,
-            player_id,
-            status,
-        )
-        log_admin_action(
-            "tournament_player_status_updated",
-            "tournament_round_player",
-            {"tournament_id": tournament_id, "round_id": round_id, "player_id": player_id, "status": status},
-            user_id=session.get("user_id"),
-        )
-        flash(TRANSLATIONS[lang]["success"])
-    except ValueError as exc:
-        flash(f"{TRANSLATIONS[lang]['error']}: {exc}")
-    finally:
-        conn.close()
-    return redirect_or_json(
-        url_for(
-            "admin_tournament",
-            tournament_id=tournament_id,
-            lang=lang,
-            round_id=request.form.get("round_id", type=int),
-        )
-    )
-
 @admin_bp.route("/admin/tournaments/<int:tournament_id>/participants/remove", methods=["POST"])
 def admin_remove_tournament_participant(tournament_id):
     if not admin_required():
@@ -2652,6 +2613,44 @@ def admin_unpair(tournament_id):
     finally:
         conn.close()
     return redirect_or_json(url_for("admin_tournament", tournament_id=tournament_id, lang=lang, round_id=request.form.get("round_id", type=int)))
+
+@admin_bp.route("/admin/tournaments/<int:tournament_id>/unpair-all", methods=["POST"])
+def admin_unpair_all(tournament_id):
+    if not admin_required():
+        return redirect(url_for("admin_login", lang=get_language(request.args.get("lang"))))
+    lang = get_language(request.args.get("lang"))
+    round_id = request.form.get("round_id", type=int)
+    conn = get_db()
+    try:
+        pairing_ids = [
+            row["id"]
+            for row in conn.execute(
+                "SELECT id FROM tournament_pairings WHERE round_id = ?",
+                (round_id,),
+            ).fetchall()
+        ]
+        previous_dates = conn.execute(
+            "SELECT match_date FROM matches WHERE tournament_pairing_id IN (SELECT id FROM tournament_pairings WHERE round_id = ?)",
+            (round_id,),
+        ).fetchall()
+        removed = unpair_all(conn, tournament_id, round_id)
+        log_admin_action(
+            "tournament_round_pairings_removed",
+            "tournament_round",
+            {"tournament_id": tournament_id, "round_id": round_id, "pairing_ids": pairing_ids},
+            user_id=session.get("user_id"),
+        )
+        if removed:
+            refresh_stats()
+            for row in previous_dates:
+                mark_dirty(row["match_date"])
+            update_from_latest_snapshot()
+        flash(TRANSLATIONS[lang]["success"])
+    except ValueError as exc:
+        flash(f"{TRANSLATIONS[lang]['error']}: {exc}")
+    finally:
+        conn.close()
+    return redirect_or_json(url_for("admin_tournament", tournament_id=tournament_id, lang=lang, round_id=round_id))
 
 @admin_bp.route("/admin/tournaments/<int:tournament_id>/result", methods=["POST"])
 def admin_set_tournament_result(tournament_id):

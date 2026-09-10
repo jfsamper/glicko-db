@@ -104,8 +104,8 @@ Mantenha uma cópia de segurança antes de importar uma planilha que substitua o
 2. Adicione participantes e escolha suíço, suíço por categoria, suíço acelerado ou McMahon.
 3. Gere ou administre manualmente os emparelhamentos de cada rodada.
 4. Na tela do torneio, edite nome, local, número de rodadas, pontos de BYE e pontos de ausência.
-5. Registre resultados clicando no nome do jogador vencedor ou no texto do resultado. O texto percorre `-`, `1-0`, `1/2-1/2` e `0-1`; clicar novamente no vencedor selecionado limpa o resultado. O vencedor aparece destacado em negrito e verde.
-6. Registre BYEs e ausências, gere a rodada seguinte, revise a classificação e exporte os resultados com os botões administrativos.
+5. Registre resultados clicando no nome do jogador vencedor ou no texto do resultado. O texto percorre `-`, `1-0`, `1/2-1/2`, `0-1`, `1-!0`, `!0-1` e `!0-0`; clicar novamente no vencedor selecionado limpa o resultado. Os três últimos registram, respectivamente, ausência das pretas, ausência das brancas ou ausência de ambos. Eles contam para a classificação do torneio, mas nunca para ratings, perfis ou resumos dos jogadores. O vencedor aparece destacado em negrito e verde.
+6. Registre BYEs, gere a rodada seguinte, revise a classificação e exporte os resultados com os botões administrativos.
 
 As posições da classificação são sempre únicas e sequenciais; os empates são resolvidos por SOS, SOSOS, SODOS, rating e nome. O emparelhamento evita repetir o BYE para um jogador enquanto outro participante ainda não o recebeu, e os BYEs importados do OpenGotha são registrados para que as rodadas futuras respeitem esse histórico.
 

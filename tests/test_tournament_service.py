@@ -36,6 +36,7 @@ from services.tournament_service import (
     sync_match_pairing,
     sync_tournament_matches,
     unpair,
+    unpair_all,
     update_pairing,
 )
 from services.pairing_service import default_acceleration_rounds
@@ -1297,60 +1298,6 @@ def test_odd_roster_persists_a_bye():
     ).fetchone()[0] == 1
 
 
-def test_set_round_player_status_rejects_players_already_paired_in_round():
-    conn = create_db()
-    seed_players(conn)
-    tournament_id = create_manual_tournament(conn, rounds=5, pairing_system="swiss")
-    for player_id in range(1, 11):
-        add_participant(conn, tournament_id, player_id)
-    round_id, _ = generate_next_round(conn, tournament_id)
-
-    pairing = conn.execute(
-        "SELECT white_player_id, black_player_id FROM tournament_pairings WHERE round_id = ? AND is_bye = 0 LIMIT 1",
-        (round_id,),
-    ).fetchone()
-
-    try:
-        set_round_player_status(conn, tournament_id, round_id, pairing["white_player_id"], "absent")
-    except ValueError as exc:
-        assert "already paired" in str(exc).lower()
-    else:
-        raise AssertionError("Players already paired in a round should not be marked absent or bye")
-
-
-def test_manual_pair_and_selected_pairing_ignore_players_already_marked_for_the_round():
-    conn = create_db()
-    seed_players(conn)
-    tournament_id = create_manual_tournament(conn, rounds=5, pairing_system="swiss")
-    for player_id in range(1, 11):
-        add_participant(conn, tournament_id, player_id)
-    round_id, _ = generate_next_round(conn, tournament_id)
-
-    conn.execute("DELETE FROM tournament_pairings WHERE round_id = ?", (round_id,))
-    conn.execute("DELETE FROM tournament_round_players WHERE round_id = ?", (round_id,))
-    conn.commit()
-    set_round_player_status(conn, tournament_id, round_id, 1, "absent")
-
-    try:
-        manual_pair(conn, tournament_id, round_id, 1, 2)
-    except ValueError as exc:
-        assert "already marked" in str(exc).lower()
-    else:
-        raise AssertionError("A player already marked absent/bye in a round must not be paired manually")
-
-    pair_selected_players(conn, tournament_id, round_id, [1, 2, 3])
-
-    paired = conn.execute(
-        "SELECT COUNT(*) FROM tournament_pairings WHERE round_id = ? AND (white_player_id = 1 OR black_player_id = 1)",
-        (round_id,),
-    ).fetchone()[0]
-    assert paired == 0
-    assert conn.execute(
-        "SELECT COUNT(*) FROM tournament_pairings WHERE round_id = ?",
-        (round_id,),
-    ).fetchone()[0] >= 1
-
-
 def test_manual_pair_and_unpair_respect_round_occupancy():
     conn = create_db()
     seed_players(conn)
@@ -1374,6 +1321,23 @@ def test_manual_pair_and_unpair_respect_round_occupancy():
         (round_id, pairing["white_player_id"], pairing["black_player_id"]),
     ).fetchone()
     assert repaired["board_number"] == pairing["board_number"]
+
+
+def test_unpair_all_removes_every_pairing_and_round_occupancy():
+    conn = create_db()
+    seed_players(conn)
+    tournament_id = create_manual_tournament(conn, rounds=1, pairing_system="swiss")
+    for player_id in range(1, 6):
+        add_participant(conn, tournament_id, player_id)
+    round_id, _ = generate_next_round(conn, tournament_id)
+
+    assert unpair_all(conn, tournament_id, round_id) == 3
+    assert conn.execute(
+        "SELECT COUNT(*) FROM tournament_pairings WHERE round_id = ?", (round_id,)
+    ).fetchone()[0] == 0
+    assert conn.execute(
+        "SELECT COUNT(*) FROM tournament_round_players WHERE round_id = ?", (round_id,)
+    ).fetchone()[0] == 0
 
 
 def test_delete_tournament_removes_all_dependent_records():
@@ -1416,7 +1380,7 @@ def test_delete_missing_tournament_is_rejected():
         raise AssertionError("Expected missing tournament deletion to fail")
 
 
-def test_manual_bye_and_absence_are_recorded_for_a_round():
+def test_manual_bye_is_recorded_for_a_round():
     conn = create_db()
     seed_players(conn)
     tournament_id = create_manual_tournament(conn, rounds=5, pairing_system="swiss")
@@ -1429,7 +1393,7 @@ def test_manual_bye_and_absence_are_recorded_for_a_round():
     ).fetchall()
     assert len(unpaired) == 0
 
-    # Make a fresh round with an even roster and manually change two statuses.
+    # Make a fresh round with an even roster and manually add a BYE.
     conn.execute("DELETE FROM tournament_pairings")
     conn.execute("DELETE FROM tournament_round_players")
     conn.execute("DELETE FROM tournament_rounds")
@@ -1441,13 +1405,12 @@ def test_manual_bye_and_absence_are_recorded_for_a_round():
     conn.execute("DELETE FROM tournament_round_players WHERE round_id = ?", (round_id,))
     conn.commit()
     set_round_player_status(conn, tournament_id, round_id, 1, "bye")
-    set_round_player_status(conn, tournament_id, round_id, 2, "absent")
 
     statuses = dict(conn.execute(
         "SELECT player_id, status FROM tournament_round_players WHERE round_id = ?",
         (round_id,),
     ).fetchall())
-    assert statuses == {1: "bye", 2: "absent"}
+    assert statuses == {1: "bye"}
 
 
 def test_selected_pairing_turns_one_player_into_bye_and_pairs_multiple_players():
@@ -1580,6 +1543,33 @@ def test_process_tournament_round_matches_inserts_completed_pairings_into_rating
     ).fetchall()
     assert all(row["notes"] == str(round_number) for row in matches)
     assert all(row["round_number"] == round_number for row in matches)
+
+
+def test_absence_results_score_pairings_and_materialize_matches():
+    conn = create_db()
+    seed_players(conn)
+    tournament_id = create_manual_tournament(conn, rounds=1, pairing_system="swiss")
+    for player_id in (1, 2, 3, 4):
+        add_participant(conn, tournament_id, player_id)
+    round_id, _ = generate_next_round(conn, tournament_id)
+    pairings = conn.execute(
+        "SELECT id, white_player_id, black_player_id FROM tournament_pairings WHERE round_id = ? AND is_bye = 0 ORDER BY board_number",
+        (round_id,),
+    ).fetchall()
+
+    set_pairing_result(conn, tournament_id, pairings[0]["id"], "1-!0")
+    set_pairing_result(conn, tournament_id, pairings[1]["id"], "!0-0")
+
+    standings = {row["id"]: row for row in get_tournament_standings(conn, tournament_id)}
+    first_pairing = pairings[0]
+    second_pairing = pairings[1]
+    assert standings[first_pairing["white_player_id"]]["score"] == 1.0
+    assert standings[first_pairing["black_player_id"]]["score"] == 0.0
+    assert standings[second_pairing["white_player_id"]]["score"] == 0.0
+    assert standings[second_pairing["black_player_id"]]["score"] == 0.0
+    assert [tuple(row) for row in conn.execute("SELECT result FROM matches ORDER BY tournament_pairing_id").fetchall()] == [
+        ("1-!0",), ("!0-0",)
+    ]
 
 
 def test_completed_pairing_and_materialized_match_stay_in_sync():
