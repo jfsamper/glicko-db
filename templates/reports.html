@@ -42,7 +42,7 @@
   <article class="card">
     <h3>{{ translations.get('report_players', 'Player performance') }}{% if season %} - {{ season }}{% endif %}</h3>
     <div class="table-wrapper">
-      <table class="table-stack player-performance-table">
+      <div class="table-wrapper"><table class="table-stack player-performance-table">
         <thead><tr><th>{{ translations.get('position', 'Rank') }}</th><th>{{ translations.get('player', 'Player') }}</th><th>{{ translations.get('games', 'Games') }}</th><th>{{ translations.get('wins', 'Wins') }}</th><th>{{ translations.get('losses', 'Losses') }}</th><th>{{ translations.get('win_pct', 'Win percentage') }}</th><th>{{ translations.get('rating_change_points', 'Rating points') }}</th><th>{{ translations.get('rating_change_percentage', 'Rating %') }}</th><th>{{ translations.get('export_report', 'Export') }}</th></tr></thead>
         <tbody>
         {% for player in report.players %}
@@ -56,7 +56,7 @@
           </tr>
         {% else %}<tr><td colspan="9">{{ translations.get('report_empty', 'No games in this period.') }}</td></tr>{% endfor %}
         </tbody>
-      </table>
+      </table></div>
     </div>
     {% if total_count > page_size %}
       <div class="pagination-summary">
@@ -83,9 +83,9 @@
   {% if report.selected_player_id %}
   <article class="card">
     <h3>{{ translations.get('opponent_records', 'Results vs opponents') }}</h3>
-    <table class="table-stack"><thead><tr><th>{{ translations.get('opponent', 'Opponent') }}</th><th>{{ translations.get('games', 'Games') }}</th><th>{{ translations.get('wins', 'Wins') }}</th><th>{{ translations.get('losses', 'Losses') }}</th><th>{{ translations.get('draws', 'Draws') }}</th><th>{{ translations.get('win_pct', 'Win percentage') }}</th></tr></thead>
+    <div class="table-wrapper"><table class="table-stack"><thead><tr><th>{{ translations.get('opponent', 'Opponent') }}</th><th>{{ translations.get('games', 'Games') }}</th><th>{{ translations.get('wins', 'Wins') }}</th><th>{{ translations.get('losses', 'Losses') }}</th><th>{{ translations.get('draws', 'Draws') }}</th><th>{{ translations.get('win_pct', 'Win percentage') }}</th></tr></thead>
       <tbody>{% for opponent in report.opponents %}<tr><td>{{ opponent.display_name }}</td><td>{{ opponent.games }}</td><td>{{ opponent.wins }}</td><td>{{ opponent.losses }}</td><td>{{ opponent.draws }}</td><td>{{ opponent.win_percentage }}%</td></tr>{% else %}<tr><td colspan="6">{{ translations.get('report_empty', 'No games in this period.') }}</td></tr>{% endfor %}</tbody>
-    </table>
+    </table></div>
   </article>
   {% endif %}
 
@@ -111,7 +111,7 @@
 
   <div class="card-grid">
     {% for key, title, label in [('countries', translations.get('report_countries', 'Performance by opponent country'), translations.get('country', 'Country')), ('clubs', translations.get('report_clubs', 'Performance by opponent club'), translations.get('club', 'Club'))] %}
-    <article class="card"><h3>{{ title }}</h3><table class="table-stack"><thead><tr><th>{{ label }}</th><th>{{ translations.get('games', 'Games') }}</th><th>{{ translations.get('wins', 'Wins') }}</th><th>{{ translations.get('win_pct', 'Win percentage') }}</th></tr></thead><tbody>{% for group in report[key] %}<tr><td>{{ group.display_name }}</td><td>{{ group.games }}</td><td>{{ group.wins }}</td><td>{{ group.win_percentage }}%</td></tr>{% else %}<tr><td colspan="4">{{ translations.get('report_empty', 'No games in this period.') }}</td></tr>{% endfor %}</tbody></table></article>
+    <article class="card"><h3>{{ title }}</h3><div class="table-wrapper"><table class="table-stack"><thead><tr><th>{{ label }}</th><th>{{ translations.get('games', 'Games') }}</th><th>{{ translations.get('wins', 'Wins') }}</th><th>{{ translations.get('win_pct', 'Win percentage') }}</th></tr></thead><tbody>{% for group in report[key] %}<tr><td>{{ group.display_name }}</td><td>{{ group.games }}</td><td>{{ group.wins }}</td><td>{{ group.win_percentage }}%</td></tr>{% else %}<tr><td colspan="4">{{ translations.get('report_empty', 'No games in this period.') }}</td></tr>{% endfor %}</tbody></table></div></article>
     {% endfor %}
   </div>
 

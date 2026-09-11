@@ -117,7 +117,7 @@
       </div>
     </form>
     {% if tournaments %}
-      <table class="table-stack">
+      <div class="table-wrapper"><table class="table-stack">
         <thead><tr><th>{{ translations.tournament_name }}</th><th>{{ translations.tournament_type }}</th><th>{{ translations.rounds }}</th><th>{{ translations.status }}</th><th>{{ translations.actions_label }}</th></tr></thead>
         <tbody>
           {% for tournament in tournaments %}
@@ -145,7 +145,7 @@
           </tr>
           {% endfor %}
         </tbody>
-      </table>
+      </table></div>
     {% else %}
       <p>{{ translations.no_tournaments }}</p>
     {% endif %}

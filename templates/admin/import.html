@@ -138,7 +138,7 @@
         </div>
       </div>
 
-      <table class="table-stack">
+      <div class="table-wrapper"><table class="table-stack">
         <thead>
           <tr>
             <th>Player</th>
@@ -175,7 +175,7 @@
             </tr>
           {% endfor %}
         </tbody>
-      </table>
+      </table></div>
 
       <form id="commit-preview-form" method="post" action="{{ url_for('admin_import', lang=lang) }}" style="margin-top: 1rem;">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>

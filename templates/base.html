@@ -212,7 +212,7 @@
 
     function scheduleTopNavClose() {
       window.clearTimeout(topNavCloseTimer);
-      if (window.matchMedia("(max-width: 720px)").matches) {
+      if (window.matchMedia("(max-width: 900px)").matches) {
         topNavCloseTimer = window.setTimeout(closeTopNav, 5000);
       }
     }
@@ -239,7 +239,7 @@
       });
 
       window.addEventListener("resize", () => {
-        if (!window.matchMedia("(max-width: 720px)").matches) closeTopNav();
+        if (!window.matchMedia("(max-width: 900px)").matches) closeTopNav();
       });
     }
     </script>

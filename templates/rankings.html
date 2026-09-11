@@ -15,6 +15,7 @@
   <article class="card rankings-table-card">
       <h3>{{ translations.table_heading }}</h3>
       <p class="muted">{{ translations.recent_results }}</p>
+      <div class="table-wrapper">
       <table class="table-stack">
         <thead>
           <tr>
@@ -41,6 +42,7 @@
         {% endfor %}
         </tbody>
       </table>
+      </div>
 
       {% if total_count > 10 %}
         <div class="pagination-summary">

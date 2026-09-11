@@ -48,6 +48,7 @@ button {
   border-radius: 8px;
   padding: 0.7rem 1rem;
   cursor: pointer;
+  white-space: nowrap;
 }
 
 .filter-form {
@@ -63,6 +64,15 @@ button {
   padding: 0;
   background: transparent;
   max-width: none;
+}
+
+.inline-actions,
+.admin-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
 }
 
 .result-submissions-table {
@@ -148,6 +158,10 @@ button {
   grid-template-columns: minmax(0, 2.2fr) minmax(160px, 0.8fr);
   gap: 1rem;
   align-items: end;
+}
+
+.stats-grid {
+  min-width: 0;
 }
 
 .filter-item {
@@ -416,5 +430,15 @@ button {
   .filter-actions a.button {
     width: 100%;
     text-align: center;
+  }
+}
+
+@media (min-width: 721px) and (max-width: 900px) {
+  .filter-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .filter-panel {
+    padding-inline: 0.9rem;
   }
 }

@@ -51,7 +51,7 @@
   </form>
 
   <div class="card-grid" style="display: block; margin-top: 1%;">
-    <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; width: 100%; margin: 0 auto 1rem auto;">
+    <div class="player-result-cards" style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; width: 100%; margin: 0 auto 1rem auto;">
       <article class="card" style="height: 100%;">
         <h3>{{ translations.total_results }}</h3>
         <p class="metric small">{{ stats.total.wins }}-{{ stats.total.losses }}{% if stats.total.draws %}-{{ stats.total.draws }}{% endif %}</p>
@@ -145,9 +145,9 @@
               data-category="{{ glicko_to_category(rating_chart.points[-1].rating, 1) }}"
               data-x="{{ rating_chart.points[-1].x }}"
               data-y="{{ rating_chart.points[-1].y }}"></circle>
-            <text x="-20" y="18" class="chart-label">{{ glicko_to_category(rating_chart.label_max, 1) }}</text>
-            <text x="-20" y="110" class="chart-label">{{ glicko_to_category(((rating_chart.label_max + rating_chart.label_min) / 2), 1) }}</text>
-            <text x="-20" y="195" class="chart-label">{{ glicko_to_category(rating_chart.label_min, 1) }}</text>
+            <text x="4" y="18" class="chart-label">{{ glicko_to_category(rating_chart.label_max, 1) }}</text>
+            <text x="4" y="110" class="chart-label">{{ glicko_to_category(((rating_chart.label_max + rating_chart.label_min) / 2), 1) }}</text>
+            <text x="4" y="195" class="chart-label">{{ glicko_to_category(rating_chart.label_min, 1) }}</text>
             <text x="20" y="215" class="chart-label">{{ datetime.strptime(rating_chart.points[0].date, '%Y-%m-%d').strftime('%m/%y') }}</text>
             <text x="300" y="215" class="chart-label">{{ datetime.strptime(rating_chart.points[(rating_chart.points|length // 2)].date, '%Y-%m-%d').strftime('%m/%y') }}</text>
             <text x="570" y="215" class="chart-label">{{ datetime.strptime(rating_chart.points[-1].date, '%Y-%m-%d').strftime('%m/%y') }}</text>
@@ -187,9 +187,9 @@
 <section class="panel">
   <div class="panel-header centered-header"><h3>{{ translations.tournament_overview }}</h3></div>
   {% if tournaments %}
-    <table class="table-stack"><thead><tr><th>{{ translations.final_position }}</th><th>{{ translations.date }}</th><th>{{ translations.tournament_name }}</th><th>{{ translations.score }}</th><th>{{ translations.tournament_type }}</th></tr></thead>
+    <div class="table-wrapper"><table class="table-stack"><thead><tr><th>{{ translations.final_position }}</th><th>{{ translations.date }}</th><th>{{ translations.tournament_name }}</th><th>{{ translations.score }}</th><th>{{ translations.tournament_type }}</th></tr></thead>
       <tbody>{% for tournament in tournaments %}<tr><td class="{% if tournament.final_position|int == 1 %}position-medal position-gold{% elif tournament.final_position|int == 2 %}position-medal position-silver{% elif tournament.final_position|int == 3 %}position-medal position-copper{% endif %}">{{ tournament.final_position }}</td><td>{{ tournament.begin_date }}</td><td><a href="{{ url_for('tournament_page', tournament_id=tournament.id, lang=lang) }}">{{ tournament.name }}</a></td><td>{{ tournament.score }}</td><td>{{ translations.get(tournament.tournament_type, tournament.tournament_type) }}</td></tr>{% endfor %}</tbody>
-    </table>
+    </table></div>
   {% else %}<p class="muted">{{ translations.no_tournament_history }}</p>{% endif %}
   {% if total_tournaments > 10 %}
     <div class="pagination-summary">
@@ -212,7 +212,7 @@
     <h3>{{ translations.opponent_records }}</h3>
   </div>
 
-  <table class="table-stack">
+  <div class="table-wrapper"><table class="table-stack">
     <thead>
       <tr>
         <th style="text-align:left;">{{ translations.opponent }}</th>
@@ -267,14 +267,14 @@
       </tr>
       {% endfor %}
     </tbody>
-  </table>
+  </table></div>
 </section>
 
 <section class="panel">
   <div class="panel-header centered-header">
     <h3>{{ translations.match_history }}</h3>
   </div>
-  <table class="table-stack">
+  <div class="table-wrapper"><table class="table-stack">
     <thead>
       <tr>
         <th>{{ translations.date }}</th>
@@ -337,7 +337,7 @@
     </tr>
     {% endfor %}
     </tbody>
-  </table>
+  </table></div>
 
   {% if total_matches > 10 %}
     <div class="pagination-summary">

@@ -251,6 +251,7 @@ nav a:hover,
   padding: 0.7rem 1rem;
   border-radius: 8px;
   text-decoration: none;
+  white-space: nowrap;
 }
 
 .button.secondary {
@@ -409,7 +410,7 @@ nav a:hover,
   }
 }
 
-@media (max-width: 720px) {
+@media (max-width: 900px) {
   header,
   footer {
     padding: 0.85rem 1rem;
@@ -516,7 +517,7 @@ nav a:hover,
 
   .top-nav-link {
     color: var(--text);
-    white-space: normal;
+    white-space: nowrap;
   }
 
   .content-area {

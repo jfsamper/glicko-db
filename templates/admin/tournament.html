@@ -156,7 +156,7 @@
         <input type="hidden" name="round_id" value="{{ selected_round_id }}">
         <button type="submit" class="unpair-button" title="{{ translations.unpair_all }}">{{ translations.unpair_all }}</button>
       </form>
-      <table class="table-stack">
+      <div class="table-wrapper"><table class="table-stack">
         <thead><tr><th>{{ translations.tournament_round }}</th><th>{{ translations.board }}</th><th>{{ translations.white }}</th><th>{{ translations.black }}</th><th>{{ translations.result }}</th><th>{{ translations.actions_label }}</th></tr></thead>
         <tbody>
           {% for pairing in selected_pairings if not pairing.is_bye %}
@@ -250,7 +250,7 @@
           </tr>
           {% endfor %}
         </tbody>
-      </table>
+      </table></div>
     {% else %}
       <p>{{ translations.no_paired_tables }}</p>
     {% endif %}
@@ -269,8 +269,8 @@
   <div class="card">
     <h3>{{ translations.standings }}</h3>
     {% if standings %}
-      <table class="table-stack standings-table">
-        <thead><tr><th class="standings-rank">N°</th><th class="standings-player">{{ translations.player }}</th>{% for round in rounds|reverse %}<th class="standings-round">R{{ round.round_number }}</th>{% endfor %}<th>{{ translations.score }}</th>{% if tournament.tournament_type == 'mcmahon' %}<th>{{ translations.mms or 'MMS' }}</th>{% endif %}<th>{{ translations.wins }}</th><th>{{ translations.sos }}</th><th>{{ translations.sosos }}</th><th>{{ translations.sodos }}</th></tr></thead>
+      <div class="table-wrapper"><table class="table-stack standings-table">
+        <thead><tr><th class="standings-rank">N°</th><th class="standings-player">{{ translations.player }}</th>{% for round in rounds|reverse %}<th class="standings-round">R{{ round.round_number }}</th>{% endfor %}<th><abbr title="{{ translations.score }}">{{ translations.score_abbr }}</abbr></th>{% if tournament.tournament_type == 'mcmahon' %}<th>{{ translations.mms or 'MMS' }}</th>{% endif %}<th><abbr title="{{ translations.wins }}">{{ translations.wins_abbr }}</abbr></th><th>{{ translations.sos }}</th><th>{{ translations.sosos }}</th><th>{{ translations.sodos }}</th></tr></thead>
         <tbody>
           {% for row in standings %}
           <tr>
@@ -278,7 +278,7 @@
           </tr>
           {% endfor %}
         </tbody>
-      </table>
+      </table></div>
     {% else %}
       <p>{{ translations.no_tournaments }}</p>
     {% endif %}

@@ -5,6 +5,25 @@
   table-layout: fixed;
 }
 
+.table-wrapper {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-gutter: stable;
+}
+
+.table-wrapper .table-stack {
+  width: max-content;
+  min-width: 100%;
+  table-layout: auto;
+}
+
+.table-wrapper .table-stack th,
+.table-wrapper .table-stack td {
+  white-space: nowrap;
+}
+
 .table-stack th,
 .table-stack td {
   padding: 0.75rem;
@@ -30,6 +49,15 @@
 
 .standings-table {
   table-layout: fixed;
+}
+
+.standings-table th {
+  white-space: nowrap;
+}
+
+.standings-table th abbr {
+  text-decoration: none;
+  cursor: help;
 }
 
 .standings-rank {
@@ -179,11 +207,6 @@
   .card {
     max-width: 100%;
     overflow-x: auto;
-  }
-
-  .table-wrapper {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
   }
 
   .table-stack {

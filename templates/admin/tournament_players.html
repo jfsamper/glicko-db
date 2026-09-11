@@ -24,7 +24,7 @@
     <article class="card">
       <h3>{{ translations.participant_list }}</h3>
       {% if participants %}
-        <table class="table-stack">
+        <div class="table-wrapper"><table class="table-stack">
           <thead><tr><th>{{ translations.player }}</th><th>{{ translations.rating }}</th><th>{{ translations.actions_label }}</th></tr></thead>
           <tbody>
             {% for participant in participants %}
@@ -50,7 +50,7 @@
             </tr>
             {% endfor %}
           </tbody>
-        </table>
+        </table></div>
       {% else %}
         <p>{{ translations.no_unpaired_players }}</p>
       {% endif %}
