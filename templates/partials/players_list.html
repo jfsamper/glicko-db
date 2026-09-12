@@ -103,7 +103,7 @@
         
         <div class="admin-actions">
             <a class="text-link" href="{{ url_for('admin_edit_player', id=player.id, lang=lang) }}">
-            <button type="submit" style="width: 85%;">  
+            <button type="submit">  
             {{ translations.edit_heading }} </button>
             </a>
             <form style="background-color: var(--card);" action="{{ url_for('admin_delete_player', id=player.id, lang=lang) }}" method="post"
