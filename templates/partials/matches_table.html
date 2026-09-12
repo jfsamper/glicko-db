@@ -71,6 +71,7 @@
         </a>
       </th>
       <th>{{translations.event}}</th>
+      <th>{{ translations.match_record }}</th>
       {% if admin_mode %}
         <th>{{ translations.actions_label }}</th>
       {% endif %}
@@ -113,6 +114,14 @@
 
         <td>{{ match.event or "" }}</td>
 
+        <td>
+          {% if match.sgf_filename %}
+            <a class="text-link" href="{{ url_for('match_record', match_id=match.id, lang=lang) }}">{{ translations.view_record }}</a>
+          {% else %}
+            -
+          {% endif %}
+        </td>
+
         {% if admin_mode %}
           <td>
             <a class="text-link" href="{{ url_for('admin_edit_match', id=match.id, lang=lang) }}">
@@ -135,7 +144,7 @@
     {% else %}
 
       <tr>
-        <td colspan="{% if admin_mode %}7{% else %}6{% endif %}">
+        <td colspan="{% if admin_mode %}8{% else %}7{% endif %}">
           {{ translations.no_matches_found }}
         </td>
       </tr>

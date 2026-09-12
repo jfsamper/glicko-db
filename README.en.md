@@ -107,6 +107,8 @@ Keep a backup before importing a workbook that replaces the data.
 5. Enter results by clicking the winning player name or the result text. The text cycles through `-`, `1-0`, `1/2-1/2`, `0-1`, `1-!0`, `!0-1`, and `!0-0`; clicking the selected winner again clears it. The last three record Black absent, White absent, or both absent, respectively. They count for tournament standings but never for ratings, player profiles, or player summaries. The winner is highlighted in bold green.
 6. Record BYEs, generate the next round, review standings, and export results with the administration buttons.
 
+Optional SGF records uploaded with a match are stored under `uploads/sgf/` with a safe generated filename. On save, their main properties are normalized to match the database players, ranks, place/event, date, and result. Records approved from `Report Results` use the same process.
+
 Standings positions are always unique and sequential; ties resolve through SOS, SOSOS, SODOS, rating, and name. The pairing algorithm avoids repeating a BYE for a player while another participant has not received one, and imported OpenGotha BYEs are recorded so future rounds respect that history.
 
 When an OpenGotha import finds a similar name, it shows a database player suggestion. Click the suggested name to link it immediately to the existing player, or use the selector to create a new player or choose another player.

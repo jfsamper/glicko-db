@@ -15,12 +15,14 @@ from datetime import datetime
 
 from flask import (
     Blueprint,
+    abort,
     jsonify,
     Response,
     flash,
     redirect,
     render_template,
     request,
+    send_file,
     session,
     url_for,
 )
@@ -95,6 +97,14 @@ from services.player_service import (
 from services.rating_service import get_dirty_date, get_rating_config, mark_dirty, recompute_ratings, update_from_latest_snapshot, update_rating_config
 from services.category_service import get_category_config, update_category_config
 from services.recaptcha import verify_recaptcha
+from services.sgf_service import (
+    delete_sgf_file,
+    ensure_sgf_schema,
+    get_sgf_path,
+    match_sgf_metadata,
+    save_sgf_upload,
+    update_sgf_metadata,
+)
 from services.pairing_service import (
     ACCELERATION_SCHEMES,
     DEFAULT_ACCELERATION_CATEGORIES,
@@ -819,7 +829,10 @@ def admin_report_results():
             result = (request.form.get("result") or "").strip()
             match_date = (request.form.get("match_date") or "").strip()
             event = (request.form.get("event") or "").strip()
+            location = (request.form.get("location") or "").strip()
             notes = (request.form.get("notes") or "").strip()
+            sgf_file = request.files.get("sgf_file")
+            sgf_filename = None
             if player_id is None:
                 flash(TRANSLATIONS[lang]["player_link_required"])
             elif color not in {"white", "black"}:
@@ -853,15 +866,27 @@ def admin_report_results():
                     if duplicate is not None:
                         valid = False
                         message = TRANSLATIONS[lang]["duplicate_submission"]
+                if valid and sgf_file and sgf_file.filename:
+                    try:
+                        sgf_filename = save_sgf_upload(
+                            sgf_file,
+                            match_sgf_metadata(
+                                conn, white_player_id, black_player_id, match_date, result, event,
+                                location=location,
+                            ),
+                        )
+                    except ValueError:
+                        valid = False
+                        message = f"{TRANSLATIONS[lang]['error']}: {TRANSLATIONS[lang].get('invalid_sgf', 'Invalid SGF file')}"
                 if valid:
                     conn.execute(
                         """
                         INSERT INTO result_submissions
                             (submitted_by_user_id, match_date, white_player_id, black_player_id,
-                             result, event, notes, handicap_stones)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                                result, event, location, notes, handicap_stones, sgf_filename)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                         """,
-                        (user["id"], match_date, white_player_id, black_player_id, result, event, notes, handicap_stones),
+                            (user["id"], match_date, white_player_id, black_player_id, result, event, location, notes, handicap_stones, sgf_filename),
                     )
                     conn.commit()
                     log_admin_action(
@@ -943,6 +968,31 @@ def admin_result_submissions():
     )
 
 
+@admin_bp.route("/admin/result-submissions/<int:submission_id>/sgf")
+def admin_result_submission_sgf(submission_id):
+    permission_error = require_permission("operator")
+    if permission_error is not None:
+        return permission_error
+    conn = get_db()
+    submission = conn.execute(
+        "SELECT sgf_filename FROM result_submissions WHERE id = ?",
+        (submission_id,),
+    ).fetchone()
+    conn.close()
+    if submission is None:
+        abort(404)
+    path = get_sgf_path(submission["sgf_filename"])
+    if path is None:
+        abort(404)
+    return send_file(
+        path,
+        mimetype="application/x-go-sgf",
+        as_attachment=False,
+        download_name=f"submission-{submission_id}.sgf",
+        max_age=0,
+    )
+
+
 @admin_bp.route("/admin/result-submissions/<int:submission_id>/approve", methods=["POST"])
 def admin_approve_result_submission(submission_id):
     permission_error = require_permission("operator")
@@ -951,6 +1001,7 @@ def admin_approve_result_submission(submission_id):
     lang = get_language(request.args.get("lang"))
     conn = get_db()
     try:
+        ensure_sgf_schema(conn)
         submission = conn.execute(
             "SELECT * FROM result_submissions WHERE id = ? AND status = 'pending'",
             (submission_id,),
@@ -962,12 +1013,12 @@ def admin_approve_result_submission(submission_id):
         match_id = conn.execute(
             """
             INSERT INTO matches
-                (match_date, white_player_id, black_player_id, result, event, notes, round_number, handicap_stones)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                (match_date, white_player_id, black_player_id, result, event, location, notes, round_number, handicap_stones, sgf_filename)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (submission["match_date"], submission["white_player_id"], submission["black_player_id"],
-             submission["result"], submission["event"], submission["notes"], submission["round_number"],
-             submission["handicap_stones"]),
+             submission["result"], submission["event"], submission["location"], submission["notes"],
+             submission["round_number"], submission["handicap_stones"], submission["sgf_filename"]),
         ).lastrowid
         conn.execute(
             """
@@ -1006,6 +1057,10 @@ def admin_reject_result_submission(submission_id):
     lang = get_language(request.args.get("lang"))
     conn = get_db()
     try:
+        submission = conn.execute(
+            "SELECT sgf_filename FROM result_submissions WHERE id = ? AND status = 'pending'",
+            (submission_id,),
+        ).fetchone()
         updated = conn.execute(
             """
             UPDATE result_submissions
@@ -1020,6 +1075,8 @@ def admin_reject_result_submission(submission_id):
     if not updated:
         flash(TRANSLATIONS[lang]["submission_not_pending"])
     else:
+        if submission is not None:
+            delete_sgf_file(submission["sgf_filename"])
         log_admin_action(
             "result_submission_rejected",
             "result_submission",
@@ -1509,6 +1566,7 @@ def admin_matches():
     filter_sql, filter_params = _match_filter_sql(date_from, date_to, player_id)
 
     conn = get_db()
+    ensure_sgf_schema(conn)
     total_count = conn.execute(
         f"SELECT COUNT(*) FROM matches m {filter_sql}",
         filter_params,
@@ -1532,7 +1590,8 @@ def admin_matches():
             p_black.id AS black_id,
             p_white.display_name AS white_name,
             p_black.display_name AS black_name,
-            m.result
+            m.result,
+            m.sgf_filename
         FROM matches m
         JOIN players p_white ON p_white.id = m.white_player_id
         JOIN players p_black ON p_black.id = m.black_player_id
@@ -2837,6 +2896,7 @@ def admin_add_match():
 
     lang = get_language(request.args.get("lang"))
     conn = get_db()
+    ensure_sgf_schema(conn)
 
     if request.method == "POST":
         match_date = request.form.get("match_date", "").strip()
@@ -2844,8 +2904,11 @@ def admin_add_match():
         black_player_id = request.form.get("black_player_id")
         result = request.form.get("result", "").strip()
         event = request.form.get("event", "").strip()
+        location = request.form.get("location", "").strip()
         raw_notes = request.form.get("notes", "")
         notes = normalize_round_note_for_storage(raw_notes)
+        sgf_file = request.files.get("sgf_file")
+        sgf_filename = None
 
         valid, message = validate_match_form_data(
             conn,
@@ -2862,6 +2925,19 @@ def admin_add_match():
             except ValueError:
                 valid = False
                 message = f"{TRANSLATIONS[lang]['error']}: {TRANSLATIONS[lang].get('invalid_handicap', 'Invalid handicap')}"
+            if valid:
+                try:
+                    if sgf_file and sgf_file.filename:
+                        sgf_filename = save_sgf_upload(
+                            sgf_file,
+                            match_sgf_metadata(
+                                conn, white_player_id, black_player_id, match_date, result, event
+                                , location=location
+                            ),
+                        )
+                except ValueError:
+                    valid = False
+                    message = f"{TRANSLATIONS[lang]['error']}: {TRANSLATIONS[lang].get('invalid_sgf', 'Invalid SGF file')}"
 
         if not valid:
             flash(message or TRANSLATIONS[lang]["error"])
@@ -2871,10 +2947,10 @@ def admin_add_match():
             conn.execute(
                 """
                 INSERT INTO matches
-                    (match_date, white_player_id, black_player_id, result, event, notes, round_number, handicap_stones)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    (match_date, white_player_id, black_player_id, result, event, location, notes, round_number, handicap_stones, sgf_filename)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
-                (match_date.strip(), w_id, b_id, result, event, notes, normalize_round_note(raw_notes), handicap_stones),
+                (match_date.strip(), w_id, b_id, result, event, location, notes, normalize_round_note(raw_notes), handicap_stones, sgf_filename),
             )
             conn.commit()
             refresh_stats()
@@ -2919,6 +2995,7 @@ def admin_edit_match():
         return redirect(url_for("admin_matches", lang=lang))
 
     conn = get_db()
+    ensure_sgf_schema(conn)
 
     match = conn.execute(
         "SELECT * FROM matches WHERE id = ?",
@@ -2936,8 +3013,12 @@ def admin_edit_match():
         black_player_id = request.form.get("black_player_id")
         result = request.form.get("result", "").strip()
         event = request.form.get("event", "").strip()
+        location = request.form.get("location", "").strip()
         raw_notes = request.form.get("notes", "")
         notes = normalize_round_note_for_storage(raw_notes)
+        sgf_file = request.files.get("sgf_file")
+        old_sgf_filename = match["sgf_filename"]
+        new_sgf_filename = old_sgf_filename
 
         valid, message = validate_match_form_data(
             conn,
@@ -2954,6 +3035,21 @@ def admin_edit_match():
             except ValueError:
                 valid = False
                 message = f"{TRANSLATIONS[lang]['error']}: {TRANSLATIONS[lang].get('invalid_handicap', 'Invalid handicap')}"
+            if valid:
+                try:
+                    if sgf_file and sgf_file.filename:
+                        new_sgf_filename = save_sgf_upload(
+                            sgf_file,
+                            match_sgf_metadata(
+                                conn, white_player_id, black_player_id, match_date, result, event
+                                , location=location
+                            ),
+                        )
+                    elif request.form.get("remove_sgf") == "1":
+                        new_sgf_filename = None
+                except ValueError:
+                    valid = False
+                    message = f"{TRANSLATIONS[lang]['error']}: {TRANSLATIONS[lang].get('invalid_sgf', 'Invalid SGF file')}"
 
         if not valid:
             flash(message or TRANSLATIONS[lang]["error"])
@@ -2965,10 +3061,11 @@ def admin_edit_match():
                     """
                     UPDATE matches
                     SET match_date = ?, white_player_id = ?, black_player_id = ?,
-                        result = ?, event = ?, notes = ?, round_number = ?, handicap_stones = ?
+                        result = ?, event = ?, location = ?, notes = ?, round_number = ?, handicap_stones = ?,
+                        sgf_filename = ?
                     WHERE id = ?
                     """,
-                    (match_date.strip(), w_id, b_id, result, event, notes, normalize_round_note(raw_notes), handicap_stones, match_id),
+                    (match_date.strip(), w_id, b_id, result, event, location, notes, normalize_round_note(raw_notes), handicap_stones, new_sgf_filename, match_id),
                 )
                 sync_match_pairing(
                     conn,
@@ -2979,6 +3076,15 @@ def admin_edit_match():
                     handicap_stones,
                 )
                 conn.commit()
+                if old_sgf_filename and old_sgf_filename != new_sgf_filename:
+                    delete_sgf_file(old_sgf_filename)
+                elif new_sgf_filename:
+                    update_sgf_metadata(
+                        new_sgf_filename,
+                        match_sgf_metadata(
+                            conn, white_player_id, black_player_id, match_date, result, event
+                        ),
+                    )
                 refresh_stats()
                 mark_dirty(match["match_date"])
                 mark_dirty(match_date.strip())
@@ -3033,15 +3139,18 @@ def admin_delete_match():
         return redirect(url_for("admin_matches", lang=lang))
 
     conn = get_db()
-    match_row = conn.execute("SELECT match_date FROM matches WHERE id = ?", (match_id,)).fetchone()
+    ensure_sgf_schema(conn)
+    match_row = conn.execute("SELECT match_date, sgf_filename FROM matches WHERE id = ?", (match_id,)).fetchone()
     if not match_row:
         conn.close()
         flash(TRANSLATIONS[lang]["error"])
         return redirect(url_for("admin_matches", lang=lang))
     match_date = match_row["match_date"]
+    sgf_filename = match_row["sgf_filename"]
     conn.execute("DELETE FROM matches WHERE id = ?", (match_id,))
     conn.commit()
     conn.close()
+    delete_sgf_file(sgf_filename)
     log_admin_action(
         "match_deleted",
         "match",

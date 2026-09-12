@@ -10,7 +10,7 @@
   </div>
 
   {% if user.player_id %}
-        <form method="post" class="filter-form" id="report-results-form"
+        <form method="post" enctype="multipart/form-data" class="filter-form" id="report-results-form"
           data-my-player-name="{{ user.player_name }}"
           data-wins-suffix="{{ translations.wins_suffix }}"
           data-select-player="{{ translations.select_player }}">
@@ -58,8 +58,16 @@
             <input id="event" name="event" type="text" />
           </div>
           <div class="filter-item wide">
+            <label for="location">{{ translations.location }}</label>
+            <input id="location" name="location" type="text" />
+          </div>
+          <div class="filter-item wide">
             <label for="notes">{{ translations.notes_label }}</label>
             <textarea id="notes" name="notes"></textarea>
+          </div>
+          <div class="filter-item wide">
+            <label for="sgf_file">{{ translations.upload_sgf }}</label>
+            <input id="sgf_file" name="sgf_file" type="file" accept=".sgf,application/x-go-sgf">
           </div>
         </div>
         <div class="filter-actions">
@@ -75,7 +83,7 @@
   {% if submissions %}
     <div class="table-wrapper result-submissions-table-wrap">
       <table class="table-stack result-submissions-table member-submissions-table">
-        <thead><tr><th>{{ translations.date }}</th><th>{{ translations.white }}</th><th>{{ translations.black }}</th><th>{{ translations.result }}</th><th>{{ translations.status }}</th><th>{{ translations.review_note_label }}</th></tr></thead>
+        <thead><tr><th>{{ translations.date }}</th><th>{{ translations.white }}</th><th>{{ translations.black }}</th><th>{{ translations.result }}</th><th>{{ translations.match_record }}</th><th>{{ translations.status }}</th><th>{{ translations.review_note_label }}</th></tr></thead>
         <tbody>
           {% for submission in submissions %}
             <tr>
@@ -83,6 +91,7 @@
               <td>{{ submission.white_name }}</td>
               <td>{{ submission.black_name }}</td>
               <td>{{ submission.result }}</td>
+              <td>{{ translations.sgf_attached if submission.sgf_filename else '-' }}</td>
               <td>{{ translations.get(submission.status + '_status', submission.status) }}</td>
               <td>{{ submission.review_notes or '-' }}</td>
             </tr>

@@ -229,6 +229,16 @@ TRANSLATIONS = {
         "result_win": "Victoria",
         "result_loss": "Derrota",
         "result_draw": "Tablas",
+        "match_record": "Registro SGF",
+        "view_record": "Ver registro",
+        "upload_sgf": "Registro SGF (.sgf)",
+        "replace_sgf": "Reemplazar registro SGF",
+        "remove_sgf": "Eliminar registro SGF",
+        "download_sgf": "Descargar SGF",
+        "sgf_attached": "Adjunto",
+        "sgf_simple_theme": "Simple",
+        "sgf_dark_theme": "Oscuro",
+        "invalid_sgf": "El archivo SGF no es válido",
         "chart_title": "Historial de rating",
         "chart_caption": "El gráfico muestra la evolución del rating del jugador con el tiempo.",
         "best_rating": "Mejor rating",
@@ -717,6 +727,16 @@ TRANSLATIONS = {
         "result_win": "Win",
         "result_loss": "Loss",
         "result_draw": "Draw",
+        "match_record": "SGF record",
+        "view_record": "View record",
+        "upload_sgf": "SGF record (.sgf)",
+        "replace_sgf": "Replace SGF record",
+        "remove_sgf": "Remove SGF record",
+        "download_sgf": "Download SGF",
+        "sgf_attached": "Attached",
+        "sgf_simple_theme": "Simple",
+        "sgf_dark_theme": "Dark",
+        "invalid_sgf": "The SGF file is invalid",
         "chart_title": "Rating history",
         "chart_caption": "The chart shows the player rating over time as matches are imported.",
         "baseline": "1500 baseline",
@@ -1202,6 +1222,16 @@ TRANSLATIONS = {
         "result_win": "Vitória",
         "result_loss": "Derrota",
         "result_draw": "Empate",
+        "match_record": "Registro SGF",
+        "view_record": "Ver registro",
+        "upload_sgf": "Registro SGF (.sgf)",
+        "replace_sgf": "Substituir registro SGF",
+        "remove_sgf": "Remover registro SGF",
+        "download_sgf": "Baixar SGF",
+        "sgf_attached": "Anexado",
+        "sgf_simple_theme": "Simples",
+        "sgf_dark_theme": "Escuro",
+        "invalid_sgf": "O arquivo SGF não é válido",
         "chart_title": "Histórico de rating",
         "chart_caption": "O gráfico mostra o rating do jogador ao longo do tempo conforme as partidas são importadas.",
         "baseline": "Base 1500",
@@ -1760,9 +1790,11 @@ def migrate_result_submissions_schema(conn):
             black_player_id INTEGER NOT NULL,
             result TEXT NOT NULL CHECK(result IN ('1-0', '0-1', '1/2-1/2')),
             event TEXT,
+            location TEXT,
             notes TEXT,
             round_number INTEGER NOT NULL DEFAULT 0,
             handicap_stones INTEGER NOT NULL DEFAULT 0,
+            sgf_filename TEXT,
             status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending', 'approved', 'rejected')),
             reviewed_by_user_id INTEGER,
             reviewed_at TEXT,
@@ -1779,6 +1811,13 @@ def migrate_result_submissions_schema(conn):
         )
         """
     )
+    submission_columns = {
+        row[1] for row in conn.execute("PRAGMA table_info(result_submissions)").fetchall()
+    }
+    if submission_columns and "sgf_filename" not in submission_columns:
+        conn.execute("ALTER TABLE result_submissions ADD COLUMN sgf_filename TEXT")
+    if submission_columns and "location" not in submission_columns:
+        conn.execute("ALTER TABLE result_submissions ADD COLUMN location TEXT")
     conn.execute(
         "CREATE INDEX IF NOT EXISTS idx_result_submissions_status ON result_submissions (status, created_at DESC)"
     )

@@ -4,7 +4,7 @@ from datetime import datetime
 import math
 import re
 
-from flask import Blueprint, Response, jsonify, render_template, request, flash, redirect, session, url_for
+from flask import Blueprint, Response, abort, jsonify, render_template, request, flash, redirect, send_file, session, url_for
 
 from services.category_service import get_category_config, glicko_to_category
 from services.common import (
@@ -15,6 +15,7 @@ from services.common import (
 )
 
 from services.home_stats import build_home_stats
+from services.sgf_service import get_sgf_path, has_sgf_column
 from services.reporting_service import (
     build_date_report,
     export_report_csv,
@@ -541,6 +542,7 @@ def matches():
     filter_sql, filter_params = _match_filter_sql(date_from, date_to, player_id)
 
     conn = get_db()
+    sgf_select = "m.sgf_filename" if has_sgf_column(conn) else "NULL AS sgf_filename"
 
     total_count = conn.execute(
         f"SELECT COUNT(*) FROM matches m {filter_sql}",
@@ -562,7 +564,8 @@ def matches():
             p_black.display_name AS black_name,
             p_white.id AS white_id,
             p_black.id AS black_id,
-            m.result
+            m.result,
+            {sgf_select}
         FROM matches m
         JOIN players p_white
             ON p_white.id = m.white_player_id
@@ -594,6 +597,67 @@ def matches():
         player_id=player_id,
         match_players=match_players,
         **pagination_details(total_count, page, page_size),
+    )
+
+
+@public_bp.route("/matches/<int:match_id>/sgf")
+def match_sgf(match_id):
+    conn = get_db()
+    if not has_sgf_column(conn):
+        conn.close()
+        abort(404)
+    row = conn.execute(
+        "SELECT sgf_filename FROM matches WHERE id = ?",
+        (match_id,),
+    ).fetchone()
+    conn.close()
+    if row is None:
+        abort(404)
+    path = get_sgf_path(row["sgf_filename"])
+    if path is None:
+        abort(404)
+    return send_file(
+        path,
+        mimetype="application/x-go-sgf",
+        as_attachment=request.args.get("download") == "1",
+        download_name=f"match-{match_id}.sgf",
+        max_age=0,
+    )
+
+
+@public_bp.route("/matches/<int:match_id>/record")
+def match_record(match_id):
+    lang = get_language(request.args.get("lang"))
+    conn = get_db()
+    if not has_sgf_column(conn):
+        conn.close()
+        abort(404)
+    row = conn.execute(
+        """
+        SELECT m.id, m.match_date, m.result, m.event, m.sgf_filename,
+               white.display_name AS white_name,
+               black.display_name AS black_name
+        FROM matches m
+        JOIN players white ON white.id = m.white_player_id
+        JOIN players black ON black.id = m.black_player_id
+        WHERE m.id = ?
+        """,
+        (match_id,),
+    ).fetchone()
+    conn.close()
+    if row is None or get_sgf_path(row["sgf_filename"]) is None:
+        abort(404)
+
+    theme = (request.args.get("theme") or "").strip().lower()
+    if theme not in {"simple", "dark"}:
+        theme = "dark" if session.get("user_theme") == "dark" else "simple"
+    return render_template(
+        "match_record.html",
+        match=dict(row),
+        lang=lang,
+        theme=theme,
+        sgf_url=url_for("match_sgf", match_id=match_id, lang=lang, _external=True),
+        translations=TRANSLATIONS[lang],
     )
 
 

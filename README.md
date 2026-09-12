@@ -108,6 +108,8 @@ Conserva una copia de seguridad antes de importar un libro que reemplace los dat
 5. Registra resultados haciendo clic en el nombre del jugador ganador o en el texto del resultado. El texto recorre `-`, `1-0`, `1/2-1/2`, `0-1`, `1-!0`, `!0-1` y `!0-0`; volver a hacer clic en el ganador lo deselecciona. Los tres últimos resultados registran la ausencia de negras, la ausencia de blancas o la ausencia de ambos, respectivamente. Cuentan para la clasificación del torneo, pero no para ratings, perfiles ni resúmenes de jugadores. El ganador queda resaltado en negrita y verde.
 6. Registra descansos, genera la siguiente ronda, revisa la clasificación y exporta los resultados con los botones de administración.
 
+Los registros SGF opcionales cargados con una partida se guardan en `uploads/sgf/` con un nombre seguro. Al guardarlos, se actualizan sus propiedades principales para coincidir con los jugadores, rangos, lugar/evento, fecha y resultado registrados en la base de datos. Los registros aprobados desde `Reportar Resultados` siguen el mismo proceso.
+
 Las posiciones de la clasificación son siempre únicas y secuenciales; los empates se resuelven con SOS, SOSOS, SODOS, rating y nombre. El emparejamiento evita repetir el BYE en un mismo jugador mientras otro participante no lo haya recibido, y los BYE importados de OpenGotha quedan registrados para que las rondas futuras respeten ese historial.
 
 Cuando una importación de OpenGotha encuentra un nombre parecido, muestra una sugerencia de un jugador en la base de datos. Haz clic en el nombre sugerido para vincularlo inmediatamente al jugador existente, o usa el selector para crear un jugador nuevo o elegir otro jugador.

@@ -1,10 +1,13 @@
 import sqlite3
+from io import BytesIO
+from werkzeug.datastructures import FileStorage
 
 import config
 import app as app_module
 import routes.admin as admin_routes
 import services.common as common
 import services.recaptcha as recaptcha
+import services.sgf_service as sgf_service
 from app import create_app
 
 
@@ -160,6 +163,7 @@ def test_recaptcha_verifier_checks_action_score_and_hostname(monkeypatch):
 
 def test_member_can_submit_only_for_linked_player(tmp_path, monkeypatch):
     application, db_path, player_ids = make_moderation_app(tmp_path, monkeypatch)
+    monkeypatch.setattr(sgf_service, "SGF_UPLOAD_DIR", tmp_path / "sgf")
     member_id = common.create_user_account(
         "member",
         "member-password",
@@ -194,21 +198,26 @@ def test_member_can_submit_only_for_linked_player(tmp_path, monkeypatch):
             "event": "Club night",
             "notes": "Round 1",
             "handicap_stones": "0",
+            "sgf_file": (BytesIO(b"(;GM[1]FF[4]SZ[19];B[pd];W[dd])"), "reported-game.sgf"),
         },
+        content_type="multipart/form-data",
     )
 
     assert response.status_code == 302
     with sqlite3.connect(db_path) as conn:
         submission = conn.execute(
-            "SELECT white_player_id, black_player_id, status FROM result_submissions"
+            "SELECT white_player_id, black_player_id, status, sgf_filename FROM result_submissions"
         ).fetchone()
         match_count = conn.execute("SELECT COUNT(*) FROM matches").fetchone()[0]
-    assert submission == (player_ids[0], player_ids[1], "pending")
+    assert submission[0:3] == (player_ids[0], player_ids[1], "pending")
+    assert submission[3].endswith(".sgf")
+    assert (tmp_path / "sgf" / submission[3]).is_file()
     assert match_count == baseline_match_count
 
 
 def test_staff_approval_materializes_pending_result(tmp_path, monkeypatch):
     application, db_path, player_ids = make_moderation_app(tmp_path, monkeypatch)
+    monkeypatch.setattr(sgf_service, "SGF_UPLOAD_DIR", tmp_path / "sgf")
     member_id = common.create_user_account(
         "member",
         "member-password",
@@ -216,15 +225,18 @@ def test_staff_approval_materializes_pending_result(tmp_path, monkeypatch):
         player_id=player_ids[0],
     )
     staff_id = common.create_user_account("operator", "operator-password", role_name="operator")
+    sgf_filename = sgf_service.save_sgf_upload(
+        FileStorage(stream=BytesIO(b"(;GM[1]FF[4]SZ[19];B[pd];W[dd])"), filename="approved.sgf")
+    )
     conn = sqlite3.connect(db_path)
     try:
         submission_id = conn.execute(
             """
             INSERT INTO result_submissions
-                (submitted_by_user_id, match_date, white_player_id, black_player_id, result, event, notes)
-            VALUES (?, '2026-09-01', ?, ?, '0-1', 'Club night', 'Round 1')
+                (submitted_by_user_id, match_date, white_player_id, black_player_id, result, event, notes, sgf_filename)
+            VALUES (?, '2026-09-01', ?, ?, '0-1', 'Club night', 'Round 1', ?)
             """,
-            (member_id, player_ids[0], player_ids[1]),
+            (member_id, player_ids[0], player_ids[1], sgf_filename),
         ).lastrowid
         conn.commit()
     finally:
@@ -235,6 +247,10 @@ def test_staff_approval_materializes_pending_result(tmp_path, monkeypatch):
     monkeypatch.setattr(admin_routes, "update_from_latest_snapshot", lambda: None)
     client = application.test_client()
     authenticate(client, staff_id, "operator")
+
+    sgf_response = client.get(f"/admin/result-submissions/{submission_id}/sgf?lang=en")
+    assert sgf_response.status_code == 200
+    assert sgf_response.get_data(as_text=True).startswith("(;GM[1]")
 
     response = client.post(
         f"/admin/result-submissions/{submission_id}/approve?lang=en",
@@ -248,10 +264,11 @@ def test_staff_approval_materializes_pending_result(tmp_path, monkeypatch):
             (submission_id,),
         ).fetchone()
         match = conn.execute(
-            "SELECT white_player_id, black_player_id, result, event FROM matches WHERE event = 'Club night'"
+            "SELECT white_player_id, black_player_id, result, event, sgf_filename FROM matches WHERE event = 'Club night'"
         ).fetchone()
     assert submission == ("approved", staff_id)
-    assert match == (player_ids[0], player_ids[1], "0-1", "Club night")
+    assert match[:4] == (player_ids[0], player_ids[1], "0-1", "Club night")
+    assert match[4] == sgf_filename
 
 
 def test_auth_migration_adds_member_to_legacy_role_constraint(tmp_path):

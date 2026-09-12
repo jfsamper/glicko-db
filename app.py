@@ -27,6 +27,7 @@ from services.helpers import normalize_round_note
 from services.import_service import import_workbook_data
 from services.rating_service import recompute_ratings
 from services.settings_service import migrate_application_settings_schema
+from services.sgf_service import ensure_sgf_schema
 from routes.public import glicko_to_category, register_public_routes
 from routes.admin import register_admin_routes
 from services.pairing_service import DEFAULT_ACCELERATION_SCHEME, format_rank_category
@@ -131,6 +132,7 @@ def init_db():
             black_player_id INTEGER NOT NULL,
             result TEXT NOT NULL CHECK(result IN ('1-0', '0-1', '1/2-1/2', '!0-1', '1-!0', '!0-0')),
             event TEXT,
+            location TEXT,
             notes TEXT,
             round_number INTEGER NOT NULL DEFAULT 0,
             tournament_pairing_id INTEGER,
@@ -317,6 +319,7 @@ def migrate_matches_notes_schema(conn):
             black_player_id INTEGER NOT NULL,
             result TEXT NOT NULL CHECK(result IN ('1-0', '0-1', '1/2-1/2', '!0-1', '1-!0', '!0-0')),
             event TEXT,
+            location TEXT,
             notes TEXT,
             round_number INTEGER NOT NULL DEFAULT 0,
             tournament_pairing_id INTEGER,
@@ -329,8 +332,8 @@ def migrate_matches_notes_schema(conn):
     )
     conn.execute(
         """
-        INSERT INTO matches (id, match_date, white_player_id, black_player_id, result, event, notes, round_number, tournament_pairing_id, handicap_stones)
-        SELECT id, match_date, white_player_id, black_player_id, result, event, CAST(notes AS TEXT), 0, NULL, 0
+        INSERT INTO matches (id, match_date, white_player_id, black_player_id, result, event, location, notes, round_number, tournament_pairing_id, handicap_stones)
+        SELECT id, match_date, white_player_id, black_player_id, result, event, location, CAST(notes AS TEXT), 0, NULL, 0
         FROM matches__legacy_round_notes
         """
     )
@@ -365,6 +368,12 @@ def migrate_match_result_schema(conn):
         return
 
     conn.execute("ALTER TABLE matches RENAME TO matches__legacy_result_values")
+    legacy_columns = {
+        row[1]
+        for row in conn.execute("PRAGMA table_info(matches__legacy_result_values)").fetchall()
+    }
+    if "location" not in legacy_columns:
+        conn.execute("ALTER TABLE matches__legacy_result_values ADD COLUMN location TEXT")
     conn.execute(
         """
         CREATE TABLE matches (
@@ -374,6 +383,7 @@ def migrate_match_result_schema(conn):
             black_player_id INTEGER NOT NULL,
             result TEXT NOT NULL CHECK(result IN ('1-0', '0-1', '1/2-1/2', '!0-1', '1-!0', '!0-0')),
             event TEXT,
+            location TEXT,
             notes TEXT,
             round_number INTEGER NOT NULL DEFAULT 0,
             tournament_pairing_id INTEGER,
@@ -387,10 +397,10 @@ def migrate_match_result_schema(conn):
     conn.execute(
         """
         INSERT INTO matches
-            (id, match_date, white_player_id, black_player_id, result, event,
-             notes, round_number, tournament_pairing_id, handicap_stones)
-        SELECT id, match_date, white_player_id, black_player_id, result, event,
-               notes, round_number, tournament_pairing_id, handicap_stones
+              (id, match_date, white_player_id, black_player_id, result, event,
+               location, notes, round_number, tournament_pairing_id, handicap_stones)
+           SELECT id, match_date, white_player_id, black_player_id, result, event,
+                location, notes, round_number, tournament_pairing_id, handicap_stones
         FROM matches__legacy_result_values
         """
     )
@@ -945,6 +955,7 @@ def initialize_app():
     migrate_audit_log_schema(conn)
     bootstrap_default_admin_account(conn)
     ensure_player_schema_columns(conn)
+    ensure_sgf_schema(conn)
     migrate_matches_notes_schema(conn)
     migrate_match_result_schema(conn)
     migrate_tournament_match_identity_schema(conn)

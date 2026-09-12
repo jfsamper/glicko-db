@@ -329,6 +329,20 @@ button {
   font-size: 0.82rem;
 }
 
+.sgf-upload-field > .muted {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.sgf-remove-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  white-space: nowrap;
+}
+
 .link-button {
   appearance: none;
   background: transparent;

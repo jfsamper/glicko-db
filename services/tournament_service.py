@@ -23,6 +23,7 @@ from services.pairing_service import (
 )
 from services.player_service import ensure_player
 from services.reporting_service import ensure_tournament_match_identity
+from services.sgf_service import ensure_sgf_schema
 from services.standings_service import calculate_standings
 
 
@@ -2373,11 +2374,12 @@ def unpair_all(conn, tournament_id, round_id):
 def sync_pairing_match(conn, tournament_id, pairing_id):
     """Keep the materialized match for a pairing synchronized with its source."""
     ensure_tournament_match_identity(conn)
+    ensure_sgf_schema(conn)
     pairing = conn.execute(
         """
         SELECT p.id, p.white_player_id, p.black_player_id, p.result,
                p.is_bye, p.handicap_stones, r.round_number, t.name,
-               t.begin_date, t.end_date
+               t.location, t.begin_date, t.end_date
         FROM tournament_pairings p
         JOIN tournament_rounds r ON r.id = p.round_id
         JOIN tournaments t ON t.id = r.tournament_id
@@ -2389,7 +2391,7 @@ def sync_pairing_match(conn, tournament_id, pairing_id):
         raise ValueError("Pairing not found")
 
     existing = conn.execute(
-        "SELECT id, match_date, event, notes, round_number FROM matches WHERE tournament_pairing_id = ?",
+        "SELECT id, match_date, event, location, notes, round_number, sgf_filename FROM matches WHERE tournament_pairing_id = ?",
         (pairing_id,),
     ).fetchone()
     valid_game = (
@@ -2413,6 +2415,7 @@ def sync_pairing_match(conn, tournament_id, pairing_id):
         if existing is not None and existing["event"]
         else pairing["name"]
     )
+    location = pairing["location"]
     notes = (
         existing["notes"]
         if existing is not None and existing["notes"] is not None
@@ -2428,9 +2431,9 @@ def sync_pairing_match(conn, tournament_id, pairing_id):
         conn.execute(
             """
             INSERT INTO matches
-                (match_date, white_player_id, black_player_id, result, event,
-                 notes, round_number, tournament_pairing_id, handicap_stones)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                 (match_date, white_player_id, black_player_id, result, event, location,
+                  notes, round_number, tournament_pairing_id, handicap_stones)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 match_date,
@@ -2438,6 +2441,7 @@ def sync_pairing_match(conn, tournament_id, pairing_id):
                 pairing["black_player_id"],
                 pairing["result"],
                 event,
+                location,
                 notes,
                 match_round,
                 pairing_id,
@@ -2450,7 +2454,7 @@ def sync_pairing_match(conn, tournament_id, pairing_id):
             UPDATE matches
             SET match_date = ?, white_player_id = ?, black_player_id = ?,
                 result = ?, event = ?, notes = ?, round_number = ?,
-                handicap_stones = ?
+                handicap_stones = ?, location = ?
             WHERE id = ?
             """,
             (
@@ -2462,6 +2466,7 @@ def sync_pairing_match(conn, tournament_id, pairing_id):
                 notes,
                 match_round,
                 handicap_stones,
+                location,
                 existing["id"],
             ),
         )

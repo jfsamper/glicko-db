@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+
+{% block head_extra %}
+<link rel="stylesheet" href="{{ url_for('static', filename='vendor/besogo/css/besogo.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='vendor/besogo/css/board-' ~ theme ~ '.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/sgf.css') }}">
+{% endblock %}
+
+{% block content %}
+<section class="panel sgf-record-page">
+  <div class="panel-actions">
+    <nav aria-label="Breadcrumb" class="breadcrumb">
+      <a href="{{ url_for('matches', lang=lang) }}">{{ translations.games }}</a>
+      <span> &gt; </span>
+      <span>{{ translations.match_record }}</span>
+    </nav>
+  </div>
+
+  <div class="panel-header">
+    <div>
+      <h2>{{ translations.match_record }}</h2>
+      <p class="sgf-match-summary">
+        {{ match.white_name }} · {{ match.black_name }} · {{ match.match_date }}
+      </p>
+    </div>
+    <div class="sgf-record-actions">
+      <a class="button{% if theme == 'simple' %} is-selected{% endif %}" href="{{ url_for('match_record', match_id=match.id, lang=lang, theme='simple') }}">{{ translations.sgf_simple_theme }}</a>
+      <a class="button{% if theme == 'dark' %} is-selected{% endif %}" href="{{ url_for('match_record', match_id=match.id, lang=lang, theme='dark') }}">{{ translations.sgf_dark_theme }}</a>
+      <a class="button secondary" href="{{ url_for('match_sgf', match_id=match.id, lang=lang, download=1) }}">{{ translations.download_sgf }}</a>
+    </div>
+  </div>
+
+  <div class="sgf-viewer-shell">
+    <div
+      class="besogo-viewer"
+      sgf="{{ sgf_url }}"
+      panels="control+names+comment+tree"
+      coord="western"
+      resize="auto"
+      orient="view"
+      transwidth="600"
+      minpanelswidth="280"
+      tabindex="0"
+    ></div>
+  </div>
+</section>
+
+{% for script in ('besogo.js', 'editor.js', 'gameRoot.js', 'svgUtil.js', 'parseSgf.js', 'loadSgf.js', 'saveSgf.js', 'boardDisplay.js', 'coord.js', 'toolPanel.js', 'filePanel.js', 'controlPanel.js', 'namesPanel.js', 'commentPanel.js', 'treePanel.js') %}
+<script src="{{ url_for('static', filename='vendor/besogo/js/' ~ script) }}"></script>
+{% endfor %}
+<script>
+  window.addEventListener('load', function () {
+    if (window.besogo && typeof window.besogo.autoInit === 'function') {
+      window.besogo.autoInit();
+    }
+  });
+</script>
+{% endblock %}

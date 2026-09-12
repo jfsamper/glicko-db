@@ -8,6 +8,7 @@
     <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/nouislider@15.8.1/dist/nouislider.min.css" /> 
     <script src="https://cdn.bootcss.com/noUiSlider/15.8.1/nouislider.js"></script>
+    {% block head_extra %}{% endblock %}
   </head>
   <body>
     {% set current_endpoint = (request.endpoint or '').rsplit('.', 1)[-1] %}

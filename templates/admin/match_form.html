@@ -20,7 +20,7 @@
     </div>
   </div>
 
-  <form method="post" action="{{ form_action }}" class="filter-form">
+  <form method="post" action="{{ form_action }}" class="filter-form" enctype="multipart/form-data">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
     <div class="filter-panel">
       <div class="filter-header">
@@ -83,6 +83,11 @@
         </div>
 
         <div class="filter-item wide">
+          <label for="location">{{ translations.location }}</label>
+          <input id="location" type="text" name="location" value="{{ match.location if match else '' }}">
+        </div>
+
+        <div class="filter-item wide">
           <label for="notes">{{ translations.notes_label }}</label>
           <input
             id="notes"
@@ -103,6 +108,20 @@
             step="1"
             value="{{ match.handicap_stones if match else 0 }}"
           >
+        </div>
+
+        <div class="filter-item wide sgf-upload-field">
+          <label for="sgf_file">{{ translations.upload_sgf }}</label>
+          <input id="sgf_file" type="file" name="sgf_file" accept=".sgf,application/x-go-sgf">
+          {% if match and match.sgf_filename %}
+            <span class="muted">
+              <a href="{{ url_for('match_record', match_id=match.id, lang=lang) }}">{{ translations.view_record }}</a>
+              <label class="sgf-remove-option">
+                <input type="checkbox" name="remove_sgf" value="1">
+                {{ translations.remove_sgf }}
+              </label>
+            </span>
+          {% endif %}
         </div>
       </div>
 

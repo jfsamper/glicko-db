@@ -275,6 +275,7 @@ def load_player(
 
     columns = conn.execute("PRAGMA table_info(matches)").fetchall()
     has_event = any(column[1] == "event" for column in columns)
+    has_sgf = any(column[1] == "sgf_filename" for column in columns)
 
     total_matches = conn.execute(
         f"SELECT COUNT(*) FROM matches WHERE {count_condition}",
@@ -282,7 +283,7 @@ def load_player(
     ).fetchone()[0]
 
     match_select = """
-        SELECT m.match_date, m.result, {event_select},
+        SELECT m.id, m.match_date, m.result, {event_select}, {sgf_select},
                m.white_player_id, m.black_player_id,
                p_white.display_name AS white_name,
                p_white.slug AS white_slug,
@@ -300,13 +301,17 @@ def load_player(
         match_event_select = "m.event"
     else:
         match_event_select = "NULL AS event"
+    if has_sgf:
+        match_sgf_select = "m.sgf_filename"
+    else:
+        match_sgf_select = "NULL AS sgf_filename"
 
     matches = conn.execute(
-        match_select.format(event_select=match_event_select, match_condition=match_condition) + " LIMIT ? OFFSET ?",
+        match_select.format(event_select=match_event_select, sgf_select=match_sgf_select, match_condition=match_condition) + " LIMIT ? OFFSET ?",
         (*match_params, page_size, offset),
     ).fetchall()
     all_matches = conn.execute(
-        match_select.format(event_select=match_event_select, match_condition=match_condition) + " LIMIT -1 OFFSET 0",
+        match_select.format(event_select=match_event_select, sgf_select=match_sgf_select, match_condition=match_condition) + " LIMIT -1 OFFSET 0",
         match_params,
     ).fetchall()
     white_stats = {"games": 0, "wins": 0, "losses": 0, "draws": 0}

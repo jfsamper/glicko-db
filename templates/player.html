@@ -281,6 +281,7 @@
         <th>{{ translations.white }}</th>
         <th>{{ translations.black }}</th>
         <th>{{ translations.result }}</th>
+        <th>{{ translations.match_record }}</th>
       </tr>
     </thead>
     <tbody>
@@ -333,6 +334,14 @@
             white_player_id=match.white_player_id,
             black_player_id=match.black_player_id
         ) }}
+        </td>
+
+        <td>
+          {% if match.sgf_filename %}
+            <a class="text-link" href="{{ url_for('match_record', match_id=match.id, lang=lang) }}">{{ translations.view_record }}</a>
+          {% else %}
+            -
+          {% endif %}
         </td>
     </tr>
     {% endfor %}
