@@ -15,4 +15,4 @@ sys.path.insert(0, VENV_SITE_PACKAGES)
 
 from app import create_app
 
-application = create_app()
+application = create_app(auto_init=True)

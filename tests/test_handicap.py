@@ -33,10 +33,10 @@ def test_handicap_points_is_zero_for_zero_stones():
     assert category_service.handicap_points(1500, 1500, 0, k=K, m=M) == 0.0
 
 
-def test_handicap_points_scales_linearly_with_stones_and_midpoint_rating():
+def test_handicap_points_follows_the_logarithmic_category_curve():
     one_stone = category_service.handicap_points(1500, 1500, 1, k=K, m=M)
     three_stones = category_service.handicap_points(1500, 1500, 3, k=K, m=M)
-    assert three_stones == pytest.approx(one_stone * 3)
+    assert three_stones > one_stone * 3
 
     weak_players = category_service.handicap_points(700, 700, 1, k=K, m=M)
     strong_players = category_service.handicap_points(2700, 2700, 1, k=K, m=M)
@@ -59,6 +59,38 @@ def test_black_handicap_points_is_noop_when_stones_zero():
 def test_black_handicap_points_matches_category_service_formula():
     expected = category_service.handicap_points(1600, 1400, 3, k=K, m=M)
     assert rating_service.black_handicap_points(1600, 1400, 3, category_k=K, category_m=M) == expected
+
+
+def test_handicap_rating_adjustments_match_rank_equivalence():
+    import math
+
+    def rating_for_category(category):
+        return M * math.exp((category + 29) / K)
+
+    white_5kyu = rating_for_category(-5)
+    black_10kyu = rating_for_category(-10)
+    white_shift, black_shift = category_service.handicap_rating_adjustments(
+        white_5kyu, black_10kyu, 5, k=K, m=M
+    )
+
+    assert black_10kyu + white_shift == pytest.approx(white_5kyu)
+    assert white_5kyu + black_shift == pytest.approx(black_10kyu)
+
+
+def test_handicap_rating_adjustments_match_dan_kyu_equivalence():
+    import math
+
+    def rating_for_category(category):
+        return M * math.exp((category + 29) / K)
+
+    white_2dan = rating_for_category(1)
+    black_3kyu = rating_for_category(-3)
+    white_shift, black_shift = category_service.handicap_rating_adjustments(
+        white_2dan, black_3kyu, 4, k=K, m=M
+    )
+
+    assert black_3kyu + white_shift == pytest.approx(white_2dan)
+    assert white_2dan + black_shift == pytest.approx(black_3kyu)
 
 
 def test_handicap_stones_helper_defaults_to_zero_for_missing_or_null_column():
@@ -173,6 +205,21 @@ def test_recompute_ratings_applies_symmetric_handicap_adjustment(tmp_path, monke
     # With a handicap subsidizing Black, White is nominally seen as weaker,
     # so Black's win is less surprising and gains fewer rating points.
     assert handicapped_black_rating < baseline_black_rating
+
+    # Reset and replay white winning while giving a large handicap to black.
+    # In this scenario, Black is heavily handicapped, so White's win over a norminally weaker opponent
+    # with a very large handicap (making him a much weaker player)
+    # should be very surprising, and Black should lose a significant number of rating points.
+    conn = get_test_db()
+    conn.execute("UPDATE players SET rating = initial_rating, rd = 200, volatility = 0.06")
+    conn.execute("UPDATE matches SET result = '1-0', handicap_stones = 5 WHERE id = 1")
+    conn.commit()
+    conn.close()
+    rating_service.recompute_ratings()
+    handicapped_black_rating_after_loss = get_test_db().execute("SELECT rating FROM players WHERE id = 2").fetchone()[0]
+
+    assert handicapped_black_rating_after_loss < handicapped_black_rating
+    assert handicapped_black_rating_after_loss < baseline_black_rating
 
 
 # --- routes/admin.py parse_handicap_stones -------------------------------

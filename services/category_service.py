@@ -117,29 +117,43 @@ def category_value(rating, k=None, m=None):
 
 
 def handicap_points(rating_a, rating_b, handicap_stones, k=None, m=None):
-    """Rating-point equivalent of a number of handicap stones.
+    """Return the raw-rating shift for Black's effective handicap strength."""
+    return handicap_rating_adjustments(
+        rating_a,
+        rating_b,
+        handicap_stones,
+        k=k,
+        m=m,
+    )[0]
 
-    Uses the local slope of this app's own (logarithmic) category curve,
-    evaluated at the midpoint of the two players' ratings, rather than a
-    flat constant like the commonly cited ~100 points/stone convention.
-    On a log category scale, raw points-per-stone scale with the rating
-    itself (d(rating)/d(category) = rating/k), so a flat constant would
-    over-adjust weak-kyu handicap games and under-adjust strong-dan ones
-    relative to this app's own kyu/dan labels. See CODE_REVIEW.md notes
-    on the 2026-08 handicap design discussion for the full rationale.
 
-    Returns a non-negative number of raw Glicko rating points.
-    """
+def handicap_rating_adjustments(white_rating, black_rating, handicap_stones, k=None, m=None):
+    """Return opponent-rating shifts for White's and Black's calculations."""
     if k is None or m is None:
         config = get_category_config()
         k = config["glicko_k"] if k is None else k
         m = config["glicko_m"] if m is None else m
-    if not k:
+    if not k or not m:
         raise ValueError("Category parameters must be non-zero")
 
-    midpoint = (float(rating_a) + float(rating_b)) / 2.0
-    points_per_stone = midpoint / k
-    return abs(float(handicap_stones)) * points_per_stone
+    try:
+        white_rating = float(white_rating)
+    except (TypeError, ValueError):
+        white_rating = DEFAULT_RATING
+    try:
+        black_rating = float(black_rating)
+    except (TypeError, ValueError):
+        black_rating = DEFAULT_RATING
+    if not math.isfinite(white_rating) or white_rating <= 0:
+        white_rating = DEFAULT_RATING
+    if not math.isfinite(black_rating) or black_rating <= 0:
+        black_rating = DEFAULT_RATING
+
+    category_factor = math.exp(abs(float(handicap_stones)) / float(k))
+    return (
+        black_rating * (category_factor - 1.0),
+        white_rating * (1.0 / category_factor - 1.0),
+    )
 
 
 def suggested_handicap_stones(rating_stronger, rating_weaker, k=None, m=None, max_stones=9):

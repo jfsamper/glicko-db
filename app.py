@@ -1164,10 +1164,11 @@ def initialize_app():
     refresh_startup_stats(seeded)
 
 
-app = create_app()
+app = create_app(auto_init=False)
 
 
 ### ------------------------------------ REMOVE BELOW FROM PROD ---------------------------------------------- 
 
 if __name__ == "__main__":
+    initialize_app()
     app.run(debug=True, host="0.0.0.0", port=5000)

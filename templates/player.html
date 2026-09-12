@@ -148,9 +148,9 @@
             <text x="4" y="18" class="chart-label">{{ glicko_to_category(rating_chart.label_max, 1) }}</text>
             <text x="4" y="110" class="chart-label">{{ glicko_to_category(((rating_chart.label_max + rating_chart.label_min) / 2), 1) }}</text>
             <text x="4" y="195" class="chart-label">{{ glicko_to_category(rating_chart.label_min, 1) }}</text>
-            <text x="20" y="215" class="chart-label">{{ datetime.strptime(rating_chart.points[0].date, '%Y-%m-%d').strftime('%m/%y') }}</text>
-            <text x="300" y="215" class="chart-label">{{ datetime.strptime(rating_chart.points[(rating_chart.points|length // 2)].date, '%Y-%m-%d').strftime('%m/%y') }}</text>
-            <text x="570" y="215" class="chart-label">{{ datetime.strptime(rating_chart.points[-1].date, '%Y-%m-%d').strftime('%m/%y') }}</text>
+            {% for axis_label in rating_chart.axis_labels %}
+              <text x="{{ axis_label.x }}" y="215" text-anchor="{{ axis_label.anchor }}" class="chart-label">{{ axis_label.label }}</text>
+            {% endfor %}
           </svg>
           <div id="chart-tooltip" class="chart-tooltip" role="status" aria-live="polite">
             <div class="chart-tooltip__content">

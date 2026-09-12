@@ -111,7 +111,7 @@ As posições da classificação são sempre únicas e sequenciais; os empates s
 
 Quando uma importação do OpenGotha encontra um nome semelhante, ela mostra a sugestão de um jogador do banco de dados. Clique no nome sugerido para vinculá-lo imediatamente ao jogador existente ou use o seletor para criar um novo jogador ou escolher outro jogador.
 
-Cada emparelhamento recebe uma sugestão automática de handicap em pedras (uma pedra por categoria de diferença entre os jogadores), que o diretor do torneio pode editar antes de registrar o resultado. Ao processar a rodada, o handicap é transferido para a partida e ajusta o rating no estilo OGS: o rating do adversário é deslocado apenas para o cálculo dessa partida, sem alterar seu rating base.
+Cada emparelhamento recebe uma sugestão automática de handicap em pedras (uma pedra por categoria de diferença entre os jogadores), que o diretor do torneio pode editar antes de registrar o resultado. Ao processar a rodada, o handicap é transferido para a partida e desloca o rating efetivo exatamente uma categoria logarítmica por pedra: o rating efetivo das pretas sobe e o das brancas desce apenas nesse cálculo, sem alterar os ratings base.
 
 ### Consultar relatórios
 

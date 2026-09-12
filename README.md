@@ -112,7 +112,7 @@ Las posiciones de la clasificación son siempre únicas y secuenciales; los empa
 
 Cuando una importación de OpenGotha encuentra un nombre parecido, muestra una sugerencia de un jugador en la base de datos. Haz clic en el nombre sugerido para vincularlo inmediatamente al jugador existente, o usa el selector para crear un jugador nuevo o elegir otro jugador.
 
-Cada emparejamiento recibe una sugerencia automática de hándicap en piedras (una piedra por categoría de diferencia entre los jugadores), que el director del torneo puede editar antes de registrar el resultado. Al procesar la ronda, el hándicap se traslada a la partida y ajusta el rating de forma similar a OGS: el rating del oponente se desplaza solo para el cálculo de esa partida, sin tocar su rating base.
+Cada emparejamiento recibe una sugerencia automática de hándicap en piedras (una piedra por categoría de diferencia entre los jugadores), que el director del torneo puede editar antes de registrar el resultado. Al procesar la ronda, el hándicap se traslada a la partida y ajusta el rating al desplazar exactamente una categoría logarítmica por piedra: sube el rating efectivo de negras y baja el de blancas solo para ese cálculo, sin tocar sus ratings base.
 
 ### Consultar reportes
 

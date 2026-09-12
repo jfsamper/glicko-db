@@ -6,7 +6,11 @@ import logging
 import math
 import sqlite3
 
-from services.category_service import get_category_config as get_category_scale, handicap_points
+from services.category_service import (
+    get_category_config as get_category_scale,
+    handicap_points,
+    handicap_rating_adjustments,
+)
 from services.common import current_timestamp, get_db
 from services.glicko2 import Player
 
@@ -83,7 +87,7 @@ def black_handicap_points(white_rating, black_rating, handicap_stones, category_
     """Rating-point adjustment applied to the OPPONENT'S rating only (never
     the player's own baseline) when computing a handicap game's expected
     score. Convention: Black receives the handicap (see README/Go rules --
-    Black places the handicap stones and moves first).
+    Black places the handicap stones and then white moves).
 
     White's update should see Black as this many points STRONGER than
     Black's nominal rating (subsidized by the handicap). Black's update
@@ -188,12 +192,12 @@ def recompute_ratings(conn=None):
             black_score = 1.0 - score if score != 0.5 else 0.5
 
             handicap_stones = _handicap_stones(match)
-            h_points = black_handicap_points(
+            white_handicap_points, black_handicap_adjustment = handicap_rating_adjustments(
                 white_state["rating"],
                 black_state["rating"],
                 handicap_stones,
-                category_k=category_scale["glicko_k"],
-                category_m=category_scale["glicko_m"],
+                k=category_scale["glicko_k"],
+                m=category_scale["glicko_m"],
             )
 
             white_update = glicko2_update(
@@ -206,7 +210,7 @@ def recompute_ratings(conn=None):
                 white_score,
                 conn=conn,
                 tau=cfg["tau"],
-                handicap_points_for_opponent=h_points,
+                handicap_points_for_opponent=white_handicap_points,
             )
             black_update = glicko2_update(
                 black_state["rating"],
@@ -218,7 +222,7 @@ def recompute_ratings(conn=None):
                 black_score,
                 conn=conn,
                 tau=cfg["tau"],
-                handicap_points_for_opponent=-h_points,
+                handicap_points_for_opponent=black_handicap_adjustment,
             )
 
             states[match["white_player_id"]] = {
@@ -624,12 +628,12 @@ def _replay_from_dirty_date(conn, dirty_date):
             continue
 
         handicap_stones = _handicap_stones(match)
-        h_points = black_handicap_points(
+        white_handicap_points, black_handicap_adjustment = handicap_rating_adjustments(
             white_state["rating"],
             black_state["rating"],
             handicap_stones,
-            category_k=category_scale["glicko_k"],
-            category_m=category_scale["glicko_m"],
+            k=category_scale["glicko_k"],
+            m=category_scale["glicko_m"],
         )
 
         white_update = glicko2_update(
@@ -642,7 +646,7 @@ def _replay_from_dirty_date(conn, dirty_date):
             score,
             conn=conn,
             tau=cfg["tau"],
-            handicap_points_for_opponent=h_points,
+            handicap_points_for_opponent=white_handicap_points,
         )
 
         black_update = glicko2_update(
@@ -655,7 +659,7 @@ def _replay_from_dirty_date(conn, dirty_date):
             1.0 - score if score != 0.5 else 0.5,
             conn=conn,
             tau=cfg["tau"],
-            handicap_points_for_opponent=-h_points,
+            handicap_points_for_opponent=black_handicap_adjustment,
         )
 
         states[white_id] = white_update

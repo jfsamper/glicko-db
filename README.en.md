@@ -111,7 +111,7 @@ Standings positions are always unique and sequential; ties resolve through SOS, 
 
 When an OpenGotha import finds a similar name, it shows a database player suggestion. Click the suggested name to link it immediately to the existing player, or use the selector to create a new player or choose another player.
 
-Each pairing gets an automatic handicap suggestion in stones (one stone per category of rating gap between the players), which the tournament director can edit before entering the result. When the round is processed, the handicap carries over to the match and adjusts ratings OGS-style: the opponent's rating is shifted only for that match's calculation, never touching their base rating.
+Each pairing gets an automatic handicap suggestion in stones (one stone per category of rating gap between the players), which the tournament director can edit before entering the result. When the round is processed, the handicap carries over to the match and shifts the effective rating by exactly one logarithmic category per stone: Black's effective rating rises and White's falls only for that calculation, never touching their base ratings.
 
 ### View reports
 

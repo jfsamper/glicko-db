@@ -2308,6 +2308,7 @@ def build_rating_chart_data(snapshots):
     if not snapshots:
         return {
             "points": [],
+            "axis_labels": [],
             "polyline": "",
             "path": "",
             "baseline_y": 0,
@@ -2379,9 +2380,27 @@ def build_rating_chart_data(snapshots):
 
     label_min = round(min_rating)
     label_max = round(max_rating)
+    month_names = ("jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec")
+    label_indexes = []
+    for position in range(min(5, len(points))):
+        index = round(position * (len(points) - 1) / max(1, min(5, len(points)) - 1))
+        if index not in label_indexes:
+            label_indexes.append(index)
+    axis_labels = []
+    for index in label_indexes:
+        point = points[index]
+        snapshot_date = datetime.strptime(str(point["date"]), "%Y-%m-%d")
+        axis_labels.append(
+            {
+                "x": point["x"],
+                "label": f"{month_names[snapshot_date.month - 1]}/{snapshot_date.strftime('%y')}",
+                "anchor": "start" if index == 0 else "end" if index == len(points) - 1 else "middle",
+            }
+        )
 
     return {
         "points": points,
+        "axis_labels": axis_labels,
         "polyline": " ".join(
             f"{point['x']},{point['y']}"
             for point in points

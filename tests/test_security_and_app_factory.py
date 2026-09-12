@@ -1,4 +1,5 @@
 import json
+import importlib
 import re
 import sqlite3
 from pathlib import Path
@@ -10,6 +11,7 @@ from flask_wtf.csrf import generate_csrf
 from werkzeug.security import generate_password_hash
 
 from app import create_app
+import app as app_module
 import config
 import services.common as common
 import routes.admin as admin_routes
@@ -22,6 +24,33 @@ def test_create_app_factory_creates_isolated_instances(tmp_path):
     assert app1.config["CUSTOM_TEST_KEY"] == "val1"
     assert app2.config["CUSTOM_TEST_KEY"] == "val2"
     assert app1 is not app2
+
+
+def test_create_app_without_auto_init_does_not_create_a_database(tmp_path, monkeypatch):
+    db_path = tmp_path / "not-created.db"
+    monkeypatch.setattr(config, "DB_PATH", str(db_path))
+    monkeypatch.setattr(common, "DB_PATH", str(db_path))
+
+    create_app({"TESTING": True}, auto_init=False)
+
+    assert not db_path.exists()
+
+
+def test_passenger_wsgi_creates_an_initialized_application(tmp_path, monkeypatch):
+    db_path = tmp_path / "passenger.db"
+    db_path_string = str(db_path)
+    monkeypatch.setattr(config, "DB_PATH", db_path_string)
+    monkeypatch.setattr(common, "DB_PATH", db_path_string)
+    monkeypatch.setattr(app_module, "DB_PATH", db_path_string)
+    monkeypatch.setattr(admin_routes, "DB_PATH", db_path_string)
+
+    passenger_wsgi = importlib.import_module("passenger_wsgi")
+
+    assert passenger_wsgi.application is not None
+    with sqlite3.connect(db_path) as conn:
+        assert conn.execute(
+            "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'players'"
+        ).fetchone() == (1,)
 
 
 def test_session_cookie_security_defaults():
