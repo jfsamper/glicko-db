@@ -178,4 +178,4 @@ The consistent ordering, filtering, and search behavior is already shipped and v
 
 ## License and Attribution
 
-Review the source files and dependencies for licensing details. The Glicko-2 implementation was originally developed by Ryan Kirkman and released under the MIT license.
+Review the source files and dependencies for license details. The Glicko-2 implementation is © 2009 Ryan Kirkman and BesoGo is © 2015-2018 Ye Wang. Both are released under the [MIT license](static/vendor/besogo/LICENSE).
