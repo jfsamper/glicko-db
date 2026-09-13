@@ -176,10 +176,4 @@ The consistent ordering, filtering, and search behavior is already shipped and v
 
 Glicko DB was originally developed for the Go community in Colombia by Juan Felipe Samper in 2026.
 
-<<<<<<< HEAD
 The Glicko-2 system was published by Mark Glickman in 2022 into the public domain. The Python implementation is © 2009 Ryan Kirkman, and BesoGo is © 2015-2018 Ye Wang. Both are distributed under the [MIT license](static/vendor/besogo/LICENSE).
-=======
-## License and Attribution
-
-Review the source files and dependencies for license details. The Glicko-2 implementation is © 2009 Ryan Kirkman and BesoGo is © 2015-2018 Ye Wang. Both are released under the [MIT license](static/vendor/besogo/LICENSE).
->>>>>>> 44fb4cb5332c06683a93314cd47281436a99c3c9
