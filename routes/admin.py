@@ -84,7 +84,7 @@ from config import (
 )
 from services.common import ALLOWED_ROLES
 from services.helpers import normalize_key, normalize_round_note, normalize_round_note_for_storage, parse_date_value
-from services.import_service import build_import_preview, import_gotha_xml, import_workbook_data
+from services.import_service import build_import_preview, import_workbook_data
 from services.player_service import (
     count_rankings,
     load_rankings,

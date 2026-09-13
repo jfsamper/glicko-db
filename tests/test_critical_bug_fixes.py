@@ -435,51 +435,6 @@ def test_workbook_import_normalizes_round_and_preserves_time_notes(tmp_path, mon
     ]
 
 
-def test_gotha_import_populates_numeric_round_key(tmp_path, monkeypatch):
-        import services.import_service as import_service
-
-        db_path = tmp_path / "gotha_round.db"
-        conn = create_test_db(db_path)
-        conn.close()
-
-        xml_path = tmp_path / "round.xml"
-        xml_path.write_text(
-                """
-                <Tournament>
-                    <TournamentParameterSet>
-                        <GeneralParameterSet beginDate="2026-08-01" name="Round event"/>
-                    </TournamentParameterSet>
-                    <Players>
-                        <Player firstName="Alice" name="Smith"/>
-                        <Player firstName="Bob" name="Jones"/>
-                    </Players>
-                    <Games>
-                        <Game roundNumber="2" whitePlayer="SMITHALICE" blackPlayer="JONESBOB" result="RESULT_WHITEWINS"/>
-                    </Games>
-                </Tournament>
-                """.strip(),
-                encoding="utf-8",
-        )
-
-        def get_test_db():
-                connection = sqlite3.connect(db_path)
-                connection.row_factory = sqlite3.Row
-                return connection
-
-        monkeypatch.setattr(import_service, "get_db", get_test_db)
-        monkeypatch.setattr(import_service, "mark_dirty", lambda _date: None)
-
-        result = import_service.import_gotha_xml(xml_path)
-
-        assert result["matches"] == 1
-        conn = get_test_db()
-        match = conn.execute(
-                "SELECT notes, round_number FROM matches"
-        ).fetchone()
-        conn.close()
-        assert tuple(match) == ("2", 2)
-
-
 def test_parse_date_value_rejects_invalid_or_missing_dates():
     with pytest.raises(ValueError):
         parse_date_value("")

@@ -3,9 +3,9 @@
 The main risks now are maintainability (a few files have grown very large) and a handful of loose ends that the [previous review](CODE_REVIEW..old.md) calls "green" but that are still visibly open in the source.
 
 ## 1. Status check on previously-tracked issues
-- import_gotha_xml() in import_service.py — still dead code. routes/admin.py imports it but the actual .xml upload path calls build_import_preview() → create_tournament_from_gotha() instead. The only real callers left are tests/test_handicap.py and import_service.py's own parse_gotha_xml dependency. Recommend finishing the planned removal (function + the unused import in admin.py).
+- import_gotha_xml() in import_service.py — resolved. The unused helper, its admin import, and its two obsolete tests were removed. The active XML flow remains build_import_preview() → create_tournament_from_gotha().
 
-- Flask debug mode — still enabled in app.py's if __name__ == "__main__": app.run(debug=True, ...). It's dead in the real deployment path (Passenger uses passenger_wsgi.py, which calls create_app() directly), so it's low-risk today, but it's a footgun for anyone who runs python app.py against a real database. Worth gating behind an env var or deleting now that Passenger is the actual entry point.
+- Flask debug mode — resolved. The direct app.py entry point no longer passes debug=True; Passenger continues to call create_app() directly.
 
 ## 2. Architecture & maintainability
 - routes/admin.py (~2,800 lines) and services/tournament_service.py (~2,000 lines) have become "god files." Both mix several distinct concerns (auth/session handling, match CRUD, tournament CRUD, backups, OpenGotha XML import/export, pairing orchestration). This is the biggest structural risk in the repo — not because anything's broken, but because every change to one concern risks touching unrelated code. Splitting admin.py into per-domain blueprints (admin_matches.py, admin_tournaments.py, admin_users.py, admin_backups.py) and splitting tournament_service.py into gotha_import.py / gotha_export.py / pairing_orchestration.py would pay off.
@@ -39,9 +39,29 @@ Minor fixes:
 
 - Inline style="" attributes are scattered through several templates (player.html, category.html) for layout (grid/gap/text-align) rather than color — this doesn't fight the dark theme, but it does undercut the otherwise clean CSS-variable-driven theming approach; moving these into tournament.css/tables.css classes would make future theme edits easier.
 
-## Suggested priority order
-- Finish removing import_gotha_xml() dead code + its unused import.
-- Remove/gate the debug=True app.run() block.
-- Untangle category_service.py ↔ rating_service.py circular import.
-- Split routes/admin.py and services/tournament_service.py by concern.
-- Homepage stats: tab/collapse by period; remove placeholder News content.
+## Implementation plan for remaining issues
+
+1. Untangle the category/rating circular import.
+	- Move glicko_to_category() and any required constants into a small shared module.
+	- Update category_service.py, rating_service.py, routes/public.py, and app.py imports.
+	- Run the category, rating, standings, and application-factory tests before and after the move.
+
+2. Split the largest route and service modules by ownership.
+	- Extract routes/admin.py into match, tournament, user/profile, and backup/import modules while preserving endpoint names and the existing blueprint registration contract.
+	- Extract services/tournament_service.py into OpenGotha import/export and pairing orchestration modules, keeping compatibility wrappers only where callers still need them.
+	- Move one domain at a time, run its focused tests, then run the full suite and verify url_for() endpoint resolution.
+
+3. Reduce homepage density and remove placeholder news.
+	- Present one statistics period at a time using the existing language and styling conventions, with a server-rendered default and accessible period navigation.
+	- Remove the literal placeholder News card until a real data source exists.
+	- Add route/template tests for the default period, period switching, and absence of placeholder content.
+
+4. Address the remaining low-severity consistency items.
+	- Add the same rate limiter used for login attempts to password-reset requests without changing the generic response.
+	- Make CSV handicap validation use parse_handicap_stones so invalid values fail consistently instead of being clamped.
+	- Consolidate duplicated match/tournament sort helpers into a shared module.
+	- Split TRANSLATIONS out of services/common.py, then extract the remaining common concerns only where ownership is clear.
+
+5. Retire historical compatibility complexity after verification.
+	- Document and verify the players_corrupt migration state across supported databases.
+	- Add a migration/integrity check proving no live database needs the repair path, then remove or isolate repair_legacy_players_table() in a separate change.
