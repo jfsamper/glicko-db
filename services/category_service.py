@@ -3,6 +3,7 @@ import math
 import sqlite3
 
 from config import DEFAULT_RATING, GLICKO_K, GLICKO_M
+from services.category_utils import format_glicko_category
 from services.common import current_timestamp, get_db
 
 
@@ -116,6 +117,16 @@ def category_value(rating, k=None, m=None):
     return (math.log(rating / m) * k) - 29
 
 
+def glicko_to_category(glicko, decimals=0, k=None, m=None):
+    """Convert a rating using the persisted category scale by default."""
+    if k is None or m is None:
+        config = get_category_config()
+        k = config["glicko_k"] if k is None else k
+        m = config["glicko_m"] if m is None else m
+
+    return format_glicko_category(glicko, decimals=decimals, k=k, m=m)
+
+
 def handicap_points(rating_a, rating_b, handicap_stones, k=None, m=None):
     """Return the raw-rating shift for Black's effective handicap strength."""
     return handicap_rating_adjustments(
@@ -173,8 +184,3 @@ def suggested_handicap_stones(rating_stronger, rating_weaker, k=None, m=None, ma
     stones = round(gap)
     return max(0, min(max_stones, stones))
 
-
-# Circular import workaround
-# Consider moving `glicko_to_category()` to a shared utility module (e.g., `services/rating_utils.py`) 
-# that neither `rating_service` nor `category_service` depends on deeply. Functional but hard to follow.
-from services.rating_service import glicko_to_category  # noqa: E402, F401

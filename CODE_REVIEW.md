@@ -41,10 +41,10 @@ Minor fixes:
 
 ## Implementation plan for remaining issues
 
-1. Untangle the category/rating circular import.
-	- Move glicko_to_category() and any required constants into a small shared module.
-	- Update category_service.py, rating_service.py, routes/public.py, and app.py imports.
-	- Run the category, rating, standings, and application-factory tests before and after the move.
+1. Untangle the category/rating circular import — completed.
+	- Moved the pure rating-to-category formatter into services/category_utils.py.
+	- Kept thin compatibility wrappers in category_service.py and rating_service.py, so existing public imports remain stable.
+	- Removed the bottom-of-file category_service.py import from rating_service.py; focused category, rating, handicap, and standings tests pass.
 
 2. Split the largest route and service modules by ownership.
 	- Extract routes/admin.py into match, tournament, user/profile, and backup/import modules while preserving endpoint names and the existing blueprint registration contract.

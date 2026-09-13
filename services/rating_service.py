@@ -11,6 +11,7 @@ from services.category_service import (
     handicap_points,
     handicap_rating_adjustments,
 )
+from services.category_utils import format_glicko_category
 from services.common import current_timestamp, get_db
 from services.glicko2 import Player
 
@@ -495,32 +496,7 @@ def glicko_to_category(glicko, decimals=0, k=None, m=None):
         k = config["glicko_k"] if k is None else k
         m = config["glicko_m"] if m is None else m
 
-    if not k or not m:
-        raise ValueError("Category parameters must be non-zero")
-
-    try:
-        glicko = float(glicko)
-    except (TypeError, ValueError):
-        glicko = DEFAULT_RATING
-    if not math.isfinite(glicko) or glicko <= 0:
-        glicko = DEFAULT_RATING
-
-    value = (math.log(glicko / m) * k) - 29
-
-    if decimals == 0:
-        r = math.floor(value)
-
-        if r < 0:
-            return f"{abs(r)} kyu"
-
-        return f"{r + 1} dan"
-
-    r = round(value, decimals)
-
-    if r < 0:
-        return f"{1 - r:.{decimals}f} kyu"
-
-    return f"{r + 1:.{decimals}f} dan"
+    return format_glicko_category(glicko, decimals=decimals, k=k, m=m)
 
 
 def _replay_from_dirty_date(conn, dirty_date):
