@@ -171,12 +171,7 @@ Las pruebas cubren ratings y gráficos, filtros de jugadores, soporte de idiomas
 
 La funcionalidad de ordenación, filtros y búsqueda consistente ya está entregada y validada en las páginas de jugadores, partidas y torneos.
 
-## Próximas funciones recomendadas
-
-1. **Mejoras de paginación.** Mostrar páginas totales, contexto de página actual y selección simple de resultados por página.
-2. **Perfil de jugador con resultados y estadísticas de torneos.** Añadir en la ficha de cada jugador un resumen de torneos jugados, ratio de victorias/derrotas, resultados por evento, tabla de torneos recientes, rachas y porcentajes de rendimiento, con filtros por categoría y temporada.
-3. **Copias programadas con retención y verificación de restauración.** Mantenerlas desactivadas por defecto y solo habilitarlas cuando exista política clara de retención.
-
 ## Licencia y atribución
+Glicko-db fue originalmente desarrollado para la comunidad de Go en Colombia por Juan Felipe Samper en 2026. 
 
-Revisa los archivos fuente y dependencias para conocer los detalles de licencia. La implementación de Glicko-2 fue desarrollada originalmente por Ryan Kirkman, publicado bajo la licencia MIT.
+El sistema [Glicko-2](https://www.glicko.net/glicko/glicko2.pdf) fue publicado por Mark E. Glickman en 2022 al dominio público. La implementación en python es ©2009 Ryan Kirkman y BesoGo es ©2015-2018 Ye Wang. Ambas se distribuyen bajo la [licencia MIT](static/vendor/besogo/LICENSE).

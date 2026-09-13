@@ -1,76 +1,47 @@
 # Code Review – glicko-db
 
-This review is intentionally short and action-oriented. The project is currently green: the full suite passes with 344 tests, and the remaining work is mainly follow-up cleanup rather than new production risk.
+The main risks now are maintainability (a few files have grown very large) and a handful of loose ends that the [previous review](CODE_REVIEW..old.md) calls "green" but that are still visibly open in the source.
 
-## 1. Critical bugs
+## 1. Status check on previously-tracked issues
+- import_gotha_xml() in import_service.py — still dead code. routes/admin.py imports it but the actual .xml upload path calls build_import_preview() → create_tournament_from_gotha() instead. The only real callers left are tests/test_handicap.py and import_service.py's own parse_gotha_xml dependency. Recommend finishing the planned removal (function + the unused import in admin.py).
 
-- OpenGotha import robustness: missing tournament metadata and missing player-name attributes are now guarded; malformed XML is rejected without crashing the import path.
-- McMahon import correctness: `mm_bar`, `mm_floor`, and `mm_zero` remain in sync with the imported tournament values; wrong baselines are no longer applied during conversion.
-- Date validation: malformed match dates are rejected instead of being silently stored; this prevents follow-on DB errors and 500s during filtering or ranking updates.
-- Admin traceability gate: login/logout and sensitive config/user changes are now recorded in the SQLite `audit_log` table; named-user auth remains enforced.
-- Result publication gate: member submissions are isolated in `result_submissions` and cannot affect live matches, ratings, or reports until an authorized staff member approves them.
+- Flask debug mode — still enabled in app.py's if __name__ == "__main__": app.run(debug=True, ...). It's dead in the real deployment path (Passenger uses passenger_wsgi.py, which calls create_app() directly), so it's low-risk today, but it's a footgun for anyone who runs python app.py against a real database. Worth gating behind an env var or deleting now that Passenger is the actual entry point.
 
-## 2. High-priority issues
+## 2. Architecture & maintainability
+- routes/admin.py (~2,800 lines) and services/tournament_service.py (~2,000 lines) have become "god files." Both mix several distinct concerns (auth/session handling, match CRUD, tournament CRUD, backups, OpenGotha XML import/export, pairing orchestration). This is the biggest structural risk in the repo — not because anything's broken, but because every change to one concern risks touching unrelated code. Splitting admin.py into per-domain blueprints (admin_matches.py, admin_tournaments.py, admin_users.py, admin_backups.py) and splitting tournament_service.py into gotha_import.py / gotha_export.py / pairing_orchestration.py would pay off.
 
-- Backup + repair hardening: stale legacy SQLite schemas are repaired automatically, FTS5 search tables are rebuilt safely, and restore candidates are limited to managed backups.
-- Tournament integrity: BYE handling, standings rank uniqueness, and round-pairing logic were corrected and covered by regression tests.
-- Rating correctness: recomputation and dirty-state replay are transaction-safe, use UTC-5 application dates, and process same-day matches by round; unknown rounds are treated as round 1.
-- Security baseline: CSRF, secure session cookies, and user-role-based admin access are enforced; only administrators and operators can modify player, rating, and category data; the legacy shared-password bridge has been removed.
-- Account recovery: authenticated users can manage email, language, theme, timezone, and password from their profile; forgotten-password requests use hashed, expiring, single-use tokens and generic responses to avoid email enumeration.
-- Result moderation: the `member` role, self-service registration, manual player linkage, ownership checks, staff approval/rejection, audit events, and post-approval rating refresh are implemented and covered by focused tests. Expiring, hashed, single-use approval-code helpers are scaffolded for a future email flow but are not active.
+- Circular-import workaround is self-documented but still fragile. category_service.py imports glicko_to_category from rating_service at the bottom of the file specifically to dodge a circular import, with a comment already flagging this as awkward. It works today, but it's one reordered import away from breaking. The suggested fix (pull glicko_to_category into a small shared module neither service depends on) is worth actually doing.
 
-## 3. Medium-priority issues
+- Player._tau is a mutable class attribute set per-call in glicko2_update() (Player._tau = tau). This works fine under the app's current single-threaded-per-request SQLite usage, but it's a latent race condition if the app is ever run with threaded workers or concurrent background recomputation — one request's tau could leak into another's calculation mid-flight. Prefer an instance attribute or passing tau explicitly into the volatility solver.
 
-- Config validation: category and rating settings now reject invalid or non-positive values instead of persisting broken data.
-- Login throttling configuration: attempt and time-window thresholds now come from `config.py` with environment-backed defaults.
-- Tournament UX: async redirect flow, settings editing, result entry behavior, and pending-player resolution were improved without breaking the normal admin workflow.
-- Search consistency: player, match, and tournament list pages now share a consistent ordering and filtering model, with query state preserved across pagination, and this is covered by regression tests.
-- Performance cleanup: lookup caching, SQL `LIMIT/OFFSET` use, and migration guards were tightened to reduce unnecessary scanning and repeated work.
-- Import reliability: fuzzy player matching, round-note normalization, and metadata handling were hardened across workbook and XML imports. OpenGotha tournament metadata and match records now use typed `GothaTournamentPayload`, `GothaPlayer`, and `GothaMatch` dataclasses while preserving legacy mapping access.
-- Handicap games (2026-08): stones-based handicap support landed end-to-end -- `category_service.handicap_points`/`suggested_handicap_stones` use this app's logarithmic category curve for exact one-category-per-stone shifts, with auto-suggested/overridable handicap on manual and generated tournament pairings and opponent-only effective-rating adjustments in both rating paths. Handicap columns on `matches`/`tournament_pairings` use a defaulting migration. OpenGotha XML import (`import_gotha.py`, `import_service.py`, `tournament_service.create_tournament_from_gotha`) and the CSV importer both read an optional handicap value; missing/invalid values default to 0. Covered by `tests/test_handicap.py`.
-- Date and round consistency: application-generated timestamps use UTC-5 by default or the active account's valid IANA timezone preference, and both rating calculation paths share deterministic date/round ordering. Invalid or unset preferences fall back to UTC-5.
-- Timezone selector usability: account timezone selectors use one curated representative per current UTC offset, sort options ascending, display the UTC adjustment, and preserve raw IANA values for storage.
-- Reporting: public reports default to All time, support player filtering and games-based selector ordering, and provide consistent CSV/PDF exports with localized PDF text and filter-preserving filenames.
-- Tournament operations: draft tournaments are hidden from public listings, inactive players can be managed by administrators, and tournament actions support asynchronous panel refresh with redirect fallback for non-AJAX clients.
+- repair_legacy_players_table() / the players_corrupt handling in app.py is defensive code for what looks like a real historical incident (a table literally renamed to players_corrupt during some past debugging session, plus dangling FKs pointing at it). It's good that it's handled robustly and tested, but it's also permanent complexity that now runs on every tournament create/delete. Worth understanding root cause well enough to be confident it can't recur, and maybe scheduling removal of this compatibility shim after a verified clean migration.
 
-## 4. Low-priority / refactoring
+- Duplicated sort/filter helpers. routes/admin.py redefines _parse_match_sort, _parse_match_order, and TOURNAMENT_SORT_FIELDS with logic identical to routes/public.py (while separately importing _match_filter_sql and parse_tournament_sort from public). Consolidating these into one shared module would remove the risk of the two copies drifting apart.
 
-- Review document cleanup: this file was shortened to a concise 4-section issue log; historical duplicate notes and stale long-form explanations were merged or removed.
-- Optional cleanup: split large CSS bundles, keep dev-only scripts under `scripts/dev_only`, and trim backlog docs that drift from the active roadmap.
-- Future follow-ups: scheduled backup retention, named reporting seasons, and broader observability improvements remain optional, non-blocking enhancements.
+- services/common.py is a kitchen-sink module: auth, audit logging, timezone helpers, chart-building math, and the entire multilingual TRANSLATIONS dict (well over 1,000 lines) all live in one file. Splitting TRANSLATIONS out to its own i18n.py (or per-locale JSON) would make translation edits low-risk and separate from the security-sensitive auth code sitting in the same file.
 
-## Status summary
+- Repetitive route boilerplate. Most admin POST handlers repeat the same conn = get_db(); try: ...; except ValueError as exc: flash(...); finally: conn.close() shape. A small helper/decorator for "run this DB action, flash a translated result" would cut a lot of near-duplicate code across admin.py.
 
-- Production blockers: none remaining in the current scope.
-- Current project status: green, with the audit, auth, account profile/recovery, per-account timezone, round-order, tournament-delete modal, typed OpenGotha, reporting, handicap-games, result-moderation, and reCAPTCHA registration changes completed and validated by 344 tests.
+## 3. Security
+Minor fixes:
 
-## 5. Remaining low-priority follow-ups
+- Password-reset requests aren't rate-limited (only login attempts are), so the endpoint could be used to spam the configured SMTP account. Low severity given the generic response, but easy to add the same limiter.
 
-The project is green; the historical 4.x backlog has been narrowed down to items that still genuinely need work.
+- handicap_stones validation is inconsistent between entry points: the match/tournament forms reject out-of-range values with a hard error (parse_handicap_stones, update_pairing_handicap), while the CSV importer silently clamps to 0–9. Not a security issue, just a UX inconsistency worth aligning.
 
-- Named reporting seasons and broader observability remain deferred.
+## 4. Design / UX (live site)
 
----
+- Homepage is very dense. It renders all three time periods (All-time / Year / Quarter) × five metrics × five entries each = 75 rows on first load. A tabbed or accordion view (similar to the season dropdown already used on /reports) would reduce clutter and page weight without losing information.
 
-## 6. Recommended order of work
+- The "Noticias" (News) card ships literal placeholder content (... / ... in index.html) straight to production. Either wire it to something real or drop the section until there's content.
 
-The remaining work is narrow and optional rather than production-critical:
+- Language switcher is a single-button cycle (ES→EN→PT) labeled with the next language's abbreviation rather than the current one — functional, but a first-time visitor has to experiment to understand it's a cycle rather than a static label. A small dropdown would be more discoverable, though this is a minor point given the audience is a known local club.
 
-1. Add named reporting seasons if a real operational need emerges.
+- Inline style="" attributes are scattered through several templates (player.html, category.html) for layout (grid/gap/text-align) rather than color — this doesn't fight the dark theme, but it does undercut the otherwise clean CSS-variable-driven theming approach; moving these into tournament.css/tables.css classes would make future theme edits easier.
 
----
-
-## 7. Files reviewed (with notes)
-
-| File | Status | Notes |
-|------|--------|-------|
-| [app.py](app.py) | Reviewed | migration defaults, audit metadata, seed data |
-| [config.py](config.py) | Reviewed | default rating constants, timezone, and SMTP settings |
-| [routes/admin.py](routes/admin.py) | Reviewed | account profile/recovery, moderation workflow, permissions, and rate limits |
-| [services/category_service.py](services/category_service.py) | Reviewed | positive validation and updated_at persistence |
-| [services/import_gotha.py](services/import_gotha.py) | Reviewed | typed tournament/participant/match payloads with legacy mapping access |
-| [services/rating_service.py](services/rating_service.py) | Reviewed | dirty-date replay and transaction safety |
-| [services/tournament_service.py](services/tournament_service.py) | Reviewed | typed OpenGotha metadata parser, pending-player cleanup, and export IDs |
-| [templates/admin/tournaments.html](templates/admin/tournaments.html) | Reviewed | explicit tournament-delete modal |
-| [templates/partials/matches_table.html](templates/partials/matches_table.html) | Reviewed | sort control UX follow-up |
-| [tests/](tests) | Reviewed | regression coverage for fixed issues and result moderation is present |
+## Suggested priority order
+- Finish removing import_gotha_xml() dead code + its unused import.
+- Remove/gate the debug=True app.run() block.
+- Untangle category_service.py ↔ rating_service.py circular import.
+- Split routes/admin.py and services/tournament_service.py by concern.
+- Homepage stats: tab/collapse by period; remove placeholder News content.
