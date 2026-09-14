@@ -10,6 +10,7 @@ Glicko DB es una aplicación Flask y SQLite para administrar jugadores, ratings,
 - Cálculo Glicko-2 con parámetros de rating y categoría configurables
 - Interfaz pública en español, inglés y portugués
 - Administración de jugadores y partidas con paginación, filtros y ordenación consistente
+- Biblioteca pública de registros SGF, con vinculación y desvinculación de partidas para directores de torneo, operadores y administradores
 - Importación de libros Excel (XLSX), OpenGotha (XML) y archivos de partidas (CSV)
 - Creación y edición de torneos, importación de OpenGotha, emparejamientos, registro de resultados, clasificación y exportación
 - Registro de cuentas de miembros y envío de resultados individuales para aprobación administrativa

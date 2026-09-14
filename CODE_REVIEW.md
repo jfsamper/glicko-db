@@ -46,10 +46,19 @@ Minor fixes:
 	- Kept thin compatibility wrappers in category_service.py and rating_service.py, so existing public imports remain stable.
 	- Removed the bottom-of-file category_service.py import from rating_service.py; focused category, rating, handicap, and standings tests pass.
 
-2. Split the largest route and service modules by ownership.
-	- Extract routes/admin.py into match, tournament, user/profile, and backup/import modules while preserving endpoint names and the existing blueprint registration contract.
-	- Extract services/tournament_service.py into OpenGotha import/export and pairing orchestration modules, keeping compatibility wrappers only where callers still need them.
-	- Move one domain at a time, run its focused tests, then run the full suite and verify url_for() endpoint resolution.
+2. Split the largest route and service modules by ownership — in progress.
+	- Completed the first slice: backup validation, discovery, FTS repair, and restoration now live in services/backup_service.py; backup handlers are registered from routes/admin_backups.py on the existing admin blueprint.
+	- Completed the second slice: workbook, CSV, and OpenGotha import handlers now live in routes/admin_import.py; the import endpoints and routes.admin compatibility symbols are preserved.
+	- Completed the third slice: tournament listing, creation, and OpenGotha tournament import now live in routes/admin_tournaments.py; the existing admin blueprint and endpoint contract are preserved.
+	- Completed the fourth slice: all tournament endpoint registrations, including settings, participants, pairing, results, and round actions, now live in routes/admin_tournaments.py.
+	- Moved the delete, status, settings-display, pending-player resolution, XML export, participant, pairing, result, and round bodies into routes/admin_tournaments.py. The full suite passes with the new implementations registered on the shared blueprint.
+	- Completed the tournament body move: detail, participant, pairing, result, round, and player-creation handlers now run from routes/admin_tournaments.py. The old unregistered definitions in admin.py are isolated as legacy compatibility code and are not registered on the blueprint.
+	- Completed the fifth slice: match listing, creation, editing, deletion, SGF handling, pagination, and SQLite recovery now live in routes/admin_matches.py. Existing endpoint names and the shared admin blueprint are preserved.
+	- Completed the sixth slice: player rankings/CRUD, category configuration, and rating configuration/recalculation now live in routes/admin_players.py. Existing endpoint names, permissions, recovery behavior, and the shared admin blueprint are preserved.
+	- Remaining route work: extract routes/admin_users.py for authentication, profiles, users, settings, submissions, audit, and logout workflows.
+	- Remaining route modules: routes/admin_matches.py for match listing and CRUD; routes/admin_players.py for player, rating, and category administration; routes/admin_users.py for authentication, profiles, users, settings, submissions, and audit workflows. Continue extracting the corresponding tournament service modules.
+	- Remaining service modules: services/tournament_gotha.py for XML metadata read/create/export; services/tournament_participants.py for participant and pending-player persistence; services/tournament_pairing.py for round generation, pairing, status, and handicap orchestration; services/tournament_matches.py for pairing-to-match synchronization and result materialization; services/tournament_standings.py for tournament standings assembly.
+	- Preserve endpoint names, the shared blueprint registration contract, and compatibility symbols while moving one domain at a time. Run focused tests after each slice, then the full suite and url_for() endpoint checks.
 
 3. Reduce homepage density and remove placeholder news.
 	- Present one statistics period at a time using the existing language and styling conventions, with a server-rendered default and accessible period navigation.
