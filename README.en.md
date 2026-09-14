@@ -156,6 +156,8 @@ Use the admin backup screen before bulk imports, restores, or upgrades. The serv
 
 Each backup includes a sidecar directory containing the SGF library, and restore recovers it without breaking links.
 
+Run `python scripts/check_legacy_players_state.py` to audit the active database and managed backups for the historical `players_corrupt` table or child foreign keys. The 2026-09-13 audit found all eight managed databases clean. The compatibility repair path remains in place until a separate change removes or relocates it.
+
 ## Development
 
 Run the regression suite from the project root:
@@ -166,7 +168,7 @@ pytest -q
 
 ### Code organization
 
-Administrative routes are split by domain across `routes/admin_tournaments.py`, `routes/admin_matches.py`, `routes/admin_players.py`, and `routes/admin_users.py`. Tournament logic is split by responsibility across `services/tournament_gotha.py`, `services/tournament_participants.py`, `services/tournament_pairing.py`, `services/tournament_matches.py`, and `services/tournament_standings.py`. Translations and language selection live in `services/i18n.py`, while pure rating-chart helpers live in `services/chart_service.py`; `services/common.py` retains compatibility exports for existing imports. `services/tournament_service.py` remains a compatibility facade. The current full regression suite passes 375 tests.
+Administrative routes are split by domain across `routes/admin_tournaments.py`, `routes/admin_matches.py`, `routes/admin_players.py`, and `routes/admin_users.py`. Tournament logic is split by responsibility across `services/tournament_gotha.py`, `services/tournament_participants.py`, `services/tournament_pairing.py`, `services/tournament_matches.py`, and `services/tournament_standings.py`. Translations and language selection live in `services/i18n.py`, while pure rating-chart helpers live in `services/chart_service.py`; `services/common.py` retains compatibility exports for existing imports. `services/tournament_service.py` remains a compatibility facade. The current full regression suite passes 376 tests.
 
 ### Linux hosting installation
 

@@ -14,7 +14,7 @@ The original route and tournament-service decomposition has been verified for th
 
 - Player._tau is a mutable class attribute set per-call in glicko2_update() (Player._tau = tau). This works fine under the app's current single-threaded-per-request SQLite usage, but it's a latent race condition if the app is ever run with threaded workers or concurrent background recomputation — one request's tau could leak into another's calculation mid-flight. Prefer an instance attribute or passing tau explicitly into the volatility solver.
 
-- repair_legacy_players_table() / the players_corrupt handling in app.py is defensive code for what looks like a real historical incident (a table literally renamed to players_corrupt during some past debugging session, plus dangling FKs pointing at it). It's good that it's handled robustly and tested, but it's also permanent complexity that now runs on every tournament create/delete. Worth understanding root cause well enough to be confident it can't recur, and maybe scheduling removal of this compatibility shim after a verified clean migration.
+- Historical `players_corrupt` compatibility — verified clean, retirement pending as a separate change. `legacy_players_integrity_state()` and `assert_legacy_players_state_clean()` now check for the legacy table and child foreign keys, with the assertion running after startup repair. The read-only `scripts/check_legacy_players_state.py` audit checked the active database and seven managed backups on 2026-09-13: all eight had canonical `players`, no `players_corrupt` table, no child references, `PRAGMA integrity_check = ok`, and zero foreign-key violations. `repair_legacy_players_table()` remains isolated in `app.py` until a separate change removes or relocates the compatibility path.
 
 - Shared route sort helpers — resolved. Match and tournament sort mappings and validators now live in `routes/sort_helpers.py`; `routes/admin.py` and `routes/public.py` re-export the same definitions, and the admin tournament query uses the shared `t.` SQL alias.
 
@@ -22,7 +22,7 @@ The original route and tournament-service decomposition has been verified for th
 
 - Repetitive route boilerplate. Most admin POST handlers repeat the same conn = get_db(); try: ...; except ValueError as exc: flash(...); finally: conn.close() shape. A small helper/decorator for "run this DB action, flash a translated result" would cut a lot of near-duplicate code across admin.py.
 
-`services/tournament_service.py` is a 27-line compatibility facade that re-exports the established public and private import surface; it contains no tournament implementation bodies. No `_legacy_admin_*` route bodies or `_legacy()` service adapters remain. The last full-suite verification passed 375 tests.
+`services/tournament_service.py` is a 27-line compatibility facade that re-exports the established public and private import surface; it contains no tournament implementation bodies. No `_legacy_admin_*` route bodies or `_legacy()` service adapters remain. The last full-suite verification passed 376 tests.
 
 ## 3. Security
 Minor fixes:
@@ -65,5 +65,6 @@ Minor fixes:
 	- Split `TRANSLATIONS` and `get_language` out of `services/common.py` into `services/i18n.py`, and move pure chart helpers into `services/chart_service.py` — completed with compatibility re-exports and ownership tests. Auth, audit, timezone, database, and statistics extraction remains deferred until a cleaner ownership boundary is available.
 
 5. Retire historical compatibility complexity after verification.
-	- Document and verify the players_corrupt migration state across supported databases.
-	- Add a migration/integrity check proving no live database needs the repair path, then remove or isolate repair_legacy_players_table() in a separate change.
+	- Document and verify the `players_corrupt` migration state across supported databases — completed for the active database and seven managed backups; the repeatable check is `scripts/check_legacy_players_state.py`.
+	- Add a migration/integrity check proving no live database needs the repair path — completed with the startup assertion and `tests/test_critical_bug_fixes.py` coverage.
+	- Remove or isolate `repair_legacy_players_table()` in a separate change after the clean-state verification has been observed across the deployment lifecycle.

@@ -8,7 +8,13 @@ from pathlib import Path
 import pytest
 
 import config
-from app import app, migrate_tournament_schema, repair_legacy_players_table
+from app import (
+    app,
+    assert_legacy_players_state_clean,
+    legacy_players_integrity_state,
+    migrate_tournament_schema,
+    repair_legacy_players_table,
+)
 from routes import admin as admin_routes
 from services.glicko2 import Player
 from services.helpers import parse_date_value
@@ -1174,6 +1180,28 @@ def test_repair_legacy_players_table_restores_players_from_corrupt_name(tmp_path
     assert row["rating"] == 1500
     columns = {info[1] for info in conn.execute("PRAGMA table_info(players)").fetchall()}
     assert "initial_rating" in columns
+    conn.close()
+
+
+def test_legacy_players_integrity_check_detects_and_clears_legacy_state():
+    conn = sqlite3.connect(":memory:")
+    conn.executescript(
+        """
+        CREATE TABLE players_corrupt (id INTEGER PRIMARY KEY);
+        CREATE TABLE tournament_pairings (
+            id INTEGER PRIMARY KEY,
+            white_player_id INTEGER REFERENCES players_corrupt(id)
+        );
+        """
+    )
+
+    state = legacy_players_integrity_state(conn)
+    assert state["has_players"] is False
+    assert state["has_players_corrupt"] is True
+    assert state["referencing_tables"] == ("tournament_pairings",)
+    with pytest.raises(RuntimeError, match="Legacy players_corrupt schema detected"):
+        assert_legacy_players_state_clean(conn)
+
     conn.close()
 
 

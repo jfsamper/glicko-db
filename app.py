@@ -819,6 +819,35 @@ def _tables_referencing_legacy_players(conn):
     return references
 
 
+def legacy_players_integrity_state(conn):
+    """Return the legacy-player schema state without modifying the database."""
+    tables = {
+        row[0]
+        for row in conn.execute(
+            "SELECT name FROM sqlite_master WHERE type = 'table'"
+        ).fetchall()
+    }
+    return {
+        "has_players": "players" in tables,
+        "has_players_corrupt": "players_corrupt" in tables,
+        "referencing_tables": tuple(
+            table_name
+            for table_name, _create_sql in _tables_referencing_legacy_players(conn)
+        ),
+    }
+
+
+def assert_legacy_players_state_clean(conn):
+    """Fail loudly if a database still requires the legacy player repair path."""
+    state = legacy_players_integrity_state(conn)
+    if state["has_players_corrupt"] or state["referencing_tables"]:
+        references = ", ".join(state["referencing_tables"]) or "none"
+        raise RuntimeError(
+            "Legacy players_corrupt schema detected "
+            f"(table={state['has_players_corrupt']}, references={references})"
+        )
+
+
 def _rebuild_table_without_legacy_players_fk(conn, table_name, create_sql):
     """Rebuild a table without foreign key references to the legacy `players_corrupt` table."""
     legacy_name = f"{table_name}__legacy_fk_repair"
@@ -957,6 +986,7 @@ def initialize_app():
 
     conn = get_db()
     repair_legacy_players_table(conn)
+    assert_legacy_players_state_clean(conn)
 
     #migrations
 

@@ -155,6 +155,8 @@ Usa la pantalla de copias de seguridad antes de importaciones masivas, restaurac
 
 Cada copia de seguridad incluye un directorio lateral con la biblioteca SGF, y la restauración lo recupera sin romper los enlaces.
 
+Ejecuta `python scripts/check_legacy_players_state.py` para auditar la base de datos activa y las copias administradas en busca de la tabla histórica `players_corrupt` o de claves foráneas hijas. La auditoría del 13/09/2026 encontró limpias las ocho bases administradas. La ruta de reparación de compatibilidad se mantiene hasta que un cambio separado la elimine o la traslade.
+
 ## Desarrollo
 
 Ejecuta la suite de regresión desde la raíz del proyecto:
@@ -165,7 +167,7 @@ pytest -q
 
 ### Organización del código
 
-Las rutas administrativas están separadas por dominio entre `routes/admin_tournaments.py`, `routes/admin_matches.py`, `routes/admin_players.py` y `routes/admin_users.py`. La lógica de torneos está separada por responsabilidad entre `services/tournament_gotha.py`, `services/tournament_participants.py`, `services/tournament_pairing.py`, `services/tournament_matches.py` y `services/tournament_standings.py`. Las traducciones y la selección de idioma viven en `services/i18n.py`, mientras que los helpers puros de gráficos de rating viven en `services/chart_service.py`; `services/common.py` conserva exports de compatibilidad para los imports existentes. `services/tournament_service.py` se conserva como fachada de compatibilidad. La suite completa de regresión pasa actualmente 375 pruebas.
+Las rutas administrativas están separadas por dominio entre `routes/admin_tournaments.py`, `routes/admin_matches.py`, `routes/admin_players.py` y `routes/admin_users.py`. La lógica de torneos está separada por responsabilidad entre `services/tournament_gotha.py`, `services/tournament_participants.py`, `services/tournament_pairing.py`, `services/tournament_matches.py` y `services/tournament_standings.py`. Las traducciones y la selección de idioma viven en `services/i18n.py`, mientras que los helpers puros de gráficos de rating viven en `services/chart_service.py`; `services/common.py` conserva exports de compatibilidad para los imports existentes. `services/tournament_service.py` se conserva como fachada de compatibilidad. La suite completa de regresión pasa actualmente 376 pruebas.
 
 ### Instalación en hosting Linux
 
