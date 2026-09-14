@@ -127,6 +127,10 @@ No remaining P1 items.
    - Add clear operator feedback when rating replay is deferred
    - Expand operational summaries only where they support troubleshooting
 
+6. Help and embedded viewer polish
+   - Create help files for the main public and administrative workflows
+   - Improve the Besogo dark theme for more consistent readability and contrast
+
 ### P4 — Workflow enhancements
 
 6. Tournament preflight and dry-run approval workflow
@@ -138,8 +142,9 @@ No remaining P1 items.
 The login rate-limit settings, typed OpenGotha payload, explicit tournament-delete modal, per-account timezone preferences, account profile/recovery, date-bounded reporting, PDF reporting, and result moderation were completed and are no longer part of the remaining backlog. The next recommended sequence is:
 
 1. Add named seasons if the reporting workflow requires them.
-2. Add scheduled backups with retention and restore verification.
-3. Consider replay observability and tournament preflight.
+2. Create help files and improve the Besogo dark theme.
+3. Add scheduled backups with retention and restore verification.
+4. Consider replay observability and tournament preflight.
 
 ## Documentation rules
 

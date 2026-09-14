@@ -23,9 +23,9 @@ Every "resolved" item below was re-checked against the current codebase (not jus
 - `player.html` has no inline `style` attributes left; `category.html` keeps only the one data-driven `style="width: {{ pct }}%;"` bar, which is expected. `static/css/tournament.css` and `static/css/tables.css` exist and are used.
 - Player-profile match/tournament history and report player-performance tables page locally over a preloaded dataset (no reload); rankings/players/matches/tournament lists still page server-side via `LIMIT ?/OFFSET ?`, consistent with the stated rationale.
 - Public tournament round selection preloads all round pairings in the initial response and switches the visible round panel client-side without a form submission or page reload; standings remain tournament-wide.
-- Full suite: **372 passed** (`pytest -q`; the additional coverage includes news publication, entity tags, and public article visibility).
+- Full suite: **373 passed** (`pytest -q`; the additional coverage includes news publication, entity tags, and public article visibility).
 
-No new correctness or security bugs were found during this pass. No tracked review items remain open.
+No new correctness or security bugs were found during this pass. No tracked review items remain open. Future product work is tracked in [FUTURE_FEATURES.md](FUTURE_FEATURES.md), including help files and improvements to the Besogo dark theme.
 
 ## 1. Status check on previously-tracked issues
 - import_gotha_xml() in import_service.py — resolved. The unused helper, its admin import, and its two obsolete tests were removed. The active XML flow remains build_import_preview() → create_tournament_from_gotha().

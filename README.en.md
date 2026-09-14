@@ -88,7 +88,7 @@ SGF record management follows account permissions: `administrator`, `tournament_
 
 ## Project roadmap
 
-The detailed and prioritized roadmap is in [FUTURE_FEATURES.md](FUTURE_FEATURES.md). The explicit import reconciliation, typed OpenGotha payloads, per-account audit review with free-text and date filters, player profile improvements, and the explicit tournament-delete modal are implemented and verified. Profiles include recent activity, streaks, tournament history, and a season filter.
+The detailed and prioritized roadmap is in [FUTURE_FEATURES.md](FUTURE_FEATURES.md). The explicit import reconciliation, typed OpenGotha payloads, per-account audit review with free-text and date filters, player profile improvements, and the explicit tournament-delete modal are implemented and verified. Upcoming product work includes creating help files and improving the Besogo dark theme. Profiles include recent activity, streaks, tournament history, and a season filter.
 
 ## Common operations
 
@@ -169,7 +169,7 @@ pytest -q
 
 ### Code organization
 
-Administrative routes are split by domain across `routes/admin_tournaments.py`, `routes/admin_matches.py`, `routes/admin_players.py`, and `routes/admin_users.py`. Tournament logic is split by responsibility across `services/tournament_gotha.py`, `services/tournament_participants.py`, `services/tournament_pairing.py`, `services/tournament_matches.py`, and `services/tournament_standings.py`. Translations and language selection live in `services/i18n.py`, while pure rating-chart helpers live in `services/chart_service.py`; `services/common.py` retains compatibility exports for existing imports. `services/tournament_service.py` remains a compatibility facade. The current full regression suite passes 377 tests.
+Administrative routes are split by domain across `routes/admin_tournaments.py`, `routes/admin_matches.py`, `routes/admin_players.py`, and `routes/admin_users.py`. Tournament logic is split by responsibility across `services/tournament_gotha.py`, `services/tournament_participants.py`, `services/tournament_pairing.py`, `services/tournament_matches.py`, and `services/tournament_standings.py`. Translations and language selection live in `services/i18n.py`, while pure rating-chart helpers live in `services/chart_service.py`; `services/common.py` retains compatibility exports for existing imports. `services/tournament_service.py` remains a compatibility facade. The current full regression suite passes 373 tests.
 
 ### Linux hosting installation
 
