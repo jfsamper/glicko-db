@@ -1,7 +1,6 @@
 """Tournament persistence and OpenGotha-compatible metadata import."""
 
 from collections import defaultdict
-from difflib import SequenceMatcher
 from datetime import datetime
 from pathlib import Path
 import xml.etree.ElementTree as ET
@@ -25,6 +24,33 @@ from services.player_service import ensure_player
 from services.reporting_service import ensure_tournament_match_identity
 from services.sgf_service import ensure_sgf_schema
 from services.standings_service import calculate_standings
+from services.tournament_participants import (
+    list_pending_players as _list_pending_players,
+    player_lookup as _player_lookup,
+    suggest_player_name as _suggest_player_name,
+)
+from services.tournament_standings import get_tournament_standings
+from services.tournament_pairing import (
+    auto_handicap_stones as _auto_handicap_stones,
+    normalize_tournament_rounds,
+    normalize_tournament_system,
+    pairing_policy as _pairing_policy,
+    table_columns as _table_columns,
+    tournament_handicap_enabled as _tournament_handicap_enabled,
+    update_tournament_handicaps,
+)
+from services.tournament_gotha import (
+    create_tournament_from_gotha,
+    export_tournament_results,
+    read_gotha_tournament,
+)
+from services.tournament_matches import (
+    process_tournament_round_matches,
+    save_tournament_matches,
+    sync_match_pairing,
+    sync_pairing_match,
+    sync_tournament_matches,
+)
 
 
 SUPPORTED_SYSTEMS = {"swiss", "swiss_cat", "accelerated_swiss", "mcmahon"}
@@ -32,7 +58,7 @@ TOURNAMENT_STATUSES = ("draft", "active", "canceled", "completed")
 VALID_TOURNAMENT_RESULTS = {"1-0", "0-1", "1/2-1/2", "!0-1", "1-!0", "!0-0"}
 
 
-def normalize_tournament_system(value, default="swiss"):
+def _legacy_normalize_tournament_system(value, default="swiss"):
     normalized = str(value or "").strip().lower().replace("-", "_")
     if normalized == "swiss_by_category":
         normalized = "swiss_cat"
@@ -75,7 +101,7 @@ def _category_for_rating(conn, rating):
     return category
 
 
-def _auto_handicap_stones(conn, white_player_id, black_player_id):
+def _legacy_auto_handicap_stones(conn, white_player_id, black_player_id):
     """Best-effort auto-suggested handicap (in stones) for a newly created
     pairing, from the two players' current ratings. Returns 0 if either
     rating can't be found (e.g. a not-yet-materialized pending player) --
@@ -103,7 +129,7 @@ def _auto_handicap_stones(conn, white_player_id, black_player_id):
     )
 
 
-def _tournament_handicap_enabled(conn, tournament_id):
+def _legacy_tournament_handicap_enabled(conn, tournament_id):
     columns = _table_columns(conn, "tournaments")
     if "handicap_enabled" not in columns:
         # Legacy schemas predate the setting and already auto-suggested handicaps.
@@ -115,7 +141,7 @@ def _tournament_handicap_enabled(conn, tournament_id):
     return bool(row and row["handicap_enabled"])
 
 
-def update_tournament_handicaps(conn, tournament_id, handicap_enabled, apply_auto_handicap=False):
+def _legacy_update_tournament_handicaps(conn, tournament_id, handicap_enabled, apply_auto_handicap=False):
     """Update existing pairings when a tournament's handicap mode changes."""
     pairings = conn.execute(
         """
@@ -143,7 +169,7 @@ def update_tournament_handicaps(conn, tournament_id, handicap_enabled, apply_aut
         )
 
 
-def normalize_tournament_rounds(rounds):
+def _legacy_normalize_tournament_rounds(rounds):
     """Tournament rounds must always be valid and non-zero."""
     try:
         value = int(rounds)
@@ -152,11 +178,11 @@ def normalize_tournament_rounds(rounds):
     return max(1, value)
 
 
-def _table_columns(conn, table_name):
+def _legacy_table_columns(conn, table_name):
     return {row["name"] for row in conn.execute(f"PRAGMA table_info({table_name})").fetchall()}
 
 
-def _pairing_policy(tournament, round_number):
+def _legacy_pairing_policy(tournament, round_number):
     acceleration_rounds = (
         int(tournament["acceleration_rounds"])
         if "acceleration_rounds" in tournament.keys() and tournament["acceleration_rounds"] is not None
@@ -219,7 +245,7 @@ def _mms_offset(value, default=0):
         return default
 
 
-def read_gotha_tournament(
+def _legacy_read_gotha_tournament(
     xml_path: str | Path, pairing_system: str | None = None
 ) -> GothaTournamentPayload:
     """Read OpenGotha XML and return a typed tournament metadata payload."""
@@ -360,99 +386,6 @@ def read_gotha_tournament(
             and normalize_key(bye.get("player") or "")
         ],
     )
-
-
-def _player_lookup(conn):
-    rows = conn.execute("SELECT id, display_name, first_name, last_name, rating FROM players").fetchall()
-    lookup = {}
-    for row in rows:
-        for value in (
-            row["display_name"],
-            f"{row['first_name']} {row['last_name']}",
-            f"{row['last_name']}{row['first_name']}",
-        ):
-            if value:
-                lookup[normalize_key(value)] = row
-    return lookup
-
-
-def _name_tokens(value):
-    text = normalize_text(value).lower()
-    if not text:
-        return []
-    tokens = []
-    for raw in text.replace("-", " ").split():
-        token = normalize_key(raw)
-        if token:
-            tokens.append(token)
-    return tokens
-
-
-def _name_similarity_score(target_name, candidate_name):
-    target_tokens = _name_tokens(target_name)
-    candidate_tokens = _name_tokens(candidate_name)
-    if not target_tokens or not candidate_tokens:
-        return SequenceMatcher(None, normalize_key(target_name), normalize_key(candidate_name)).ratio()
-
-    target_set = set(target_tokens)
-    candidate_set = set(candidate_tokens)
-    if target_set.issubset(candidate_set) or candidate_set.issubset(target_set):
-        return 0.95
-
-    common_tokens = len(target_set & candidate_set)
-    if common_tokens:
-        overlap = common_tokens / max(len(target_set), len(candidate_set))
-        ordered_ratio = SequenceMatcher(
-            None,
-            " ".join(sorted(target_tokens)),
-            " ".join(sorted(candidate_tokens)),
-        ).ratio()
-        return max(overlap, ordered_ratio)
-
-    ordered_ratio = SequenceMatcher(
-        None,
-        " ".join(sorted(target_tokens)),
-        " ".join(sorted(candidate_tokens)),
-    ).ratio()
-    return ordered_ratio
-
-
-def _suggest_player_name(name, conn):
-    """Return a close DB name if the exact lookup failed, or None if no match is found."""
-    if not name:
-        return None
-    rows = conn.execute(
-        "SELECT display_name, first_name, last_name FROM players WHERE active = 1"
-    ).fetchall()
-    best_match = None
-    best_score = 0.0
-    for row in rows:
-        for candidate in (
-            row["display_name"],
-            f"{row['first_name']} {row['last_name']}",
-        ):
-            if not candidate:
-                continue
-            score = _name_similarity_score(name, candidate)
-            if score > best_score:
-                best_score = score
-                best_match = candidate
-    if best_score >= 0.82 and best_match:
-        return best_match
-    return None
-
-
-def _list_pending_players(conn, tournament_id):
-    """Return pending (not-yet-created) players for a tournament."""
-    return conn.execute(
-        """
-        SELECT *
-        FROM tournament_pending_players
-        WHERE tournament_id = ?
-        ORDER BY rank, display_name
-        """,
-        (tournament_id,),
-    ).fetchall()
 
 
 def list_tournament_participants(conn, tournament_id):
@@ -841,7 +774,7 @@ def _refresh_tournament_completion_state(conn, tournament_id, round_id=None):
     conn.commit()
 
 
-def export_tournament_results(conn, tournament_id):
+def _legacy_export_tournament_results(conn, tournament_id):
     """Return a tournament as an OpenGotha-compatible XML document."""
     tournament = conn.execute(
         "SELECT * FROM tournaments WHERE id = ?",
@@ -1224,7 +1157,7 @@ def export_tournament_results(conn, tournament_id):
     return "\ufeff<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n" + xml_body + "\n"
 
 
-def create_tournament_from_gotha(
+def _legacy_create_tournament_from_gotha(
     conn, xml_path, pairing_system=None, player_decisions=None, metadata_overrides=None
 ):
     """Create a new tournament from OpenGotha XML metadata."""
@@ -2232,7 +2165,7 @@ def update_pairing(conn, tournament_id, pairing_id, white_player_id, black_playe
     conn.commit()
 
 
-def sync_match_pairing(conn, match_id, white_player_id, black_player_id, result, handicap_stones):
+def _legacy_sync_match_pairing(conn, match_id, white_player_id, black_player_id, result, handicap_stones):
     """Propagate editable match fields back to its tournament pairing."""
     ensure_tournament_match_identity(conn)
     pairing_tables = {
@@ -2371,7 +2304,7 @@ def unpair_all(conn, tournament_id, round_id):
     return len(pairing_ids)
 
 
-def sync_pairing_match(conn, tournament_id, pairing_id):
+def _legacy_sync_pairing_match(conn, tournament_id, pairing_id):
     """Keep the materialized match for a pairing synchronized with its source."""
     ensure_tournament_match_identity(conn)
     ensure_sgf_schema(conn)
@@ -2473,7 +2406,7 @@ def sync_pairing_match(conn, tournament_id, pairing_id):
     return True
 
 
-def sync_tournament_matches(conn, tournament_id, name=None, match_date=None):
+def _legacy_sync_tournament_matches(conn, tournament_id, name=None, match_date=None):
     """Propagate edited tournament metadata to all materialized matches."""
     if conn.execute(
         "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'matches'"
@@ -2506,7 +2439,7 @@ def sync_tournament_matches(conn, tournament_id, name=None, match_date=None):
     ).rowcount
 
 
-def save_tournament_matches(conn, tournament_id):
+def _legacy_save_tournament_matches(conn, tournament_id):
     """Materialize and synchronize every completed pairing in a tournament."""
     tournament = conn.execute(
         "SELECT id FROM tournaments WHERE id = ?",
@@ -2566,7 +2499,7 @@ def set_pairing_result(conn, tournament_id, pairing_id, result):
     conn.commit()
 
 
-def process_tournament_round_matches(conn, tournament_id, round_id=None, match_date=None, event=None):
+def _legacy_process_tournament_round_matches(conn, tournament_id, round_id=None, match_date=None, event=None):
     """Persist completed non-bye tournament pairings into the main matches table."""
     ensure_tournament_match_identity(conn)
     if round_id is None:
@@ -2682,7 +2615,7 @@ def process_tournament_round_matches(conn, tournament_id, round_id=None, match_d
     return inserted
 
 
-def get_tournament_standings(conn, tournament_id):
+def _legacy_get_tournament_standings(conn, tournament_id):
     tournament = conn.execute(
         "SELECT * FROM tournaments WHERE id = ?", (tournament_id,)
     ).fetchone()

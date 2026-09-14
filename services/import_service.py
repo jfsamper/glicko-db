@@ -20,7 +20,8 @@ from services.helpers import (
 from services.player_service import build_player_lookup, ensure_player
 from services.import_gotha import GothaMatch, parse_gotha_xml as _parse_gotha_xml
 from services.rating_service import clear_dirty_date, mark_dirty
-from services.tournament_service import _suggest_player_name, read_gotha_tournament
+from services.tournament_participants import suggest_player_name as _suggest_player_name
+from services.tournament_gotha import read_gotha_tournament
 
 logger = logging.getLogger(__name__)
 

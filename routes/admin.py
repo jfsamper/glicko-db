@@ -132,9 +132,7 @@ from services.tournament_service import (
     _recalculate_mcmahon_seeds,
     _suggest_player_name,
     add_participant,
-    create_tournament_from_gotha,
     delete_tournament,
-    export_tournament_results,
     generate_next_round,
     list_tournament_participants,
     manual_pair,
@@ -155,6 +153,7 @@ from services.tournament_service import (
     update_pairing_handicap,
     normalize_tournament_system,
 )
+from services.tournament_gotha import create_tournament_from_gotha, export_tournament_results
 from services import backup_service
 from routes.admin_backups import (
     admin_backups,
@@ -188,6 +187,7 @@ from routes.admin_players import (
     admin_ratings,
     register_player_routes,
 )
+from routes.admin_users import register_user_routes
 from routes.admin_tournaments import (
     admin_add_tournament_participant,
     admin_delete_pending_player,
@@ -487,6 +487,7 @@ register_import_routes(admin_bp)
 register_match_routes(admin_bp)
 register_sgf_routes(admin_bp)
 register_player_routes(admin_bp)
+register_user_routes(admin_bp)
 register_tournament_routes(admin_bp)
 register_tournament_detail_routes(admin_bp)
 
@@ -614,7 +615,6 @@ def admin():
         menu_sections=menu_sections,
     )
 
-@admin_bp.route("/admin/login", methods=["GET", "POST"])
 def admin_login():
     lang = get_language(request.args.get("lang"))
 
@@ -664,7 +664,6 @@ def admin_login():
     )
 
 
-@admin_bp.route("/admin/register", methods=["GET", "POST"])
 def admin_register():
     lang = get_language(request.args.get("lang"))
     if request.method == "POST":
@@ -708,7 +707,6 @@ def admin_register():
     )
 
 
-@admin_bp.route("/admin/report-results", methods=["GET", "POST"])
 def admin_report_results():
     permission_error = require_permission("results_submitter")
     if permission_error is not None:
@@ -832,7 +830,6 @@ def admin_report_results():
     )
 
 
-@admin_bp.route("/admin/result-submissions")
 def admin_result_submissions():
     permission_error = require_permission("operator")
     if permission_error is not None:
@@ -871,7 +868,6 @@ def admin_result_submissions():
     )
 
 
-@admin_bp.route("/admin/result-submissions/<int:submission_id>/sgf")
 def admin_result_submission_sgf(submission_id):
     permission_error = require_permission("operator")
     if permission_error is not None:
@@ -896,7 +892,6 @@ def admin_result_submission_sgf(submission_id):
     )
 
 
-@admin_bp.route("/admin/result-submissions/<int:submission_id>/approve", methods=["POST"])
 def admin_approve_result_submission(submission_id):
     permission_error = require_permission("operator")
     if permission_error is not None:
@@ -952,7 +947,6 @@ def admin_approve_result_submission(submission_id):
     return redirect(url_for("admin_result_submissions", lang=lang))
 
 
-@admin_bp.route("/admin/result-submissions/<int:submission_id>/reject", methods=["POST"])
 def admin_reject_result_submission(submission_id):
     permission_error = require_permission("operator")
     if permission_error is not None:
@@ -988,7 +982,6 @@ def admin_reject_result_submission(submission_id):
     return redirect(url_for("admin_result_submissions", lang=lang))
 
 
-@admin_bp.route("/admin/settings", methods=["GET", "POST"])
 def admin_settings():
     permission_error = require_permission("admin")
     if permission_error is not None:
@@ -1029,7 +1022,6 @@ def admin_settings():
     )
 
 
-@admin_bp.route("/admin/profile", methods=["GET", "POST"])
 def admin_profile():
     permission_error = require_permission("results_submitter")
     if permission_error is not None:
@@ -1149,8 +1141,6 @@ def admin_profile():
     )
 
 
-@admin_bp.route("/admin/forgot-password", methods=["GET", "POST"])
-@admin_bp.route("/admin/forgot_password", methods=["GET", "POST"])
 def admin_forgot_password():
     lang = get_language(request.args.get("lang"))
     if request.method == "POST":
@@ -1184,7 +1174,6 @@ def admin_forgot_password():
     )
 
 
-@admin_bp.route("/admin/reset-password/<token>", methods=["GET", "POST"])
 def admin_reset_password(token):
     lang = get_language(request.args.get("lang"))
     if request.method == "POST":
@@ -1206,7 +1195,6 @@ def admin_reset_password(token):
         token=token,
     )
 
-@admin_bp.route("/admin/logout")
 def admin_logout():
     current_user_id = session.get("user_id")
     log_admin_action(
@@ -2825,7 +2813,6 @@ def _audit_details_summary(details):
     return text if len(text) <= 120 else f"{text[:117]}..."
 
 
-@admin_bp.route("/admin/audit")
 def admin_audit_review():
     permission_error = require_permission("admin")
     if permission_error is not None:
@@ -2924,7 +2911,6 @@ def admin_audit_review():
     )
 
 
-@admin_bp.route("/admin/users")
 def admin_users():
     permission_error = require_permission("admin")
     if permission_error is not None:
@@ -2972,7 +2958,6 @@ def admin_users():
     )
 
 
-@admin_bp.route("/admin/users/create", methods=["GET", "POST"])
 def admin_create_user():
     permission_error = require_permission("admin")
     if permission_error is not None:
@@ -3031,7 +3016,6 @@ def admin_create_user():
     )
 
 
-@admin_bp.route("/admin/users/<int:user_id>/edit", methods=["GET", "POST"])
 def admin_edit_user(user_id):
     permission_error = require_permission("admin")
     if permission_error is not None:
@@ -3154,7 +3138,6 @@ def admin_edit_user(user_id):
     )
 
 
-@admin_bp.route("/admin/users/<int:user_id>/delete", methods=["POST"])
 def admin_delete_user(user_id):
     permission_error = require_permission("admin")
     if permission_error is not None:
