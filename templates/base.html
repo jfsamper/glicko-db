@@ -42,7 +42,14 @@
           </ul>
         </nav>
         <div id="floating-controls">
-        <button id="lang-toggle" type="button">ENG</button>
+        <label class="language-control" for="language-select">
+          <span class="visually-hidden">{{ translations.language }}</span>
+          <select id="language-select" class="language-select" aria-label="{{ translations.language }}">
+            <option value="es"{% if lang == 'es' %} selected{% endif %}>{{ translations.spanish }}</option>
+            <option value="en"{% if lang == 'en' %} selected{% endif %}>{{ translations.english }}</option>
+            <option value="pt"{% if lang == 'pt' %} selected{% endif %}>{{ translations.portuguese }}</option>
+          </select>
+        </label>
         <button id="theme-toggle" type="button">⚫</button>
         </div>
     </div>
@@ -92,8 +99,6 @@
     <script id="frontend-i18n-data" type="application/json">
       {{
         {
-          "languageCycle": ["es", "en", "pt"],
-          "languageLabels": {"es": "SPA", "en": "ENG", "pt": "POR"},
           "ratingSuffix": translations.get("glicko_label", "Glicko"),
           "categoryScale": {
             "k": (category_config|default({})).get("glicko_k", 16.6),
@@ -106,8 +111,6 @@
 
     <script>
     const defaultFrontendI18n = {
-        languageCycle: ["es", "en", "pt"],
-        languageLabels: { "es": "SPA", "en": "ENG", "pt": "POR" },
         ratingSuffix: "Glicko",
       categoryScale: { k: 16.6, m: 338 },
     };
@@ -175,26 +178,16 @@
         });
     });
 
-    const langButton = document.getElementById("lang-toggle");
+    const languageSelect = document.getElementById("language-select");
 
-    const currentLang =
-        new URLSearchParams(window.location.search)
-        .get("lang") || "es";
-
-    const languageCycle = frontendI18n.languageCycle || ["es", "en", "pt"];
-    const languageLabels = frontendI18n.languageLabels || { "es": "SPA", "en": "ENG", "pt": "POR" };
-    const currentIndex = languageCycle.indexOf(currentLang);
-    const nextLang = languageCycle[(currentIndex + 1) % languageCycle.length];
-
-    langButton.textContent = languageLabels[nextLang];
-
-    langButton.addEventListener("click", async () => {
+    languageSelect.addEventListener("change", async () => {
+        const selectedLang = languageSelect.value;
         const url = new URL(window.location);
 
-        url.searchParams.set("lang", nextLang);
+        url.searchParams.set("lang", selectedLang);
 
       await savePreferences({
-        language: nextLang,
+        language: selectedLang,
         theme: root.getAttribute("data-theme") === "dark" ? "dark" : "light",
       });
       window.location = url.toString();

@@ -30,6 +30,17 @@ def test_public_tournament_index_renders_in_supported_languages():
         assert hide_text in body
 
 
+def test_language_selector_renders_all_choices_and_marks_current_language():
+    app.testing = True
+    body = app.test_client().get("/?lang=en").get_data(as_text=True)
+
+    assert 'id="language-select"' in body
+    assert '<option value="es">Español</option>' in body
+    assert '<option value="en" selected>English</option>' in body
+    assert '<option value="pt">Português</option>' in body
+    assert 'id="lang-toggle"' not in body
+
+
 def test_homepage_stats_render_all_periods_with_accessible_tabs():
     app.testing = True
     client = app.test_client()

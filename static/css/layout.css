@@ -404,6 +404,30 @@ nav a:hover,
   transform: translateY(-2px);
 }
 
+#floating-controls .language-control {
+  display: flex;
+  align-items: center;
+}
+
+#floating-controls .language-select {
+  width: 7.5rem;
+  height: 54px;
+  padding: 0 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--panel);
+  color: var(--text);
+  font: inherit;
+  font-weight: 700;
+  box-shadow: var(--shadow);
+  cursor: pointer;
+}
+
+#floating-controls .language-select:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+
 #floating-controls button:active {
   transform: translateY(0);
 }

@@ -19,13 +19,13 @@ Every "resolved" item below was re-checked against the current codebase (not jus
 - The forgot-password route in `routes/admin_users.py` calls the same `record_failed_login_attempt()` IP limiter used by the login route, with the generic response preserved.
 - `parse_handicap_stones()` (`routes/admin.py`) is used consistently by the manual add/edit match forms, the tournament pairing forms, and the CSV import path in `routes/admin_import.py`.
 - Homepage stats render all three periods server-side with client-side tab switching (no reload); the News card now renders published administrator articles and no longer ships placeholder paragraphs.
-- Language switcher is still a single ES→EN→PT cycle button labeled with the *next* language — **still open**, as previously noted, low priority.
+- Language switcher — resolved. The shared layout now uses an accessible dropdown showing Español, English, and Português, with the active language selected; changing it preserves the current page and saves the preference.
 - `player.html` has no inline `style` attributes left; `category.html` keeps only the one data-driven `style="width: {{ pct }}%;"` bar, which is expected. `static/css/tournament.css` and `static/css/tables.css` exist and are used.
 - Player-profile match/tournament history and report player-performance tables page locally over a preloaded dataset (no reload); rankings/players/matches/tournament lists still page server-side via `LIMIT ?/OFFSET ?`, consistent with the stated rationale.
 - Public tournament round selection preloads all round pairings in the initial response and switches the visible round panel client-side without a form submission or page reload; standings remain tournament-wide.
 - Full suite: **372 passed** (`pytest -q`; the additional coverage includes news publication, entity tags, and public article visibility).
 
-No new correctness or security bugs were found during this pass. The language switcher remains the one genuinely open UX item carried forward here.
+No new correctness or security bugs were found during this pass. No tracked review items remain open.
 
 ## 1. Status check on previously-tracked issues
 - import_gotha_xml() in import_service.py — resolved. The unused helper, its admin import, and its two obsolete tests were removed. The active XML flow remains build_import_preview() → create_tournament_from_gotha().
