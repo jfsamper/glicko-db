@@ -98,7 +98,7 @@ O plano detalhado e priorizado está em [FUTURE_FEATURES.md](FUTURE_FEATURES.md)
 3. Envie um dos formatos compatíveis:
    - `.xlsx` ou `.xls`: importa os dados e substitui o conjunto atual.
    - OpenGotha `.xml`: importa partidas e metadados do torneio. O atributo `handicap` de cada partida (quantidade de pedras para Preto) é preservado quando presente.
-   - `.csv` com as colunas `date`, `white`, `black` e `result`. Uma coluna opcional `handicap` (pedras, 0-9) é preservada; valores ausentes ou inválidos usam 0.
+  - `.csv` com as colunas `date`, `white`, `black` e `result`. Uma coluna opcional `handicap` (pedras, 0-9) é preservada; valores ausentes usam 0, mas um valor inválido rejeita a importação e nenhuma alteração é confirmada.
 4. Confirme as classificações e os perfis de jogadores resultantes.
 
 Mantenha uma cópia de segurança antes de importar uma planilha que substitua os dados.

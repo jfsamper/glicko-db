@@ -840,11 +840,11 @@ def legacy_players_integrity_state(conn):
 def assert_legacy_players_state_clean(conn):
     """Fail loudly if a database still requires the legacy player repair path."""
     state = legacy_players_integrity_state(conn)
-    if state["has_players_corrupt"] or state["referencing_tables"]:
+    if not state["has_players"] or state["has_players_corrupt"] or state["referencing_tables"]:
         references = ", ".join(state["referencing_tables"]) or "none"
         raise RuntimeError(
             "Legacy players_corrupt schema detected "
-            f"(table={state['has_players_corrupt']}, references={references})"
+            f"(players={state['has_players']}, table={state['has_players_corrupt']}, references={references})"
         )
 
 

@@ -1038,8 +1038,7 @@ def admin_delete_user(user_id):
         return permission_error
 
     lang = admin.get_language(request.args.get("lang"))
-    conn = admin.get_db()
-    try:
+    def action(conn):
         conn.execute("DELETE FROM user_roles WHERE user_id = ?", (user_id,))
         conn.execute("DELETE FROM users WHERE id = ?", (user_id,))
         conn.commit()
@@ -1049,8 +1048,6 @@ def admin_delete_user(user_id):
             {"target_user_id": user_id},
             user_id=session.get("user_id"),
         )
-        flash(admin.TRANSLATIONS[lang]["user_deleted_success"])
-    finally:
-        conn.close()
+    admin.run_admin_db_action(action, lang, admin.TRANSLATIONS[lang]["user_deleted_success"])
 
     return redirect(url_for("admin_users", lang=lang))

@@ -12,7 +12,7 @@ The original route and tournament-service decomposition has been verified for th
 
 - Category/rating circular-import workaround — resolved. The pure formatter lives in `services/category_utils.py`, while `category_service.py` and `rating_service.py` retain thin compatibility wrappers for existing imports.
 
-- Player._tau is a mutable class attribute set per-call in glicko2_update() (Player._tau = tau). This works fine under the app's current single-threaded-per-request SQLite usage, but it's a latent race condition if the app is ever run with threaded workers or concurrent background recomputation — one request's tau could leak into another's calculation mid-flight. Prefer an instance attribute or passing tau explicitly into the volatility solver.
+- Player tau propagation — resolved. `glicko2_update()` now passes tau explicitly through `Player.update_player()` into the volatility solver, so concurrent calculations no longer share mutable class-level state.
 
 - Historical `players_corrupt` compatibility — verified clean, retirement pending as a separate change. `legacy_players_integrity_state()` and `assert_legacy_players_state_clean()` now check for the legacy table and child foreign keys, with the assertion running after startup repair. The read-only `scripts/check_legacy_players_state.py` audit checked the active database and seven managed backups on 2026-09-13: all eight had canonical `players`, no `players_corrupt` table, no child references, `PRAGMA integrity_check = ok`, and zero foreign-key violations. `repair_legacy_players_table()` remains isolated in `app.py` until a separate change removes or relocates the compatibility path.
 
@@ -20,9 +20,9 @@ The original route and tournament-service decomposition has been verified for th
 
 - Common-service ownership cleanup — partially resolved by clear boundaries. `services/i18n.py` now owns `TRANSLATIONS` and `get_language`, while pure chart construction lives in `services/chart_service.py`; production consumers import those owners directly and `services/common.py` keeps compatibility re-exports. Auth, audit, timezone, database, and statistics helpers remain in `common.py` because their current connection/session/migration coupling does not provide a safe independent owner yet.
 
-- Repetitive route boilerplate. Most admin POST handlers repeat the same conn = get_db(); try: ...; except ValueError as exc: flash(...); finally: conn.close() shape. A small helper/decorator for "run this DB action, flash a translated result" would cut a lot of near-duplicate code across admin.py.
+- Repetitive route boilerplate — resolved for uniform handlers. `routes/admin.py` provides `run_admin_db_action()` for the shared connection, rollback, translated validation errors, optional success flashes, and guaranteed close lifecycle. Tournament participant, pairing, round-generation, tournament-deletion, user-deletion, and SGF unlink/delete handlers use it. Import, SGF link, rating-refresh, recovery, and multi-stage handlers retain explicit lifecycles because they have distinct rollback or recovery behavior.
 
-`services/tournament_service.py` is a 27-line compatibility facade that re-exports the established public and private import surface; it contains no tournament implementation bodies. No `_legacy_admin_*` route bodies or `_legacy()` service adapters remain. The last full-suite verification passed 377 tests.
+`services/tournament_service.py` is a 27-line compatibility facade that re-exports the established public and private import surface; it contains no tournament implementation bodies. No `_legacy_admin_*` route bodies or `_legacy()` service adapters remain. The last full-suite verification passed 378 tests.
 
 ## 3. Security
 Minor fixes:

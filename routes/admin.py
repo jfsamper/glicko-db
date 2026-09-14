@@ -274,6 +274,22 @@ def ensure_backup_dir():
     backup_service.ensure_backup_dir(BACKUP_DIR)
 
 
+def run_admin_db_action(action, lang, success_message=None):
+    """Run one admin DB action with shared connection and validation handling."""
+    conn = get_db()
+    try:
+        result = action(conn)
+    except ValueError as exc:
+        conn.rollback()
+        flash(f"{TRANSLATIONS[lang]['error']}: {exc}")
+        return None
+    finally:
+        conn.close()
+    if success_message is not None:
+        flash(success_message)
+    return result
+
+
 def record_failed_login_attempt(ip_address):
     if not ip_address:
         return False

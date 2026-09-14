@@ -171,33 +171,22 @@ class TestMatchDeletionNullPointerFix:
         conn.close()
 
 
-def test_glicko2_update_uses_class_level_tau_config():
-    original_tau = Player._tau
-    try:
-        Player._tau = 0.25
-        glicko2_update(1500, 200, 0.06, 1500, 200, 0.06, 1.0)
-        assert Player._tau == get_rating_config()["tau"]
-    finally:
-        Player._tau = original_tau
+def test_glicko2_update_uses_configured_tau_without_shared_player_state():
+    result = glicko2_update(1500, 200, 0.06, 1500, 200, 0.06, 1.0)
+    assert set(result) == {"rating", "rd", "volatility"}
 
 
 def test_glicko2_update_uses_explicit_tau_without_config_query(monkeypatch):
     import services.rating_service as rating_service
 
-    original_tau = Player._tau
-
     def unexpected_config_query(*args, **kwargs):
         raise AssertionError("explicit tau must not query rating_config")
 
     monkeypatch.setattr(rating_service, "get_rating_config", unexpected_config_query)
-    try:
-        result = rating_service.glicko2_update(
-            1500, 200, 0.06, 1500, 200, 0.06, 1.0, tau=0.25
-        )
-        assert Player._tau == 0.25
-        assert set(result) == {"rating", "rd", "volatility"}
-    finally:
-        Player._tau = original_tau
+    result = rating_service.glicko2_update(
+        1500, 200, 0.06, 1500, 200, 0.06, 1.0, tau=0.25
+    )
+    assert set(result) == {"rating", "rd", "volatility"}
 
 
 def test_player_state_reuses_explicit_rating_config(monkeypatch):
@@ -1199,6 +1188,22 @@ def test_legacy_players_integrity_check_detects_and_clears_legacy_state():
     assert state["has_players"] is False
     assert state["has_players_corrupt"] is True
     assert state["referencing_tables"] == ("tournament_pairings",)
+    with pytest.raises(RuntimeError, match="Legacy players_corrupt schema detected"):
+        assert_legacy_players_state_clean(conn)
+
+    conn.close()
+
+
+def test_legacy_players_integrity_check_requires_canonical_players_table():
+    conn = sqlite3.connect(":memory:")
+    conn.execute("CREATE TABLE unrelated (id INTEGER PRIMARY KEY)")
+
+    state = legacy_players_integrity_state(conn)
+    assert state == {
+        "has_players": False,
+        "has_players_corrupt": False,
+        "referencing_tables": (),
+    }
     with pytest.raises(RuntimeError, match="Legacy players_corrupt schema detected"):
         assert_legacy_players_state_clean(conn)
 

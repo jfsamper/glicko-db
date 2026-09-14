@@ -97,7 +97,7 @@ La hoja de ruta detallada y priorizada está en [FUTURE_FEATURES.md](FUTURE_FEAT
 3. Carga uno de los formatos compatibles:
    - Libro `.xlsx` o `.xls`: importa los datos y reemplaza el conjunto de datos actual.
    - Archivo `.xml` de OpenGotha: importa partidas y metadatos del torneo. El atributo `handicap` de cada partida (número de piedras dadas a Negro) se conserva si está presente.
-   - Archivo `.csv` con las columnas `date`, `white`, `black` y `result`. Una columna opcional `handicap` (número de piedras, 0-9) se conserva; si falta o no es válida se usa 0.
+  - Archivo `.csv` con las columnas `date`, `white`, `black` y `result`. Una columna opcional `handicap` (número de piedras, 0-9) se conserva; si falta se usa 0, pero un valor no válido rechaza la importación y no se confirma ningún cambio.
 4. Confirma las posiciones y perfiles de jugadores resultantes.
 
 Conserva una copia de seguridad antes de importar un libro que reemplace los datos.

@@ -133,8 +133,7 @@ def admin_delete_tournament(tournament_id):
     if not admin.admin_required():
         return redirect(url_for("admin_login", lang=admin.get_language(request.args.get("lang"))))
     lang = admin.get_language(request.args.get("lang"))
-    conn = admin.get_db()
-    try:
+    def action(conn):
         admin.delete_tournament(conn, tournament_id)
         admin.log_admin_action(
             "tournament_deleted",
@@ -142,11 +141,7 @@ def admin_delete_tournament(tournament_id):
             {"tournament_id": tournament_id},
             user_id=admin.session.get("user_id"),
         )
-        flash(TRANSLATIONS[lang]["success"])
-    except ValueError as exc:
-        flash(f"{TRANSLATIONS[lang]['error']}: {exc}")
-    finally:
-        conn.close()
+    admin.run_admin_db_action(action, lang, TRANSLATIONS[lang]["success"])
     return redirect(url_for("admin_tournaments", lang=lang))
 
 
@@ -683,8 +678,7 @@ def admin_add_tournament_participant(tournament_id):
     if not admin.admin_required():
         return redirect(url_for("admin_login", lang=admin.get_language(request.args.get("lang"))))
     lang = admin.get_language(request.args.get("lang"))
-    conn = admin.get_db()
-    try:
+    def action(conn):
         player_id = request.form.get("player_id", type=int)
         admin.add_participant(conn, tournament_id, player_id)
         admin.log_admin_action(
@@ -693,11 +687,7 @@ def admin_add_tournament_participant(tournament_id):
             {"tournament_id": tournament_id, "player_id": player_id},
             user_id=admin.session.get("user_id"),
         )
-        flash(TRANSLATIONS[lang]["success"])
-    except ValueError as exc:
-        flash(f"{TRANSLATIONS[lang]['error']}: {exc}")
-    finally:
-        conn.close()
+    admin.run_admin_db_action(action, lang, TRANSLATIONS[lang]["success"])
     return redirect(url_for("admin_tournament_players", tournament_id=tournament_id, lang=lang))
 
 
@@ -738,8 +728,7 @@ def admin_remove_tournament_participant(tournament_id):
     if not admin.admin_required():
         return redirect(url_for("admin_login", lang=admin.get_language(request.args.get("lang"))))
     lang = admin.get_language(request.args.get("lang"))
-    conn = admin.get_db()
-    try:
+    def action(conn):
         player_id = request.form.get("player_id", type=int)
         admin.remove_participant(conn, tournament_id, player_id)
         admin.log_admin_action(
@@ -748,11 +737,7 @@ def admin_remove_tournament_participant(tournament_id):
             {"tournament_id": tournament_id, "player_id": player_id},
             user_id=admin.session.get("user_id"),
         )
-        flash(TRANSLATIONS[lang]["success"])
-    except ValueError as exc:
-        flash(f"{TRANSLATIONS[lang]['error']}: {exc}")
-    finally:
-        conn.close()
+    admin.run_admin_db_action(action, lang, TRANSLATIONS[lang]["success"])
     return redirect(
         url_for(
             "admin_tournament",
@@ -768,8 +753,7 @@ def admin_update_pairing_handicap(tournament_id):
     if not admin.admin_required():
         return redirect(url_for("admin_login", lang=admin.get_language(request.args.get("lang"))))
     lang = admin.get_language(request.args.get("lang"))
-    conn = admin.get_db()
-    try:
+    def action(conn):
         pairing_id = request.form.get("pairing_id", type=int)
         handicap_stones = request.form.get("handicap_stones", type=int)
         admin.update_pairing_handicap(conn, tournament_id, pairing_id, handicap_stones)
@@ -779,11 +763,7 @@ def admin_update_pairing_handicap(tournament_id):
             {"tournament_id": tournament_id, "pairing_id": pairing_id, "handicap_stones": handicap_stones},
             user_id=admin.session.get("user_id"),
         )
-        flash(TRANSLATIONS[lang]["success"])
-    except ValueError as exc:
-        flash(f"{TRANSLATIONS[lang]['error']}: {exc}")
-    finally:
-        conn.close()
+    admin.run_admin_db_action(action, lang, TRANSLATIONS[lang]["success"])
     return admin.redirect_or_json(
         url_for("admin_tournament", tournament_id=tournament_id, lang=lang, round_id=request.form.get("round_id", type=int))
     )
@@ -794,8 +774,7 @@ def admin_manual_pair(tournament_id):
     if not admin.admin_required():
         return redirect(url_for("admin_login", lang=admin.get_language(request.args.get("lang"))))
     lang = admin.get_language(request.args.get("lang"))
-    conn = admin.get_db()
-    try:
+    def action(conn):
         round_id = request.form.get("round_id", type=int)
         white_player_id = request.form.get("white_player_id", type=int)
         black_player_id = request.form.get("black_player_id", type=int)
@@ -811,11 +790,7 @@ def admin_manual_pair(tournament_id):
             {"tournament_id": tournament_id, "round_id": round_id, "white_player_id": white_player_id, "black_player_id": black_player_id},
             user_id=admin.session.get("user_id"),
         )
-        flash(TRANSLATIONS[lang]["success"])
-    except ValueError as exc:
-        flash(f"{TRANSLATIONS[lang]['error']}: {exc}")
-    finally:
-        conn.close()
+    admin.run_admin_db_action(action, lang, TRANSLATIONS[lang]["success"])
     return redirect(url_for("admin_tournament", tournament_id=tournament_id, lang=lang, round_id=request.form.get("round_id", type=int)))
 
 
@@ -824,8 +799,7 @@ def admin_pair_selected_players(tournament_id):
     if not admin.admin_required():
         return redirect(url_for("admin_login", lang=admin.get_language(request.args.get("lang"))))
     lang = admin.get_language(request.args.get("lang"))
-    conn = admin.get_db()
-    try:
+    def action(conn):
         round_id = request.form.get("round_id", type=int)
         player_ids = request.form.getlist("player_ids")
         admin.pair_selected_players(conn, tournament_id, round_id, player_ids)
@@ -835,11 +809,7 @@ def admin_pair_selected_players(tournament_id):
             {"tournament_id": tournament_id, "round_id": round_id, "player_count": len(player_ids)},
             user_id=admin.session.get("user_id"),
         )
-        flash(TRANSLATIONS[lang]["success"])
-    except ValueError as exc:
-        flash(f"{TRANSLATIONS[lang]['error']}: {exc}")
-    finally:
-        conn.close()
+    admin.run_admin_db_action(action, lang, TRANSLATIONS[lang]["success"])
     return admin.redirect_or_json(url_for("admin_tournament", tournament_id=tournament_id, lang=lang, round_id=request.form.get("round_id", type=int)))
 
 
@@ -1010,18 +980,13 @@ def admin_generate_tournament_round(tournament_id):
     if not admin.admin_required():
         return redirect(url_for("admin_login", lang=admin.get_language(request.args.get("lang"))))
     lang = admin.get_language(request.args.get("lang"))
-    conn = admin.get_db()
-    try:
+    def action(conn):
         admin.generate_next_round(conn, tournament_id)
         admin.log_admin_action(
             "tournament_round_generated", "tournament", {"tournament_id": tournament_id},
             user_id=admin.session.get("user_id"),
         )
-        flash(TRANSLATIONS[lang]["success"])
-    except ValueError as exc:
-        flash(f"{TRANSLATIONS[lang]['error']}: {exc}")
-    finally:
-        conn.close()
+    admin.run_admin_db_action(action, lang, TRANSLATIONS[lang]["success"])
     return admin.redirect_or_json(url_for("admin_tournament", tournament_id=tournament_id, lang=lang))
 
 

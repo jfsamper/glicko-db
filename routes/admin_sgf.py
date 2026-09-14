@@ -119,24 +119,23 @@ def admin_unlink_sgf():
         flash(admin.TRANSLATIONS[lang]["error"])
         return _library_redirect(lang)
 
-    conn = admin.get_db()
-    try:
+    def action(conn):
         admin.ensure_sgf_schema(conn)
         if filename:
-            cursor = conn.execute(
+            result = conn.execute(
                 "UPDATE matches SET sgf_filename = NULL WHERE id = ? AND sgf_filename = ?",
                 (match_id, filename),
             )
         else:
-            cursor = conn.execute(
+            result = conn.execute(
                 "UPDATE matches SET sgf_filename = NULL WHERE id = ?",
                 (match_id,),
             )
         conn.commit()
-    finally:
-        conn.close()
+        return result.rowcount
 
-    if cursor.rowcount == 0:
+    updated = admin.run_admin_db_action(action, lang)
+    if updated != 1:
         flash(admin.TRANSLATIONS[lang]["error"])
         return _library_redirect(lang)
 
@@ -162,16 +161,14 @@ def admin_delete_sgf():
         flash(admin.TRANSLATIONS[lang].get("sgf_file_not_found", admin.TRANSLATIONS[lang]["error"]))
         return _library_redirect(lang)
 
-    conn = admin.get_db()
-    try:
+    def action(conn):
         admin.ensure_sgf_schema(conn)
         conn.execute(
             "UPDATE matches SET sgf_filename = NULL WHERE sgf_filename = ?",
             (filename,),
         )
         conn.commit()
-    finally:
-        conn.close()
+    admin.run_admin_db_action(action, lang)
 
     admin.delete_sgf_file(filename)
     admin.log_admin_action(

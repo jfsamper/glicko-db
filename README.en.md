@@ -98,7 +98,7 @@ The detailed and prioritized roadmap is in [FUTURE_FEATURES.md](FUTURE_FEATURES.
 3. Upload one of the supported formats:
    - `.xlsx` or `.xls`: imports the data and replaces the current dataset.
    - OpenGotha `.xml`: imports matches and tournament metadata. The `handicap` attribute of each game (stones given to Black) is preserved if present.
-   - `.csv` with columns `date`, `white`, `black`, and `result`. An optional `handicap` column (stones, 0-9) is preserved; missing or invalid values default to 0.
+  - `.csv` with columns `date`, `white`, `black`, and `result`. An optional `handicap` column (stones, 0-9) is preserved; missing values default to 0, while an invalid value rejects the import and commits no changes.
 4. Confirm the resulting player rankings and profiles.
 
 Keep a backup before importing a workbook that replaces the data.

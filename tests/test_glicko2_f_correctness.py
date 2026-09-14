@@ -28,19 +28,6 @@ import pytest
 from services.glicko2 import Player, GLICKO_SCALE_FACTOR, BASE_RATING
 
 
-@pytest.fixture(autouse=True)
-def _restore_class_tau():
-    """Player._tau is a mutable class attribute shared across instances.
-
-    Several call sites (rating_service.py) intentionally mutate it per
-    match, so tests must save/restore it to avoid leaking state into
-    other tests in the suite.
-    """
-    original = Player._tau
-    yield
-    Player._tau = original
-
-
 def test_f_uses_rating_deviation_not_rating():
     """Directly isolates the mu-vs-phi bug in _f().
 
@@ -52,8 +39,6 @@ def test_f_uses_rating_deviation_not_rating():
     """
     rd_input = 200.0
     player = Player(rating=BASE_RATING, rd=rd_input, vol=0.06)
-    Player._tau = 0.5
-
     phi = rd_input / GLICKO_SCALE_FACTOR
     assert phi != 0  # sanity: the test only isolates the bug if phi != mu (0)
 
@@ -61,9 +46,9 @@ def test_f_uses_rating_deviation_not_rating():
     ex = math.exp(x)
     expected_num = ex * (delta**2 - phi**2 - v - ex)
     expected_denom = 2 * ((phi**2 + v + ex) ** 2)
-    expected = (expected_num / expected_denom) - ((x - a) / (Player._tau**2))
+    expected = (expected_num / expected_denom) - ((x - a) / (0.5**2))
 
-    actual = player._f(x, delta, v, a)
+    actual = player._f(x, delta, v, a, 0.5)
 
     assert actual == pytest.approx(expected, rel=1e-12)
 
@@ -78,13 +63,13 @@ def test_glickman_worked_example():
 
     tau is fixed at 0.5 to match the paper's example.
     """
-    Player._tau = 0.5
     player = Player(rating=1500, rd=200, vol=0.06)
 
     player.update_player(
         [1400, 1550, 1700],
         [30, 100, 300],
         [1, 0, 0],
+        tau=0.5,
     )
 
     assert player.rating == pytest.approx(1464.06, abs=0.01)
@@ -182,13 +167,12 @@ def test_matches_independent_reference_implementation(rating, rd, vol, opponents
     from the 1500 baseline combined with elevated volatility).
     """
     tau = 0.5
-    Player._tau = tau
-
     player = Player(rating=rating, rd=rd, vol=vol)
     player.update_player(
         [opp_rating for _, opp_rating, _ in opponents],
         [opp_rd for _, _, opp_rd in opponents],
         [score for score, _, _ in opponents],
+        tau=tau,
     )
 
     expected_rating, expected_rd, expected_vol = _reference_glicko2_update(

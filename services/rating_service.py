@@ -123,7 +123,6 @@ def glicko2_update(
 
     if tau is None:
         tau = get_rating_config(conn=conn)["tau"]
-    Player._tau = tau
     player = Player(
         rating=rating,
         rd=rd,
@@ -134,6 +133,7 @@ def glicko2_update(
         [opponent_rating + handicap_points_for_opponent],
         [opponent_rd],
         [score],
+        tau=tau,
     )
 
     return {
@@ -151,7 +151,6 @@ def recompute_ratings(conn=None):
         conn.execute("DELETE FROM rating_snapshots")
         rows = conn.execute("SELECT * FROM players").fetchall()
         cfg = get_rating_config(conn=conn)
-        Player._tau = cfg["tau"]
         category_scale = get_category_scale(conn=conn)
 
         for row in rows:
@@ -521,7 +520,6 @@ def _replay_from_dirty_date(conn, dirty_date):
     #
     states = {}
     cfg = get_rating_config(conn=conn)
-    Player._tau = cfg["tau"]
     category_scale = get_category_scale(conn=conn)
 
     for player_id in affected_players:
