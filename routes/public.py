@@ -34,6 +34,7 @@ from services.reporting_service import (
     list_report_seasons,
     resolve_report_range,
 )
+from services.news_service import get_article, list_articles
 from services.player_service import (
     count_rankings,
     load_player,
@@ -179,6 +180,7 @@ def index():
     stats = build_home_stats()
     category_config = get_category_config()
     team_members = get_team_members()
+    news_articles = list_articles(published_only=True, limit=5)
 
     return render_template(
         "index.html",
@@ -188,12 +190,31 @@ def index():
         home_stats=stats,
         stats_period=stats_period,
         team_members=team_members,
+        news_articles=news_articles,
         glicko_to_category=lambda rating, decimals=0: glicko_to_category(
             rating,
             decimals,
             k=category_config["glicko_k"],
             m=category_config["glicko_m"],
         ),
+    )
+
+
+@public_bp.route("/news/<int:article_id>")
+def news_article(article_id):
+    lang = get_language(request.args.get("lang"))
+    conn = get_db()
+    try:
+        article = get_article(conn, article_id)
+    finally:
+        conn.close()
+    if article is None or not article["is_published"]:
+        abort(404)
+    return render_template(
+        "news_article.html",
+        article=article,
+        lang=lang,
+        translations=TRANSLATIONS[lang],
     )
 
 

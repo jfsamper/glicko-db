@@ -18,14 +18,14 @@ Every "resolved" item below was re-checked against the current codebase (not jus
 - No `_legacy_admin_*` route bodies or `_legacy()` service adapters remain anywhere in `routes/` or `services/`.
 - The forgot-password route in `routes/admin_users.py` calls the same `record_failed_login_attempt()` IP limiter used by the login route, with the generic response preserved.
 - `parse_handicap_stones()` (`routes/admin.py`) is used consistently by the manual add/edit match forms, the tournament pairing forms, and the CSV import path in `routes/admin_import.py`.
-- Homepage stats render all three periods server-side with client-side tab switching (no reload); the "Noticias" card still ships literal `...` placeholder paragraphs in `templates/index.html` — **still open**, not actually resolved by any later change.
+- Homepage stats render all three periods server-side with client-side tab switching (no reload); the News card now renders published administrator articles and no longer ships placeholder paragraphs.
 - Language switcher is still a single ES→EN→PT cycle button labeled with the *next* language — **still open**, as previously noted, low priority.
 - `player.html` has no inline `style` attributes left; `category.html` keeps only the one data-driven `style="width: {{ pct }}%;"` bar, which is expected. `static/css/tournament.css` and `static/css/tables.css` exist and are used.
 - Player-profile match/tournament history and report player-performance tables page locally over a preloaded dataset (no reload); rankings/players/matches/tournament lists still page server-side via `LIMIT ?/OFFSET ?`, consistent with the stated rationale.
 - Public tournament round selection preloads all round pairings in the initial response and switches the visible round panel client-side without a form submission or page reload; standings remain tournament-wide.
-- Full suite: **379 passed** (`pytest -q`; the additional coverage includes the public tournament round-preload/no-reload behavior).
+- Full suite: **370 passed** (`pytest -q`; the additional coverage includes news publication, entity tags, and public article visibility).
 
-No new correctness or security bugs were found during this pass. The two UX items below (News placeholder, language switcher) remain genuinely open and are carried forward unchanged.
+No new correctness or security bugs were found during this pass. The language switcher remains the one genuinely open UX item carried forward here.
 
 ## 1. Status check on previously-tracked issues
 - import_gotha_xml() in import_service.py — resolved. The unused helper, its admin import, and its two obsolete tests were removed. The active XML flow remains build_import_preview() → create_tournament_from_gotha().
@@ -47,7 +47,7 @@ No new correctness or security bugs were found during this pass. The two UX item
 
 - Repetitive route boilerplate — resolved for uniform handlers. `routes/admin.py` provides `run_admin_db_action()` for the shared connection, rollback, translated validation errors, optional success flashes, and guaranteed close lifecycle. Tournament participant, pairing, round-generation, tournament-deletion, user-deletion, and SGF unlink/delete handlers use it. Import, SGF link, rating-refresh, recovery, and multi-stage handlers retain explicit lifecycles because they have distinct rollback or recovery behavior.
 
-`services/tournament_service.py` is a 27-line compatibility facade that re-exports the established public and private import surface; it contains no tournament implementation bodies. No `_legacy_admin_*` route bodies or `_legacy()` service adapters remain. The last full-suite verification passed 379 tests.
+`services/tournament_service.py` is a 27-line compatibility facade that re-exports the established public and private import surface; it contains no tournament implementation bodies. No `_legacy_admin_*` route bodies or `_legacy()` service adapters remain. The last full-suite verification passed 370 tests.
 
 ## 3. Security
 Minor fixes:
@@ -60,7 +60,7 @@ Minor fixes:
 
 - Homepage density — resolved. The statistics section renders all three already-computed periods in one response, shows All time by default, and switches All time, Year, and Quarter panels client-side through accessible tabs without another request or page reload.
 
-- The "Noticias" (News) card ships literal placeholder content (... / ... in index.html) straight to production. Either wire it to something real or drop the section until there's content.
+- News publication — resolved. Administrators can create, edit, publish, and delete articles at `/admin/news`; each article supports up to four validated links to players, tournaments, or matches, with SGF matches opening the existing record viewer.
 
 - Language switcher is a single-button cycle (ES→EN→PT) labeled with the next language's abbreviation rather than the current one — functional, but a first-time visitor has to experiment to understand it's a cycle rather than a static label. A small dropdown would be more discoverable, though this is a minor point given the audience is a known local club.
 
@@ -82,7 +82,7 @@ Minor fixes:
 
 3. Reduce homepage density and remove placeholder news.
 	- Present one statistics period at a time using the existing language and styling conventions, with a server-rendered default and accessible period navigation — completed with client-side switching, keyboard navigation, and default/invalid-period route coverage.
-	- Remove the literal placeholder News card until a real data source exists.
+	- Replace the literal placeholder News card with published administrator articles and validated entity links — completed with admin CRUD, public article pages, homepage rendering, and focused coverage.
 
 4. Address the remaining low-severity consistency items.
 	- Add the same rate limiter used for login attempts to password-reset requests without changing the generic response — completed.

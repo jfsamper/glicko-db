@@ -15,6 +15,7 @@ Glicko DB is a Flask and SQLite application for managing a Go community's player
 - Tournament creation and editing, OpenGotha import, pairings, result entry, standings, and export
 - Member account registration and individual result submission for administrative approval
 - Public reports by period (default: all time) with player filters, localized CSV/PDF export, rating changes, and opponent, country, and club performance
+- Admin-published news with quick links to players, tournaments, matches, and SGF records
 - Swiss, category Swiss, accelerated Swiss, and McMahon systems
 - BYE and absence handling, backups, restore safeguards, and SQLite migrations
 - Draft tournaments hidden from public listings, with an administrative option to show drafts

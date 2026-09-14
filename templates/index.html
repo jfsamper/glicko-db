@@ -14,8 +14,12 @@
   <div class="card-grid">
     <article class="card stats-card">
       <h3>{{ translations.news }}</h3>
-      <p class="muted">...</p>
-      <p class="muted">...</p>
+      {% if news_articles %}
+        {% for article in news_articles %}
+          <h4><a href="{{ url_for('news_article', article_id=article.id, lang=lang) }}">{{ article.title }}</a></h4>
+          <p class="muted news-preview">{{ article.body }}</p>
+        {% endfor %}
+      {% else %}<p class="muted">{{ translations.news_empty }}</p>{% endif %}
 
       <h3>{{ translations.team }}</h3>
       {% for member in team_members %}

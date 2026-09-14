@@ -189,6 +189,7 @@ from routes.admin_sgf import (
     admin_unlink_sgf,
     register_sgf_routes,
 )
+from routes.admin_news import register_news_routes
 from routes.admin_players import (
     admin_categories,
     admin_delete_player,
@@ -491,6 +492,7 @@ register_backup_routes(admin_bp)
 register_import_routes(admin_bp)
 register_match_routes(admin_bp)
 register_sgf_routes(admin_bp)
+register_news_routes(admin_bp)
 register_player_routes(admin_bp)
 register_user_routes(admin_bp)
 register_tournament_routes(admin_bp)
@@ -552,6 +554,7 @@ ADMIN_MENU_SECTIONS = (
             ("admin_backups", "admin_backups_title", "admin_backups_desc", "admin"),
             ("admin_users", "admin_users_title", "admin_users_desc", "admin"),
             ("admin_result_submissions", "result_submissions_title", "result_submissions_desc", "operator"),
+            ("admin_news", "news", "news", "operator"),
             ("admin_audit_review", "audit_review_heading", "audit_review_desc", "admin"),
             ("admin_settings", "admin_settings_title", "admin_settings_desc", "admin"),
         ),

@@ -26,6 +26,7 @@ from services.helpers import normalize_round_note
 from services.import_service import import_workbook_data
 from services.rating_service import recompute_ratings
 from services.settings_service import migrate_application_settings_schema
+from services.news_service import migrate_news_schema
 from services.sgf_service import clear_missing_sgf_links, ensure_sgf_schema
 from routes.public import glicko_to_category, register_public_routes
 from routes.admin import register_admin_routes
@@ -996,6 +997,7 @@ def initialize_app():
     migrate_result_submissions_schema(conn)
     migrate_application_settings_schema(conn)
     migrate_audit_log_schema(conn)
+    migrate_news_schema(conn)
     bootstrap_default_admin_account(conn)
     ensure_player_schema_columns(conn)
     ensure_sgf_schema(conn)

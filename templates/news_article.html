@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% block content %}
+<section class="panel news-article">
+  <p><a href="{{ url_for('index', lang=lang) }}">{{ translations.home }}</a></p>
+  <h2>{{ article.title }}</h2>
+  <p class="muted">{{ article.published_at }}</p>
+  <div class="news-body">{{ article.body }}</div>
+  {% if article.tags %}
+    <div class="news-links">
+      <h3>{{ translations.news_links }}</h3>
+      {% for tag in article.tags %}
+        {% if tag.tag_type == 'player' %}
+          <a class="text-link" href="{{ url_for('player_profile', id=tag.entity_id, lang=lang) }}">{{ translations.news_tag_player }}: {{ tag.label }}</a>
+        {% elif tag.tag_type == 'tournament' %}
+          <a class="text-link" href="{{ url_for('tournament_page', tournament_id=tag.entity_id, lang=lang) }}">{{ translations.news_tag_tournament }}: {{ tag.label }}</a>
+        {% elif tag.tag_type == 'match' %}
+          {% if tag.has_sgf %}<a class="text-link" href="{{ url_for('match_record', match_id=tag.entity_id, lang=lang) }}">{{ translations.news_view_sgf }}: {{ tag.label }}</a>{% else %}<a class="text-link" href="{{ url_for('matches', lang=lang) }}">{{ translations.news_tag_match }}: {{ tag.label }}</a>{% endif %}
+        {% endif %}
+      {% endfor %}
+    </div>
+  {% endif %}
+</section>
+{% endblock %}
