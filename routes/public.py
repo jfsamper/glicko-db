@@ -12,10 +12,17 @@ from services.common import (
     get_current_user,
     get_language,
     get_db,
+    user_has_permission,
 )
 
 from services.home_stats import build_home_stats
-from services.sgf_service import get_sgf_path, has_sgf_column
+from services.sgf_service import (
+    clear_missing_sgf_links,
+    get_sgf_metadata,
+    get_sgf_path,
+    has_sgf_column,
+    list_sgf_files,
+)
 from services.reporting_service import (
     build_date_report,
     export_report_csv,
@@ -542,6 +549,7 @@ def matches():
     filter_sql, filter_params = _match_filter_sql(date_from, date_to, player_id)
 
     conn = get_db()
+    clear_missing_sgf_links(conn)
     sgf_select = "m.sgf_filename" if has_sgf_column(conn) else "NULL AS sgf_filename"
 
     total_count = conn.execute(
@@ -600,12 +608,102 @@ def matches():
     )
 
 
+@public_bp.route("/sgf-library")
+def sgf_library():
+    lang = get_language(request.args.get("lang"))
+    conn = get_db()
+    has_column = has_sgf_column(conn)
+    if has_column:
+        clear_missing_sgf_links(conn)
+        linked_matches = conn.execute(
+            """
+            SELECT m.id, m.match_date, m.event, m.sgf_filename,
+                   white.display_name AS white_name,
+                   black.display_name AS black_name
+            FROM matches m
+            JOIN players white ON white.id = m.white_player_id
+            JOIN players black ON black.id = m.black_player_id
+            WHERE m.sgf_filename IS NOT NULL
+            ORDER BY m.match_date DESC, m.id DESC
+            """
+        ).fetchall()
+    else:
+        linked_matches = []
+    match_options = conn.execute(
+        """
+        SELECT m.id, m.match_date, m.event,
+               white.display_name AS white_name,
+               black.display_name AS black_name
+        FROM matches m
+        JOIN players white ON white.id = m.white_player_id
+        JOIN players black ON black.id = m.black_player_id
+        ORDER BY m.match_date DESC, m.id DESC
+        """
+    ).fetchall()
+    conn.close()
+
+    linked_by_filename = {
+        row["sgf_filename"]: dict(row)
+        for row in linked_matches
+    }
+    files = []
+    for record in list_sgf_files():
+        file_record = dict(record)
+        file_record["linked_match"] = linked_by_filename.get(record["filename"])
+        files.append(file_record)
+
+    return render_template(
+        "sgf_library.html",
+        lang=lang,
+        translations=TRANSLATIONS[lang],
+        files=files,
+        match_options=match_options,
+        can_manage_sgf=user_has_permission("operator"),
+        can_delete_sgf=user_has_permission("admin"),
+    )
+
+
+@public_bp.route("/sgf-library/<filename>")
+def sgf_library_record(filename):
+    lang = get_language(request.args.get("lang"))
+    metadata = get_sgf_metadata(filename)
+    if metadata is None:
+        abort(404)
+
+    theme = (request.args.get("theme") or "").strip().lower()
+    if theme not in {"simple", "dark"}:
+        theme = "dark" if session.get("user_theme") == "dark" else "simple"
+    return render_template(
+        "sgf_record.html",
+        lang=lang,
+        translations=TRANSLATIONS[lang],
+        sgf=metadata,
+        theme=theme,
+        sgf_url=url_for("sgf_file", filename=metadata["filename"], lang=lang, _external=True),
+    )
+
+
+@public_bp.route("/sgf/<filename>")
+def sgf_file(filename):
+    path = get_sgf_path(filename)
+    if path is None:
+        abort(404)
+    return send_file(
+        path,
+        mimetype="application/x-go-sgf",
+        as_attachment=request.args.get("download") == "1",
+        download_name=path.name,
+        max_age=0,
+    )
+
+
 @public_bp.route("/matches/<int:match_id>/sgf")
 def match_sgf(match_id):
     conn = get_db()
     if not has_sgf_column(conn):
         conn.close()
         abort(404)
+    clear_missing_sgf_links(conn)
     row = conn.execute(
         "SELECT sgf_filename FROM matches WHERE id = ?",
         (match_id,),
@@ -632,6 +730,7 @@ def match_record(match_id):
     if not has_sgf_column(conn):
         conn.close()
         abort(404)
+    clear_missing_sgf_links(conn)
     row = conn.execute(
         """
         SELECT m.id, m.match_date, m.result, m.event, m.sgf_filename,

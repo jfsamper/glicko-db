@@ -25,6 +25,68 @@
   outline-offset: 2px;
 }
 
+.sgf-library-table .sgf-library-file {
+  width: 4.5rem;
+  min-width: 4.5rem;
+  max-width: 4.5rem;
+}
+
+.sgf-library-filename {
+  display: inline-block;
+  max-width: 4ch;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.sgf-library-table .sgf-library-actions-heading,
+.sgf-library-table .sgf-library-actions {
+  width: 1%;
+  min-width: 12rem;
+}
+
+.sgf-library-actions {
+  white-space: normal;
+}
+
+.sgf-library-action-form {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  width: 100%;
+  max-width: none;
+  margin: 0 0 0.35rem;
+  padding: 0;
+  background: transparent;
+}
+
+.sgf-library-action-form:last-child {
+  margin-bottom: 0;
+}
+
+.sgf-library-match-select {
+  min-width: 0;
+  width: 9rem;
+  min-height: 36px;
+  padding: 0.45rem 0.5rem;
+  text-align: left;
+  text-align-last: left;
+}
+
+.sgf-library-action-form button {
+  min-height: 36px;
+  padding: 0.45rem 0.65rem;
+  white-space: nowrap;
+}
+
+.sgf-library-delete-button {
+  background: #b42318;
+}
+
+.sgf-library-delete-button:hover {
+  background: #8f1d14;
+}
+
 .sgf-viewer-shell {
   width: 100%;
   min-width: 0;

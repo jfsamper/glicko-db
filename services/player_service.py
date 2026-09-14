@@ -9,6 +9,7 @@ from services.home_stats import build_player_badges
 from services.player_stats import build_recent_result_summaries
 from services.helpers import normalize_key, normalize_text, slugify, split_name
 from services.category_service import get_category_config, glicko_to_category
+from services.sgf_service import clear_missing_sgf_links
 from services.standings_service import calculate_standings
 
 
@@ -254,6 +255,7 @@ def load_player(
     tournament_page=1, tournament_page_size=10,
 ):
     conn = get_db()
+    clear_missing_sgf_links(conn)
     player = conn.execute("SELECT * FROM players WHERE id = ?", (player_id,)).fetchone()
 
     if not player:

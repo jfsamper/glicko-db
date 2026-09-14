@@ -1,7 +1,9 @@
 """Secure storage helpers for optional SGF match records."""
 from pathlib import Path
+from datetime import datetime
 import math
 import re
+import shutil
 import uuid
 
 from config import BASE_DIR
@@ -10,6 +12,7 @@ from werkzeug.utils import secure_filename
 
 SGF_UPLOAD_DIR = Path(BASE_DIR) / "uploads" / "sgf"
 MAX_SGF_BYTES = 500 * 1024
+SGF_METADATA_KEYS = ("PW", "PB", "WR", "BR", "EV", "DT", "RE", "PC")
 
 
 def ensure_sgf_schema(conn):
@@ -50,6 +53,133 @@ def get_sgf_path(filename):
     if path is None or not path.is_file():
         return None
     return path
+
+
+def _decode_sgf_content(content):
+    if len(content) > MAX_SGF_BYTES:
+        raise ValueError("SGF file is too large")
+    if not content:
+        raise ValueError("SGF file is empty")
+
+    try:
+        text = content.decode("utf-8-sig")
+    except UnicodeDecodeError as exc:
+        raise ValueError("SGF file must be UTF-8 text") from exc
+    if not text.lstrip().startswith("(;"):
+        raise ValueError("Invalid SGF file")
+    return text
+
+
+def _unescape_sgf_value(value):
+    result = []
+    escaped = False
+    for character in str(value or ""):
+        if escaped:
+            result.append("\n" if character == "n" else character)
+            escaped = False
+        elif character == "\\":
+            escaped = True
+        else:
+            result.append(character)
+    if escaped:
+        result.append("\\")
+    return "".join(result)
+
+
+def _sgf_metadata_for_path(path):
+    try:
+        stat = path.stat()
+    except OSError:
+        return None
+
+    metadata = {
+        "filename": path.name,
+        "size_bytes": stat.st_size,
+        "modified_at": datetime.fromtimestamp(stat.st_mtime).strftime("%Y-%m-%d %H:%M:%S"),
+    }
+    try:
+        text = path.read_text(encoding="utf-8-sig")
+        properties = _root_properties(text[text.find("(;") + 2:]) if "(;" in text else {}
+    except (OSError, UnicodeDecodeError):
+        properties = {}
+
+    for key in SGF_METADATA_KEYS:
+        values = properties.get(key, [])
+        metadata[key] = _unescape_sgf_value(values[0]) if values else ""
+    return metadata
+
+
+def get_sgf_metadata(filename):
+    """Return file and root-property metadata for an existing SGF file."""
+    path = get_sgf_path(filename)
+    return _sgf_metadata_for_path(path) if path is not None else None
+
+
+def list_sgf_files():
+    """List every safely stored SGF file, newest first."""
+    if not SGF_UPLOAD_DIR.is_dir():
+        return []
+
+    records = []
+    for path in SGF_UPLOAD_DIR.glob("*.sgf"):
+        safe_path = _safe_sgf_path(path.name)
+        if safe_path is None or safe_path != path.resolve():
+            continue
+        metadata = _sgf_metadata_for_path(safe_path)
+        if metadata is not None:
+            records.append(metadata)
+    return sorted(records, key=lambda record: (record["modified_at"], record["filename"]), reverse=True)
+
+
+def clear_missing_sgf_links(conn):
+    """Clear match links whose SGF file is no longer present on disk."""
+    if not has_sgf_column(conn):
+        return 0
+
+    rows = conn.execute(
+        "SELECT id, sgf_filename FROM matches WHERE sgf_filename IS NOT NULL"
+    ).fetchall()
+    missing_ids = [
+        row["id"]
+        for row in rows
+        if get_sgf_path(row["sgf_filename"]) is None
+    ]
+    if missing_ids:
+        conn.executemany(
+            "UPDATE matches SET sgf_filename = NULL WHERE id = ?",
+            ((match_id,) for match_id in missing_ids),
+        )
+        conn.commit()
+    return len(missing_ids)
+
+
+def backup_sgf_files(backup_path):
+    """Copy the SGF library beside a database backup."""
+    target = Path(backup_path).with_suffix(".sgf")
+    if target.exists():
+        shutil.rmtree(target)
+    target.mkdir(parents=True, exist_ok=True)
+    for record in list_sgf_files():
+        source = get_sgf_path(record["filename"])
+        if source is not None:
+            shutil.copy2(source, target / source.name)
+    return target
+
+
+def restore_sgf_files(backup_path):
+    """Restore SGFs from a backup sidecar without removing newer library files."""
+    source_dir = Path(backup_path).with_suffix(".sgf")
+    if not source_dir.is_dir():
+        return False
+
+    SGF_UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+    restored = False
+    for source in source_dir.glob("*.sgf"):
+        if _safe_sgf_path(source.name) is None:
+            continue
+        shutil.copy2(source, SGF_UPLOAD_DIR / source.name)
+        restored = True
+    return restored
 
 
 def _escape_sgf_value(value):
@@ -158,17 +288,7 @@ def save_sgf_upload(file_storage, metadata=None):
         raise ValueError("Only .sgf files are supported")
 
     content = file_storage.read(MAX_SGF_BYTES + 1)
-    if len(content) > MAX_SGF_BYTES:
-        raise ValueError("SGF file is too large")
-    if not content:
-        raise ValueError("SGF file is empty")
-
-    try:
-        text = content.decode("utf-8-sig")
-    except UnicodeDecodeError as exc:
-        raise ValueError("SGF file must be UTF-8 text") from exc
-    if not text.lstrip().startswith("(;"):
-        raise ValueError("Invalid SGF file")
+    text = _decode_sgf_content(content)
     if metadata:
         text = rewrite_sgf_root(text, metadata)
 
@@ -184,8 +304,8 @@ def save_sgf_upload(file_storage, metadata=None):
 def update_sgf_metadata(filename, metadata):
     path = get_sgf_path(filename)
     if path is None:
-        return
-    text = path.read_text(encoding="utf-8-sig")
+        raise ValueError("Invalid SGF file")
+    text = _decode_sgf_content(path.read_bytes())
     path.write_text(rewrite_sgf_root(text, metadata), encoding="utf-8")
 
 

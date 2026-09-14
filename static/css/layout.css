@@ -225,6 +225,12 @@ nav a:hover,
   margin: 0 0 1rem;
 }
 
+.matches-library-link {
+  display: flex;
+  justify-content: flex-end;
+  margin: 0 0 1rem;
+}
+
 .breadcrumb {
   display: inline-flex;
   align-items: center;

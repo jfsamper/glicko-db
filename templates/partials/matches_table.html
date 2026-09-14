@@ -3,6 +3,12 @@
 {% set matches_endpoint = 'matches' if not admin_mode else 'admin_matches' %}
 {% set base_query_args = {'lang': lang, 'page': 1, 'page_size': page_size, 'date_from': date_from, 'date_to': date_to, 'player_id': player_id} %}
 
+<div class="matches-library-link">
+  <a class="button secondary" href="{{ url_for('sgf_library', lang=lang) }}">
+    {{ translations.sgf_library_title }}
+  </a>
+</div>
+
 <form method="get" class="filter-form">
   <input type="hidden" name="lang" value="{{ lang }}">
 

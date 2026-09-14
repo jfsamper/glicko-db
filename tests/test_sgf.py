@@ -131,3 +131,223 @@ def test_admin_upload_and_public_besogo_viewer(admin_client, tmp_path, monkeypat
     assert "DT[2026-09-11]" in sgf_body
     assert "RE[W+R]" in sgf_body
     assert ";B[pd];W[dd])" in sgf_body
+
+
+def test_sgf_library_is_public_and_admin_can_link_or_unlink(client, admin_client, tmp_path, monkeypatch):
+    upload_dir = tmp_path / "sgf"
+    monkeypatch.setattr(sgf_service, "SGF_UPLOAD_DIR", upload_dir)
+    stored_name = sgf_service.save_sgf_upload(
+        FileStorage(stream=BytesIO(SGF_TEXT.encode("utf-8")), filename="library.sgf")
+    )
+
+    library = client.get("/sgf-library?lang=en")
+    assert library.status_code == 200
+    library_body = library.get_data(as_text=True)
+    assert stored_name in library_body
+    assert "Black" in library_body
+    assert client.get(f"/sgf/{stored_name}").status_code == 200
+    assert client.get(f"/sgf-library/{stored_name}?lang=en").status_code == 200
+
+    response = admin_client.post(
+        "/admin/sgf/link?lang=en",
+        data={"filename": stored_name, "match_id": "1"},
+    )
+    assert response.status_code == 302
+    with common.get_db() as conn:
+        assert conn.execute(
+            "SELECT sgf_filename FROM matches WHERE id = 1"
+        ).fetchone()[0] == stored_name
+    linked_body = (upload_dir / stored_name).read_text(encoding="utf-8")
+    assert "PW[Juan Samper]" in linked_body
+    assert "PB[Camilo Acuna]" in linked_body
+    assert "RE[W+R]" in linked_body
+
+    response = admin_client.post(
+        "/admin/sgf/unlink?lang=en",
+        data={"filename": stored_name, "match_id": "1"},
+    )
+    assert response.status_code == 302
+    with common.get_db() as conn:
+        assert conn.execute(
+            "SELECT sgf_filename FROM matches WHERE id = 1"
+        ).fetchone()[0] is None
+    assert (upload_dir / stored_name).is_file()
+
+
+def test_linking_rejects_malformed_sgf_without_creating_match_link(
+    admin_client, tmp_path, monkeypatch
+):
+    upload_dir = tmp_path / "sgf"
+    monkeypatch.setattr(sgf_service, "SGF_UPLOAD_DIR", upload_dir)
+    stored_name = sgf_service.save_sgf_upload(
+        FileStorage(stream=BytesIO(SGF_TEXT.encode("utf-8")), filename="malformed.sgf")
+    )
+    path = upload_dir / stored_name
+    path.write_text("(;GM[1]", encoding="utf-8")
+
+    response = admin_client.post(
+        "/admin/sgf/link?lang=en",
+        data={"filename": stored_name, "match_id": "1"},
+    )
+    assert response.status_code == 302
+    with common.get_db() as conn:
+        assert conn.execute(
+            "SELECT sgf_filename FROM matches WHERE id = 1"
+        ).fetchone()[0] is None
+    assert path.read_text(encoding="utf-8") == "(;GM[1]"
+
+
+@pytest.mark.parametrize(
+    ("role", "expected_status"),
+    [
+        ("administrator", 302),
+        ("tournament_director", 302),
+        ("operator", 302),
+        ("member", 403),
+    ],
+)
+def test_sgf_link_permissions_follow_staff_roles(
+    client, role, expected_status, tmp_path, monkeypatch
+):
+    upload_dir = tmp_path / "sgf"
+    monkeypatch.setattr(sgf_service, "SGF_UPLOAD_DIR", upload_dir)
+    stored_name = sgf_service.save_sgf_upload(
+        FileStorage(stream=BytesIO(SGF_TEXT.encode("utf-8")), filename="permissions.sgf")
+    )
+    user_id = common.create_user_account(
+        f"sgf-{role}", "sgf-test-password", role_name=role
+    )
+    with client.session_transaction() as session:
+        session.clear()
+        session["user_id"] = user_id
+
+    response = client.post(
+        "/admin/sgf/link?lang=en",
+        data={"filename": stored_name, "match_id": "1"},
+    )
+    assert response.status_code == expected_status
+    if expected_status == 302:
+        with common.get_db() as conn:
+            assert conn.execute(
+                "SELECT sgf_filename FROM matches WHERE id = 1"
+            ).fetchone()[0] == stored_name
+            conn.execute("UPDATE matches SET sgf_filename = NULL WHERE id = 1")
+            conn.commit()
+
+
+def test_only_admin_can_delete_sgf_and_delete_clears_match_link(
+    client, admin_client, tmp_path, monkeypatch
+):
+    upload_dir = tmp_path / "sgf"
+    monkeypatch.setattr(sgf_service, "SGF_UPLOAD_DIR", upload_dir)
+    stored_name = sgf_service.save_sgf_upload(
+        FileStorage(stream=BytesIO(SGF_TEXT.encode("utf-8")), filename="delete.sgf")
+    )
+    with common.get_db() as conn:
+        conn.execute("UPDATE matches SET sgf_filename = ? WHERE id = 1", (stored_name,))
+        conn.commit()
+    with admin_client.session_transaction() as session:
+        administrator_id = session["user_id"]
+
+    operator_id = common.create_user_account(
+        "sgf-delete-operator", "sgf-test-password", role_name="operator"
+    )
+    with client.session_transaction() as session:
+        session.clear()
+        session["user_id"] = operator_id
+
+    response = client.post(
+        "/admin/sgf/delete?lang=en",
+        data={"filename": stored_name},
+    )
+    assert response.status_code == 403
+    assert (upload_dir / stored_name).is_file()
+
+    with client.session_transaction() as session:
+        session.clear()
+        session["user_id"] = administrator_id
+    response = client.post(
+        "/admin/sgf/delete?lang=en",
+        data={"filename": stored_name},
+    )
+    assert response.status_code == 302
+    assert not (upload_dir / stored_name).exists()
+    with common.get_db() as conn:
+        assert conn.execute(
+            "SELECT sgf_filename FROM matches WHERE id = 1"
+        ).fetchone()[0] is None
+
+
+def test_missing_sgf_link_self_heals_and_match_delete_keeps_file(admin_client, tmp_path, monkeypatch):
+    upload_dir = tmp_path / "sgf"
+    monkeypatch.setattr(sgf_service, "SGF_UPLOAD_DIR", upload_dir)
+    response = admin_client.post(
+        "/admin/matches/add?lang=en",
+        data={
+            "match_date": "2026-09-12",
+            "white_player_id": "1",
+            "black_player_id": "2",
+            "result": "1-0",
+            "event": "Missing SGF test",
+            "notes": "Round 1",
+            "handicap_stones": "0",
+            "sgf_file": (BytesIO(SGF_TEXT.encode("utf-8")), "missing.sgf"),
+        },
+        content_type="multipart/form-data",
+    )
+    assert response.status_code == 302
+    with common.get_db() as conn:
+        match = conn.execute(
+            "SELECT id, sgf_filename FROM matches WHERE event = 'Missing SGF test'"
+        ).fetchone()
+    missing_path = upload_dir / match["sgf_filename"]
+    missing_path.unlink()
+
+    assert admin_client.get(f"/matches/{match['id']}/record?lang=en").status_code == 404
+    with common.get_db() as conn:
+        assert conn.execute(
+            "SELECT sgf_filename FROM matches WHERE id = ?", (match["id"],)
+        ).fetchone()[0] is None
+
+    response = admin_client.post(
+        "/admin/matches/add?lang=en",
+        data={
+            "match_date": "2026-09-13",
+            "white_player_id": "1",
+            "black_player_id": "2",
+            "result": "0-1",
+            "event": "Retained SGF test",
+            "notes": "Round 2",
+            "handicap_stones": "0",
+            "sgf_file": (BytesIO(SGF_TEXT.encode("utf-8")), "retained.sgf"),
+        },
+        content_type="multipart/form-data",
+    )
+    assert response.status_code == 302
+    with common.get_db() as conn:
+        retained_match = conn.execute(
+            "SELECT id, sgf_filename FROM matches WHERE event = 'Retained SGF test'"
+        ).fetchone()
+    retained_path = upload_dir / retained_match["sgf_filename"]
+
+    response = admin_client.post(
+        f"/admin/matches/delete?id={retained_match['id']}&lang=en"
+    )
+    assert response.status_code == 302
+    assert retained_path.is_file()
+    assert retained_match["sgf_filename"] in admin_client.get("/sgf-library?lang=en").get_data(as_text=True)
+
+
+def test_sgf_backup_sidecar_restores_library_file(tmp_path, monkeypatch):
+    upload_dir = tmp_path / "sgf"
+    monkeypatch.setattr(sgf_service, "SGF_UPLOAD_DIR", upload_dir)
+    stored_name = sgf_service.save_sgf_upload(
+        FileStorage(stream=BytesIO(SGF_TEXT.encode("utf-8")), filename="backup.sgf")
+    )
+    backup_path = tmp_path / "backup.db"
+
+    sidecar = sgf_service.backup_sgf_files(backup_path)
+    (upload_dir / stored_name).unlink()
+    assert (sidecar / stored_name).is_file()
+    assert sgf_service.restore_sgf_files(backup_path) is True
+    assert (upload_dir / stored_name).is_file()

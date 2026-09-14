@@ -27,7 +27,7 @@ from services.helpers import normalize_round_note
 from services.import_service import import_workbook_data
 from services.rating_service import recompute_ratings
 from services.settings_service import migrate_application_settings_schema
-from services.sgf_service import ensure_sgf_schema
+from services.sgf_service import clear_missing_sgf_links, ensure_sgf_schema
 from routes.public import glicko_to_category, register_public_routes
 from routes.admin import register_admin_routes
 from services.pairing_service import DEFAULT_ACCELERATION_SCHEME, format_rank_category
@@ -137,6 +137,7 @@ def init_db():
             round_number INTEGER NOT NULL DEFAULT 0,
             tournament_pairing_id INTEGER,
             handicap_stones INTEGER NOT NULL DEFAULT 0,
+            sgf_filename TEXT,
             CHECK (white_player_id != black_player_id),
             FOREIGN KEY (white_player_id) REFERENCES players(id) ON DELETE CASCADE,
             FOREIGN KEY (black_player_id) REFERENCES players(id) ON DELETE CASCADE
@@ -309,6 +310,11 @@ def migrate_matches_notes_schema(conn):
         return
 
     legacy_name = "matches__legacy_round_notes"
+    event_select = "event" if "event" in columns else "NULL"
+    location_select = "location" if "location" in columns else "NULL"
+    pairing_select = "tournament_pairing_id" if "tournament_pairing_id" in columns else "NULL"
+    handicap_select = "handicap_stones" if "handicap_stones" in columns else "0"
+    sgf_select = "sgf_filename" if "sgf_filename" in columns else "NULL"
     conn.execute("ALTER TABLE matches RENAME TO matches__legacy_round_notes")
     conn.execute(
         """
@@ -324,6 +330,7 @@ def migrate_matches_notes_schema(conn):
             round_number INTEGER NOT NULL DEFAULT 0,
             tournament_pairing_id INTEGER,
             handicap_stones INTEGER NOT NULL DEFAULT 0,
+            sgf_filename TEXT,
             CHECK (white_player_id != black_player_id),
             FOREIGN KEY (white_player_id) REFERENCES players(id) ON DELETE CASCADE,
             FOREIGN KEY (black_player_id) REFERENCES players(id) ON DELETE CASCADE
@@ -331,9 +338,9 @@ def migrate_matches_notes_schema(conn):
         """
     )
     conn.execute(
-        """
-        INSERT INTO matches (id, match_date, white_player_id, black_player_id, result, event, location, notes, round_number, tournament_pairing_id, handicap_stones)
-        SELECT id, match_date, white_player_id, black_player_id, result, event, location, CAST(notes AS TEXT), 0, NULL, 0
+        f"""
+        INSERT INTO matches (id, match_date, white_player_id, black_player_id, result, event, location, notes, round_number, tournament_pairing_id, handicap_stones, sgf_filename)
+        SELECT id, match_date, white_player_id, black_player_id, result, {event_select}, {location_select}, CAST(notes AS TEXT), 0, {pairing_select}, {handicap_select}, {sgf_select}
         FROM matches__legacy_round_notes
         """
     )
@@ -372,6 +379,12 @@ def migrate_match_result_schema(conn):
         row[1]
         for row in conn.execute("PRAGMA table_info(matches__legacy_result_values)").fetchall()
     }
+    sgf_select = "sgf_filename" if "sgf_filename" in legacy_columns else "NULL"
+    event_select = "event" if "event" in legacy_columns else "NULL"
+    notes_select = "notes" if "notes" in legacy_columns else "NULL"
+    round_select = "round_number" if "round_number" in legacy_columns else "0"
+    pairing_select = "tournament_pairing_id" if "tournament_pairing_id" in legacy_columns else "NULL"
+    handicap_select = "handicap_stones" if "handicap_stones" in legacy_columns else "0"
     if "location" not in legacy_columns:
         conn.execute("ALTER TABLE matches__legacy_result_values ADD COLUMN location TEXT")
     conn.execute(
@@ -388,6 +401,7 @@ def migrate_match_result_schema(conn):
             round_number INTEGER NOT NULL DEFAULT 0,
             tournament_pairing_id INTEGER,
             handicap_stones INTEGER NOT NULL DEFAULT 0,
+            sgf_filename TEXT,
             CHECK (white_player_id != black_player_id),
             FOREIGN KEY (white_player_id) REFERENCES players(id) ON DELETE CASCADE,
             FOREIGN KEY (black_player_id) REFERENCES players(id) ON DELETE CASCADE
@@ -395,12 +409,12 @@ def migrate_match_result_schema(conn):
         """
     )
     conn.execute(
-        """
+        f"""
         INSERT INTO matches
               (id, match_date, white_player_id, black_player_id, result, event,
-               location, notes, round_number, tournament_pairing_id, handicap_stones)
-           SELECT id, match_date, white_player_id, black_player_id, result, event,
-                location, notes, round_number, tournament_pairing_id, handicap_stones
+               location, notes, round_number, tournament_pairing_id, handicap_stones, sgf_filename)
+           SELECT id, match_date, white_player_id, black_player_id, result, {event_select},
+                location, {notes_select}, {round_select}, {pairing_select}, {handicap_select}, {sgf_select}
         FROM matches__legacy_result_values
         """
     )
@@ -956,6 +970,7 @@ def initialize_app():
     bootstrap_default_admin_account(conn)
     ensure_player_schema_columns(conn)
     ensure_sgf_schema(conn)
+    clear_missing_sgf_links(conn)
     migrate_matches_notes_schema(conn)
     migrate_match_result_schema(conn)
     migrate_tournament_match_identity_schema(conn)

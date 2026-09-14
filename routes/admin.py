@@ -7,8 +7,6 @@ import os
 import sqlite3
 import time
 from pathlib import Path
-import re
-import shutil
 
 from werkzeug.utils import secure_filename
 from datetime import datetime
@@ -94,10 +92,19 @@ from services.player_service import (
     parse_player_order,
     parse_player_sort,
 )
-from services.rating_service import get_dirty_date, get_rating_config, mark_dirty, recompute_ratings, update_from_latest_snapshot, update_rating_config
+from services.rating_service import (
+    get_dirty_date,
+    get_rating_config,
+    mark_dirty,
+    recompute_ratings,
+    update_from_latest_snapshot,
+    update_rating_config,
+)
 from services.category_service import get_category_config, update_category_config
 from services.recaptcha import verify_recaptcha
 from services.sgf_service import (
+    backup_sgf_files,
+    clear_missing_sgf_links,
     delete_sgf_file,
     ensure_sgf_schema,
     get_sgf_path,
@@ -148,12 +155,64 @@ from services.tournament_service import (
     update_pairing_handicap,
     normalize_tournament_system,
 )
-
-BACKUP_DIR = os.path.join(
-    BASE_DIR,
-    "backups"
+from services import backup_service
+from routes.admin_backups import (
+    admin_backups,
+    admin_create_backup,
+    admin_delete_backup,
+    admin_restore_backup,
+    register_backup_routes,
 )
-BACKUP_NAME_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*\.db$")
+from routes.admin_import import (
+    admin_import,
+    import_matches,
+    register_import_routes,
+)
+from routes.admin_matches import (
+    admin_add_match,
+    admin_delete_match,
+    admin_edit_match,
+    admin_matches,
+    register_match_routes,
+)
+from routes.admin_sgf import (
+    admin_link_sgf,
+    admin_unlink_sgf,
+    register_sgf_routes,
+)
+from routes.admin_players import (
+    admin_categories,
+    admin_delete_player,
+    admin_edit_player,
+    admin_players,
+    admin_ratings,
+    register_player_routes,
+)
+from routes.admin_tournaments import (
+    admin_add_tournament_participant,
+    admin_delete_pending_player,
+    admin_delete_tournament,
+    admin_export_tournament_results,
+    admin_resolve_pending_player,
+    admin_remove_tournament_participant,
+    admin_tournament_players,
+    admin_tournament,
+    admin_create_tournament_player,
+    admin_manual_pair,
+    admin_pair_selected_players,
+    admin_update_pairing_handicap,
+    admin_generate_tournament_round,
+    admin_process_tournament_round,
+    admin_save_tournament,
+    admin_set_tournament_result,
+    admin_tournaments,
+    register_tournament_detail_routes,
+    register_tournament_routes,
+)
+
+
+logger = logging.getLogger(__name__)
+BACKUP_DIR = os.path.join(BASE_DIR, "backups")
 LOGIN_ATTEMPTS = {}
 DEFER_IMPORT_REPLAY_ENV = "DEFER_RATING_REPLAY_ON_IMPORT"
 MATCH_SORT_FIELDS = {
@@ -169,9 +228,6 @@ TOURNAMENT_SORT_FIELDS = {
     "status": "CASE status WHEN 'draft' THEN 0 WHEN 'active' THEN 1 WHEN 'canceled' THEN 2 WHEN 'completed' THEN 3 ELSE 4 END",
     "participants": "0",
 }
-
-
-logger = logging.getLogger(__name__)
 
 
 def acceleration_scheme_choice(scheme):
@@ -228,7 +284,7 @@ def _parse_match_order(order_value):
 
 
 def ensure_backup_dir():
-    os.makedirs(BACKUP_DIR, exist_ok=True)
+    backup_service.ensure_backup_dir(BACKUP_DIR)
 
 
 def record_failed_login_attempt(ip_address):
@@ -398,200 +454,41 @@ def load_players_for_user_link():
         conn.close()
 
 def get_backup_path(filename):
-    """Return a safe, server-generated backup path or ``None``."""
-    if not isinstance(filename, str):
-        logger.warning("Rejected backup path with non-string filename: %r", filename)
-        return None
-
-    if not BACKUP_NAME_PATTERN.fullmatch(filename):
-        logger.warning("Rejected backup path with invalid filename pattern: %r", filename)
-        return None
-
-    backup_root = Path(BACKUP_DIR).resolve()
-    path = (backup_root / filename).resolve()
-
-    try:
-        path.relative_to(backup_root)
-    except ValueError:
-        logger.warning("Rejected backup path outside backup directory: %r", filename)
-        return None
-
-    return path
+    return backup_service.get_backup_path(filename, BACKUP_DIR)
 
 
 def is_valid_sqlite_backup(path):
-    """Check that a backup file is a healthy SQLite database with real schema content."""
-    if path is None or not Path(path).is_file():
-        return False
-
-    try:
-        with sqlite3.connect(path) as conn:
-            table_count = conn.execute(
-                "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table'"
-            ).fetchone()[0]
-            if table_count <= 0:
-                return False
-
-            integrity = conn.execute("PRAGMA integrity_check").fetchone()
-            return integrity is not None and integrity[0] == "ok"
-    except sqlite3.DatabaseError:
-        return False
+    return backup_service.is_valid_sqlite_backup(path)
 
 
 def get_latest_valid_backup_path():
-    """Return the newest valid backup from managed backups and the data fallback file."""
-    candidates = []
-    active_db_path = Path(DB_PATH).resolve()
-
-    backup_dir = Path(BACKUP_DIR)
-    if backup_dir.exists():
-        for path in sorted(backup_dir.glob("*.db"), key=lambda item: item.stat().st_mtime, reverse=True):
-            if path.resolve() == active_db_path:
-                continue
-            if is_valid_sqlite_backup(path):
-                candidates.append(path)
-
-    fallback_path = Path(BASE_DIR) / "data" / "acg_ratings.db.bak"
-    if fallback_path.exists() and fallback_path.resolve() != active_db_path and is_valid_sqlite_backup(fallback_path):
-        candidates.append(fallback_path)
-
-    unique_paths = {}
-    for path in candidates:
-        unique_paths[path.resolve()] = path
-
-    if not unique_paths:
-        return None
-
-    return max(unique_paths.values(), key=lambda item: item.stat().st_mtime)
+    return backup_service.get_latest_valid_backup_path(DB_PATH, BACKUP_DIR, BASE_DIR)
 
 
 def rebuild_players_fts_artifacts(conn):
-    """Rebuild player search virtual tables and triggers from scratch.
-
-    Some legacy backups include stale FTS objects that pass integrity_check but
-    fail on player updates; dropping them forces a clean rebuild by migrations.
-    """
-    conn.execute("DROP TRIGGER IF EXISTS players_fts_ai")
-    conn.execute("DROP TRIGGER IF EXISTS players_fts_ad")
-    conn.execute("DROP TRIGGER IF EXISTS players_fts_au")
-    conn.execute("DROP TABLE IF EXISTS players_fts")
+    backup_service.rebuild_players_fts_artifacts(conn)
 
 
 def ensure_players_fts_artifacts(conn):
-    """Create a fresh players FTS index and sync triggers."""
-    conn.execute(
-        """
-        CREATE VIRTUAL TABLE IF NOT EXISTS players_fts USING fts5(
-            id UNINDEXED,
-            display_name,
-            country,
-            club,
-            slug,
-            content='players',
-            content_rowid='id'
-        )
-        """
-    )
-    conn.execute(
-        """
-        CREATE TRIGGER IF NOT EXISTS players_fts_ai AFTER INSERT ON players BEGIN
-            INSERT INTO players_fts(rowid, id, display_name, country, club, slug)
-            VALUES (new.id, new.id, new.display_name, new.country, new.club, new.slug);
-        END
-        """
-    )
-    conn.execute(
-        """
-        CREATE TRIGGER IF NOT EXISTS players_fts_ad AFTER DELETE ON players BEGIN
-            INSERT INTO players_fts(players_fts, rowid, id, display_name, country, club, slug)
-            VALUES('delete', old.id, old.id, old.display_name, old.country, old.club, old.slug);
-        END
-        """
-    )
-    conn.execute(
-        """
-        CREATE TRIGGER IF NOT EXISTS players_fts_au AFTER UPDATE ON players BEGIN
-            INSERT INTO players_fts(players_fts, rowid, id, display_name, country, club, slug)
-            VALUES('delete', old.id, old.id, old.display_name, old.country, old.club, old.slug);
-            INSERT INTO players_fts(rowid, id, display_name, country, club, slug)
-            VALUES (new.id, new.id, new.display_name, new.country, new.club, new.slug);
-        END
-        """
-    )
-    conn.execute(
-        """
-        INSERT INTO players_fts(players_fts)
-        VALUES('rebuild')
-        """
-    )
+    backup_service.ensure_players_fts_artifacts(conn)
 
 
 def ensure_rating_state_table(conn):
-    """Ensure dirty-date tracking exists for incremental rating updates."""
-    conn.execute(
-        """
-        CREATE TABLE IF NOT EXISTS rating_state (
-            id INTEGER PRIMARY KEY CHECK(id = 1),
-            earliest_dirty_date TEXT
-        )
-        """
-    )
-    conn.execute(
-        """
-        INSERT OR IGNORE INTO rating_state (id, earliest_dirty_date)
-        VALUES (1, NULL)
-        """
-    )
+    backup_service.ensure_rating_state_table(conn)
 
 
 def restore_db_from_backup(path):
-    """Restore the canonical database file from the given valid backup and re-run migrations."""
-    if path is None or not Path(path).is_file() or not is_valid_sqlite_backup(path):
-        return False
-
-    backup_path = Path(path).resolve()
-    active_db_path = Path(DB_PATH).resolve()
-    if backup_path == active_db_path:
-        logger.warning("Skipping backup restore because the selected backup matches the active database: %s", path)
-        return False
-
-    shutil.copy2(path, DB_PATH)
-
-    from app import (
-        ensure_player_schema_columns,
-        migrate_config_schema,
-        migrate_application_settings_schema,
-        migrate_tournament_schema,
-        migrate_matches_notes_schema,
-        migrate_tournament_match_identity_schema,
-        normalize_match_round_values,
-        repair_legacy_players_table,
-    )
-
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    try:
-        repair_legacy_players_table(conn)
-        migrate_tournament_schema(conn)
-        migrate_config_schema(conn)
-        migrate_auth_schema(conn)
-        migrate_application_settings_schema(conn)
-        bootstrap_default_admin_account(conn)
-        rebuild_players_fts_artifacts(conn)
-        ensure_player_schema_columns(conn)
-        ensure_players_fts_artifacts(conn)
-        ensure_rating_state_table(conn)
-        migrate_matches_notes_schema(conn)
-        migrate_tournament_match_identity_schema(conn)
-        normalize_match_round_values(conn)
-        conn.commit()
-    finally:
-        conn.close()
-
-    return True
+    return backup_service.restore_db_from_backup(path, DB_PATH)
 
 
 admin_bp = Blueprint("admin", __name__)
+register_backup_routes(admin_bp)
+register_import_routes(admin_bp)
+register_match_routes(admin_bp)
+register_sgf_routes(admin_bp)
+register_player_routes(admin_bp)
+register_tournament_routes(admin_bp)
+register_tournament_detail_routes(admin_bp)
 
 ADMIN_ROUTE_PERMISSIONS = {
     "admin.admin_backups": "admin",
@@ -603,6 +500,11 @@ ADMIN_ROUTE_PERMISSIONS = {
     "admin.admin_settings": "admin",
     "admin.admin_users": "admin",
     "admin.admin_result_submissions": "operator",
+    "admin.admin_link_sgf": "operator",
+    "admin.admin_link_sgf_alias": "operator",
+    "admin.admin_unlink_sgf": "operator",
+    "admin.admin_unlink_sgf_alias": "operator",
+    "admin.admin_delete_sgf": "admin",
     "admin.admin_approve_result_submission": "operator",
     "admin.admin_reject_result_submission": "operator",
     "admin.admin_profile": "results_submitter",
@@ -626,6 +528,7 @@ ADMIN_MENU_SECTIONS = (
         (
             ("admin_import", "admin_import_title", "admin_import_desc", "operator"),
             ("admin_matches", "admin_matches_title", "admin_matches_desc", "operator"),
+            ("sgf_library", "sgf_library_title", "sgf_library_desc", "operator"),
             ("admin_tournaments", "tournaments_title", "tournaments_desc", "operator"),
         ),
     ),
@@ -1075,8 +978,6 @@ def admin_reject_result_submission(submission_id):
     if not updated:
         flash(TRANSLATIONS[lang]["submission_not_pending"])
     else:
-        if submission is not None:
-            delete_sgf_file(submission["sgf_filename"])
         log_admin_action(
             "result_submission_rejected",
             "result_submission",
@@ -1320,224 +1221,7 @@ def admin_logout():
         url_for("index")
     )
 
-@admin_bp.route("/import")
-def import_matches():
-    lang = get_language(request.args.get("lang"))
-    return redirect(
-        url_for("admin_import", lang=lang)
-    )
-
-@admin_bp.route("/admin/import", methods=["GET", "POST"])
-def admin_import():
-    permission_error = require_permission("operator")
-    if permission_error is not None:
-        return permission_error
-
-    lang = get_language(request.args.get("lang"))
-    preview = None
-    preview_file = request.form.get("preview_file") or request.args.get("preview_file")
-
-    if request.method == "POST":
-        action = request.form.get("action")
-        file = request.files.get("file")
-
-        if action == "commit_preview" and preview_file:
-            upload_path = os.path.join(BASE_DIR, "uploads", preview_file)
-            try:
-                player_decisions = {
-                    key.removeprefix("player_decision_"): value
-                    for key, value in request.form.items()
-                    if key.startswith("player_decision_")
-                }
-                metadata_overrides = {
-                    "name": (request.form.get("metadata_name") or "").strip(),
-                    "description": (request.form.get("metadata_description") or "").strip(),
-                    "short_name": (request.form.get("metadata_short_name") or "").strip(),
-                    "location": (request.form.get("metadata_location") or "").strip(),
-                    "begin_date": (request.form.get("metadata_begin_date") or "").strip(),
-                    "end_date": (request.form.get("metadata_end_date") or "").strip(),
-                    "rounds": request.form.get("metadata_rounds", type=int),
-                    "pairing_system": normalize_tournament_system(
-                        request.form.get("metadata_tournament_type")
-                        or request.form.get("metadata_pairing_system")
-                    ),
-                }
-                if metadata_overrides["pairing_system"] == "accelerated_swiss":
-                    metadata_overrides["acceleration_scheme"] = acceleration_scheme_from_form(request.form)
-                    metadata_rounds = request.form.get("metadata_rounds", type=int) or 1
-                    metadata_overrides["acceleration_rounds"] = request.form.get(
-                        "metadata_acceleration_rounds",
-                        default_acceleration_rounds(metadata_rounds),
-                        type=int,
-                    )
-                if metadata_overrides["pairing_system"] == "swiss_cat":
-                    metadata_overrides["category_rounds"] = request.form.get(
-                        "metadata_category_rounds", DEFAULT_CATEGORY_ROUNDS, type=int
-                    )
-                if metadata_overrides["pairing_system"] == "mcmahon":
-                    metadata_overrides["mm_bar"], metadata_overrides["mm_floor"], metadata_overrides["mm_zero"] = validate_mcmahon_settings(
-                        request.form.get("metadata_mm_bar"),
-                        request.form.get("metadata_mm_floor"),
-                        request.form.get("metadata_mm_zero"),
-                    )
-                metadata_overrides = {key: value for key, value in metadata_overrides.items() if value not in (None, "")}
-                if "metadata_description" in request.form:
-                    metadata_overrides["description"] = (request.form.get("metadata_description") or "").strip()
-                conn = get_db()
-                try:
-                    if request.form.get("metadata_decision") == "reject":
-                        raise ValueError("Import rejected during metadata review")
-                    tournament_id, metadata, matched = create_tournament_from_gotha(
-                        conn, upload_path, player_decisions=player_decisions,
-                        metadata_overrides=metadata_overrides,
-                    )
-                    conn.commit()
-                finally:
-                    conn.close()
-                flash(f"{TRANSLATIONS[lang]['success']} ({matched} players)")
-                return redirect(url_for("admin_tournament", tournament_id=tournament_id, lang=lang))
-            except (OSError, ValueError, sqlite3.DatabaseError) as exc:
-                flash(f"{TRANSLATIONS[lang]['error']}: {exc}")
-                return redirect(url_for("admin_import", lang=lang))
-
-        if not file or file.filename == "":
-            flash(TRANSLATIONS[lang]["no_file"])
-            return redirect(url_for("import_matches", lang=lang))
-
-        filename = secure_filename(file.filename or "")
-        upload_path = os.path.join(BASE_DIR, "uploads", filename)
-        os.makedirs(os.path.dirname(upload_path), exist_ok=True)
-        file.save(upload_path)
-
-        try:
-            extension = Path(filename).suffix.lower()
-
-            if extension in (".xlsx", ".xls"):
-                stats = import_workbook_data(upload_path, reset=True)
-                run_post_import_replay()
-                flash(
-                    f"{TRANSLATIONS[lang]['success']} "
-                    f"({stats['players']} players, "
-                    f"{stats['matches']} matches)"
-                )
-                return redirect(url_for("import_matches", lang=lang))
-
-            if extension == ".xml":
-                conn = get_db()
-                try:
-                    preview = build_import_preview(conn, upload_path)
-                finally:
-                    conn.close()
-                return render_template(
-                    "admin/import.html",
-                    lang=lang,
-                    translations=TRANSLATIONS[lang],
-                    preview=preview,
-                    preview_file=filename,
-                    acceleration_scheme_options=ACCELERATION_SCHEMES,
-                    acceleration_scheme_choice=acceleration_scheme_choice(preview["metadata"].get("acceleration_scheme")),
-                )
-
-            if extension == ".csv":
-                with open(upload_path, newline="", encoding="utf-8-sig") as csv_file:
-                    reader = csv.DictReader(csv_file)
-                    required_columns = {"date", "white", "black", "result"}
-                    columns = {col.strip().lower() for col in reader.fieldnames or []}
-
-                    if not required_columns.issubset(columns):
-                        raise ValueError(TRANSLATIONS[lang]["required_columns_missing"])
-
-                    conn = get_db()
-                    try:
-                        players = conn.execute("SELECT id, display_name FROM players").fetchall()
-                        player_lookup = {normalize_key(row["display_name"]): row["id"] for row in players}
-                        imported_matches = 0
-                        earliest_match_date = None
-
-                        for row in reader:
-                            white_name = str(row.get("white", "")).strip()
-                            black_name = str(row.get("black", "")).strip()
-                            white_id = player_lookup.get(normalize_key(white_name))
-                            black_id = player_lookup.get(normalize_key(black_name))
-
-                            if white_id is None or black_id is None:
-                                continue
-
-                            match_date = parse_date_value(row.get("date", ""))
-                            # Optional "handicap" column: number of stones given
-                            # to Black. Missing/blank/invalid values default to
-                            # 0 (no handicap) rather than rejecting the row --
-                            # handicap data is an enhancement to existing CSV
-                            # imports, not a new required column.
-                            try:
-                                handicap_stones = int(str(row.get("handicap", "") or "0").strip() or 0)
-                            except ValueError:
-                                handicap_stones = 0
-                            handicap_stones = max(0, min(9, handicap_stones))
-                            conn.execute(
-                                """
-                                INSERT INTO matches
-                                (
-                                    match_date,
-                                    white_player_id,
-                                    black_player_id,
-                                    result,
-                                    event,
-                                    notes,
-                                    round_number,
-                                    handicap_stones
-                                )
-                                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                                """,
-                                (
-                                    match_date,
-                                    white_id,
-                                    black_id,
-                                    row.get("result", ""),
-                                    "Imported",
-                                    normalize_round_note_for_storage(row.get("notes", row.get("round", ""))),
-                                    normalize_round_note(row.get("notes", row.get("round", ""))),
-                                    handicap_stones,
-                                ),
-                            )
-                            imported_matches += 1
-                            if earliest_match_date is None or match_date < earliest_match_date:
-                                earliest_match_date = match_date
-
-                        conn.commit()
-                    finally:
-                        conn.close()
-
-                if earliest_match_date:
-                    mark_dirty(earliest_match_date)
-                    run_post_import_replay()
-                else:
-                    refresh_stats()
-
-                flash(f"{TRANSLATIONS[lang]['success']} ({imported_matches} matches)")
-                return redirect(url_for("import_matches", lang=lang))
-
-            raise ValueError(TRANSLATIONS[lang]["unsupported_file_format"])
-
-        except Exception as exc:
-            flash(f"{TRANSLATIONS[lang]['error']}: {exc}")
-            return redirect(url_for("import_matches", lang=lang))
-
-    return render_template(
-        "admin/import.html",
-        lang=lang,
-        translations=TRANSLATIONS[lang],
-        preview=preview,
-        preview_file=preview_file,
-        acceleration_scheme_options=ACCELERATION_SCHEMES,
-        acceleration_scheme_choice=acceleration_scheme_choice(
-            preview["metadata"].get("acceleration_scheme") if preview else None
-        ),
-    )
-
-
-@admin_bp.route("/admin/matches")
-def admin_matches():
+def _legacy_admin_matches():
     permission_error = require_permission("operator")
     if permission_error is not None:
         return permission_error
@@ -1623,241 +1307,6 @@ def admin_matches():
         **page_details,
     )
 
-@admin_bp.route("/admin/tournaments", methods=["GET", "POST"])
-def admin_tournaments():
-    if not admin_required():
-        return redirect(
-            url_for("admin_login", lang=get_language(request.args.get("lang")))
-        )
-
-    lang = get_language(request.args.get("lang"))
-    translations = TRANSLATIONS[lang]
-    conn = get_db()
-
-    if request.method == "POST":
-        action = request.form.get("action")
-        pairing_system = normalize_tournament_system(
-            request.form.get("tournament_type")
-            or request.form.get("pairing_system", "swiss")
-        )
-        if action == "import_opengotha":
-            file = request.files.get("file")
-            if not file or not (file.filename or "").lower().endswith(".xml"):
-                flash(translations["no_file"])
-            else:
-                filename = secure_filename(file.filename or "")
-                upload_path = os.path.join(BASE_DIR, "uploads", filename)
-                file.save(upload_path)
-                try:
-                    tournament_id, metadata, matched = create_tournament_from_gotha(
-                        conn, upload_path
-                    )
-                    log_admin_action(
-                        "tournament_imported",
-                        "tournament",
-                        {"tournament_id": tournament_id, "filename": filename, "matched_players": matched},
-                        user_id=session.get("user_id"),
-                    )
-                    flash(f"{translations['success']} ({matched} players)")
-                    conn.close()
-                    return redirect(url_for("admin_tournament", tournament_id=tournament_id, lang=lang))
-                except (OSError, ValueError) as exc:
-                    flash(f"{translations['error']}: {exc}")
-                except sqlite3.DatabaseError as exc:
-                    conn.rollback()
-                    logger.exception("OpenGotha tournament import failed for %s", upload_path)
-                    flash(f"{translations['error']}: {exc}")
-                    conn.close()
-                    return render_template(
-                        "admin/tournaments.html",
-                        tournaments=[],
-                        systems=SUPPORTED_SYSTEMS,
-                        lang=lang,
-                        translations=translations,
-                    )
-        elif action == "create" and pairing_system in SUPPORTED_SYSTEMS:
-            name = request.form.get("name", "").strip()
-            if not name:
-                flash(translations["error"])
-            else:
-                rounds = normalize_tournament_rounds(request.form.get("rounds", 1, type=int))
-                bye_points = request.form.get("bye_points", 1.0, type=float)
-                absent_points = request.form.get("absent_points", 0.0, type=float)
-                handicap_enabled = 1 if request.form.get("handicap_enabled") == "1" else 0
-                try:
-                    acceleration_scheme = (
-                        acceleration_scheme_from_form(request.form)
-                        if pairing_system == "accelerated_swiss"
-                        else DEFAULT_ACCELERATION_SCHEME
-                    )
-                except (TypeError, ValueError):
-                    acceleration_scheme = None
-                if (
-                    bye_points not in {0.0, 0.5, 1.0}
-                    or absent_points not in {0.0, 0.5, 1.0}
-                    or acceleration_scheme is None
-                ):
-                    flash(translations["error"])
-                    bye_points = absent_points = None
-                if bye_points is None:
-                    tournaments = conn.execute("SELECT * FROM tournaments ORDER BY id DESC").fetchall()
-                    conn.close()
-                    return render_template(
-                        "admin/tournaments.html",
-                        tournaments=tournaments,
-                        systems=SUPPORTED_SYSTEMS,
-                        lang=lang,
-                        translations=translations,
-                    )
-                tournament_columns = {
-                    row[1] for row in conn.execute("PRAGMA table_info(tournaments)").fetchall()
-                }
-                tournament_values = [
-                    name,
-                    request.form.get("location", "").strip(),
-                    rounds,
-                    pairing_system,
-                    pairing_system,
-                    bye_points,
-                    absent_points,
-                ]
-                insert_columns = [
-                    "name", "location", "rounds", "tournament_type", "pairing_system",
-                    "bye_points", "absent_points",
-                ]
-                if "description" in tournament_columns:
-                    insert_columns.insert(1, "description")
-                    tournament_values.insert(1, request.form.get("description", "").strip())
-                if "acceleration_scheme" in tournament_columns:
-                    insert_columns.append("acceleration_scheme")
-                    tournament_values.append(acceleration_scheme)
-                if pairing_system == "accelerated_swiss" and "acceleration_rounds" in tournament_columns:
-                    insert_columns.append("acceleration_rounds")
-                    tournament_values.append(default_acceleration_rounds(rounds))
-                if "handicap_enabled" in tournament_columns:
-                    insert_columns.append("handicap_enabled")
-                    tournament_values.append(handicap_enabled)
-                insert_columns.extend(["status", "created_at"])
-                tournament_values.extend(["draft", current_timestamp()])
-                placeholders = ", ".join("?" for _ in insert_columns)
-                conn.execute(
-                    f"INSERT INTO tournaments ({', '.join(insert_columns)}) VALUES ({placeholders})",
-                    tournament_values,
-                )
-                tournament_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
-                conn.commit()
-                log_admin_action(
-                    "tournament_created",
-                    "tournament",
-                    {"tournament_id": tournament_id, "name": name, "pairing_system": pairing_system},
-                    user_id=session.get("user_id"),
-                )
-                flash(translations["success"])
-                conn.close()
-                return redirect(url_for("admin_tournament", tournament_id=tournament_id, lang=lang))
-        elif action == "create":
-            flash(translations["error"])
-
-    sort_key = parse_tournament_sort(request.args.get("sort"))
-    sort_order = parse_tournament_order(request.args.get("order"))
-    participant_tables = {
-        row[0] for row in conn.execute(
-            "SELECT name FROM sqlite_master WHERE type='table' AND name IN ('tournament_participants', 'tournament_pending_players')"
-        ).fetchall()
-    }
-    if sort_key == "participants" and {"tournament_participants", "tournament_pending_players"}.issubset(participant_tables):
-        participant_sort_expr = "(SELECT COUNT(*) FROM tournament_participants WHERE tournament_id = tournaments.id) + (SELECT COUNT(*) FROM tournament_pending_players WHERE tournament_id = tournaments.id)"
-    else:
-        participant_sort_expr = "0"
-    page = parse_page_number(request.args.get("page"), default=1)
-    page_size = parse_page_size(request.args.get("page_size"), default=25)
-    total_count = conn.execute("SELECT COUNT(*) FROM tournaments").fetchone()[0]
-    page_details = pagination_details(total_count, page, page_size)
-    page = page_details["page"]
-    page_size = page_details["page_size"]
-    tournaments = conn.execute(
-        f"SELECT * FROM tournaments ORDER BY {TOURNAMENT_SORT_FIELDS[sort_key] if sort_key != 'participants' else participant_sort_expr} {sort_order.upper()}, id DESC LIMIT ? OFFSET ?",
-        (page_size, (page - 1) * page_size),
-    ).fetchall()
-    conn.close()
-    return render_template(
-        "admin/tournaments.html",
-        tournaments=tournaments,
-        systems=SUPPORTED_SYSTEMS,
-        lang=lang,
-        translations=translations,
-        sort=sort_key,
-        order=sort_order,
-        total_count=total_count,
-        **page_details,
-    )
-
-@admin_bp.route("/admin/tournaments/<int:tournament_id>/delete", methods=["POST"])
-def admin_delete_tournament(tournament_id):
-    if not admin_required():
-        return redirect(
-            url_for("admin_login", lang=get_language(request.args.get("lang")))
-        )
-    lang = get_language(request.args.get("lang"))
-    conn = get_db()
-    try:
-        delete_tournament(conn, tournament_id)
-        log_admin_action(
-            "tournament_deleted",
-            "tournament",
-            {"tournament_id": tournament_id},
-            user_id=session.get("user_id"),
-        )
-        flash(TRANSLATIONS[lang]["success"])
-    except ValueError as exc:
-        flash(f"{TRANSLATIONS[lang]['error']}: {exc}")
-    finally:
-        conn.close()
-    return redirect(url_for("admin_tournaments", lang=lang))
-
-@admin_bp.route("/admin/tournaments/<int:tournament_id>/status", methods=["POST"])
-def admin_update_tournament_status(tournament_id):
-    if not admin_required():
-        return redirect(url_for("admin_login", lang=get_language(request.args.get("lang"))))
-    lang = get_language(request.args.get("lang"))
-    status = request.form.get("status", "").strip()
-    if status not in TOURNAMENT_STATUSES:
-        flash(TRANSLATIONS[lang]["error"])
-        return redirect(url_for("admin_tournaments", lang=lang))
-
-    conn = get_db()
-    try:
-        tournament_columns = {
-            row[1] for row in conn.execute("PRAGMA table_info(tournaments)").fetchall()
-        }
-        if "handicap_enabled" not in tournament_columns:
-            conn.execute(
-                "ALTER TABLE tournaments ADD COLUMN handicap_enabled INTEGER NOT NULL DEFAULT 0"
-            )
-        updated = conn.execute(
-            "UPDATE tournaments SET status = ? WHERE id = ?",
-            (status, tournament_id),
-        ).rowcount
-        if not updated:
-            flash(TRANSLATIONS[lang]["error"])
-        else:
-            conn.commit()
-            log_admin_action(
-                "tournament_status_updated",
-                "tournament",
-                {"tournament_id": tournament_id, "status": status},
-                user_id=session.get("user_id"),
-            )
-            flash(TRANSLATIONS[lang]["success"])
-    except sqlite3.DatabaseError as exc:
-        conn.rollback()
-        logger.exception("Tournament settings update failed for %s", tournament_id)
-        flash(f"{TRANSLATIONS[lang]['error']}: {exc}")
-    finally:
-        conn.close()
-    return redirect_or_json(url_for("admin_tournament", tournament_id=tournament_id, lang=lang))
-
-@admin_bp.route("/admin/tournaments/<int:tournament_id>/settings", methods=["POST"])
 def admin_update_tournament_settings(tournament_id):
     if not admin_required():
         return redirect(
@@ -2045,108 +1494,7 @@ def admin_update_tournament_settings(tournament_id):
         conn.close()
     return redirect_or_json(url_for("admin_tournament_settings", tournament_id=tournament_id, lang=lang))
 
-@admin_bp.route("/admin/tournaments/<int:tournament_id>/settings")
-def admin_tournament_settings(tournament_id):
-    if not admin_required():
-        return redirect(url_for("admin_login", lang=get_language(request.args.get("lang"))))
-    lang = get_language(request.args.get("lang"))
-    conn = get_db()
-    tournament = conn.execute(
-        "SELECT * FROM tournaments WHERE id = ?", (tournament_id,)
-    ).fetchone()
-    conn.close()
-    if tournament is None:
-        flash(TRANSLATIONS[lang]["error"])
-        return redirect(url_for("admin_tournaments", lang=lang))
-    return render_template(
-        "admin/tournament_settings.html",
-        tournament=tournament,
-        acceleration_categories=acceleration_category_settings(
-            tournament["acceleration_scheme"] if "acceleration_scheme" in tournament.keys() else None
-        ),
-        acceleration_scheme_options=ACCELERATION_SCHEMES,
-        acceleration_scheme_choice=acceleration_scheme_choice(
-            tournament["acceleration_scheme"] if "acceleration_scheme" in tournament.keys() else None
-        ),
-        acceleration_rounds=(
-            tournament["acceleration_rounds"]
-            if "acceleration_rounds" in tournament.keys()
-            and tournament["acceleration_rounds"] is not None
-            else default_acceleration_rounds(tournament["rounds"])
-        ),
-        category_rounds=(
-            tournament["category_rounds"]
-            if "category_rounds" in tournament.keys()
-            else DEFAULT_CATEGORY_ROUNDS
-        ),
-        lang=lang,
-        translations=TRANSLATIONS[lang],
-    )
-
-@admin_bp.route("/admin/tournaments/<int:tournament_id>/pending-player-resolve", methods=["POST"])
-def admin_resolve_pending_player(tournament_id):
-    if not admin_required():
-        return redirect(url_for("admin_login", lang=get_language(request.args.get("lang"))))
-    lang = get_language(request.args.get("lang"))
-    pending_id = request.form.get("pending_id", type=int)
-    resolved_player_id = request.form.get("resolved_player_id", type=int)
-
-    conn = get_db()
-    try:
-        if pending_id is None:
-            raise ValueError("Pending player not found")
-        if resolved_player_id is not None:
-            player_row = conn.execute(
-                "SELECT display_name FROM players WHERE id = ?",
-                (resolved_player_id,),
-            ).fetchone()
-            if player_row is None:
-                raise ValueError("Resolved player not found")
-            canonical_name = player_row["display_name"]
-            updated = conn.execute(
-                """
-                UPDATE tournament_pending_players
-                SET resolved_player_id = ?, display_name = ?
-                WHERE tournament_id = ? AND id = ?
-                """,
-                (resolved_player_id, canonical_name, tournament_id, pending_id),
-            ).rowcount
-        else:
-            updated = conn.execute(
-                """
-                UPDATE tournament_pending_players
-                SET resolved_player_id = ?
-                WHERE tournament_id = ? AND id = ?
-                """,
-                (resolved_player_id, tournament_id, pending_id),
-            ).rowcount
-        if not updated:
-            raise ValueError("Pending player not found")
-        materialized = _materialize_pending_players(
-            conn,
-            tournament_id,
-            pending_id=pending_id,
-        )
-        if not materialized:
-            raise ValueError("Pending player could not be materialized")
-        conn.commit()
-        log_admin_action(
-            "pending_player_resolved",
-            "tournament_pending_player",
-            {"tournament_id": tournament_id, "pending_id": pending_id, "resolved_player_id": resolved_player_id},
-            user_id=session.get("user_id"),
-        )
-        flash(TRANSLATIONS[lang]["success"])
-    except (ValueError, sqlite3.DatabaseError) as exc:
-        conn.rollback()
-        logger.warning("Pending player resolution failed: %s", exc)
-        flash(f"{TRANSLATIONS[lang]['error']}: {exc}")
-    finally:
-        conn.close()
-    return redirect(url_for("admin_tournament", tournament_id=tournament_id, lang=lang))
-
-@admin_bp.route("/admin/tournaments/<int:tournament_id>")
-def admin_tournament(tournament_id):
+def _legacy_admin_tournament(tournament_id):
     if not admin_required():
         return redirect(
             url_for("admin_login", lang=get_language(request.args.get("lang")))
@@ -2265,102 +1613,7 @@ def admin_tournament(tournament_id):
         translations=TRANSLATIONS[lang],
     )
 
-@admin_bp.route("/admin/tournaments/<int:tournament_id>/export")
-def admin_export_tournament_results(tournament_id):
-    if not admin_required():
-        return redirect(url_for("admin_login", lang=get_language(request.args.get("lang"))))
-    lang = get_language(request.args.get("lang"))
-    conn = get_db()
-    try:
-        xml_text = export_tournament_results(conn, tournament_id)
-    except ValueError as exc:
-        flash(f"{TRANSLATIONS[lang]['error']}: {exc}")
-        conn.close()
-        return redirect(url_for("admin_tournament", tournament_id=tournament_id, lang=lang))
-    conn.close()
-    return Response(
-        xml_text,
-        content_type="application/xml; charset=utf-8",
-        headers={
-            "Content-Disposition": f"attachment; filename=tournament_{tournament_id}.xml"
-        },
-    )
-
-@admin_bp.route("/admin/tournaments/<int:tournament_id>/players")
-def admin_tournament_players(tournament_id):
-    if not admin_required():
-        return redirect(url_for("admin_login", lang=get_language(request.args.get("lang"))))
-    lang = get_language(request.args.get("lang"))
-    conn = get_db()
-    tournament = conn.execute(
-        "SELECT id, name FROM tournaments WHERE id = ?", (tournament_id,)
-    ).fetchone()
-    if tournament is None:
-        conn.close()
-        flash(TRANSLATIONS[lang]["error"])
-        return redirect(url_for("admin_tournaments", lang=lang))
-    participants = list_tournament_participants(conn, tournament_id)
-    available_players = conn.execute(
-        """
-        SELECT p.id, p.display_name, p.rating
-        FROM players p
-        WHERE p.active = 1
-          AND NOT EXISTS (
-              SELECT 1 FROM tournament_participants tp
-              WHERE tp.tournament_id = ? AND tp.player_id = p.id
-          )
-        ORDER BY p.display_name
-        """,
-        (tournament_id,),
-    ).fetchall()
-    category_config = get_category_config(conn=conn)
-    rank_options = []
-    for rank_value in range(8, -31, -1):
-        glicko = round(
-            category_config["glicko_m"]
-            * math.exp((rank_value + 29) / category_config["glicko_k"])
-        )
-        rank_options.append(
-            {
-                "label": f"{rank_value + 1} dan" if rank_value >= 0 else f"{-rank_value} kyu",
-                "glicko": glicko,
-            }
-        )
-    conn.close()
-    return render_template(
-        "admin/tournament_players.html",
-        tournament=tournament,
-        participants=participants,
-        available_players=available_players,
-        rank_options=rank_options,
-        lang=lang,
-        translations=TRANSLATIONS[lang],
-    )
-
-@admin_bp.route("/admin/tournaments/<int:tournament_id>/participants/add", methods=["POST"])
-def admin_add_tournament_participant(tournament_id):
-    if not admin_required():
-        return redirect(url_for("admin_login", lang=get_language(request.args.get("lang"))))
-    lang = get_language(request.args.get("lang"))
-    conn = get_db()
-    try:
-        player_id = request.form.get("player_id", type=int)
-        add_participant(conn, tournament_id, player_id)
-        log_admin_action(
-            "tournament_participant_added",
-            "tournament",
-            {"tournament_id": tournament_id, "player_id": player_id},
-            user_id=session.get("user_id"),
-        )
-        flash(TRANSLATIONS[lang]["success"])
-    except ValueError as exc:
-        flash(f"{TRANSLATIONS[lang]['error']}: {exc}")
-    finally:
-        conn.close()
-    return redirect(url_for("admin_tournament_players", tournament_id=tournament_id, lang=lang))
-
-@admin_bp.route("/admin/tournaments/<int:tournament_id>/players/create", methods=["POST"])
-def admin_create_tournament_player(tournament_id):
+def _legacy_admin_create_tournament_player(tournament_id):
     if not admin_required():
         return redirect(url_for("admin_login", lang=get_language(request.args.get("lang"))))
     lang = get_language(request.args.get("lang"))
@@ -2449,157 +1702,6 @@ def admin_create_tournament_player(tournament_id):
         conn.close()
     return redirect(url_for("admin_tournament_players", tournament_id=tournament_id, lang=lang))
 
-@admin_bp.route("/admin/tournaments/<int:tournament_id>/pending-player/delete", methods=["POST"])
-def admin_delete_pending_player(tournament_id):
-    if not admin_required():
-        return redirect(url_for("admin_login", lang=get_language(request.args.get("lang"))))
-    lang = get_language(request.args.get("lang"))
-    pending_id = request.form.get("pending_id", type=int)
-    conn = get_db()
-    try:
-        deleted = conn.execute(
-            "DELETE FROM tournament_pending_players WHERE tournament_id = ? AND id = ?",
-            (tournament_id, pending_id),
-        ).rowcount
-        if not deleted:
-            raise ValueError("Pending player not found")
-        conn.commit()
-        log_admin_action(
-            "tournament_pending_player_deleted",
-            "tournament_pending_player",
-            {"tournament_id": tournament_id, "pending_id": pending_id},
-            user_id=session.get("user_id"),
-        )
-        flash(TRANSLATIONS[lang]["pending_player_deleted"])
-    except (ValueError, sqlite3.DatabaseError) as exc:
-        conn.rollback()
-        logger.warning("Pending player deletion failed: %s", exc)
-        flash(f"{TRANSLATIONS[lang]['error']}: {exc}")
-    finally:
-        conn.close()
-    destination = "admin_tournament_players" if request.form.get("return_to") == "players" else "admin_tournament"
-    return redirect(url_for(destination, tournament_id=tournament_id, lang=lang))
-
-@admin_bp.route("/admin/tournaments/<int:tournament_id>/participants/remove", methods=["POST"])
-def admin_remove_tournament_participant(tournament_id):
-    if not admin_required():
-        return redirect(url_for("admin_login", lang=get_language(request.args.get("lang"))))
-    lang = get_language(request.args.get("lang"))
-    conn = get_db()
-    try:
-        player_id = request.form.get("player_id", type=int)
-        remove_participant(conn, tournament_id, player_id)
-        log_admin_action(
-            "tournament_participant_removed",
-            "tournament",
-            {"tournament_id": tournament_id, "player_id": player_id},
-            user_id=session.get("user_id"),
-        )
-        flash(TRANSLATIONS[lang]["success"])
-    except ValueError as exc:
-        flash(f"{TRANSLATIONS[lang]['error']}: {exc}")
-    finally:
-        conn.close()
-    return redirect(url_for("admin_tournament", tournament_id=tournament_id, lang=lang, round_id=request.form.get("round_id", type=int)))
-
-@admin_bp.route("/admin/tournaments/<int:tournament_id>/pairing-handicap", methods=["POST"])
-def admin_update_pairing_handicap(tournament_id):
-    """Lets a tournament director override the auto-suggested handicap on
-    an already-created pairing (e.g. one generated by generate_next_round
-    or pair_selected_players), before results are entered.
-    """
-    if not admin_required():
-        return redirect(url_for("admin_login", lang=get_language(request.args.get("lang"))))
-    lang = get_language(request.args.get("lang"))
-    conn = get_db()
-    try:
-        pairing_id = request.form.get("pairing_id", type=int)
-        handicap_stones = request.form.get("handicap_stones", type=int)
-        update_pairing_handicap(conn, tournament_id, pairing_id, handicap_stones)
-        log_admin_action(
-            "tournament_pairing_handicap_updated",
-            "tournament_pairing",
-            {"tournament_id": tournament_id, "pairing_id": pairing_id, "handicap_stones": handicap_stones},
-            user_id=session.get("user_id"),
-        )
-        flash(TRANSLATIONS[lang]["success"])
-    except ValueError as exc:
-        flash(f"{TRANSLATIONS[lang]['error']}: {exc}")
-    finally:
-        conn.close()
-    return redirect_or_json(
-        url_for(
-            "admin_tournament",
-            tournament_id=tournament_id,
-            lang=lang,
-            round_id=request.form.get("round_id", type=int),
-        )
-    )
-
-@admin_bp.route("/admin/tournaments/<int:tournament_id>/pair", methods=["POST"])
-def admin_manual_pair(tournament_id):
-    if not admin_required():
-        return redirect(url_for("admin_login", lang=get_language(request.args.get("lang"))))
-    lang = get_language(request.args.get("lang"))
-    conn = get_db()
-    try:
-        round_id = request.form.get("round_id", type=int)
-        white_player_id = request.form.get("white_player_id", type=int)
-        black_player_id = request.form.get("black_player_id", type=int)
-        # Blank/absent handicap_stones means "let manual_pair auto-suggest
-        # from ratings"; an explicit value (including 0) overrides it.
-        raw_handicap = request.form.get("handicap_stones", "").strip()
-        handicap_stones = int(raw_handicap) if raw_handicap else None
-        manual_pair(
-            conn,
-            tournament_id,
-            round_id,
-            white_player_id,
-            black_player_id,
-            handicap_stones=handicap_stones,
-        )
-        log_admin_action(
-            "tournament_pairing_created",
-            "tournament_pairing",
-            {"tournament_id": tournament_id, "round_id": round_id, "white_player_id": white_player_id, "black_player_id": black_player_id},
-            user_id=session.get("user_id"),
-        )
-        flash(TRANSLATIONS[lang]["success"])
-    except ValueError as exc:
-        flash(f"{TRANSLATIONS[lang]['error']}: {exc}")
-    finally:
-        conn.close()
-    return redirect(url_for("admin_tournament", tournament_id=tournament_id, lang=lang, round_id=request.form.get("round_id", type=int)))
-
-@admin_bp.route("/admin/tournaments/<int:tournament_id>/pair-selected", methods=["POST"])
-def admin_pair_selected_players(tournament_id):
-    if not admin_required():
-        return redirect(url_for("admin_login", lang=get_language(request.args.get("lang"))))
-    lang = get_language(request.args.get("lang"))
-    conn = get_db()
-    try:
-        round_id = request.form.get("round_id", type=int)
-        player_ids = request.form.getlist("player_ids")
-        pair_selected_players(
-            conn,
-            tournament_id,
-            round_id,
-            player_ids,
-        )
-        log_admin_action(
-            "tournament_pairings_created",
-            "tournament_round",
-            {"tournament_id": tournament_id, "round_id": round_id, "player_count": len(player_ids)},
-            user_id=session.get("user_id"),
-        )
-        flash(TRANSLATIONS[lang]["success"])
-    except ValueError as exc:
-        flash(f"{TRANSLATIONS[lang]['error']}: {exc}")
-    finally:
-        conn.close()
-    return redirect_or_json(url_for("admin_tournament", tournament_id=tournament_id, lang=lang, round_id=request.form.get("round_id", type=int)))
-
-@admin_bp.route("/admin/tournaments/<int:tournament_id>/pairing-edit", methods=["POST"])
 def admin_edit_pairing(tournament_id):
     if not admin_required():
         return redirect(url_for("admin_login", lang=get_language(request.args.get("lang"))))
@@ -2643,7 +1745,6 @@ def admin_edit_pairing(tournament_id):
         url_for("admin_tournament", tournament_id=tournament_id, lang=lang, round_id=round_id)
     )
 
-@admin_bp.route("/admin/tournaments/<int:tournament_id>/unpair", methods=["POST"])
 def admin_unpair(tournament_id):
     if not admin_required():
         return redirect(url_for("admin_login", lang=get_language(request.args.get("lang"))))
@@ -2673,7 +1774,6 @@ def admin_unpair(tournament_id):
         conn.close()
     return redirect_or_json(url_for("admin_tournament", tournament_id=tournament_id, lang=lang, round_id=request.form.get("round_id", type=int)))
 
-@admin_bp.route("/admin/tournaments/<int:tournament_id>/unpair-all", methods=["POST"])
 def admin_unpair_all(tournament_id):
     if not admin_required():
         return redirect(url_for("admin_login", lang=get_language(request.args.get("lang"))))
@@ -2711,8 +1811,7 @@ def admin_unpair_all(tournament_id):
         conn.close()
     return redirect_or_json(url_for("admin_tournament", tournament_id=tournament_id, lang=lang, round_id=round_id))
 
-@admin_bp.route("/admin/tournaments/<int:tournament_id>/result", methods=["POST"])
-def admin_set_tournament_result(tournament_id):
+def _legacy_admin_set_tournament_result(tournament_id):
     if not admin_required():
         return redirect(url_for("admin_login", lang=get_language(request.args.get("lang"))))
     lang = get_language(request.args.get("lang"))
@@ -2754,8 +1853,7 @@ def admin_set_tournament_result(tournament_id):
         conn.close()
     return redirect_or_json(url_for("admin_tournament", tournament_id=tournament_id, lang=lang, round_id=request.form.get("round_id", type=int)))
 
-@admin_bp.route("/admin/tournaments/<int:tournament_id>/generate", methods=["POST"])
-def admin_generate_tournament_round(tournament_id):
+def _legacy_admin_generate_tournament_round(tournament_id):
     if not admin_required():
         return redirect(
             url_for("admin_login", lang=get_language(request.args.get("lang")))
@@ -2777,8 +1875,7 @@ def admin_generate_tournament_round(tournament_id):
         conn.close()
     return redirect_or_json(url_for("admin_tournament", tournament_id=tournament_id, lang=lang))
 
-@admin_bp.route("/admin/tournaments/<int:tournament_id>/save", methods=["POST"])
-def admin_save_tournament(tournament_id):
+def _legacy_admin_save_tournament(tournament_id):
     if not admin_required():
         return redirect(
             url_for("admin_login", lang=get_language(request.args.get("lang")))
@@ -2821,8 +1918,7 @@ def admin_save_tournament(tournament_id):
         conn.close()
     return redirect_or_json(url_for("admin_tournament", tournament_id=tournament_id, lang=lang))
 
-@admin_bp.route("/admin/tournaments/<int:tournament_id>/process-round", methods=["POST"])
-def admin_process_tournament_round(tournament_id):
+def _legacy_admin_process_tournament_round(tournament_id):
     if not admin_required():
         return redirect(
             url_for("admin_login", lang=get_language(request.args.get("lang")))
@@ -2887,8 +1983,7 @@ def admin_process_tournament_round(tournament_id):
         )
     )
 
-@admin_bp.route("/admin/matches/add", methods=["GET", "POST"])
-def admin_add_match():
+def _legacy_admin_add_match():
     if not admin_required():
         return redirect(
             url_for("admin_login", lang=get_language(request.args.get("lang")))
@@ -2980,8 +2075,7 @@ def admin_add_match():
         form_action=url_for("admin_add_match", lang=lang),
     )
 
-@admin_bp.route("/admin/matches/edit", methods=["GET", "POST"])
-def admin_edit_match():
+def _legacy_admin_edit_match():
     if not admin_required():
         return redirect(
             url_for("admin_login", lang=get_language(request.args.get("lang")))
@@ -3076,9 +2170,7 @@ def admin_edit_match():
                     handicap_stones,
                 )
                 conn.commit()
-                if old_sgf_filename and old_sgf_filename != new_sgf_filename:
-                    delete_sgf_file(old_sgf_filename)
-                elif new_sgf_filename:
+                if new_sgf_filename:
                     update_sgf_metadata(
                         new_sgf_filename,
                         match_sgf_metadata(
@@ -3124,8 +2216,7 @@ def admin_edit_match():
         form_action=url_for("admin_edit_match", id=match_id, lang=lang),
     )
 
-@admin_bp.route("/admin/matches/delete", methods=["POST"])
-def admin_delete_match():
+def _legacy_admin_delete_match():
     if not admin_required():
         return redirect(
             url_for("admin_login", lang=get_language(request.args.get("lang")))
@@ -3146,11 +2237,9 @@ def admin_delete_match():
         flash(TRANSLATIONS[lang]["error"])
         return redirect(url_for("admin_matches", lang=lang))
     match_date = match_row["match_date"]
-    sgf_filename = match_row["sgf_filename"]
     conn.execute("DELETE FROM matches WHERE id = ?", (match_id,))
     conn.commit()
     conn.close()
-    delete_sgf_file(sgf_filename)
     log_admin_action(
         "match_deleted",
         "match",
@@ -3174,8 +2263,7 @@ def admin_delete_match():
     flash(TRANSLATIONS[lang]["success"])
     return redirect(url_for("admin_matches", lang=lang))
 
-@admin_bp.route("/admin/players")
-def admin_players():
+def _legacy_admin_players():
 
     lang = get_language(request.args.get("lang"))
     category_config = get_category_config()
@@ -3215,8 +2303,7 @@ def admin_players():
         **page_details,
     )
 
-@admin_bp.route("/admin/players/edit", methods=["GET", "POST"])
-def admin_edit_player():
+def _legacy_admin_edit_player():
 
     if not admin_required("data_admin"):
         return redirect(
@@ -3356,8 +2443,7 @@ def admin_edit_player():
         translations=TRANSLATIONS[lang],
     )
 
-@admin_bp.route("/admin/players/delete", methods=["POST"])
-def admin_delete_player():
+def _legacy_admin_delete_player():
     if not admin_required("data_admin"):
         return redirect(
             url_for(
@@ -3442,11 +2528,7 @@ def admin_delete_player():
     return redirect(url_for("admin_players", lang=lang))
 
 
-@admin_bp.route(
-    "/admin/categories",
-    methods=["GET", "POST"]
-)
-def admin_categories():
+def _legacy_admin_categories():
 
     if not admin_required("data_admin"):
         return redirect(
@@ -3586,11 +2668,7 @@ def admin_categories():
 
 
 
-@admin_bp.route(
-    "/admin/ratings",
-    methods=["GET", "POST"]
-)
-def admin_ratings():
+def _legacy_admin_ratings():
 
     if not admin_required("data_admin"):
         return redirect(
@@ -4100,192 +3178,6 @@ def admin_delete_user(user_id):
 
     return redirect(url_for("admin_users", lang=lang))
 
-
-@admin_bp.route("/admin/backups")
-def admin_backups():
-    permission_error = require_permission("admin")
-    if permission_error is not None:
-        return permission_error
-
-    lang = get_language(request.args.get("lang"))
-
-    ensure_backup_dir()
-    backups = []
-
-    for filename in sorted(
-        os.listdir(BACKUP_DIR),
-        reverse=True
-    ):
-
-        if not filename.endswith(".db"):
-            continue
-
-        path = os.path.join(
-            BACKUP_DIR,
-            filename
-        )
-
-        backups.append(
-            {
-                "name": filename,
-                "modified": datetime.fromtimestamp(
-                    os.path.getmtime(path), tz=current_datetime().tzinfo
-                ).replace(tzinfo=None).strftime("%Y-%m-%d %H:%M:%S"),
-            }
-        )
-
-    return render_template(
-        "admin/backups.html",
-        backups=backups,
-        lang=lang,
-        translations=TRANSLATIONS[lang],
-    )
-
-#
-@admin_bp.route(
-    "/admin/backups/create",
-    methods=["POST"]
-)
-def admin_create_backup():
-
-    if not admin_required():
-        return redirect(
-            url_for(
-                "admin_login",
-                lang=get_language(request.args.get("lang"))
-            )
-        )
-
-    lang = get_language(request.args.get("lang"))
-    ensure_backup_dir()
-
-    filename = current_datetime().strftime("%Y-%m-%d-%H%M%S") + ".db"
-
-    shutil.copy2(
-        DB_PATH,
-        os.path.join(
-            BACKUP_DIR,
-            filename
-        )
-    )
-    log_admin_action(
-        "backup_created",
-        "backup",
-        {"filename": filename},
-        user_id=session.get("user_id"),
-    )
-
-    flash(
-        TRANSLATIONS[lang]["success"]
-    )
-
-    return redirect(
-        url_for(
-            "admin_backups",
-            lang=lang
-        )
-    )
-#
-@admin_bp.route(
-    "/admin/backups/restore",
-    methods=["POST"]
-)
-def admin_restore_backup():
-
-    if not admin_required():
-        return redirect(
-            url_for(
-                "admin_login",
-                lang=get_language(request.args.get("lang"))
-            )
-        )
-
-    lang = get_language(request.args.get("lang"))
-
-    path = get_backup_path(request.form.get("name"))
-
-    if path is None or not path.is_file():
-        logger.warning("Backup restore rejected: missing or invalid backup path %r", request.form.get("name"))
-        flash(TRANSLATIONS[lang]["error"])
-        return redirect(url_for("admin_backups", lang=lang))
-
-    if not is_valid_sqlite_backup(path):
-        logger.warning("Backup restore rejected: invalid SQLite backup %s", path)
-        flash(TRANSLATIONS[lang]["error"])
-        return redirect(url_for("admin_backups", lang=lang))
-
-    if not restore_db_from_backup(path):
-        logger.warning("Backup restore failed during restore step for %s", path)
-        flash(TRANSLATIONS[lang]["error"])
-        return redirect(url_for("admin_backups", lang=lang))
-
-    log_admin_action(
-        "backup_restored",
-        "backup",
-        {"filename": path.name},
-        user_id=session.get("user_id"),
-    )
-
-    flash(
-        TRANSLATIONS[lang]["success"]
-    )
-
-    return redirect(
-        url_for(
-            "admin_backups",
-            lang=lang
-        )
-    )
-#
-@admin_bp.route(
-    "/admin/backups/delete",
-    methods=["POST"]
-)
-def admin_delete_backup():
-
-    if not admin_required():
-        return redirect(
-            url_for(
-                "admin_login",
-                lang=get_language(request.args.get("lang"))
-            )
-        )
-
-    lang = get_language(request.args.get("lang"))
-
-    path = get_backup_path(request.form.get("name"))
-
-    if path is None or not path.is_file():
-        flash(
-            TRANSLATIONS[lang]["error"]
-        )
-
-        return redirect(
-            url_for(
-                "admin_backups",
-                lang=lang
-            )
-        )
-
-    os.remove(path)
-    log_admin_action(
-        "backup_deleted",
-        "backup",
-        {"filename": path.name},
-        user_id=session.get("user_id"),
-    )
-
-    flash(
-        TRANSLATIONS[lang]["success"]
-    )
-
-    return redirect(
-        url_for(
-            "admin_backups",
-            lang=lang
-        )
-    )
-#
 
 def register_admin_routes(app):
     if "admin" not in app.blueprints:
