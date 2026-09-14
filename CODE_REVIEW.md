@@ -60,7 +60,7 @@ Minor fixes:
 
 - Homepage density — resolved. The statistics section renders all three already-computed periods in one response, shows All time by default, and switches All time, Year, and Quarter panels client-side through accessible tabs without another request or page reload.
 
-- News publication — resolved. Administrators can create, edit, publish, and delete articles at `/admin/news`; each article supports up to four validated links to players, tournaments, or matches, with SGF matches opening the existing record viewer.
+- News publication — resolved. Administrators can create, edit, publish, and delete articles at `/admin/news`; each article supports unlimited validated links to players, tournaments, or matches, with SGF matches opening the existing record viewer.
 
 - Language switcher is a single-button cycle (ES→EN→PT) labeled with the next language's abbreviation rather than the current one — functional, but a first-time visitor has to experiment to understand it's a cycle rather than a static label. A small dropdown would be more discoverable, though this is a minor point given the audience is a known local club.
 

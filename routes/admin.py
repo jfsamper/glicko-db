@@ -546,6 +546,7 @@ ADMIN_MENU_SECTIONS = (
             ("admin_players", "admin_players_title", "admin_players_desc", "data_admin"),
             ("admin_ratings", "admin_ratings_title", "admin_ratings_desc", "data_admin"),
             ("admin_categories", "admin_categories_title", "admin_categories_desc", "data_admin"),
+            ("admin_result_submissions", "result_submissions_title", "result_submissions_desc", "operator"),
         ),
     ),
     (
@@ -553,7 +554,6 @@ ADMIN_MENU_SECTIONS = (
         (
             ("admin_backups", "admin_backups_title", "admin_backups_desc", "admin"),
             ("admin_users", "admin_users_title", "admin_users_desc", "admin"),
-            ("admin_result_submissions", "result_submissions_title", "result_submissions_desc", "operator"),
             ("admin_news", "news", "news", "operator"),
             ("admin_audit_review", "audit_review_heading", "audit_review_desc", "admin"),
             ("admin_settings", "admin_settings_title", "admin_settings_desc", "admin"),

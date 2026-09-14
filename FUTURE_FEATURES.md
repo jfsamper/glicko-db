@@ -30,7 +30,7 @@ This document lists only unfinished product, operational, and maintainability wo
 - Reports can be exported as CSV or localized PDF; PDF exports include centered headings, the selected player and period in the filename, and preserve the active filters.
 - Admin tournament actions support asynchronous panel refresh with redirect fallback for non-AJAX clients.
 - Result moderation is available: members submit only for their linked player, and staff approve or reject before publication; hashed expiring approval-code helpers scaffold the future email flow.
-- Admin news publication is available at `/admin/news`, with up to four validated links per article to players, tournaments, matches, and SGF viewers.
+- Admin news publication is available at `/admin/news`, with unlimited validated links per article to players, tournaments, matches, and SGF viewers.
 
 ## Verified implementation status
 

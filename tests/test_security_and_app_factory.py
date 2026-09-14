@@ -216,6 +216,23 @@ def test_role_permissions_allow_tournament_director_but_not_admin_only_access(tm
     assert admin_routes.get_required_permission_for_route("admin.admin_delete_player") == "data_admin"
     assert admin_routes.get_required_permission_for_route("admin.admin_ratings") == "data_admin"
     assert admin_routes.get_required_permission_for_route("admin.admin_categories") == "data_admin"
+    assert admin_routes.get_required_permission_for_route("admin.admin_result_submissions") == "operator"
+    assert admin_routes.get_required_permission_for_route("admin.admin_approve_result_submission") == "operator"
+    assert admin_routes.get_required_permission_for_route("admin.admin_reject_result_submission") == "operator"
+    data_management_items = dict(
+        (endpoint, permission)
+        for heading, items in admin_routes.ADMIN_MENU_SECTIONS
+        if heading == "admin_data_management_heading"
+        for endpoint, _title, _description, permission in items
+    )
+    management_items = dict(
+        (endpoint, permission)
+        for heading, items in admin_routes.ADMIN_MENU_SECTIONS
+        if heading == "admin_management_heading"
+        for endpoint, _title, _description, permission in items
+    )
+    assert data_management_items["admin_result_submissions"] == "operator"
+    assert "admin_result_submissions" not in management_items
 
 
 def test_tournament_player_management_can_create_and_enroll_player(tmp_path, monkeypatch):
@@ -445,7 +462,8 @@ def test_non_admin_role_session_remains_valid_across_requests(tmp_path, monkeypa
     page = response.get_data(as_text=True)
     assert "Import" in page
     assert "Tournament operations" in page
-    assert "Data management" not in page
+    assert "Data management" in page
+    assert "Result moderation" in page
     assert 'href="/admin/players' not in page
     assert 'href="/admin/ratings' not in page
     assert 'href="/admin/categories' not in page

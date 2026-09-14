@@ -1,8 +1,12 @@
 """News articles and validated links to application entities."""
+import re
+
 from services.db import get_db
 from services.sgf_service import get_sgf_path
 
 TAG_TYPES = ("player", "tournament", "match")
+TAG_TOKEN_PREFIXES = {tag_type: f"[{tag_type}:" for tag_type in TAG_TYPES}
+NEWS_TAG_TOKEN_RE = re.compile(r"\[(player|tournament|match):(\d+)\]")
 
 
 def migrate_news_schema(conn):
@@ -39,6 +43,49 @@ def _tag_target(conn, tag_type, entity_id):
     if table is None:
         return None
     return conn.execute(f"SELECT 1 FROM {table} WHERE id = ?", (entity_id,)).fetchone()
+
+
+def _load_tag(conn, tag_type, entity_id):
+    if tag_type == "match":
+        target = conn.execute(
+            """
+            SELECT m.id, m.sgf_filename,
+                   printf('%s: %s vs %s', m.match_date, white.display_name, black.display_name) AS label
+            FROM matches m
+            JOIN players white ON white.id = m.white_player_id
+            JOIN players black ON black.id = m.black_player_id
+            WHERE m.id = ?
+            """,
+            (entity_id,),
+        ).fetchone()
+    else:
+        table = "players" if tag_type == "player" else "tournaments"
+        label_column = "display_name" if tag_type == "player" else "name"
+        target = conn.execute(
+            f"SELECT id, {label_column} AS label FROM {table} WHERE id = ?",
+            (entity_id,),
+        ).fetchone()
+    if target is None:
+        return None
+    tag = {"tag_type": tag_type, "entity_id": entity_id, **dict(target)}
+    if tag_type == "match":
+        tag["has_sgf"] = bool(get_sgf_path(tag.get("sgf_filename")))
+    return tag
+
+
+def resolve_news_tags(conn, body, tags):
+    """Resolve saved tags plus valid tokens typed directly into article text."""
+    resolved = list(tags or [])
+    known = {(tag["tag_type"], int(tag["entity_id"])) for tag in resolved}
+    for match in NEWS_TAG_TOKEN_RE.finditer(body or ""):
+        key = (match.group(1), int(match.group(2)))
+        if key in known:
+            continue
+        tag = _load_tag(conn, *key)
+        if tag is not None:
+            resolved.append(tag)
+            known.add(key)
+    return resolved
 
 
 def normalize_tags(conn, raw_tags):
@@ -109,23 +156,9 @@ def _article_rows(conn, where="", params=(), limit=None):
             (article["id"],),
         ).fetchall():
             tag = dict(tag)
-            table = {"player": "players", "tournament": "tournaments", "match": "matches"}[tag["tag_type"]]
-            label_column = "display_name" if table == "players" else "name" if table == "tournaments" else "id"
-            if table == "matches":
-                target = conn.execute("""
-                    SELECT m.id, m.sgf_filename,
-                           printf('%s: %s vs %s', m.match_date, white.display_name, black.display_name) AS label
-                    FROM matches m
-                    JOIN players white ON white.id = m.white_player_id
-                    JOIN players black ON black.id = m.black_player_id
-                    WHERE m.id = ?
-                """, (tag["entity_id"],)).fetchone()
-            else:
-                target = conn.execute(f"SELECT id, {label_column} AS label FROM {table} WHERE id = ?", (tag["entity_id"],)).fetchone()
+            target = _load_tag(conn, tag["tag_type"], tag["entity_id"])
             if target:
                 tag.update(dict(target))
-                if tag["tag_type"] == "match":
-                    tag["has_sgf"] = bool(get_sgf_path(tag.get("sgf_filename")))
                 article["tags"].append(tag)
     return articles
 

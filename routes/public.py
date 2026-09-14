@@ -5,6 +5,7 @@ import math
 import re
 
 from flask import Blueprint, Response, abort, jsonify, render_template, request, flash, redirect, send_file, session, url_for
+from markupsafe import Markup, escape
 
 from routes.sort_helpers import (
     MATCH_SORT_FIELDS,
@@ -34,7 +35,7 @@ from services.reporting_service import (
     list_report_seasons,
     resolve_report_range,
 )
-from services.news_service import get_article, list_articles
+from services.news_service import get_article, list_articles, resolve_news_tags
 from services.player_service import (
     count_rankings,
     load_player,
@@ -50,6 +51,33 @@ from services.tournament_standings import get_tournament_standings
 
 public_bp = Blueprint("public", __name__)
 HOME_STATS_PERIODS = ("all_time", "year", "quarter")
+NEWS_TAG_TOKEN_RE = re.compile(r"\[(player|tournament|match):(\d+)\]")
+
+
+def render_news_body(body, tags, lang):
+    tag_lookup = {(tag["tag_type"], int(tag["entity_id"])): tag for tag in tags}
+    parts = []
+    cursor = 0
+    for match in NEWS_TAG_TOKEN_RE.finditer(body or ""):
+        parts.append(escape(body[cursor:match.start()]))
+        tag_type = match.group(1)
+        entity_id = int(match.group(2))
+        tag = tag_lookup.get((tag_type, entity_id))
+        if tag is None:
+            parts.append(escape(match.group(0)))
+        else:
+            if tag_type == "player":
+                target_url = url_for("player_profile", id=entity_id, lang=lang)
+            elif tag_type == "tournament":
+                target_url = url_for("tournament_page", tournament_id=entity_id, lang=lang)
+            elif tag.get("has_sgf"):
+                target_url = url_for("match_record", match_id=entity_id, lang=lang)
+            else:
+                target_url = url_for("matches", lang=lang)
+            parts.append(Markup('<a class="news-inline-link" href="{}">{}</a>').format(target_url, tag["label"]))
+        cursor = match.end()
+    parts.append(escape((body or "")[cursor:]))
+    return Markup("".join(parts)).replace("\n", Markup("<br>\n"))
 
 
 def _parse_match_filters(args):
@@ -181,6 +209,13 @@ def index():
     category_config = get_category_config()
     team_members = get_team_members()
     news_articles = list_articles(published_only=True, limit=5)
+    conn = get_db()
+    try:
+        for article in news_articles:
+            tags = resolve_news_tags(conn, article["body"], article["tags"])
+            article["body_html"] = render_news_body(article["body"], tags, lang)
+    finally:
+        conn.close()
 
     return render_template(
         "index.html",
@@ -206,6 +241,9 @@ def news_article(article_id):
     conn = get_db()
     try:
         article = get_article(conn, article_id)
+        if article is not None and article["is_published"]:
+            article_tags = resolve_news_tags(conn, article["body"], article["tags"])
+            news_body_html = render_news_body(article["body"], article_tags, lang)
     finally:
         conn.close()
     if article is None or not article["is_published"]:
@@ -213,6 +251,7 @@ def news_article(article_id):
     return render_template(
         "news_article.html",
         article=article,
+        news_body_html=news_body_html,
         lang=lang,
         translations=TRANSLATIONS[lang],
     )

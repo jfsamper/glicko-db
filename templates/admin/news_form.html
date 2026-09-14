@@ -15,7 +15,7 @@
       <legend>{{ translations.news_links }}</legend>
       <p class="muted">{{ translations.news_links_help }}</p>
       <div id="news-tags">
-        {% for index in range(4) %}
+        {% for index in range([4, article.tags|length]|max) %}
           {% set selected = article.tags[index] if article.tags|length > index else {} %}
           <div class="news-tag-row">
             <select name="tag_type" aria-label="{{ translations.news_link_type }}">
@@ -32,17 +32,24 @@
                 {% endfor %}
               {% endfor %}
             </select>
+            <button type="button" class="button secondary news-insert-tag">{{ translations.news_insert_tag }}</button>
           </div>
         {% endfor %}
       </div>
+      <button type="button" class="button secondary" id="add-news-tag">{{ translations.news_add_link }}</button>
     </fieldset>
     <div class="actions"><button class="button" type="submit">{{ translations.save_profile_button }}</button><a class="button secondary" href="{{ url_for('admin_news', lang=lang) }}">{{ translations.cancel_button }}</a></div>
   </form>
 </section>
 <script>
-  document.querySelectorAll('.news-tag-row').forEach((row) => {
+  const tags = document.getElementById('news-tags');
+  const addTagButton = document.getElementById('add-news-tag');
+
+  const setupTagRow = (row) => {
     const type = row.querySelector('[name="tag_type"]');
     const target = row.querySelector('[name="entity_id"]');
+    const insert = row.querySelector('.news-insert-tag');
+    const body = document.getElementById('news-body');
     const update = () => {
       const selected = target.value;
       target.querySelectorAll('option[data-tag-type]').forEach((option) => {
@@ -52,6 +59,24 @@
     };
     type.addEventListener('change', update);
     update();
+    insert.addEventListener('click', () => {
+      if (!type.value || !target.value) return;
+      const token = `[${type.value}:${target.value}]`;
+      const start = body.selectionStart;
+      const end = body.selectionEnd;
+      body.value = `${body.value.slice(0, start)}${token}${body.value.slice(end)}`;
+      body.focus();
+      body.selectionStart = body.selectionEnd = start + token.length;
+    });
+  };
+
+  tags.querySelectorAll('.news-tag-row').forEach(setupTagRow);
+  addTagButton.addEventListener('click', () => {
+    const row = tags.querySelector('.news-tag-row').cloneNode(true);
+    row.querySelector('[name="tag_type"]').value = '';
+    row.querySelector('[name="entity_id"]').value = '';
+    tags.appendChild(row);
+    setupTagRow(row);
   });
 </script>
 {% endblock %}

@@ -4,7 +4,7 @@
   <p><a href="{{ url_for('index', lang=lang) }}">{{ translations.home }}</a></p>
   <h2>{{ article.title }}</h2>
   <p class="muted">{{ article.published_at }}</p>
-  <div class="news-body">{{ article.body }}</div>
+  <div class="news-body">{{ news_body_html }}</div>
   {% if article.tags %}
     <div class="news-links">
       <h3>{{ translations.news_links }}</h3>

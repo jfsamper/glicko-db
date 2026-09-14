@@ -11,7 +11,6 @@ def _admin_routes():
 
     return admin
 
-
 def register_user_routes(admin_bp):
     routes = (
         ("/admin/login", "admin_login", ("GET", "POST")),
