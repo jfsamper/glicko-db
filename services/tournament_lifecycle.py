@@ -2,9 +2,6 @@
 
 
 def delete_tournament(conn, tournament_id):
-    from app import repair_legacy_players_table
-
-    repair_legacy_players_table(conn)
     if conn.execute(
         "SELECT id FROM tournaments WHERE id = ?", (tournament_id,)
     ).fetchone() is None:

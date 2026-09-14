@@ -186,7 +186,6 @@ def restore_db_from_backup(path, db_path):
         migrate_tournament_match_identity_schema,
         migrate_tournament_schema,
         normalize_match_round_values,
-        repair_legacy_players_table,
     )
     from services.sgf_service import clear_missing_sgf_links, ensure_sgf_schema, restore_sgf_files
 
@@ -194,7 +193,6 @@ def restore_db_from_backup(path, db_path):
     conn = sqlite3.connect(db_path)
     conn.row_factory = sqlite3.Row
     try:
-        repair_legacy_players_table(conn)
         migrate_tournament_schema(conn)
         migrate_config_schema(conn)
         migrate_auth_schema(conn)

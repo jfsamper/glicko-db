@@ -1,6 +1,6 @@
 # Code Review – glicko-db
 
-The original route and tournament-service decomposition has been verified for the nine targeted modules. The route migration and final service cleanup are complete. The other open items below are separate security, UX, and shared-module follow-ups.
+The original route and tournament-service decomposition has been verified for the nine targeted modules. The route migration and service ownership cleanup are complete. The other open items below are separate security and UX follow-ups.
 
 ## 0. 2026-09-14 re-verification pass
 
@@ -11,7 +11,7 @@ Every "resolved" item below was re-checked against the current codebase (not jus
 - `routes/admin.py` is 588 lines (close to the ~575 previously recorded; the small drift is normal churn, not regrowth of the god-file). `services/tournament_service.py` is exactly 27 lines and contains only re-exports. The five tournament service modules and four `admin_*` route modules all exist and own the described responsibilities.
 - `services/category_utils.py` still owns `format_glicko_category()`; `category_service.py` and `rating_service.py` both hold thin delegating wrappers only.
 - `rating_service.glicko2_update()` still threads `tau` explicitly into `Player.update_player()`; no class-level mutable tau state.
-- `legacy_players_integrity_state()`, `assert_legacy_players_state_clean()`, and `repair_legacy_players_table()` are all still in `app.py`; `scripts/check_legacy_players_state.py` still exists as the repeatable audit.
+- `legacy_players_integrity_state()` and `assert_legacy_players_state_clean()` remain in `app.py` as read-only startup validation; `repair_legacy_players_table()` has been removed after the active database and managed backups were verified clean. `scripts/check_legacy_players_state.py` remains as the repeatable audit.
 - `routes/sort_helpers.py` remains the single source for match/tournament sort fields and validators; `routes/admin.py` and `routes/public.py` import from it rather than redefining it.
 - `services/i18n.py` owns `TRANSLATIONS`/`get_language`; `services/chart_service.py` owns chart construction; `services/common.py` only re-exports both for compatibility. Production route modules import the owners directly.
 - `run_admin_db_action()` (`routes/admin.py`) is used by tournament participant/pairing/round-generation/deletion, user-deletion, and SGF unlink/delete handlers in `routes/admin_tournaments.py`, `routes/admin_sgf.py`, and `routes/admin_users.py`.
@@ -23,7 +23,7 @@ Every "resolved" item below was re-checked against the current codebase (not jus
 - `player.html` has no inline `style` attributes left; `category.html` keeps only the one data-driven `style="width: {{ pct }}%;"` bar, which is expected. `static/css/tournament.css` and `static/css/tables.css` exist and are used.
 - Player-profile match/tournament history and report player-performance tables page locally over a preloaded dataset (no reload); rankings/players/matches/tournament lists still page server-side via `LIMIT ?/OFFSET ?`, consistent with the stated rationale.
 - Public tournament round selection preloads all round pairings in the initial response and switches the visible round panel client-side without a form submission or page reload; standings remain tournament-wide.
-- Full suite: **370 passed** (`pytest -q`; the additional coverage includes news publication, entity tags, and public article visibility).
+- Full suite: **372 passed** (`pytest -q`; the additional coverage includes news publication, entity tags, and public article visibility).
 
 No new correctness or security bugs were found during this pass. The language switcher remains the one genuinely open UX item carried forward here.
 
@@ -33,13 +33,13 @@ No new correctness or security bugs were found during this pass. The language sw
 - Flask debug mode — resolved. The direct app.py entry point no longer passes debug=True; Passenger continues to call create_app() directly.
 
 ## 2. Architecture & maintainability
-- The original god-file risk has been substantially reduced. `routes/admin.py` is now about 575 lines and primarily owns blueprint bootstrap, shared auth/DB helpers, and compatibility aliases; `services/tournament_service.py` is now a 27-line compatibility facade. Administrative ownership lives in `routes/admin_tournaments.py`, `routes/admin_matches.py`, `routes/admin_players.py`, and `routes/admin_users.py`; tournament ownership lives in `services/tournament_gotha.py`, `services/tournament_participants.py`, `services/tournament_pairing.py`, `services/tournament_matches.py`, and `services/tournament_standings.py`.
+- The original god-file risk has been substantially reduced. `routes/admin.py` is now about 575 lines and primarily owns blueprint bootstrap, shared route helpers, and compatibility aliases; `services/tournament_service.py` is now a 27-line compatibility facade. Administrative ownership lives in `routes/admin_tournaments.py`, `routes/admin_matches.py`, `routes/admin_players.py`, and `routes/admin_users.py`; tournament ownership lives in `services/tournament_gotha.py`, `services/tournament_participants.py`, `services/tournament_pairing.py`, `services/tournament_matches.py`, and `services/tournament_standings.py`.
 
 - Category/rating circular-import workaround — resolved. The pure formatter lives in `services/category_utils.py`, while `category_service.py` and `rating_service.py` retain thin compatibility wrappers for existing imports.
 
 - Player tau propagation — resolved. `glicko2_update()` now passes tau explicitly through `Player.update_player()` into the volatility solver, so concurrent calculations no longer share mutable class-level state.
 
-- Historical `players_corrupt` compatibility — verified clean, retirement pending as a separate change. `legacy_players_integrity_state()` and `assert_legacy_players_state_clean()` now check for the legacy table and child foreign keys, with the assertion running after startup repair. The read-only `scripts/check_legacy_players_state.py` audit checked the active database and seven managed backups on 2026-09-13: all eight had canonical `players`, no `players_corrupt` table, no child references, `PRAGMA integrity_check = ok`, and zero foreign-key violations. `repair_legacy_players_table()` remains isolated in `app.py` until a separate change removes or relocates the compatibility path.
+- Historical `players_corrupt` compatibility — retired. `legacy_players_integrity_state()` and `assert_legacy_players_state_clean()` remain as read-only startup validation and fail loudly if a legacy table or child foreign key is ever encountered. The read-only `scripts/check_legacy_players_state.py` audit found the active database and seven managed backups clean on 2026-09-13, and the live server has since been rechecked with the same result. The repair function and all runtime repair calls have been removed.
 
 - Shared route sort helpers — resolved. Match and tournament sort mappings and validators now live in `routes/sort_helpers.py`; `routes/admin.py` and `routes/public.py` re-export the same definitions, and the admin tournament query uses the shared `t.` SQL alias.
 
@@ -88,9 +88,9 @@ Minor fixes:
 	- Add the same rate limiter used for login attempts to password-reset requests without changing the generic response — completed.
 	- Make CSV handicap validation use parse_handicap_stones so invalid values fail consistently instead of being clamped — completed and covered by a route-level regression test.
 	- Consolidate duplicated match/tournament sort helpers into a shared module — completed and covered by shared-definition and route/list regression tests.
-	- Split `TRANSLATIONS` and `get_language` out of `services/common.py` into `services/i18n.py`, and move pure chart helpers into `services/chart_service.py` — completed with compatibility re-exports and ownership tests. Auth, audit, timezone, database, and statistics extraction remains deferred until a cleaner ownership boundary is available.
+	- Split `TRANSLATIONS` and `get_language` out of `services/common.py` into `services/i18n.py`, and move pure chart helpers into `services/chart_service.py` — completed with compatibility re-exports and ownership tests. Auth, audit, timezone, database, and statistics extraction is also complete: `services/auth_service.py`, `services/audit_service.py`, `services/timezone_service.py`, `services/db.py`, and `services/stats_service.py` are the implementation owners; `services/common.py` remains a compatibility facade, and `tests/test_service_ownership.py` verifies the re-exports.
 
-5. Retire historical compatibility complexity after verification.
+5. Retire historical compatibility complexity after verification — completed.
 	- Document and verify the `players_corrupt` migration state across supported databases — completed for the active database and seven managed backups; the repeatable check is `scripts/check_legacy_players_state.py`.
 	- Add a migration/integrity check proving no live database needs the repair path — completed with the startup assertion and `tests/test_critical_bug_fixes.py` coverage.
-	- Remove or isolate `repair_legacy_players_table()` in a separate change after the clean-state verification has been observed across the deployment lifecycle.
+	- Remove `repair_legacy_players_table()` and its runtime call sites after clean-state verification — completed; startup now validates the canonical schema without attempting repair.

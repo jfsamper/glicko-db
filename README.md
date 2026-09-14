@@ -156,7 +156,7 @@ Usa la pantalla de copias de seguridad antes de importaciones masivas, restaurac
 
 Cada copia de seguridad incluye un directorio lateral con la biblioteca SGF, y la restauración lo recupera sin romper los enlaces.
 
-Ejecuta `python scripts/check_legacy_players_state.py` para auditar la base de datos activa y las copias administradas en busca de la tabla histórica `players_corrupt` o de claves foráneas hijas. La auditoría del 13/09/2026 encontró limpias las ocho bases administradas. La ruta de reparación de compatibilidad se mantiene hasta que un cambio separado la elimine o la traslade.
+Ejecuta `python scripts/check_legacy_players_state.py` para auditar la base de datos activa y las copias administradas en busca de la tabla histórica `players_corrupt` o de claves foráneas hijas. La auditoría del 13/09/2026 encontró limpias las ocho bases administradas y la ruta de reparación de compatibilidad ya fue retirada; el arranque ahora rechaza cualquier base que todavía la necesite.
 
 ## Desarrollo
 

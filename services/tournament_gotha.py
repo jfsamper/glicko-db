@@ -137,7 +137,6 @@ def read_gotha_tournament(xml_path: str | Path, pairing_system: str | None = Non
 
 def create_tournament_from_gotha(conn, xml_path, pairing_system=None, player_decisions=None, metadata_overrides=None):
     """Create a tournament and its imported rounds from OpenGotha XML."""
-    from app import repair_legacy_players_table
     from config import GLICKO_K, GLICKO_M
     from services.timezone_service import current_timestamp
     from services.helpers import normalize_key
@@ -151,7 +150,6 @@ def create_tournament_from_gotha(conn, xml_path, pairing_system=None, player_dec
     from services.tournament_participants import player_lookup, suggest_player_name
     from services.tournament_status import _refresh_tournament_completion_state
 
-    repair_legacy_players_table(conn)
     xml_path = _resolve_gotha_path(xml_path)
     metadata = read_gotha_tournament(xml_path)
     metadata.update(metadata_overrides or {})

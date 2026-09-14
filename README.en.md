@@ -157,7 +157,7 @@ Use the admin backup screen before bulk imports, restores, or upgrades. The serv
 
 Each backup includes a sidecar directory containing the SGF library, and restore recovers it without breaking links.
 
-Run `python scripts/check_legacy_players_state.py` to audit the active database and managed backups for the historical `players_corrupt` table or child foreign keys. The 2026-09-13 audit found all eight managed databases clean. The compatibility repair path remains in place until a separate change removes or relocates it.
+Run `python scripts/check_legacy_players_state.py` to audit the active database and managed backups for the historical `players_corrupt` table or child foreign keys. The 2026-09-13 audit found all eight managed databases clean, and the compatibility repair path has now been removed; startup rejects any database that still requires it.
 
 ## Development
 

@@ -157,7 +157,7 @@ Use a tela administrativa de cópias de segurança antes de importações em mas
 
 Cada cópia de segurança inclui um diretório lateral com a biblioteca SGF, e a restauração a recupera sem quebrar os vínculos.
 
-Execute `python scripts/check_legacy_players_state.py` para auditar o banco ativo e os backups gerenciados em busca da tabela histórica `players_corrupt` ou de chaves estrangeiras filhas. A auditoria de 13/09/2026 encontrou limpos os oito bancos gerenciados. O caminho de reparo de compatibilidade permanece até que uma alteração separada o remova ou realoque.
+Execute `python scripts/check_legacy_players_state.py` para auditar o banco ativo e os backups gerenciados em busca da tabela histórica `players_corrupt` ou de chaves estrangeiras filhas. A auditoria de 13/09/2026 encontrou limpos os oito bancos gerenciados, e o caminho de reparo de compatibilidade foi removido; a inicialização rejeita qualquer banco que ainda precise dele.
 
 ## Desenvolvimento
 

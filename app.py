@@ -849,100 +849,6 @@ def assert_legacy_players_state_clean(conn):
         )
 
 
-def _rebuild_table_without_legacy_players_fk(conn, table_name, create_sql):
-    """Rebuild a table without foreign key references to the legacy `players_corrupt` table."""
-    legacy_name = f"{table_name}__legacy_fk_repair"
-    conn.execute(f'ALTER TABLE "{table_name}" RENAME TO "{legacy_name}"')
-
-    repaired_sql = re.sub(
-        r"REFERENCES\s+([\"'`]?)(players_corrupt)\1\s*\(",
-        "REFERENCES players(",
-        create_sql,
-        flags=re.IGNORECASE,
-    )
-    conn.execute(repaired_sql)
-
-    source_columns = {
-        row[1] for row in conn.execute(f'PRAGMA table_info("{legacy_name}")').fetchall()
-    }
-    target_columns = [
-        row[1] for row in conn.execute(f'PRAGMA table_info("{table_name}")').fetchall()
-    ]
-    shared_columns = [column for column in target_columns if column in source_columns]
-
-    if shared_columns:
-        columns_sql = ", ".join(f'"{column}"' for column in shared_columns)
-        conn.execute(
-            f'INSERT INTO "{table_name}" ({columns_sql}) '
-            f'SELECT {columns_sql} FROM "{legacy_name}"'
-        )
-
-    conn.execute(f'DROP TABLE "{legacy_name}"')
-
-
-def repair_legacy_players_table(conn):
-    """Restore a legacy database whose `players` table was renamed during debugging.
-
-    Older ad hoc repair scripts sometimes renamed the active `players` table to
-    `players_corrupt` while rebuilding the schema. The app should detect that
-    condition and restore the canonical `players` table before running any query
-    against player data.
-    """
-    tables = {
-        row[0]
-        for row in conn.execute(
-            "SELECT name FROM sqlite_master WHERE type = 'table'"
-        ).fetchall()
-    }
-
-    has_corrupt_table = "players_corrupt" in tables
-    # A prior repair run may have already dropped players_corrupt without
-    # rebinding child FKs, so this must be detected even without the table.
-    referencing_tables = _tables_referencing_legacy_players(conn)
-
-    if not has_corrupt_table and not referencing_tables:
-        return
-
-    conn.execute("DROP TRIGGER IF EXISTS players_fts_ai")
-    conn.execute("DROP TRIGGER IF EXISTS players_fts_ad")
-    conn.execute("DROP TRIGGER IF EXISTS players_fts_au")
-    conn.execute("DROP TABLE IF EXISTS players_fts")
-
-    if has_corrupt_table:
-        if "players" not in tables:
-            conn.execute("ALTER TABLE players_corrupt RENAME TO players")
-        else:
-            source_cols = [
-                row[1]
-                for row in conn.execute("PRAGMA table_info(players_corrupt)").fetchall()
-            ]
-            target_cols = [
-                row[1]
-                for row in conn.execute("PRAGMA table_info(players)").fetchall()
-            ]
-            shared_cols = [col for col in source_cols if col in target_cols]
-            if shared_cols:
-                columns_sql = ", ".join(shared_cols)
-                conn.execute(
-                    f"INSERT OR IGNORE INTO players ({columns_sql}) "
-                    f"SELECT {columns_sql} FROM players_corrupt"
-                )
-
-    if "players" in tables or has_corrupt_table:
-        for table_name, create_sql in referencing_tables:
-            _rebuild_table_without_legacy_players_fk(conn, table_name, create_sql)
-
-    conn.execute("DROP TABLE IF EXISTS players_corrupt")
-
-    player_columns = {
-        row[1] for row in conn.execute("PRAGMA table_info(players)").fetchall()
-    }
-    if "initial_rating" not in player_columns:
-        conn.execute("ALTER TABLE players ADD COLUMN initial_rating REAL")
-
-    conn.commit()
-
-
 def ensure_player_schema_columns(conn):
     """Ensure the working player schema includes the stats columns needed by admin and public views."""
     if "players" not in {
@@ -986,7 +892,6 @@ def initialize_app():
     init_db()
 
     conn = get_db()
-    repair_legacy_players_table(conn)
     assert_legacy_players_state_clean(conn)
 
     #migrations
