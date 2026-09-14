@@ -79,6 +79,12 @@ footer {
   z-index: 20;
 }
 
+.topbar-title {
+  color: #edf6ff;
+  text-decoration: underline;
+  text-decoration-color: rgba(255, 255, 255, 0.7);
+}
+
 .top-actions {
   display: flex;
   align-items: center;

@@ -17,7 +17,7 @@
         <a href="{{ url_for('index', lang=lang) }}"><img src="{{ url_for('static', filename='favicon.svg') }}" alt="Logo" class="logo" width="200px" style="background-color: var(--border); border-radius: 50%;" /></a>
       </div>
       <div class="brand">
-        <h1 class="centered-header">{{ translations.title }}</h1>
+        <a href="{{ url_for('index', lang=lang) }}"><h1 class="centered-header topbar-title">{{ translations.title }}</h1></a>
         <p>{{ translations.database }} {{translations.subtitle}}</p>
       </div>
       <div class="top-actions">
