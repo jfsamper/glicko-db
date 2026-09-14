@@ -976,6 +976,8 @@ def initialize_app():
     migrate_tournament_match_identity_schema(conn)
     normalize_match_round_values(conn)
     migrate_handicap_schema(conn)
+    ensure_sgf_schema(conn)
+    clear_missing_sgf_links(conn)
 
     columns = {
         row["name"]

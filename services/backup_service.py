@@ -187,8 +187,9 @@ def restore_db_from_backup(path, db_path):
         normalize_match_round_values,
         repair_legacy_players_table,
     )
-    from services.sgf_service import ensure_sgf_schema, restore_sgf_files
+    from services.sgf_service import clear_missing_sgf_links, ensure_sgf_schema, restore_sgf_files
 
+    restore_sgf_files(backup_path)
     conn = sqlite3.connect(db_path)
     conn.row_factory = sqlite3.Row
     try:
@@ -208,9 +209,10 @@ def restore_db_from_backup(path, db_path):
         migrate_tournament_match_identity_schema(conn)
         normalize_match_round_values(conn)
         migrate_handicap_schema(conn)
+        ensure_sgf_schema(conn)
+        clear_missing_sgf_links(conn)
         conn.commit()
     finally:
         conn.close()
 
-    restore_sgf_files(backup_path)
     return True

@@ -79,7 +79,7 @@
                     <form class="sgf-library-action-form" action="{{ url_for('admin_link_sgf', lang=lang) }}" method="post">
                       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                       <input type="hidden" name="filename" value="{{ sgf.filename }}">
-                      <label class="sr-only" for="sgf-match-{{ loop.index }}">{{ translations.sgf_select_match }}</label>
+                      <label class="sr-only" for="sgf-match-{{ loop.index }}"> </label>
                       <select class="sgf-library-match-select" id="sgf-match-{{ loop.index }}" name="match_id" required>
                         <option value="">{{ translations.sgf_select_match }}</option>
                         {% for match in match_options %}

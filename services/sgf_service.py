@@ -20,12 +20,36 @@ def ensure_sgf_schema(conn):
     columns = {
         row[1] for row in conn.execute("PRAGMA table_info(matches)").fetchall()
     }
-    if columns and "sgf_filename" not in columns:
+    if not columns:
+        return
+
+    if "sgf_filename" not in columns:
         conn.execute("ALTER TABLE matches ADD COLUMN sgf_filename TEXT")
-    if columns and "location" not in columns:
+    if "location" not in columns:
         conn.execute("ALTER TABLE matches ADD COLUMN location TEXT")
-    if columns and ("sgf_filename" not in columns or "location" not in columns):
-        conn.commit()
+
+    # Keep the oldest existing link before enforcing the one-SGF-per-match rule.
+    conn.execute(
+        """
+        UPDATE matches
+        SET sgf_filename = NULL
+        WHERE sgf_filename IS NOT NULL
+          AND id NOT IN (
+              SELECT MIN(id)
+              FROM matches
+              WHERE sgf_filename IS NOT NULL
+              GROUP BY sgf_filename
+          )
+        """
+    )
+    conn.execute(
+        """
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_matches_sgf_filename_unique
+        ON matches (sgf_filename)
+        WHERE sgf_filename IS NOT NULL
+        """
+    )
+    conn.commit()
 
 
 def has_sgf_column(conn):

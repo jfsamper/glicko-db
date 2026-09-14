@@ -1,4 +1,6 @@
 """Administrative SGF library linking routes."""
+import sqlite3
+
 from flask import flash, redirect, request, url_for
 
 
@@ -39,10 +41,11 @@ def admin_link_sgf():
     conn = admin.get_db()
     try:
         admin.ensure_sgf_schema(conn)
+        admin.clear_missing_sgf_links(conn)
         match = conn.execute(
             """
             SELECT id, match_date, white_player_id, black_player_id,
-                   result, event, location
+                   result, event, location, sgf_filename
             FROM matches
             WHERE id = ?
             """,
@@ -50,6 +53,15 @@ def admin_link_sgf():
         ).fetchone()
         if match is None:
             flash(admin.TRANSLATIONS[lang]["error"])
+            return _library_redirect(lang)
+
+        if match["sgf_filename"] and match["sgf_filename"] != filename:
+            flash(
+                admin.TRANSLATIONS[lang].get(
+                    "sgf_match_already_linked",
+                    admin.TRANSLATIONS[lang]["error"],
+                )
+            )
             return _library_redirect(lang)
 
         existing = conn.execute(
@@ -76,6 +88,10 @@ def admin_link_sgf():
         except ValueError:
             conn.rollback()
             flash(admin.TRANSLATIONS[lang].get("invalid_sgf", admin.TRANSLATIONS[lang]["error"]))
+            return _library_redirect(lang)
+        except sqlite3.IntegrityError:
+            conn.rollback()
+            flash(admin.TRANSLATIONS[lang].get("sgf_already_linked", admin.TRANSLATIONS[lang]["error"]))
             return _library_redirect(lang)
     finally:
         conn.close()

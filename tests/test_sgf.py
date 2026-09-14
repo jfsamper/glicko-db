@@ -174,6 +174,74 @@ def test_sgf_library_is_public_and_admin_can_link_or_unlink(client, admin_client
     assert (upload_dir / stored_name).is_file()
 
 
+def test_sgf_links_are_one_to_one_in_both_directions(admin_client, tmp_path, monkeypatch):
+    upload_dir = tmp_path / "sgf"
+    monkeypatch.setattr(sgf_service, "SGF_UPLOAD_DIR", upload_dir)
+    first_name = sgf_service.save_sgf_upload(
+        FileStorage(stream=BytesIO(SGF_TEXT.encode("utf-8")), filename="first.sgf")
+    )
+    second_name = sgf_service.save_sgf_upload(
+        FileStorage(stream=BytesIO(SGF_TEXT.encode("utf-8")), filename="second.sgf")
+    )
+
+    assert admin_client.post(
+        "/admin/sgf/link?lang=en",
+        data={"filename": first_name, "match_id": "1"},
+    ).status_code == 302
+    assert admin_client.post(
+        "/admin/sgf/link?lang=en",
+        data={"filename": first_name, "match_id": "2"},
+    ).status_code == 302
+    assert admin_client.post(
+        "/admin/sgf/link?lang=en",
+        data={"filename": second_name, "match_id": "1"},
+    ).status_code == 302
+
+    with common.get_db() as conn:
+        links = conn.execute(
+            "SELECT id, sgf_filename FROM matches WHERE id IN (1, 2) ORDER BY id"
+        ).fetchall()
+        assert links[0]["sgf_filename"] == first_name
+        assert links[1]["sgf_filename"] is None
+        with pytest.raises(sqlite3.IntegrityError):
+            conn.execute("UPDATE matches SET sgf_filename = ? WHERE id = 2", (first_name,))
+        conn.rollback()
+
+
+def test_sgf_schema_cleans_legacy_duplicate_links_before_indexing():
+    conn = sqlite3.connect(":memory:")
+    conn.execute(
+        """
+        CREATE TABLE matches (
+            id INTEGER PRIMARY KEY,
+            match_date TEXT NOT NULL,
+            white_player_id INTEGER NOT NULL,
+            black_player_id INTEGER NOT NULL,
+            result TEXT NOT NULL,
+            sgf_filename TEXT
+        )
+        """
+    )
+    conn.executemany(
+        """
+        INSERT INTO matches
+            (id, match_date, white_player_id, black_player_id, result, sgf_filename)
+        VALUES (?, '2026-09-13', 1, 2, '1-0', ?)
+        """,
+        [(1, "duplicate.sgf"), (2, "duplicate.sgf")],
+    )
+
+    sgf_service.ensure_sgf_schema(conn)
+
+    links = conn.execute(
+        "SELECT id, sgf_filename FROM matches ORDER BY id"
+    ).fetchall()
+    assert links == [(1, "duplicate.sgf"), (2, None)]
+    with pytest.raises(sqlite3.IntegrityError):
+        conn.execute("UPDATE matches SET sgf_filename = 'duplicate.sgf' WHERE id = 2")
+    conn.close()
+
+
 def test_linking_rejects_malformed_sgf_without_creating_match_link(
     admin_client, tmp_path, monkeypatch
 ):
