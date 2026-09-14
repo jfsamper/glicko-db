@@ -1,10 +1,34 @@
 """Participant lookup and OpenGotha name reconciliation helpers."""
 from difflib import SequenceMatcher
 
+from config import GLICKO_K, GLICKO_M
+from services.category_service import glicko_to_category
 from services.helpers import normalize_key, normalize_text
 from services.pairing_service import mcmahon_score_from_rank
 from services.player_service import ensure_player
 from services.tournament_pairing import table_columns
+
+
+def _category_for_rating(conn, rating):
+    config = (
+        conn.execute(
+            "SELECT glicko_k, glicko_m FROM category_config WHERE id = 1"
+        ).fetchone()
+        if conn.execute(
+            "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'category_config'"
+        ).fetchone()
+        else None
+    )
+    category = glicko_to_category(
+        rating,
+        k=config["glicko_k"] if config else GLICKO_K,
+        m=config["glicko_m"] if config else GLICKO_M,
+    )
+    if category.endswith(" dan"):
+        return f"{category[:-4]}D"
+    if category.endswith(" kyu"):
+        return f"{category[:-4]}K"
+    return category
 
 
 def player_lookup(conn):

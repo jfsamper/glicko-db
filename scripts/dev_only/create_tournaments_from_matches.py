@@ -30,11 +30,8 @@ ROUND_RE = re.compile(r"(?:round|ronda|rodada)?\s*([0-9]+)", re.IGNORECASE)
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from services.tournament_service import (
-    _category_for_rating,
-    _recalculate_mcmahon_seeds,
-    _refresh_tournament_completion_state,
-)
+from services.tournament_participants import _category_for_rating, _recalculate_mcmahon_seeds
+from services.tournament_status import _refresh_tournament_completion_state
 from services.reporting_service import ensure_tournament_match_identity
 
 

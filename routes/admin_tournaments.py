@@ -24,14 +24,6 @@ def register_tournament_routes(admin_bp):
     )
 
 
-def _delegate(function_name):
-    def delegated_handler(*args, **kwargs):
-        return getattr(_admin_routes(), function_name)(*args, **kwargs)
-
-    delegated_handler.__name__ = function_name
-    return delegated_handler
-
-
 def register_tournament_detail_routes(admin_bp):
     routes = (
         ("/admin/tournaments/<int:tournament_id>/delete", "admin_delete_tournament", ("POST",)),
@@ -57,31 +49,35 @@ def register_tournament_detail_routes(admin_bp):
         ("/admin/tournaments/<int:tournament_id>/save", "admin_save_tournament", ("POST",)),
         ("/admin/tournaments/<int:tournament_id>/process-round", "admin_process_tournament_round", ("POST",)),
     )
+    handler_map = {
+        "admin_delete_tournament": admin_delete_tournament,
+        "admin_update_tournament_status": admin_update_tournament_status,
+        "admin_update_tournament_settings": admin_update_tournament_settings,
+        "admin_tournament_settings": admin_tournament_settings,
+        "admin_resolve_pending_player": admin_resolve_pending_player,
+        "admin_export_tournament_results": admin_export_tournament_results,
+        "admin_tournament": admin_tournament,
+        "admin_create_tournament_player": admin_create_tournament_player,
+        "admin_tournament_players": admin_tournament_players,
+        "admin_add_tournament_participant": admin_add_tournament_participant,
+        "admin_delete_pending_player": admin_delete_pending_player,
+        "admin_remove_tournament_participant": admin_remove_tournament_participant,
+        "admin_update_pairing_handicap": admin_update_pairing_handicap,
+        "admin_manual_pair": admin_manual_pair,
+        "admin_pair_selected_players": admin_pair_selected_players,
+        "admin_edit_pairing": admin_edit_pairing,
+        "admin_unpair": admin_unpair,
+        "admin_unpair_all": admin_unpair_all,
+        "admin_set_tournament_result": admin_set_tournament_result,
+        "admin_generate_tournament_round": admin_generate_tournament_round,
+        "admin_save_tournament": admin_save_tournament,
+        "admin_process_tournament_round": admin_process_tournament_round,
+    }
     for route, endpoint, methods in routes:
-        view_func = {
-            "admin_delete_tournament": admin_delete_tournament,
-            "admin_update_tournament_status": admin_update_tournament_status,
-            "admin_tournament_settings": admin_tournament_settings,
-            "admin_resolve_pending_player": admin_resolve_pending_player,
-            "admin_export_tournament_results": admin_export_tournament_results,
-            "admin_tournament": admin_tournament,
-            "admin_create_tournament_player": admin_create_tournament_player,
-            "admin_tournament_players": admin_tournament_players,
-            "admin_add_tournament_participant": admin_add_tournament_participant,
-            "admin_delete_pending_player": admin_delete_pending_player,
-            "admin_remove_tournament_participant": admin_remove_tournament_participant,
-            "admin_update_pairing_handicap": admin_update_pairing_handicap,
-            "admin_manual_pair": admin_manual_pair,
-            "admin_pair_selected_players": admin_pair_selected_players,
-            "admin_set_tournament_result": admin_set_tournament_result,
-            "admin_generate_tournament_round": admin_generate_tournament_round,
-            "admin_save_tournament": admin_save_tournament,
-            "admin_process_tournament_round": admin_process_tournament_round,
-        }.get(endpoint, _delegate(endpoint))
         admin_bp.add_url_rule(
             route,
             endpoint=endpoint,
-            view_func=view_func,
+            view_func=handler_map[endpoint],
             methods=list(methods),
         )
 
@@ -190,6 +186,195 @@ def admin_tournament_settings(tournament_id):
         lang=lang,
         translations=TRANSLATIONS[lang],
     )
+
+
+def admin_update_tournament_settings(tournament_id):
+    admin = _admin_routes()
+    if not admin.admin_required():
+        return redirect(
+            url_for("admin_login", lang=admin.get_language(request.args.get("lang")))
+        )
+    lang = admin.get_language(request.args.get("lang"))
+    name = request.form.get("name", "").strip()
+    location = request.form.get("location", "").strip()
+    description = request.form.get("description")
+    begin_date = request.form.get("begin_date")
+    end_date = request.form.get("end_date")
+    rounds = admin.normalize_tournament_rounds(request.form.get("rounds", 1, type=int))
+    bye_points = request.form.get("bye_points", type=float)
+    absent_points = request.form.get("absent_points", type=float)
+    handicap_enabled = request.form.get("handicap_enabled") == "1"
+    apply_auto_handicap = request.form.get("apply_auto_handicap") == "1"
+    number_of_categories = request.form.get("number_of_categories")
+    category_floors = request.form.getlist("category_floor")
+    acceleration_rounds = request.form.get("acceleration_rounds")
+    category_rounds = request.form.get("category_rounds")
+    mm_bar = request.form.get("mm_bar")
+    mm_floor = request.form.get("mm_floor")
+    mm_zero = request.form.get("mm_zero")
+
+    if not name or bye_points not in {0.0, 0.5, 1.0} or absent_points not in {0.0, 0.5, 1.0}:
+        flash(TRANSLATIONS[lang]["error"])
+        return redirect(url_for("admin_tournament_settings", tournament_id=tournament_id, lang=lang))
+
+    conn = admin.get_db()
+    tournament_columns = {
+        row[1] for row in conn.execute("PRAGMA table_info(tournaments)").fetchall()
+    }
+    optional_columns = [
+        column for column in (
+            "description", "begin_date", "end_date", "acceleration_scheme", "acceleration_rounds", "category_rounds",
+            "mm_bar", "mm_floor", "mm_zero"
+        ) if column in tournament_columns
+    ]
+    optional_select = f", {', '.join(optional_columns)}" if optional_columns else ""
+    try:
+        current_tournament = conn.execute(
+            f"SELECT pairing_system, tournament_type{optional_select} FROM tournaments WHERE id = ?",
+            (tournament_id,),
+        ).fetchone()
+        if current_tournament is None:
+            flash(TRANSLATIONS[lang]["error"])
+            return redirect(url_for("admin_tournaments", lang=lang))
+
+        if begin_date is None:
+            begin_date = current_tournament["begin_date"] if "begin_date" in current_tournament.keys() else ""
+        if end_date is None:
+            end_date = current_tournament["end_date"] if "end_date" in current_tournament.keys() else ""
+        if description is None:
+            description = current_tournament["description"] if "description" in current_tournament.keys() else ""
+        try:
+            begin_date = admin.parse_date_value(begin_date) if begin_date else None
+            end_date = admin.parse_date_value(end_date) if end_date else None
+            if begin_date and end_date and begin_date > end_date:
+                raise ValueError
+        except ValueError:
+            flash(TRANSLATIONS[lang]["error"])
+            return redirect(url_for("admin_tournament_settings", tournament_id=tournament_id, lang=lang))
+
+        pairing_system = admin.normalize_tournament_system(current_tournament["pairing_system"])
+        acceleration_scheme = (
+            current_tournament["acceleration_scheme"]
+            if "acceleration_scheme" in tournament_columns
+            else admin.DEFAULT_ACCELERATION_SCHEME
+        ) or admin.DEFAULT_ACCELERATION_SCHEME
+        if pairing_system == "accelerated_swiss":
+            try:
+                acceleration_scheme = admin.acceleration_scheme_from_form(request.form)
+            except (TypeError, ValueError):
+                flash(TRANSLATIONS[lang]["error"])
+                return redirect(url_for("admin_tournament_settings", tournament_id=tournament_id, lang=lang))
+        if pairing_system == "mcmahon":
+            try:
+                mm_bar_value, mm_floor_value, mm_zero_value = admin.validate_mcmahon_settings(mm_bar, mm_floor, mm_zero)
+            except (TypeError, ValueError):
+                flash(TRANSLATIONS[lang]["error"])
+                return redirect(url_for("admin_tournament_settings", tournament_id=tournament_id, lang=lang))
+
+        try:
+            acceleration_rounds = (
+                admin.default_acceleration_rounds(rounds)
+                if acceleration_rounds in (None, "")
+                else int(acceleration_rounds)
+            )
+            category_rounds = (
+                admin.DEFAULT_CATEGORY_ROUNDS
+                if category_rounds in (None, "")
+                else int(category_rounds)
+            )
+            if acceleration_rounds < 0 or category_rounds < 0 or acceleration_rounds > rounds or category_rounds > rounds:
+                raise ValueError
+        except (TypeError, ValueError):
+            flash(TRANSLATIONS[lang]["error"])
+            return redirect(url_for("admin_tournament_settings", tournament_id=tournament_id, lang=lang))
+
+        update_fields = [
+            "name = ?", "location = ?", "rounds = ?", "bye_points = ?",
+            "absent_points = ?", "handicap_enabled = ?", "tournament_type = ?", "pairing_system = ?",
+        ]
+        update_values = [name, location, rounds, bye_points, absent_points, int(handicap_enabled), pairing_system, pairing_system]
+        if "begin_date" in tournament_columns:
+            update_fields.append("begin_date = ?")
+            update_values.append(begin_date)
+        if "end_date" in tournament_columns:
+            update_fields.append("end_date = ?")
+            update_values.append(end_date)
+        if "description" in tournament_columns:
+            update_fields.append("description = ?")
+            update_values.append(description)
+        if pairing_system == "accelerated_swiss" and "acceleration_scheme" in tournament_columns:
+            update_fields.append("acceleration_scheme = ?")
+            update_values.append(acceleration_scheme)
+        if pairing_system == "accelerated_swiss" and "acceleration_rounds" in tournament_columns:
+            update_fields.append("acceleration_rounds = ?")
+            update_values.append(acceleration_rounds)
+        if pairing_system == "swiss_cat" and "category_rounds" in tournament_columns:
+            update_fields.append("category_rounds = ?")
+            update_values.append(category_rounds)
+        if pairing_system == "mcmahon" and {"mm_bar", "mm_floor", "mm_zero"}.issubset(tournament_columns):
+            update_fields.extend(["mm_bar = ?", "mm_floor = ?", "mm_zero = ?"])
+            update_values.extend([mm_bar_value, mm_floor_value, mm_zero_value])
+        update_values.append(tournament_id)
+        updated = conn.execute(
+            f"UPDATE tournaments SET {', '.join(update_fields)} WHERE id = ?",
+            update_values,
+        ).rowcount
+        if not updated:
+            flash(TRANSLATIONS[lang]["error"])
+        else:
+            has_matches = conn.execute(
+                "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'matches'"
+            ).fetchone() is not None
+            old_match_dates = []
+            if has_matches:
+                old_match_dates = conn.execute(
+                    """
+                    SELECT m.match_date
+                    FROM matches m
+                    JOIN tournament_pairings p ON p.id = m.tournament_pairing_id
+                    JOIN tournament_rounds r ON r.id = p.round_id
+                    WHERE r.tournament_id = ?
+                    """,
+                    (tournament_id,),
+                ).fetchall()
+            admin.update_tournament_handicaps(
+                conn,
+                tournament_id,
+                handicap_enabled,
+                apply_auto_handicap=apply_auto_handicap,
+            )
+            updated_matches = admin.sync_tournament_matches(
+                conn,
+                tournament_id,
+                name=name,
+                match_date=begin_date,
+            )
+            if pairing_system == "mcmahon":
+                participant_columns = {
+                    row[1] for row in conn.execute("PRAGMA table_info(tournament_participants)").fetchall()
+                }
+                if "mc_seeds_calculated" in participant_columns:
+                    conn.execute(
+                        "UPDATE tournament_participants SET mc_seeds_calculated = 0 WHERE tournament_id = ?",
+                        (tournament_id,),
+                    )
+                admin._recalculate_mcmahon_seeds(conn, tournament_id)
+            conn.commit()
+            if updated_matches and begin_date:
+                for row in old_match_dates:
+                    admin.mark_dirty(row["match_date"])
+                admin.mark_dirty(begin_date)
+                admin.refresh_stats()
+            admin.log_admin_action(
+                "tournament_settings_updated",
+                "tournament",
+                {"tournament_id": tournament_id, "name": name, "rounds": rounds},
+                user_id=admin.session.get("user_id"),
+            )
+            flash(TRANSLATIONS[lang]["success"])
+    finally:
+        conn.close()
+    return admin.redirect_or_json(url_for("admin_tournament_settings", tournament_id=tournament_id, lang=lang))
 
 
 def admin_resolve_pending_player(tournament_id):
@@ -656,6 +841,135 @@ def admin_pair_selected_players(tournament_id):
     finally:
         conn.close()
     return admin.redirect_or_json(url_for("admin_tournament", tournament_id=tournament_id, lang=lang, round_id=request.form.get("round_id", type=int)))
+
+
+def admin_edit_pairing(tournament_id):
+    admin = _admin_routes()
+    if not admin.admin_required():
+        return redirect(url_for("admin_login", lang=admin.get_language(request.args.get("lang"))))
+    lang = admin.get_language(request.args.get("lang"))
+    conn = admin.get_db()
+    pairing_id = request.form.get("pairing_id", type=int)
+    round_id = request.form.get("round_id", type=int)
+    previous_dates = conn.execute(
+        "SELECT match_date FROM matches WHERE tournament_pairing_id = ?",
+        (pairing_id,),
+    ).fetchall()
+    try:
+        admin.update_pairing(
+            conn,
+            tournament_id,
+            pairing_id,
+            request.form.get("white_player_id", type=int),
+            request.form.get("black_player_id", type=int),
+        )
+        admin.log_admin_action(
+            "tournament_pairing_updated",
+            "tournament_pairing",
+            {"tournament_id": tournament_id, "pairing_id": pairing_id},
+            user_id=admin.session.get("user_id"),
+        )
+        admin.refresh_stats()
+        current_dates = conn.execute(
+            "SELECT match_date FROM matches WHERE tournament_pairing_id = ?",
+            (pairing_id,),
+        ).fetchall()
+        for row in previous_dates + current_dates:
+            admin.mark_dirty(row["match_date"])
+        admin.update_from_latest_snapshot()
+        flash(TRANSLATIONS[lang]["success"])
+    except ValueError as exc:
+        conn.rollback()
+        flash(f"{TRANSLATIONS[lang]['error']}: {exc}")
+    finally:
+        conn.close()
+    return admin.redirect_or_json(
+        url_for("admin_tournament", tournament_id=tournament_id, lang=lang, round_id=round_id)
+    )
+
+
+def admin_unpair(tournament_id):
+    admin = _admin_routes()
+    if not admin.admin_required():
+        return redirect(url_for("admin_login", lang=admin.get_language(request.args.get("lang"))))
+    lang = admin.get_language(request.args.get("lang"))
+    conn = admin.get_db()
+    pairing_id = request.form.get("pairing_id", type=int)
+    previous_dates = conn.execute(
+        "SELECT match_date FROM matches WHERE tournament_pairing_id = ?",
+        (pairing_id,),
+    ).fetchall()
+    try:
+        admin.unpair(conn, tournament_id, pairing_id)
+        admin.log_admin_action(
+            "tournament_pairing_removed",
+            "tournament_pairing",
+            {"tournament_id": tournament_id, "pairing_id": pairing_id},
+            user_id=admin.session.get("user_id"),
+        )
+        admin.refresh_stats()
+        for row in previous_dates:
+            admin.mark_dirty(row["match_date"])
+        admin.update_from_latest_snapshot()
+        flash(TRANSLATIONS[lang]["success"])
+    except ValueError as exc:
+        flash(f"{TRANSLATIONS[lang]['error']}: {exc}")
+    finally:
+        conn.close()
+    return admin.redirect_or_json(
+        url_for(
+            "admin_tournament",
+            tournament_id=tournament_id,
+            lang=lang,
+            round_id=request.form.get("round_id", type=int),
+        )
+    )
+
+
+def admin_unpair_all(tournament_id):
+    admin = _admin_routes()
+    if not admin.admin_required():
+        return redirect(url_for("admin_login", lang=admin.get_language(request.args.get("lang"))))
+    lang = admin.get_language(request.args.get("lang"))
+    round_id = request.form.get("round_id", type=int)
+    conn = admin.get_db()
+    try:
+        pairing_ids = [
+            row["id"]
+            for row in conn.execute(
+                "SELECT id FROM tournament_pairings WHERE round_id = ?",
+                (round_id,),
+            ).fetchall()
+        ]
+        previous_dates = conn.execute(
+            "SELECT match_date FROM matches WHERE tournament_pairing_id IN (SELECT id FROM tournament_pairings WHERE round_id = ?)",
+            (round_id,),
+        ).fetchall()
+        removed = admin.unpair_all(conn, tournament_id, round_id)
+        admin.log_admin_action(
+            "tournament_round_pairings_removed",
+            "tournament_round",
+            {"tournament_id": tournament_id, "round_id": round_id, "pairing_ids": pairing_ids},
+            user_id=admin.session.get("user_id"),
+        )
+        if removed:
+            admin.refresh_stats()
+            for row in previous_dates:
+                admin.mark_dirty(row["match_date"])
+            admin.update_from_latest_snapshot()
+        flash(TRANSLATIONS[lang]["success"])
+    except ValueError as exc:
+        flash(f"{TRANSLATIONS[lang]['error']}: {exc}")
+    finally:
+        conn.close()
+    return admin.redirect_or_json(
+        url_for(
+            "admin_tournament",
+            tournament_id=tournament_id,
+            lang=lang,
+            round_id=round_id,
+        )
+    )
 
 
 def admin_set_tournament_result(tournament_id):

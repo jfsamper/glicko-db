@@ -1,6 +1,6 @@
 # Code Review – glicko-db
 
-The main risks now are maintainability (a few files have grown very large) and a handful of loose ends that the [previous review](CODE_REVIEW..old.md) calls "green" but that are still visibly open in the source.
+The original route and tournament-service decomposition has been verified for the nine targeted modules. The route migration and final service cleanup are complete. The other open items below are separate security, UX, and shared-module follow-ups.
 
 ## 1. Status check on previously-tracked issues
 - import_gotha_xml() in import_service.py — resolved. The unused helper, its admin import, and its two obsolete tests were removed. The active XML flow remains build_import_preview() → create_tournament_from_gotha().
@@ -8,9 +8,9 @@ The main risks now are maintainability (a few files have grown very large) and a
 - Flask debug mode — resolved. The direct app.py entry point no longer passes debug=True; Passenger continues to call create_app() directly.
 
 ## 2. Architecture & maintainability
-- routes/admin.py (~2,800 lines) and services/tournament_service.py (~2,000 lines) have become "god files." Both mix several distinct concerns (auth/session handling, match CRUD, tournament CRUD, backups, OpenGotha XML import/export, pairing orchestration). This is the biggest structural risk in the repo — not because anything's broken, but because every change to one concern risks touching unrelated code. Splitting admin.py into per-domain blueprints (admin_matches.py, admin_tournaments.py, admin_users.py, admin_backups.py) and splitting tournament_service.py into gotha_import.py / gotha_export.py / pairing_orchestration.py would pay off.
+- The original god-file risk has been substantially reduced. `routes/admin.py` is now about 600 lines and primarily owns blueprint bootstrap, shared auth/DB helpers, and compatibility aliases; `services/tournament_service.py` is now a 27-line compatibility facade. The domain implementations live in the extracted modules listed in the migration checklist below.
 
-- Circular-import workaround is self-documented but still fragile. category_service.py imports glicko_to_category from rating_service at the bottom of the file specifically to dodge a circular import, with a comment already flagging this as awkward. It works today, but it's one reordered import away from breaking. The suggested fix (pull glicko_to_category into a small shared module neither service depends on) is worth actually doing.
+- Category/rating circular-import workaround — resolved. The pure formatter lives in `services/category_utils.py`, while `category_service.py` and `rating_service.py` retain thin compatibility wrappers for existing imports.
 
 - Player._tau is a mutable class attribute set per-call in glicko2_update() (Player._tau = tau). This works fine under the app's current single-threaded-per-request SQLite usage, but it's a latent race condition if the app is ever run with threaded workers or concurrent background recomputation — one request's tau could leak into another's calculation mid-flight. Prefer an instance attribute or passing tau explicitly into the volatility solver.
 
@@ -21,6 +21,24 @@ The main risks now are maintainability (a few files have grown very large) and a
 - services/common.py is a kitchen-sink module: auth, audit logging, timezone helpers, chart-building math, and the entire multilingual TRANSLATIONS dict (well over 1,000 lines) all live in one file. Splitting TRANSLATIONS out to its own i18n.py (or per-locale JSON) would make translation edits low-risk and separate from the security-sensitive auth code sitting in the same file.
 
 - Repetitive route boilerplate. Most admin POST handlers repeat the same conn = get_db(); try: ...; except ValueError as exc: flash(...); finally: conn.close() shape. A small helper/decorator for "run this DB action, flash a translated result" would cut a lot of near-duplicate code across admin.py.
+
+### Issue-2 migration verification
+
+The originally targeted modules were checked against current blueprint registration, function ownership, and compatibility imports:
+
+| Target module | Verified ownership | Remaining caveat |
+|------|------|------|
+| [routes/admin_tournaments.py](routes/admin_tournaments.py) | Tournament listing, creation, settings, detail, participant, pairing, result, round, import, export, and unpair handlers | Uses `routes.admin` only as the shared helper/compatibility boundary; all tournament endpoints register directly to local handlers. |
+| [routes/admin_matches.py](routes/admin_matches.py) | Match listing, creation, editing, deletion, SGF handling, pagination, and SQLite recovery | Uses `routes.admin` only as the shared helper/compatibility boundary. |
+| [routes/admin_players.py](routes/admin_players.py) | Player rankings/CRUD, category configuration, and rating configuration/recalculation | Uses `routes.admin` only as the shared helper/compatibility boundary. |
+| [routes/admin_users.py](routes/admin_users.py) | Authentication, registration, result reporting/moderation, profiles, settings, password recovery, logout, audit, and user administration | Directly registers its view functions; shared helper access remains through `routes.admin`. |
+| [services/tournament_gotha.py](services/tournament_gotha.py) | OpenGotha metadata parsing, tournament creation persistence, and XML export | None in the production ownership path. |
+| [services/tournament_participants.py](services/tournament_participants.py) | Participant lookup/listing, pending-player materialization, name reconciliation, and McMahon seed persistence | None in the production ownership path. |
+| [services/tournament_pairing.py](services/tournament_pairing.py) | Pairing policy, round generation, BYE/status handling, participant mutations, pairing edits, and handicap updates | None in the production ownership path. |
+| [services/tournament_matches.py](services/tournament_matches.py) | Pairing-to-match synchronization, result updates, tournament-wide match sync/save, and round result materialization | None in the production ownership path. |
+| [services/tournament_standings.py](services/tournament_standings.py) | Tournament-specific standings assembly | None in the production ownership path. |
+
+`services/tournament_service.py` is a 27-line compatibility facade that re-exports the established public and private import surface; it contains no tournament implementation bodies. No `_legacy_admin_*` route bodies or `_legacy()` service adapters remain. The last full-suite verification passed 370 tests.
 
 ## 3. Security
 Minor fixes:
@@ -46,26 +64,10 @@ Minor fixes:
 	- Kept thin compatibility wrappers in category_service.py and rating_service.py, so existing public imports remain stable.
 	- Removed the bottom-of-file category_service.py import from rating_service.py; focused category, rating, handicap, and standings tests pass.
 
-2. Split the largest route and service modules by ownership — in progress.
-	- Completed the first slice: backup validation, discovery, FTS repair, and restoration now live in services/backup_service.py; backup handlers are registered from routes/admin_backups.py on the existing admin blueprint.
-	- Completed the second slice: workbook, CSV, and OpenGotha import handlers now live in routes/admin_import.py; the import endpoints and routes.admin compatibility symbols are preserved.
-	- Completed the third slice: tournament listing, creation, and OpenGotha tournament import now live in routes/admin_tournaments.py; the existing admin blueprint and endpoint contract are preserved.
-	- Completed the fourth slice: all tournament endpoint registrations, including settings, participants, pairing, results, and round actions, now live in routes/admin_tournaments.py.
-	- Moved the delete, status, settings-display, pending-player resolution, XML export, participant, pairing, result, and round bodies into routes/admin_tournaments.py. The full suite passes with the new implementations registered on the shared blueprint.
-	- Completed the tournament body move: detail, participant, pairing, result, round, and player-creation handlers now run from routes/admin_tournaments.py. The old unregistered definitions in admin.py are isolated as legacy compatibility code and are not registered on the blueprint.
-	- Completed the fifth slice: match listing, creation, editing, deletion, SGF handling, pagination, and SQLite recovery now live in routes/admin_matches.py. Existing endpoint names and the shared admin blueprint are preserved.
-	- Completed the sixth slice: player rankings/CRUD, category configuration, and rating configuration/recalculation now live in routes/admin_players.py. Existing endpoint names, permissions, recovery behavior, and the shared admin blueprint are preserved.
-	- Completed the seventh slice: authentication, registration, result reporting/moderation, profiles, application settings, password recovery, logout, audit, and user administration endpoints are now owned and registered by routes/admin_users.py. Existing endpoint paths, permissions, and behavior are preserved through compatibility delegates.
-	- Route ownership extraction is complete. Service decomposition is now in progress: participant reconciliation helpers are in services/tournament_participants.py; pairing policy and handicap helpers are in services/tournament_pairing.py; standings assembly is in services/tournament_standings.py; and OpenGotha metadata parsing plus direct production ownership are in services/tournament_gotha.py. Tournament-match boundaries are available in services/tournament_matches.py.
-	- Moved OpenGotha tournament creation persistence and XML export implementation into services/tournament_gotha.py, including player reconciliation, pending players, imported games, byes, absences, handicaps, attendance masks, and OpenGotha parameter blocks. Full import/export and tournament coverage passes.
-	- Moved participant listing/materialization and McMahon seed persistence into services/tournament_participants.py. Existing tournament_service imports remain compatible and full participant/tournament coverage passes.
-	- Moved pairing orchestration and round/bye state into services/tournament_pairing.py, including round generation, bye/status handling, manual and selected pairing, participant add/remove, pairing edits, handicap overrides, and unpair operations. Admin routes now import these operations directly.
-	- Moved match synchronization, result updates, tournament-wide match sync/save, and round result materialization into the services/tournament_matches.py ownership boundary. Admin routes now import these operations directly; pairing deletion continues to remove linked materialized matches through the compatibility path.
-	- Remaining issue-2 service task: remove the legacy compatibility bodies from services/tournament_service.py after the dedicated modules stop delegating to them. Production callers have now been migrated to the dedicated participant, pairing, standings, and match modules; tests and compatibility imports still exercise tournament_service symbols until the implementation bodies are physically relocated.
-	- Physically moved the smaller tournament-match implementations into services/tournament_matches.py: metadata sync/save, result updates, pairing-to-match synchronization, and editable match synchronization. Full suite remains green.
-	- Physically moved round result materialization into services/tournament_matches.py as well. Full suite and import contracts remain green.
-	- Completed issue 2 service cleanup: removed all legacy implementation bodies from services/tournament_service.py. It is now a compatibility facade exposing the established import surface while focused modules own the implementations. Full suite and import-contract validation pass.
-	- Preserve endpoint names, the shared blueprint registration contract, and compatibility symbols while moving one domain at a time. Run focused tests after each slice, then the full suite and url_for() endpoint checks.
+2. Split the largest route and service modules — completed.
+	- Administrative ownership is split across the domain route modules, with endpoint names and compatibility imports preserved.
+	- Tournament ownership is split across the five dedicated service modules listed above; `services/tournament_service.py` is a compatibility facade only.
+	- The final dead `_legacy()` adapter was removed from `services/tournament_pairing.py`. Focused tournament/route tests and the full suite pass.
 
 3. Reduce homepage density and remove placeholder news.
 	- Present one statistics period at a time using the existing language and styling conventions, with a server-rendered default and accessible period navigation.

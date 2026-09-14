@@ -3,7 +3,7 @@
 
 def sync_match_pairing(conn, match_id, white_player_id, black_player_id, result, handicap_stones):
     from services.reporting_service import ensure_tournament_match_identity
-    from services.tournament_service import VALID_TOURNAMENT_RESULTS, _refresh_tournament_completion_state
+    from services.tournament_status import VALID_TOURNAMENT_RESULTS, _refresh_tournament_completion_state
     ensure_tournament_match_identity(conn)
     tables = {row[0] for row in conn.execute("SELECT name FROM sqlite_master WHERE type = 'table' AND name IN ('tournament_pairings', 'tournament_rounds')").fetchall()}
     if len(tables) != 2: return None
@@ -75,7 +75,7 @@ def sync_tournament_matches(conn, tournament_id, name=None, match_date=None):
 
 
 def save_tournament_matches(conn, tournament_id):
-    from services.tournament_service import _refresh_tournament_completion_state
+    from services.tournament_status import _refresh_tournament_completion_state
 
     if conn.execute("SELECT id FROM tournaments WHERE id = ?", (tournament_id,)).fetchone() is None:
         raise ValueError("Tournament not found")
@@ -99,7 +99,7 @@ def process_tournament_round_matches(conn, tournament_id, round_id=None, match_d
     from services.common import current_date
     from services.reporting_service import ensure_tournament_match_identity
     from services.tournament_participants import materialize_pending_players
-    from services.tournament_service import VALID_TOURNAMENT_RESULTS, _refresh_tournament_completion_state
+    from services.tournament_status import VALID_TOURNAMENT_RESULTS, _refresh_tournament_completion_state
 
     ensure_tournament_match_identity(conn)
     if round_id is None:
@@ -136,7 +136,7 @@ def process_tournament_round_matches(conn, tournament_id, round_id=None, match_d
 
 
 def set_pairing_result(conn, tournament_id, pairing_id, result):
-    from services.tournament_service import VALID_TOURNAMENT_RESULTS, _refresh_tournament_completion_state
+    from services.tournament_status import VALID_TOURNAMENT_RESULTS, _refresh_tournament_completion_state
 
     pairing = conn.execute(
         """

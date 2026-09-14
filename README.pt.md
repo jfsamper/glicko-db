@@ -164,6 +164,10 @@ Execute a suíte de regressão a partir da raiz do projeto:
 pytest -q
 ```
 
+### Organização do código
+
+As rotas administrativas estão separadas por domínio em `routes/admin_tournaments.py`, `routes/admin_matches.py`, `routes/admin_players.py` e `routes/admin_users.py`. A lógica de torneios está separada por responsabilidade em `services/tournament_gotha.py`, `services/tournament_participants.py`, `services/tournament_pairing.py`, `services/tournament_matches.py` e `services/tournament_standings.py`. `services/tournament_service.py` permanece como fachada de compatibilidade para os imports existentes. A suíte completa de regressão passa atualmente em 370 testes.
+
 ### Instalação em hospedagem Linux
 
 Use Python 3.10 ou posterior e crie um ambiente virtual novo antes da instalação:

@@ -91,11 +91,6 @@ def update_tournament_handicaps(conn, tournament_id, handicap_enabled, apply_aut
         conn.execute("UPDATE matches SET handicap_stones = ? WHERE tournament_pairing_id = ?", (handicap_stones, pairing["id"]))
 
 
-def _legacy(function_name, *args, **kwargs):
-    from services import tournament_service
-    return getattr(tournament_service, f"_legacy_{function_name}")(*args, **kwargs)
-
-
 def participant_state(conn, tournament_id, acceleration_scheme=None, acceleration_active=False):
     player_columns = table_columns(conn, "players")
     player_name = "p.display_name AS player_name" if "display_name" in player_columns else "CAST(tp.player_id AS TEXT) AS player_name"
@@ -162,7 +157,7 @@ def reorder_round_boards(conn, tournament_id, round_id):
 
 
 def generate_next_round(conn, tournament_id):
-    from services.tournament_service import _refresh_tournament_completion_state
+    from services.tournament_status import _refresh_tournament_completion_state
     tournament = conn.execute("SELECT * FROM tournaments WHERE id = ?", (tournament_id,)).fetchone()
     if tournament is None: raise ValueError("Tournament not found")
     round_number = conn.execute("SELECT COALESCE(MAX(round_number), 0) + 1 FROM tournament_rounds WHERE tournament_id = ?", (tournament_id,)).fetchone()[0]
@@ -253,7 +248,7 @@ def manual_pair(conn, tournament_id, round_id, white_player_id, black_player_id,
 
 def update_pairing(conn, tournament_id, pairing_id, white_player_id, black_player_id):
     from services.tournament_matches import sync_pairing_match
-    from services.tournament_service import _refresh_tournament_completion_state
+    from services.tournament_status import _refresh_tournament_completion_state
     pairing = conn.execute("SELECT p.round_id, p.white_player_id AS old_white_player_id, p.black_player_id AS old_black_player_id FROM tournament_pairings p JOIN tournament_rounds r ON r.id = p.round_id WHERE p.id = ? AND r.tournament_id = ? AND p.is_bye = 0", (pairing_id, tournament_id)).fetchone()
     if pairing is None or white_player_id == black_player_id: raise ValueError("Invalid pairing")
     ids = {row[0] for row in conn.execute("SELECT player_id FROM tournament_participants WHERE tournament_id = ?", (tournament_id,)).fetchall()}
@@ -275,7 +270,7 @@ def update_pairing_handicap(conn, tournament_id, pairing_id, handicap_stones):
 
 def unpair(conn, tournament_id, pairing_id):
     from services.reporting_service import ensure_tournament_match_identity
-    from services.tournament_service import _refresh_tournament_completion_state
+    from services.tournament_status import _refresh_tournament_completion_state
     pairing = conn.execute("SELECT round_id, white_player_id, black_player_id FROM tournament_pairings WHERE id = ?", (pairing_id,)).fetchone()
     deleted = conn.execute("DELETE FROM tournament_pairings WHERE id = ? AND round_id IN (SELECT id FROM tournament_rounds WHERE tournament_id = ?)", (pairing_id, tournament_id)).rowcount
     if not deleted: raise ValueError("Pairing not found")

@@ -149,7 +149,7 @@ def create_tournament_from_gotha(conn, xml_path, pairing_system=None, player_dec
         table_columns,
     )
     from services.tournament_participants import player_lookup, suggest_player_name
-    from services.tournament_service import _refresh_tournament_completion_state
+    from services.tournament_status import _refresh_tournament_completion_state
 
     repair_legacy_players_table(conn)
     xml_path = _resolve_gotha_path(xml_path)
