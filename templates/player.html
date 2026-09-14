@@ -9,7 +9,7 @@
   </div>
 
   <div class="card-grid">
-    <article class="card highlight-card" style="width:100%; text-align: center;">
+    <article class="card highlight-card player-rating-card">
       <h3>{{ translations.current_rating }}</h3>
       <p class="metric">{{ player.rating | round(1) }} ({{ category }})</p>
       <p class="muted">{{ translations.games_played }}: {{ player.games_played }}</p>
@@ -17,7 +17,7 @@
   </div>
 
   {% if badges and badges|length > 0 %}
-  <div class="card-grid" style="margin-top: 1%;">
+  <div class="card-grid player-badges-grid">
     <article class="card">
       <h3>{{ translations.player_badges_heading }}</h3>
       <div class="badge-list">
@@ -36,7 +36,7 @@
   {% endif %}
 
   {% if total_matches > 0 %}
-  <form method="get" class="filter-form profile-season-filter" style="margin-top: 1rem;">
+  <form method="get" class="filter-form profile-season-filter">
     <input type="hidden" name="id" value="{{ player.id }}">
     <input type="hidden" name="lang" value="{{ lang }}">
     <div class="filter-grid">
@@ -50,40 +50,40 @@
     </div>
   </form>
 
-  <div class="card-grid" style="display: block; margin-top: 1%;">
-    <div class="player-result-cards" style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; width: 100%; margin: 0 auto 1rem auto;">
-      <article class="card" style="height: 100%;">
+  <div class="card-grid player-profile-results">
+    <div class="player-result-cards">
+      <article class="card player-profile-card">
         <h3>{{ translations.total_results }}</h3>
         <p class="metric small">{{ stats.total.wins }}-{{ stats.total.losses }}{% if stats.total.draws %}-{{ stats.total.draws }}{% endif %}</p>
       </article>
 
-      <article class="card" style="height: 100%;">
+      <article class="card player-profile-card">
         <h3>{{ translations.yearly_results }}</h3>
         <p class="metric small">{{ stats.yearly.wins }}-{{ stats.yearly.losses }}{% if stats.yearly.draws %}-{{ stats.yearly.draws }}{% endif %}</p>
       </article>
 
-      <article class="card" style="height: 100%;">
+      <article class="card player-profile-card">
         <h3>{{ translations.quarterly_results }}</h3>
         <p class="metric small">{{ stats.quarterly.wins }}-{{ stats.quarterly.losses }}{% if stats.quarterly.draws %}-{{ stats.quarterly.draws }}{% endif %}</p>
       </article>
     </div>
 
-    <div class="player-profile-summary" style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; width: 100%; margin: 0 auto 1rem auto;">
-      <article class="card" style="height: 100%;">
+    <div class="player-profile-summary">
+      <article class="card player-profile-card">
         <h3>{{ translations.win_rate }}</h3>
-        <div style="display:grid; gap:0.35rem;">
+        <div class="player-profile-details">
           <div><strong>{{ translations.overall_results }}</strong>: {{ '%.1f'|format(stats.total.win_rate) }}%</div>
           <div>{{ translations.as_white }}: {{ '%.1f'|format(stats.white.win_rate) }}%</div>
           <div>{{ translations.as_black }}: {{ '%.1f'|format(stats.black.win_rate) }}%</div>
         </div>
       </article>
 
-      <article class="card" style="height: 100%;">
+      <article class="card player-profile-card">
         <h3>{{ translations.recent_streak }}</h3>
         {% if stats.recent_streak %}
-          <div class="badge-list" style="justify-content: center;">
+          <div class="badge-list player-streak-list">
             {% for symbol in stats.recent_streak %}
-              <span class="badge-pill {% if symbol == 'X' %}record-win{% elif symbol == 'O' %}record-loss{% else %}record-even{% endif %}" style="min-width: 1.6rem; text-align: center;">{{ symbol }}</span>
+              <span class="badge-pill player-streak-symbol {% if symbol == 'X' %}record-win{% elif symbol == 'O' %}record-loss{% else %}record-even{% endif %}">{{ symbol }}</span>
             {% endfor %}
           </div>
         {% else %}
@@ -91,9 +91,9 @@
         {% endif %}
       </article>
 
-      <article class="card" style="height: 100%;">
+      <article class="card player-profile-card">
         <h3>{{ translations.career_milestones }}</h3>
-        <div style="display:grid; gap:0.35rem;">
+        <div class="player-profile-details">
           <div><strong>{{ translations.best_rating }}</strong>: {{ stats.milestones.best_rating | round(1) }} ({{ glicko_to_category(stats.milestones.best_rating, 1) }})</div>
           <div><strong>{{ translations.streak_count }}</strong>: {{ stats.milestones.streak_count }}</div>
           <div><strong>{{ translations.current_streak }}</strong>: {{ stats.milestones.current_streak }}</div>
@@ -102,8 +102,8 @@
       </article>
     </div>
 
-    <article class="card chart-card player-profile-chart" style="width: 100%;">  
-      <div style="text-align:center ;">
+    <article class="card chart-card player-profile-chart">
+      <div class="player-profile-chart-header">
         <div>
           <h3>{{ translations.chart_title }}</h3>
           <p class="muted">{{ translations.chart_caption }}</p>
@@ -215,7 +215,7 @@
   <div class="table-wrapper"><table class="table-stack">
     <thead>
       <tr>
-        <th style="text-align:left;">{{ translations.opponent }}</th>
+        <th class="table-cell-left">{{ translations.opponent }}</th>
         <th>{{ translations.rating }}</th>
         <th>{{ translations.result }}</th>
       </tr>
@@ -230,7 +230,7 @@
       {% endif %}
       "
       >
-        <td style="text-align:left;">
+        <td class="table-cell-left">
           {% if opponent.is_self %}
           {{ opponent.name }}
           {% else %}

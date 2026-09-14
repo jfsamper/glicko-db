@@ -33,6 +33,11 @@
   word-break: normal;
 }
 
+.table-stack th.table-cell-left,
+.table-stack td.table-cell-left {
+  text-align: left;
+}
+
 .table-stack a {
   color: var(--accent-secondary);
   text-decoration: none;

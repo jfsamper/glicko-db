@@ -130,9 +130,63 @@
   min-width: 0;
 }
 
+.player-rating-card {
+  width: 100%;
+  text-align: center;
+}
+
+.player-badges-grid {
+  margin-top: 1%;
+}
+
+.profile-season-filter {
+  margin-top: 1rem;
+}
+
+.player-profile-results {
+  display: block;
+  margin-top: 1%;
+}
+
 .player-result-cards,
 .player-profile-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  width: 100%;
+  margin: 0 auto 1rem;
   min-width: 0;
+}
+
+.player-profile-card {
+  height: 100%;
+}
+
+.player-profile-details {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.player-streak-list {
+  justify-content: center;
+}
+
+.player-streak-symbol {
+  min-width: 1.6rem;
+  text-align: center;
+}
+
+.player-profile-chart {
+  width: 100%;
+}
+
+.player-profile-chart-header,
+.category-formula-card {
+  text-align: center;
+}
+
+.category-formula-card {
+  align-content: center;
 }
 
 .card-grid .chart-card {

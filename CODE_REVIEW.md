@@ -8,7 +8,7 @@ The original route and tournament-service decomposition has been verified for th
 - Flask debug mode — resolved. The direct app.py entry point no longer passes debug=True; Passenger continues to call create_app() directly.
 
 ## 2. Architecture & maintainability
-- The original god-file risk has been substantially reduced. `routes/admin.py` is now about 600 lines and primarily owns blueprint bootstrap, shared auth/DB helpers, and compatibility aliases; `services/tournament_service.py` is now a 27-line compatibility facade. The domain implementations live in the extracted modules listed in the migration checklist below.
+- The original god-file risk has been substantially reduced. `routes/admin.py` is now about 575 lines and primarily owns blueprint bootstrap, shared auth/DB helpers, and compatibility aliases; `services/tournament_service.py` is now a 27-line compatibility facade. Administrative ownership lives in `routes/admin_tournaments.py`, `routes/admin_matches.py`, `routes/admin_players.py`, and `routes/admin_users.py`; tournament ownership lives in `services/tournament_gotha.py`, `services/tournament_participants.py`, `services/tournament_pairing.py`, `services/tournament_matches.py`, and `services/tournament_standings.py`.
 
 - Category/rating circular-import workaround — resolved. The pure formatter lives in `services/category_utils.py`, while `category_service.py` and `rating_service.py` retain thin compatibility wrappers for existing imports.
 
@@ -39,7 +39,7 @@ Minor fixes:
 
 - Language switcher is a single-button cycle (ES→EN→PT) labeled with the next language's abbreviation rather than the current one — functional, but a first-time visitor has to experiment to understand it's a cycle rather than a static label. A small dropdown would be more discoverable, though this is a minor point given the audience is a known local club.
 
-- Inline style="" attributes are scattered through several templates (player.html, category.html) for layout (grid/gap/text-align) rather than color — this doesn't fight the dark theme, but it does undercut the otherwise clean CSS-variable-driven theming approach; moving these into tournament.css/tables.css classes would make future theme edits easier.
+- Static inline layout styles — resolved for the reviewed profile/category surfaces. `player.html` and `category.html` now use reusable classes in `static/css/tournament.css`, and player table alignment is owned by `static/css/tables.css`; the category-bar percentage remains data-driven. Unrelated admin-template inline styles remain outside this focused cleanup.
 
 ## Implementation plan for remaining issues
 
