@@ -27,7 +27,8 @@ from services.pairing_service import (
     pair_players,
 )
 from services.standings_service import calculate_standings
-from services.tournament_service import add_participant, delete_tournament, generate_next_round
+from services.tournament_service import delete_tournament
+from services.tournament_pairing import add_participant, generate_next_round
 
 PREFIX = "DEMO-PAIRING-"
 DEFAULT_ROUNDS = 5

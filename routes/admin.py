@@ -131,29 +131,33 @@ from services.tournament_service import (
     _player_lookup,
     _recalculate_mcmahon_seeds,
     _suggest_player_name,
-    add_participant,
     delete_tournament,
-    generate_next_round,
     list_tournament_participants,
-    manual_pair,
     normalize_tournament_rounds,
-    process_tournament_round_matches,
-    remove_participant,
     get_tournament_standings,
     TOURNAMENT_STATUSES,
-    save_tournament_matches,
-    unpair,
-    unpair_all,
-    set_pairing_result,
-    pair_selected_players,
-    sync_match_pairing,
-    sync_tournament_matches,
-    update_pairing,
     update_tournament_handicaps,
-    update_pairing_handicap,
     normalize_tournament_system,
 )
 from services.tournament_gotha import create_tournament_from_gotha, export_tournament_results
+from services.tournament_pairing import (
+    add_participant,
+    generate_next_round,
+    manual_pair,
+    pair_selected_players,
+    remove_participant,
+    unpair,
+    unpair_all,
+    update_pairing,
+    update_pairing_handicap,
+)
+from services.tournament_matches import (
+    process_tournament_round_matches,
+    save_tournament_matches,
+    set_pairing_result,
+    sync_match_pairing,
+    sync_tournament_matches,
+)
 from services import backup_service
 from routes.admin_backups import (
     admin_backups,

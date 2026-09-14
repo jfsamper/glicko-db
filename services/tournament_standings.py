@@ -7,7 +7,7 @@ from services.standings_service import calculate_standings
 
 def get_tournament_standings(conn, tournament_id):
     """Load tournament state and calculate its OpenGotha-style standings."""
-    from services.tournament_service import list_tournament_participants
+    from services.tournament_participants import list_tournament_participants
 
     tournament = conn.execute("SELECT * FROM tournaments WHERE id = ?", (tournament_id,)).fetchone()
     if tournament is None:

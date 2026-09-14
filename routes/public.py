@@ -40,7 +40,8 @@ from services.player_service import (
     parse_player_order,
     parse_player_sort,
 )
-from services.tournament_service import get_tournament_standings, TOURNAMENT_STATUSES
+from services.tournament_service import TOURNAMENT_STATUSES
+from services.tournament_standings import get_tournament_standings
 
 public_bp = Blueprint("public", __name__)
 
