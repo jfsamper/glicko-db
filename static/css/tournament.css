@@ -293,6 +293,11 @@
   margin: 0;
 }
 
+.round-selector {
+  text-align: center;
+  text-align-last: center;
+}
+
 .category-label,
 .category-bar-header,
 .category-value-header,

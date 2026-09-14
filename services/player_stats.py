@@ -24,7 +24,7 @@ def build_player_result_summary(player_id, conn):
 
 def build_recent_result_summaries(conn, limit=8, days=90):
     """Return recent-result strings for players with matches in the last N days."""
-    from services.common import server_date
+    from services.timezone_service import server_date
 
     cutoff = conn.execute(
         "SELECT date(?, '-' || ? || ' days')",

@@ -2,7 +2,8 @@
 from calendar import monthrange
 from datetime import date, datetime
 
-from services.common import get_db, server_date
+from services.db import get_db
+from services.timezone_service import server_date
 from services.i18n import TRANSLATIONS
 
 

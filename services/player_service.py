@@ -5,7 +5,8 @@ import math
 import sqlite3
 
 from services.chart_service import build_rating_chart_data
-from services.common import current_date, get_db
+from services.db import get_db
+from services.timezone_service import current_date
 from services.i18n import TRANSLATIONS
 from services.home_stats import build_player_badges
 from services.player_stats import build_recent_result_summaries

@@ -14,7 +14,7 @@ from reportlab.platypus import SimpleDocTemplate, Spacer, Table, TableStyle, Par
 
 from config import GLICKO_K, GLICKO_M
 from services.chart_service import build_rating_chart_data
-from services.common import server_date as configured_server_date
+from services.timezone_service import server_date as configured_server_date
 from services.rating_service import glicko_to_category
 
 VALID_RESULTS = {"1-0", "0-1", "1/2-1/2"}

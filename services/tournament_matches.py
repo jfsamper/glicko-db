@@ -22,7 +22,7 @@ def sync_match_pairing(conn, match_id, white_player_id, black_player_id, result,
 def sync_pairing_match(conn, tournament_id, pairing_id):
     from services.reporting_service import ensure_tournament_match_identity
     from services.sgf_service import ensure_sgf_schema
-    from services.common import current_date
+    from services.timezone_service import current_date
     from services.tournament_status import PLAYED_GAME_RESULTS
     ensure_tournament_match_identity(conn); ensure_sgf_schema(conn)
 
@@ -99,7 +99,7 @@ def save_tournament_matches(conn, tournament_id):
 
 
 def process_tournament_round_matches(conn, tournament_id, round_id=None, match_date=None, event=None):
-    from services.common import current_date
+    from services.timezone_service import current_date
     from services.reporting_service import ensure_tournament_match_identity
     from services.tournament_participants import materialize_pending_players
     from services.tournament_status import PLAYED_GAME_RESULTS, _refresh_tournament_completion_state

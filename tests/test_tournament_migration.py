@@ -4,6 +4,7 @@ from pathlib import Path
 
 import conftest
 from app import app, migrate_match_result_schema, migrate_matches_notes_schema, migrate_tournament_schema, normalize_match_round_values
+import config
 import routes.admin as admin_routes
 import services.common as common
 
@@ -508,6 +509,7 @@ def test_delete_match_recovers_from_database_error(tmp_path, monkeypatch):
     conn.close()
 
     monkeypatch.setattr(admin_routes, "DB_PATH", str(current_db))
+    monkeypatch.setattr(config, "DB_PATH", str(current_db))
     monkeypatch.setattr(common, "DB_PATH", str(current_db))
     monkeypatch.setattr(admin_routes, "BACKUP_DIR", str(backup_dir))
     monkeypatch.setattr(admin_routes, "refresh_stats", lambda: (_ for _ in ()).throw(sqlite3.DatabaseError("database disk image is malformed")))
@@ -594,6 +596,7 @@ def test_edit_match_recovers_from_database_error(tmp_path, monkeypatch):
     conn.close()
 
     monkeypatch.setattr(admin_routes, "DB_PATH", str(current_db))
+    monkeypatch.setattr(config, "DB_PATH", str(current_db))
     monkeypatch.setattr(common, "DB_PATH", str(current_db))
     monkeypatch.setattr(admin_routes, "BACKUP_DIR", str(backup_dir))
     monkeypatch.setattr(admin_routes, "refresh_stats", lambda: (_ for _ in ()).throw(sqlite3.DatabaseError("database disk image is malformed")))

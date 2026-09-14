@@ -10,16 +10,16 @@ from flask_wtf.csrf import CSRFProtect
 
 from config import BASE_DIR, DB_PATH, DEFAULT_RATING, DEFAULT_RD, DEFAULT_VOLATILITY, GLICKO_K, GLICKO_M, TAU
 
-from services.common import (
+from services.auth_service import (
     bootstrap_default_admin_account,
-    get_db,
     get_current_user,
-    migrate_audit_log_schema,
     migrate_auth_schema,
     migrate_result_submissions_schema,
-    refresh_stats,
-    current_timestamp,
 )
+from services.audit_service import migrate_audit_log_schema
+from services.db import get_db
+from services.stats_service import refresh_stats
+from services.timezone_service import current_timestamp
 from services.i18n import TRANSLATIONS, get_language
 
 from services.helpers import normalize_round_note

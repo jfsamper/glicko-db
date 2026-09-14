@@ -2,6 +2,31 @@
 
 The original route and tournament-service decomposition has been verified for the nine targeted modules. The route migration and final service cleanup are complete. The other open items below are separate security, UX, and shared-module follow-ups.
 
+## 0. 2026-09-14 re-verification pass
+
+Every "resolved" item below was re-checked against the current codebase (not just re-read from this file). All hold up:
+
+- `import_gotha_xml` is absent from the codebase; the active flow is still `build_import_preview()` → `create_tournament_from_gotha()`.
+- `app.py`'s `if __name__ == "__main__":` block calls `app.run(host="0.0.0.0", port=5000)` with no `debug=True`.
+- `routes/admin.py` is 588 lines (close to the ~575 previously recorded; the small drift is normal churn, not regrowth of the god-file). `services/tournament_service.py` is exactly 27 lines and contains only re-exports. The five tournament service modules and four `admin_*` route modules all exist and own the described responsibilities.
+- `services/category_utils.py` still owns `format_glicko_category()`; `category_service.py` and `rating_service.py` both hold thin delegating wrappers only.
+- `rating_service.glicko2_update()` still threads `tau` explicitly into `Player.update_player()`; no class-level mutable tau state.
+- `legacy_players_integrity_state()`, `assert_legacy_players_state_clean()`, and `repair_legacy_players_table()` are all still in `app.py`; `scripts/check_legacy_players_state.py` still exists as the repeatable audit.
+- `routes/sort_helpers.py` remains the single source for match/tournament sort fields and validators; `routes/admin.py` and `routes/public.py` import from it rather than redefining it.
+- `services/i18n.py` owns `TRANSLATIONS`/`get_language`; `services/chart_service.py` owns chart construction; `services/common.py` only re-exports both for compatibility. Production route modules import the owners directly.
+- `run_admin_db_action()` (`routes/admin.py`) is used by tournament participant/pairing/round-generation/deletion, user-deletion, and SGF unlink/delete handlers in `routes/admin_tournaments.py`, `routes/admin_sgf.py`, and `routes/admin_users.py`.
+- No `_legacy_admin_*` route bodies or `_legacy()` service adapters remain anywhere in `routes/` or `services/`.
+- The forgot-password route in `routes/admin_users.py` calls the same `record_failed_login_attempt()` IP limiter used by the login route, with the generic response preserved.
+- `parse_handicap_stones()` (`routes/admin.py`) is used consistently by the manual add/edit match forms, the tournament pairing forms, and the CSV import path in `routes/admin_import.py`.
+- Homepage stats render all three periods server-side with client-side tab switching (no reload); the "Noticias" card still ships literal `...` placeholder paragraphs in `templates/index.html` — **still open**, not actually resolved by any later change.
+- Language switcher is still a single ES→EN→PT cycle button labeled with the *next* language — **still open**, as previously noted, low priority.
+- `player.html` has no inline `style` attributes left; `category.html` keeps only the one data-driven `style="width: {{ pct }}%;"` bar, which is expected. `static/css/tournament.css` and `static/css/tables.css` exist and are used.
+- Player-profile match/tournament history and report player-performance tables page locally over a preloaded dataset (no reload); rankings/players/matches/tournament lists still page server-side via `LIMIT ?/OFFSET ?`, consistent with the stated rationale.
+- Public tournament round selection preloads all round pairings in the initial response and switches the visible round panel client-side without a form submission or page reload; standings remain tournament-wide.
+- Full suite: **379 passed** (`pytest -q`; the additional coverage includes the public tournament round-preload/no-reload behavior).
+
+No new correctness or security bugs were found during this pass. The two UX items below (News placeholder, language switcher) remain genuinely open and are carried forward unchanged.
+
 ## 1. Status check on previously-tracked issues
 - import_gotha_xml() in import_service.py — resolved. The unused helper, its admin import, and its two obsolete tests were removed. The active XML flow remains build_import_preview() → create_tournament_from_gotha().
 
@@ -18,11 +43,11 @@ The original route and tournament-service decomposition has been verified for th
 
 - Shared route sort helpers — resolved. Match and tournament sort mappings and validators now live in `routes/sort_helpers.py`; `routes/admin.py` and `routes/public.py` re-export the same definitions, and the admin tournament query uses the shared `t.` SQL alias.
 
-- Common-service ownership cleanup — partially resolved by clear boundaries. `services/i18n.py` now owns `TRANSLATIONS` and `get_language`, while pure chart construction lives in `services/chart_service.py`; production consumers import those owners directly and `services/common.py` keeps compatibility re-exports. Auth, audit, timezone, database, and statistics helpers remain in `common.py` because their current connection/session/migration coupling does not provide a safe independent owner yet.
+- Common-service ownership cleanup — resolved. `services/i18n.py` owns `TRANSLATIONS` and `get_language`; pure chart construction lives in `services/chart_service.py`; `services/db.py` owns the raw SQLite connection factory (`get_db()`); `services/timezone_service.py` owns configured-timezone resolution and all current-time/date helpers; `services/auth_service.py` owns user accounts, roles, sessions/permissions, and password-reset flows; `services/audit_service.py` owns the admin audit log schema/writes; `services/stats_service.py` owns the per-player games/wins/losses/draws recompute. `services/common.py` is now a pure compatibility facade re-exporting all of the above; production route/service modules import directly from the new owners, and `tests/test_service_ownership.py` asserts identity between the facade's re-exports and the owners' functions.
 
 - Repetitive route boilerplate — resolved for uniform handlers. `routes/admin.py` provides `run_admin_db_action()` for the shared connection, rollback, translated validation errors, optional success flashes, and guaranteed close lifecycle. Tournament participant, pairing, round-generation, tournament-deletion, user-deletion, and SGF unlink/delete handlers use it. Import, SGF link, rating-refresh, recovery, and multi-stage handlers retain explicit lifecycles because they have distinct rollback or recovery behavior.
 
-`services/tournament_service.py` is a 27-line compatibility facade that re-exports the established public and private import surface; it contains no tournament implementation bodies. No `_legacy_admin_*` route bodies or `_legacy()` service adapters remain. The last full-suite verification passed 378 tests.
+`services/tournament_service.py` is a 27-line compatibility facade that re-exports the established public and private import surface; it contains no tournament implementation bodies. No `_legacy_admin_*` route bodies or `_legacy()` service adapters remain. The last full-suite verification passed 379 tests.
 
 ## 3. Security
 Minor fixes:

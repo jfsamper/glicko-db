@@ -5,6 +5,7 @@ from werkzeug.security import check_password_hash, generate_password_hash
 
 import config
 import routes.admin as admin_routes
+import services.auth_service as auth_service
 import services.common as common
 from app import create_app
 from config import DEFAULT_RATING, DEFAULT_RD, DEFAULT_VOLATILITY, GLICKO_K, GLICKO_M, TAU
@@ -266,7 +267,7 @@ def test_forgot_password_sends_reset_url_and_token_is_single_use(tmp_path, monke
 def test_forgot_password_handles_missing_smtp_configuration(tmp_path, monkeypatch):
     app, _db_path, _user_id = make_account_app(tmp_path, monkeypatch)
     client = app.test_client()
-    monkeypatch.setattr(common, "MAIL_SERVER", "")
+    monkeypatch.setattr(auth_service, "MAIL_SERVER", "")
 
     response = client.post(
         "/admin/forgot-password?lang=en",

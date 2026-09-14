@@ -15,11 +15,8 @@ from routes.sort_helpers import (
     parse_tournament_sort,
 )
 from services.category_service import get_category_config, glicko_to_category
-from services.common import (
-    get_current_user,
-    get_db,
-    user_has_permission,
-)
+from services.auth_service import get_current_user, user_has_permission
+from services.db import get_db
 from services.i18n import TRANSLATIONS, get_language
 
 from services.home_stats import build_home_stats
@@ -904,20 +901,25 @@ def tournament_page(tournament_id):
     selected_round_id = request.args.get("round_id", type=int)
     if selected_round_id is None and rounds:
         selected_round_id = rounds[0]["id"]
-    pairings = conn.execute(
+    all_pairings = conn.execute(
         """
-        SELECT p.board_number, p.is_bye, p.result,
+        SELECT p.round_id, r.round_number, p.board_number, p.is_bye, p.result,
                p.white_player_id, p.black_player_id,
                COALESCE(white.display_name, p.white_player_name) AS white_name,
                COALESCE(black.display_name, p.black_player_name) AS black_name
         FROM tournament_pairings p
+        JOIN tournament_rounds r ON r.id = p.round_id
         LEFT JOIN players white ON white.id = p.white_player_id
         LEFT JOIN players black ON black.id = p.black_player_id
-        WHERE p.round_id = ?
-        ORDER BY p.is_bye, p.board_number
+        WHERE r.tournament_id = ?
+        ORDER BY r.round_number DESC, p.is_bye, p.board_number
         """,
-        (selected_round_id,),
-    ).fetchall() if selected_round_id else []
+        (tournament_id,),
+    ).fetchall()
+    pairings_by_round = {}
+    for pairing in all_pairings:
+        pairings_by_round.setdefault(pairing["round_id"], []).append(pairing)
+    pairings = pairings_by_round.get(selected_round_id, [])
     standings = get_tournament_standings(conn, tournament_id)
     conn.close()
     return render_template(
@@ -928,6 +930,7 @@ def tournament_page(tournament_id):
         rounds=rounds,
         selected_round_id=selected_round_id,
         pairings=pairings,
+        pairings_by_round=pairings_by_round,
         standings=standings,
     )
 

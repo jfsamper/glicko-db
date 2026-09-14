@@ -11,6 +11,7 @@ import services.common as common
 import services.helpers as helpers
 import services.import_gotha as import_gotha
 import services.rating_service as rating_service
+import config
 from services.player_stats import build_player_result_summary
 
 
@@ -40,7 +41,7 @@ def test_timezone_choices_are_unique_sorted_and_prefer_requested_regions():
 
 def test_application_clock_uses_account_timezone_and_falls_back_for_invalid_values(monkeypatch, tmp_path):
     db_path = tmp_path / "timezone.db"
-    monkeypatch.setattr(common, "DB_PATH", str(db_path))
+    monkeypatch.setattr(config, "DB_PATH", str(db_path))
     conn = sqlite3.connect(db_path)
     conn.row_factory = sqlite3.Row
     common.migrate_auth_schema(conn)
@@ -278,8 +279,7 @@ def test_refresh_stats_aggregates_results_and_includes_inactive_players(monkeypa
     conn.commit()
     conn.close()
 
-    monkeypatch.setattr(common, "get_db", lambda: sqlite3.connect(db_path))
-    common.refresh_stats()
+    common.refresh_stats(conn=sqlite3.connect(db_path))
 
     conn = sqlite3.connect(db_path)
     rows = conn.execute(
@@ -322,8 +322,7 @@ def test_absence_results_are_excluded_from_player_stats_and_summaries(monkeypatc
     )
     conn.commit()
 
-    monkeypatch.setattr(common, "get_db", lambda: sqlite3.connect(db_path))
-    common.refresh_stats()
+    common.refresh_stats(conn=sqlite3.connect(db_path))
 
     rows = conn.execute(
         "SELECT id, games_played, wins, losses, draws FROM players ORDER BY id"

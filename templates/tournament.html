@@ -21,7 +21,7 @@
         <div class="filter-grid">
           <div class="filter-item wide">
             <label for="round_id">{{ translations.select_round }}</label>
-            <select id="round_id" name="round_id" onchange="this.form.submit()" {% if not rounds %}disabled{% endif %} style="text-align: center;">
+            <select id="round_id" class="round-selector" {% if not rounds %}disabled{% endif %}>
               {% for round in rounds %}
                 <option value="{{ round.id }}" {% if round.id == selected_round_id %}selected{% endif %}>{{ translations.tournament_round }} {{ round.round_number }}</option>
               {% endfor %}
@@ -31,37 +31,44 @@
       </div>
     </form>
 
-    {% if pairings %}
-      <div class="table-wrapper"><table class="table-stack">
-        <thead>
-          <tr><th>{{ translations.board }}</th><th>{{ translations.white }}</th><th>{{ translations.black }}</th><th>{{ translations.result }}</th></tr>
-        </thead>
-        <tbody>
-          {% for pairing in pairings if not pairing.is_bye %}
-            <tr>
-              <td>{{ pairing.board_number }}</td>
-              <td>
-                {% if pairing.white_player_id %}<a href="{{ url_for('player_profile', id=pairing.white_player_id, lang=lang) }}">{{ pairing.white_name }}</a>{% else %}{{ pairing.white_name }}{% endif %}
-              </td>
-              <td>
-                {% if pairing.black_player_id %}<a href="{{ url_for('player_profile', id=pairing.black_player_id, lang=lang) }}">{{ pairing.black_name }}</a>{% else %}{{ pairing.black_name }}{% endif %}
-              </td>
-              <td>
-                {% if pairing.result == '1-0' %}{{ translations.white_wins }}{% elif pairing.result == '0-1' %}{{ translations.black_wins }}{% elif pairing.result == '1/2-1/2' %}{{ translations.draw_result }}{% elif pairing.result in ('!0-1', '1-!0', '!0-0') %}{{ pairing.result }}{% else %}-{% endif %}
-              </td>
-            </tr>
-          {% endfor %}
-          {% for pairing in pairings if pairing.is_bye %}
-            <tr class="bye-pairing-row">
-              <td colspan="3" class="pairing-player bye-player">{{ pairing.white_name }}</td>
-              <td class="bye-label">{{ translations.bye }}</td>
-            </tr>
-          {% endfor %}
-        </tbody>
-      </table></div>
+    {% for round in rounds %}
+      <div class="public-round-pairings" data-round-pairings="{{ round.id }}"{% if round.id != selected_round_id %} hidden{% endif %}>
+        {% set round_pairings = pairings_by_round.get(round.id, []) %}
+        {% if round_pairings %}
+          <div class="table-wrapper"><table class="table-stack">
+            <thead>
+              <tr><th>{{ translations.board }}</th><th>{{ translations.white }}</th><th>{{ translations.black }}</th><th>{{ translations.result }}</th></tr>
+            </thead>
+            <tbody>
+              {% for pairing in round_pairings if not pairing.is_bye %}
+                <tr>
+                  <td>{{ pairing.board_number }}</td>
+                  <td>
+                    {% if pairing.white_player_id %}<a href="{{ url_for('player_profile', id=pairing.white_player_id, lang=lang) }}">{{ pairing.white_name }}</a>{% else %}{{ pairing.white_name }}{% endif %}
+                  </td>
+                  <td>
+                    {% if pairing.black_player_id %}<a href="{{ url_for('player_profile', id=pairing.black_player_id, lang=lang) }}">{{ pairing.black_name }}</a>{% else %}{{ pairing.black_name }}{% endif %}
+                  </td>
+                  <td>
+                    {% if pairing.result == '1-0' %}{{ translations.white_wins }}{% elif pairing.result == '0-1' %}{{ translations.black_wins }}{% elif pairing.result == '1/2-1/2' %}{{ translations.draw_result }}{% elif pairing.result == '1-!0' %}{{ translations.white_wins_black_absent }}{% elif pairing.result == '!0-1' %}{{ translations.black_wins_white_absent }}{% elif pairing.result == '!0-0' %}{{ translations.both_absent_result }}{% else %}-{% endif %}
+                  </td>
+                </tr>
+              {% endfor %}
+              {% for pairing in round_pairings if pairing.is_bye %}
+                <tr class="bye-pairing-row">
+                  <td colspan="3" class="pairing-player bye-player">{{ pairing.white_name }}</td>
+                  <td class="bye-label">{{ translations.bye }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table></div>
+        {% else %}
+          <p>{{ translations.no_paired_tables }}</p>
+        {% endif %}
+      </div>
     {% else %}
       <p>{{ translations.no_paired_tables }}</p>
-    {% endif %}
+    {% endfor %}
   </div>
 
   <div class="card">
@@ -93,4 +100,16 @@
     {% endif %}
   </div>
 </section>
+<script>
+  (() => {
+    const selector = document.getElementById("round_id");
+    const panels = Array.from(document.querySelectorAll("[data-round-pairings]"));
+    if (!selector || !panels.length) return;
+    selector.addEventListener("change", () => {
+      panels.forEach((panel) => {
+        panel.hidden = panel.dataset.roundPairings !== selector.value;
+      });
+    });
+  })();
+</script>
 {% endblock %}

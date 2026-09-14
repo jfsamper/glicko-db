@@ -139,7 +139,7 @@ def create_tournament_from_gotha(conn, xml_path, pairing_system=None, player_dec
     """Create a tournament and its imported rounds from OpenGotha XML."""
     from app import repair_legacy_players_table
     from config import GLICKO_K, GLICKO_M
-    from services.common import current_timestamp
+    from services.timezone_service import current_timestamp
     from services.helpers import normalize_key
     from services.pairing_service import acceleration_for_rank, mcmahon_score_from_rank
     from services.player_service import ensure_player

@@ -810,6 +810,22 @@ def test_public_tournament_detail_renders_draft_round_results(monkeypatch, tmp_p
         (11, 99, "Charlie Example", "", "1-0", 1),
     )
     conn.execute(
+        "INSERT INTO tournament_rounds (id, tournament_id, round_number, status) VALUES (?, ?, ?, 'completed')",
+        (12, 1, 2),
+    )
+    conn.execute(
+        "INSERT INTO tournament_pairings (round_id, board_number, white_player_name, black_player_name, result, is_bye) VALUES (?, ?, ?, ?, ?, ?)",
+        (12, 1, "Round Two White", "Round Two Black", "0-1", 0),
+    )
+    conn.executemany(
+        "INSERT INTO tournament_pairings (round_id, board_number, white_player_name, black_player_name, result, is_bye) VALUES (?, ?, ?, ?, ?, ?)",
+        [
+            (12, 2, "Absent Black", "Absent Black Opponent", "1-!0", 0),
+            (12, 3, "Absent White", "Absent White Opponent", "!0-1", 0),
+            (12, 4, "Double Absent", "Double Absent Opponent", "!0-0", 0),
+        ],
+    )
+    conn.execute(
         "INSERT INTO tournament_pending_players (tournament_id, display_name, rating, rank) VALUES (?, ?, ?, ?)",
         (1, "Alice Example", 1500, 1),
     )
@@ -827,6 +843,12 @@ def test_public_tournament_detail_renders_draft_round_results(monkeypatch, tmp_p
     body = response.get_data(as_text=True)
     assert "Alice Example" in body
     assert "Bob Example" in body
+    assert 'data-round-pairings="11"' in body
+    assert 'data-round-pairings="12"' in body
+    assert 'onchange="this.form.submit()"' not in body
+    assert "White wins (Absent, 1-!0)" in body
+    assert "Black wins (Absent, !0-1)" in body
+    assert "Both absent (!0-0)" in body
     bye_row = body.split('<tr class="bye-pairing-row">', 1)[1].split("</tr>", 1)[0]
     assert bye_row.count("Charlie Example") == 1
     assert "99" not in bye_row

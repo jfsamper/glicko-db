@@ -33,7 +33,7 @@ def ensure_application_settings_table(conn, defaults=None):
         "SELECT id FROM application_settings WHERE id = 1"
     ).fetchone()
     if row is None:
-        from services.common import current_timestamp
+        from services.timezone_service import current_timestamp
 
         conn.execute(
             """
@@ -55,7 +55,7 @@ def ensure_application_settings_table(conn, defaults=None):
 def get_application_settings(conn=None, fallback_settings=None):
     owns_connection = conn is None
     if conn is None:
-        from services.common import get_db
+        from services.db import get_db
 
         conn = get_db()
 
@@ -104,13 +104,13 @@ def update_application_settings(values, conn=None):
     validated = validate_application_settings(values)
     owns_connection = conn is None
     if conn is None:
-        from services.common import get_db
+        from services.db import get_db
 
         conn = get_db()
 
     try:
         ensure_application_settings_table(conn)
-        from services.common import current_timestamp
+        from services.timezone_service import current_timestamp
 
         conn.execute(
             """

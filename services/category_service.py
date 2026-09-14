@@ -4,7 +4,8 @@ import sqlite3
 
 from config import DEFAULT_RATING, GLICKO_K, GLICKO_M
 from services.category_utils import format_glicko_category
-from services.common import current_timestamp, get_db
+from services.db import get_db
+from services.timezone_service import current_timestamp
 
 
 def _as_positive_float(value, field_name):

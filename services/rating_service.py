@@ -12,7 +12,8 @@ from services.category_service import (
     handicap_rating_adjustments,
 )
 from services.category_utils import format_glicko_category
-from services.common import current_timestamp, get_db
+from services.db import get_db
+from services.timezone_service import current_timestamp
 from services.glicko2 import Player
 
 logger = logging.getLogger(__name__)

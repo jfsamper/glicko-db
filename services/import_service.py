@@ -6,7 +6,7 @@ import logging
 import openpyxl
 
 from config import DEFAULT_RATING, DEFAULT_RD, DEFAULT_VOLATILITY
-from services.common import get_db
+from services.db import get_db
 from services.helpers import (
     header_index,
     looks_like_player_name,
