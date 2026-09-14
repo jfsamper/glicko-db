@@ -58,12 +58,30 @@
     </div>
   </div>
 
-  <div class="stats-grid">
+  <nav class="home-stats-tabs" aria-label="{{ translations.stats_title }}" role="tablist">
     {% for period_key, period_label in [('all_time', translations.stats_period_all_time), ('year', translations.stats_period_year), ('quarter', translations.stats_period_quarter)] %}
-    <article class="stats-panel centered-header">
+      <button
+        type="button"
+        class="home-stats-tab{% if stats_period == period_key %} is-active{% endif %}"
+        id="home-stats-tab-{{ period_key }}"
+        role="tab"
+        aria-controls="home-stats-period-{{ period_key }}"
+        aria-selected="{{ 'true' if stats_period == period_key else 'false' }}"
+      >{{ period_label }}</button>
+    {% endfor %}
+  </nav>
+
+  {% for period_key, period_label in [('all_time', translations.stats_period_all_time), ('year', translations.stats_period_year), ('quarter', translations.stats_period_quarter)] %}
+    {% set period_stats = home_stats[period_key] %}
+    <article
+      class="stats-panel centered-header home-stats-panel"
+      id="home-stats-period-{{ period_key }}"
+      role="tabpanel"
+      aria-labelledby="home-stats-tab-{{ period_key }}"
+      {% if stats_period != period_key %}hidden{% endif %}
+    >
       <h4>{{ period_label }}</h4>
       <div class="stats-list">
-        {% set period_stats = home_stats[period_key] %}
         {% for metric_key, metric_label in [('most_active', translations.stats_metric_active), ('most_wins', translations.stats_metric_wins), ('relative_glicko_gain', translations.stats_metric_glicko), ('most_wins_as_white', translations.stats_metric_white), ('most_wins_as_black', translations.stats_metric_black)] %}
         <div class="stats-group">
           <h5>{{ metric_label }}</h5>
@@ -82,7 +100,40 @@
         {% endfor %}
       </div>
     </article>
-    {% endfor %}
-  </div>
+  {% endfor %}
 </section>
+<script>
+  (() => {
+    const tabs = Array.from(document.querySelectorAll(".home-stats-tab"));
+    const panels = Array.from(document.querySelectorAll(".home-stats-panel"));
+    if (!tabs.length || !panels.length) return;
+
+    const activate = (periodKey, moveFocus = false) => {
+      tabs.forEach((tab) => {
+        const active = tab.id === `home-stats-tab-${periodKey}`;
+        tab.classList.toggle("is-active", active);
+        tab.setAttribute("aria-selected", String(active));
+        tab.tabIndex = active ? 0 : -1;
+        if (active && moveFocus) tab.focus();
+      });
+      panels.forEach((panel) => {
+        panel.hidden = panel.id !== `home-stats-period-${periodKey}`;
+      });
+    };
+
+    tabs.forEach((tab, index) => {
+      tab.addEventListener("click", () => activate(tab.id.replace("home-stats-tab-", "")));
+      tab.addEventListener("keydown", (event) => {
+        if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+        event.preventDefault();
+        const nextIndex = event.key === "Home"
+          ? 0
+          : event.key === "End"
+            ? tabs.length - 1
+            : (index + (event.key === "ArrowRight" ? 1 : -1) + tabs.length) % tabs.length;
+        activate(tabs[nextIndex].id.replace("home-stats-tab-", ""), true);
+      });
+    });
+  })();
+</script>
 {% endblock %}

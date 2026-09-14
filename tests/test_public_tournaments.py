@@ -30,6 +30,29 @@ def test_public_tournament_index_renders_in_supported_languages():
         assert hide_text in body
 
 
+def test_homepage_stats_render_all_periods_with_accessible_tabs():
+    app.testing = True
+    client = app.test_client()
+
+    default_body = client.get("/?lang=en").get_data(as_text=True)
+    assert default_body.count('class="stats-panel centered-header home-stats-panel"') == 3
+    assert 'id="home-stats-period-all_time"' in default_body
+    assert 'aria-selected="true"' in default_body
+    assert 'id="home-stats-period-year"' in default_body
+    assert 'id="home-stats-period-quarter"' in default_body
+    assert 'addEventListener("click"' in default_body
+    year_start = default_body.index('id="home-stats-period-year"')
+    assert "hidden" in default_body[year_start:year_start + 250]
+
+    year_body = client.get("/?lang=en&stats_period=year").get_data(as_text=True)
+    assert year_body.count('class="stats-panel centered-header home-stats-panel"') == 3
+    assert 'id="home-stats-period-year"' in year_body
+    assert 'id="home-stats-period-all_time"' in year_body
+
+    invalid_body = client.get("/?lang=en&stats_period=unknown").get_data(as_text=True)
+    assert 'id="home-stats-period-all_time"' in invalid_body
+
+
 def test_public_navigation_keeps_reports_link_and_sidebar_login_link():
     app.testing = True
     body = app.test_client().get("/?lang=en").get_data(as_text=True)

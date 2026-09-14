@@ -256,6 +256,43 @@
   gap: 1rem;
 }
 
+.home-stats-tabs {
+  display: flex;
+  gap: 0.35rem;
+  margin-bottom: 1rem;
+  padding: 0.3rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--card);
+}
+
+.home-stats-tab {
+  flex: 1;
+  appearance: none;
+  cursor: pointer;
+  font: inherit;
+  padding: 0.6rem 0.8rem;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  color: #ffffff;
+  font-weight: 700;
+  text-align: center;
+  text-decoration: none;
+}
+
+.home-stats-tab:hover,
+.home-stats-tab:focus-visible,
+.home-stats-tab.is-active {
+  border-color: var(--accent);
+  background: var(--panel);
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.home-stats-panel {
+  margin: 0;
+}
+
 .category-label,
 .category-bar-header,
 .category-value-header,
@@ -641,6 +678,10 @@
 }
 
 @media (max-width: 720px) {
+  .home-stats-tabs {
+    flex-direction: column;
+  }
+
   .player-result-cards {
     grid-template-columns: 1fr !important;
   }

@@ -51,6 +51,7 @@ from services.tournament_service import TOURNAMENT_STATUSES
 from services.tournament_standings import get_tournament_standings
 
 public_bp = Blueprint("public", __name__)
+HOME_STATS_PERIODS = ("all_time", "year", "quarter")
 
 
 def _parse_match_filters(args):
@@ -174,6 +175,9 @@ def show_drafts_requested():
 @public_bp.route("/")
 def index():
     lang = get_language(request.args.get("lang"))
+    stats_period = (request.args.get("stats_period") or "all_time").strip().lower()
+    if stats_period not in HOME_STATS_PERIODS:
+        stats_period = "all_time"
     rankings = load_rankings()
     stats = build_home_stats()
     category_config = get_category_config()
@@ -185,6 +189,7 @@ def index():
         translations=TRANSLATIONS[lang],
         rankings=rankings,
         home_stats=stats,
+        stats_period=stats_period,
         team_members=team_members,
         glicko_to_category=lambda rating, decimals=0: glicko_to_category(
             rating,

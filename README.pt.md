@@ -168,7 +168,7 @@ pytest -q
 
 ### Organização do código
 
-As rotas administrativas estão separadas por domínio em `routes/admin_tournaments.py`, `routes/admin_matches.py`, `routes/admin_players.py` e `routes/admin_users.py`. A lógica de torneios está separada por responsabilidade em `services/tournament_gotha.py`, `services/tournament_participants.py`, `services/tournament_pairing.py`, `services/tournament_matches.py` e `services/tournament_standings.py`. As traduções e a seleção de idioma ficam em `services/i18n.py`, enquanto os helpers puros de gráficos de rating ficam em `services/chart_service.py`; `services/common.py` mantém exports de compatibilidade para os imports existentes. `services/tournament_service.py` permanece como fachada de compatibilidade. A suíte completa de regressão passa atualmente em 376 testes.
+As rotas administrativas estão separadas por domínio em `routes/admin_tournaments.py`, `routes/admin_matches.py`, `routes/admin_players.py` e `routes/admin_users.py`. A lógica de torneios está separada por responsabilidade em `services/tournament_gotha.py`, `services/tournament_participants.py`, `services/tournament_pairing.py`, `services/tournament_matches.py` e `services/tournament_standings.py`. As traduções e a seleção de idioma ficam em `services/i18n.py`, enquanto os helpers puros de gráficos de rating ficam em `services/chart_service.py`; `services/common.py` mantém exports de compatibilidade para os imports existentes. `services/tournament_service.py` permanece como fachada de compatibilidade. A suíte completa de regressão passa atualmente em 377 testes.
 
 ### Instalação em hospedagem Linux
 

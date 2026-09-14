@@ -22,7 +22,7 @@ The original route and tournament-service decomposition has been verified for th
 
 - Repetitive route boilerplate. Most admin POST handlers repeat the same conn = get_db(); try: ...; except ValueError as exc: flash(...); finally: conn.close() shape. A small helper/decorator for "run this DB action, flash a translated result" would cut a lot of near-duplicate code across admin.py.
 
-`services/tournament_service.py` is a 27-line compatibility facade that re-exports the established public and private import surface; it contains no tournament implementation bodies. No `_legacy_admin_*` route bodies or `_legacy()` service adapters remain. The last full-suite verification passed 376 tests.
+`services/tournament_service.py` is a 27-line compatibility facade that re-exports the established public and private import surface; it contains no tournament implementation bodies. No `_legacy_admin_*` route bodies or `_legacy()` service adapters remain. The last full-suite verification passed 377 tests.
 
 ## 3. Security
 Minor fixes:
@@ -33,7 +33,7 @@ Minor fixes:
 
 ## 4. Design / UX (live site)
 
-- Homepage is very dense. It renders all three time periods (All-time / Year / Quarter) × five metrics × five entries each = 75 rows on first load. A tabbed or accordion view (similar to the season dropdown already used on /reports) would reduce clutter and page weight without losing information.
+- Homepage density — resolved. The statistics section renders all three already-computed periods in one response, shows All time by default, and switches All time, Year, and Quarter panels client-side through accessible tabs without another request or page reload.
 
 - The "Noticias" (News) card ships literal placeholder content (... / ... in index.html) straight to production. Either wire it to something real or drop the section until there's content.
 
@@ -54,9 +54,8 @@ Minor fixes:
 	- The final dead `_legacy()` adapter was removed from `services/tournament_pairing.py`. Focused tournament/route tests and the full suite pass.
 
 3. Reduce homepage density and remove placeholder news.
-	- Present one statistics period at a time using the existing language and styling conventions, with a server-rendered default and accessible period navigation.
+	- Present one statistics period at a time using the existing language and styling conventions, with a server-rendered default and accessible period navigation — completed with client-side switching, keyboard navigation, and default/invalid-period route coverage.
 	- Remove the literal placeholder News card until a real data source exists.
-	- Add route/template tests for the default period, period switching, and absence of placeholder content.
 
 4. Address the remaining low-severity consistency items.
 	- Add the same rate limiter used for login attempts to password-reset requests without changing the generic response — completed.
