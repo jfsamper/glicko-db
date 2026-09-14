@@ -186,23 +186,19 @@
 
 <section class="panel">
   <div class="panel-header centered-header"><h3>{{ translations.tournament_overview }}</h3></div>
-  {% if tournaments %}
+  {% if profile_tournaments %}
     <div class="table-wrapper"><table class="table-stack"><thead><tr><th>{{ translations.final_position }}</th><th>{{ translations.date }}</th><th>{{ translations.tournament_name }}</th><th>{{ translations.score }}</th><th>{{ translations.tournament_type }}</th></tr></thead>
-      <tbody>{% for tournament in tournaments %}<tr><td class="{% if tournament.final_position|int == 1 %}position-medal position-gold{% elif tournament.final_position|int == 2 %}position-medal position-silver{% elif tournament.final_position|int == 3 %}position-medal position-copper{% endif %}">{{ tournament.final_position }}</td><td>{{ tournament.begin_date }}</td><td><a href="{{ url_for('tournament_page', tournament_id=tournament.id, lang=lang) }}">{{ tournament.name }}</a></td><td>{{ tournament.score }}</td><td>{{ translations.get(tournament.tournament_type, tournament.tournament_type) }}</td></tr>{% endfor %}</tbody>
+      <tbody>{% for tournament in profile_tournaments %}<tr data-profile-tournament-row><td class="{% if tournament.final_position|int == 1 %}position-medal position-gold{% elif tournament.final_position|int == 2 %}position-medal position-silver{% elif tournament.final_position|int == 3 %}position-medal position-copper{% endif %}">{{ tournament.final_position }}</td><td>{{ tournament.begin_date }}</td><td><a href="{{ url_for('tournament_page', tournament_id=tournament.id, lang=lang) }}">{{ tournament.name }}</a></td><td>{{ tournament.score }}</td><td>{{ translations.get(tournament.tournament_type, tournament.tournament_type) }}</td></tr>{% endfor %}</tbody>
     </table></div>
   {% else %}<p class="muted">{{ translations.no_tournament_history }}</p>{% endif %}
   {% if total_tournaments > 10 %}
-    <div class="pagination-summary">
+    <div class="pagination-summary" data-profile-tournament-summary data-showing-label="{{ translations.showing_results }}" data-of-label="{{ translations.of_label }}">
       {{ translations.showing_results }} {{ tournament_pagination.result_start }}-{{ tournament_pagination.result_end }} {{ translations.of_label }} {{ total_tournaments }}
     </div>
     <div class="pagination-row">
-      {% if tournament_pagination.page > 1 %}
-        <a class="button secondary" href="{{ url_for('player_profile', id=player.id, lang=lang, season=season, page=page, page_size=page_size, tournament_page=tournament_pagination.page - 1) }}">{{ translations.prev_page }}</a>
-      {% endif %}
-      <span aria-label="{{ translations.page_label }} {{ tournament_pagination.page }}">{{ translations.page_label }} {{ tournament_pagination.page }} {{ translations.of_label }} {{ tournament_pagination.total_pages }}</span>
-      {% if tournament_pagination.page < tournament_pagination.total_pages %}
-        <a class="button" href="{{ url_for('player_profile', id=player.id, lang=lang, season=season, page=page, page_size=page_size, tournament_page=tournament_pagination.page + 1) }}">{{ translations.next_page }}</a>
-      {% endif %}
+      <button type="button" class="button secondary" data-profile-tournament-prev>{{ translations.prev_page }}</button>
+      <span data-profile-tournament-page data-page-label="{{ translations.page_label }}" data-of-label="{{ translations.of_label }}" aria-label="{{ translations.page_label }} {{ tournament_pagination.page }}">{{ translations.page_label }} {{ tournament_pagination.page }} {{ translations.of_label }} {{ tournament_pagination.total_pages }}</span>
+      <button type="button" class="button" data-profile-tournament-next>{{ translations.next_page }}</button>
     </div>
   {% endif %}
 </section>
@@ -286,8 +282,9 @@
     </thead>
     <tbody>
     
-    {% for match in matches %}
+    {% for match in profile_matches %}
     <tr
+      data-profile-match-row
       class="
       {% set result_text =
           format_match_result(
@@ -349,26 +346,102 @@
   </table></div>
 
   {% if total_matches > 10 %}
-    <div class="pagination-summary">
+    <div class="pagination-summary" data-profile-match-summary data-showing-label="{{ translations.showing_results }}" data-of-label="{{ translations.of_label }}">
       {{ translations.showing_results }} {{ result_start }}-{{ result_end }} {{ translations.of_label }} {{ total_matches }}
     </div>
     <div class="pagination-row">
       <label for="player-page-size">{{ translations.page_size_label }}</label>
-      <select id="player-page-size" onchange="window.location.href = this.value">
+      <select id="player-page-size">
         {% for option in [10, 25, 50, 100] %}
-          <option value="{{ url_for('player_profile', id=player.id, lang=lang, page=1, page_size=option) }}" {% if page_size == option %}selected{% endif %}>{{ option }}</option>
+          <option value="{{ option }}" {% if page_size == option %}selected{% endif %}>{{ option }}</option>
         {% endfor %}
       </select>
-      {% if page > 1 %}
-        <a class="button secondary" href="{{ url_for('player_profile', id=player.id, lang=lang, page=page - 1, page_size=page_size) }}">{{ translations.prev_page }}</a>
-      {% endif %}
-      <span aria-label="{{ translations.page_label }} {{ page }}">{{ translations.page_label }} {{ page }} {{ translations.of_label }} {{ total_pages }}</span>
-      {% if page * page_size < total_matches %}
-        <a class="button" href="{{ url_for('player_profile', id=player.id, lang=lang, page=page + 1, page_size=page_size) }}">{{ translations.next_page }}</a>
-      {% endif %}
+      <button type="button" class="button secondary" data-profile-match-prev>{{ translations.prev_page }}</button>
+      <span data-profile-match-page data-page-label="{{ translations.page_label }}" data-of-label="{{ translations.of_label }}" aria-label="{{ translations.page_label }} {{ page }}">{{ translations.page_label }} {{ page }} {{ translations.of_label }} {{ total_pages }}</span>
+      <button type="button" class="button" data-profile-match-next>{{ translations.next_page }}</button>
     </div>
   {% endif %}
 </section>
+
+<script>
+  (() => {
+    const setupPagination = ({ rowSelector, pageSize, initialPage, prevSelector, nextSelector, pageSelector, summarySelector }) => {
+      const rows = Array.from(document.querySelectorAll(rowSelector));
+      const previous = document.querySelector(prevSelector);
+      const next = document.querySelector(nextSelector);
+      const pageLabel = document.querySelector(pageSelector);
+      const summary = document.querySelector(summarySelector);
+      if (!rows.length || !previous || !next || !pageLabel || !summary) return;
+
+      let currentPage = initialPage;
+
+      const render = (requestedPage) => {
+        const totalPages = Math.max(1, Math.ceil(rows.length / pageSize));
+        currentPage = Math.min(Math.max(1, requestedPage), totalPages);
+        const startIndex = (currentPage - 1) * pageSize;
+        const endIndex = Math.min(startIndex + pageSize, rows.length);
+        rows.forEach((row, index) => {
+          row.hidden = index < startIndex || index >= endIndex;
+        });
+        const pageText = pageLabel.dataset.pageLabel;
+        const ofText = pageLabel.dataset.ofLabel;
+        pageLabel.textContent = `${pageText} ${currentPage} ${ofText} ${totalPages}`;
+        pageLabel.setAttribute("aria-label", `${pageText} ${currentPage}`);
+        summary.textContent = `${summary.dataset.showingLabel} ${startIndex + 1}-${endIndex} ${summary.dataset.ofLabel} ${rows.length}`;
+        previous.disabled = currentPage === 1;
+        next.disabled = currentPage === totalPages;
+      };
+
+      previous.addEventListener("click", () => render(currentPage - 1));
+      next.addEventListener("click", () => render(currentPage + 1));
+      render(currentPage);
+    };
+
+    const pageSizeSelect = document.getElementById("player-page-size");
+    if (pageSizeSelect) {
+      let pageSize = Number(pageSizeSelect.value) || 25;
+      const profileRows = Array.from(document.querySelectorAll("[data-profile-match-row]"));
+      const previous = document.querySelector("[data-profile-match-prev]");
+      const next = document.querySelector("[data-profile-match-next]");
+      const pageLabel = document.querySelector("[data-profile-match-page]");
+      const summary = document.querySelector("[data-profile-match-summary]");
+      if (profileRows.length && previous && next && pageLabel && summary) {
+        let currentPage = {{ page|int }};
+        const renderMatches = (requestedPage) => {
+          const totalPages = Math.max(1, Math.ceil(profileRows.length / pageSize));
+          currentPage = Math.min(Math.max(1, requestedPage), totalPages);
+          const startIndex = (currentPage - 1) * pageSize;
+          const endIndex = Math.min(startIndex + pageSize, profileRows.length);
+          profileRows.forEach((row, index) => {
+            row.hidden = index < startIndex || index >= endIndex;
+          });
+          pageLabel.textContent = `${pageLabel.dataset.pageLabel} ${currentPage} ${pageLabel.dataset.ofLabel} ${totalPages}`;
+          pageLabel.setAttribute("aria-label", `${pageLabel.dataset.pageLabel} ${currentPage}`);
+          summary.textContent = `${summary.dataset.showingLabel} ${startIndex + 1}-${endIndex} ${summary.dataset.ofLabel} ${profileRows.length}`;
+          previous.disabled = currentPage === 1;
+          next.disabled = currentPage === totalPages;
+        };
+        pageSizeSelect.addEventListener("change", () => {
+          pageSize = Number(pageSizeSelect.value) || 25;
+          renderMatches(1);
+        });
+        previous.addEventListener("click", () => renderMatches(currentPage - 1));
+        next.addEventListener("click", () => renderMatches(currentPage + 1));
+        renderMatches(currentPage);
+      }
+    }
+
+    setupPagination({
+      rowSelector: "[data-profile-tournament-row]",
+      pageSize: 10,
+      initialPage: {{ tournament_pagination.page|int if tournament_pagination else 1 }},
+      prevSelector: "[data-profile-tournament-prev]",
+      nextSelector: "[data-profile-tournament-next]",
+      pageSelector: "[data-profile-tournament-page]",
+      summarySelector: "[data-profile-tournament-summary]",
+    });
+  })();
+</script>
 
 <script>
   (function () {

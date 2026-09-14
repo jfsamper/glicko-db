@@ -135,7 +135,8 @@ def test_reports_paginate_player_performance_with_default_page_size(app, monkeyp
     second_body = second_page.get_data(as_text=True)
     assert 'id="report-page-size"' in first_body
     assert "Page 1 of 2" in first_body
-    assert ">Player 27</a>" not in first_body
+    assert ">Player 27</a>" in first_body
+    assert 'data-report-player-row hidden' in first_body
     assert ">Player 27</a>" in second_body
     assert "Page 2 of 2" in second_body
 

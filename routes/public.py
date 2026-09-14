@@ -289,6 +289,7 @@ def reports():
     except ValueError as exc:
         return Response(str(exc), status=400)
     total_count = len(report["players"])
+    all_report_players = report["players"]
     page_details = pagination_details(total_count, page, page_size)
     report["players"] = report["players"][(page_details["page"] - 1) * page_details["page_size"]:page_details["page"] * page_details["page_size"]]
     return render_template(
@@ -296,6 +297,7 @@ def reports():
         lang=lang,
         translations=TRANSLATIONS[lang],
         report=report,
+        all_report_players=all_report_players,
         period=period,
         season=season,
         report_seasons=report_seasons,
@@ -494,6 +496,7 @@ def player_profile():
         player=data["player"],
         category=category,
         matches=data["matches"],
+        profile_matches=data.get("all_matches", data["matches"]),
         total_matches=data.get("total_matches", 0),
         **pagination_details(data.get("total_matches", 0), data.get("page", 1), data.get("page_size", 25)),
         stats=data["stats"],
@@ -504,6 +507,7 @@ def player_profile():
         season=data.get("season", ""),
         profile_seasons=data.get("profile_seasons", []),
         tournaments=data.get("tournaments", []),
+        profile_tournaments=data.get("all_tournaments", data.get("tournaments", [])),
         total_tournaments=data.get("total_tournaments", 0),
         tournament_pagination=data.get("tournament_pagination", {}),
         glicko_to_category=lambda rating, decimals=0: glicko_to_category(

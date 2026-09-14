@@ -528,6 +528,7 @@ def load_player(
             tournaments.append(overview_row)
 
     total_tournaments = len(tournaments)
+    all_tournaments = [dict(tournament) for tournament in tournaments]
     tournament_pagination = pagination_details(
         total_tournaments, tournament_page, tournament_page_size
     )
@@ -564,6 +565,7 @@ def load_player(
     return {
         "player": dict(player),
         "matches": [dict(match) for match in matches],
+        "all_matches": [dict(match) for match in all_matches],
         "page": page,
         "page_size": page_size,
         "total_matches": total_matches,
@@ -572,6 +574,7 @@ def load_player(
         "available_categories": available_categories,
         "profile_seasons": profile_seasons,
         "tournaments": tournaments,
+        "all_tournaments": all_tournaments,
         "total_tournaments": total_tournaments,
         "tournament_pagination": tournament_pagination,
         "stats": {

@@ -45,8 +45,8 @@
       <div class="table-wrapper"><table class="table-stack player-performance-table">
         <thead><tr><th>{{ translations.get('position', 'Rank') }}</th><th>{{ translations.get('player', 'Player') }}</th><th>{{ translations.get('games', 'Games') }}</th><th>{{ translations.get('wins', 'Wins') }}</th><th>{{ translations.get('losses', 'Losses') }}</th><th>{{ translations.get('win_pct', 'Win percentage') }}</th><th>{{ translations.get('rating_change_points', 'Rating points') }}</th><th>{{ translations.get('rating_change_percentage', 'Rating %') }}</th><th>{{ translations.get('export_report', 'Export') }}</th></tr></thead>
         <tbody>
-        {% for player in report.players %}
-          <tr>
+        {% for player in all_report_players %}
+          <tr data-report-player-row{% if loop.index0 < (page - 1) * page_size or loop.index0 >= page * page_size %} hidden{% endif %}>
             <td>{{ player.rank }}</td>
             <td><a href="{{ url_for('player_profile', id=player.player_id, lang=lang) }}">{{ player.display_name }}</a></td>
             <td>{{ player.games }}</td><td>{{ player.wins }}</td><td>{{ player.losses }}</td><td>{{ player.win_percentage }}%</td>
@@ -59,26 +59,60 @@
       </table></div>
     </div>
     {% if total_count > page_size %}
-      <div class="pagination-summary">
+      <div class="pagination-summary" data-report-summary data-showing-label="{{ translations.get('showing_results', 'Showing') }}" data-of-label="{{ translations.get('of_label', 'of') }}">
         {{ translations.get('showing_results', 'Showing') }} {{ result_start }}-{{ result_end }} {{ translations.get('of_label', 'of') }} {{ total_count }}
       </div>
-      <div class="pagination-row">
+      <div class="pagination-row" data-report-pagination>
         <label for="report-page-size">{{ translations.get('page_size_label', 'Results per page') }}</label>
-        <select id="report-page-size" onchange="window.location.href = this.value">
+        <select id="report-page-size">
           {% for option in [25, 50, 100] %}
-            <option value="{{ url_for('reports', lang=lang, period=period, season=season, start_date=report.start_date, end_date=report.end_date, player_id=report.selected_player_id, page=1, page_size=option) }}" {% if page_size == option %}selected{% endif %}>{{ option }}</option>
+            <option value="{{ option }}" {% if page_size == option %}selected{% endif %}>{{ option }}</option>
           {% endfor %}
         </select>
-        {% if page > 1 %}
-          <a class="button secondary" href="{{ url_for('reports', lang=lang, period=period, season=season, start_date=report.start_date, end_date=report.end_date, player_id=report.selected_player_id, page=page - 1, page_size=page_size) }}">{{ translations.get('prev_page', 'Previous') }}</a>
-        {% endif %}
-        <span aria-label="{{ translations.get('page_label', 'Page') }} {{ page }}">{{ translations.get('page_label', 'Page') }} {{ page }} {{ translations.get('of_label', 'of') }} {{ total_pages }}</span>
-        {% if page < total_pages %}
-          <a class="button" href="{{ url_for('reports', lang=lang, period=period, season=season, start_date=report.start_date, end_date=report.end_date, player_id=report.selected_player_id, page=page + 1, page_size=page_size) }}">{{ translations.get('next_page', 'Next') }}</a>
-        {% endif %}
+        <button type="button" class="button secondary" data-report-prev>{{ translations.get('prev_page', 'Previous') }}</button>
+        <span data-report-page data-page-label="{{ translations.get('page_label', 'Page') }}" data-of-label="{{ translations.get('of_label', 'of') }}" aria-label="{{ translations.get('page_label', 'Page') }} {{ page }}">{{ translations.get('page_label', 'Page') }} {{ page }} {{ translations.get('of_label', 'of') }} {{ total_pages }}</span>
+        <button type="button" class="button" data-report-next>{{ translations.get('next_page', 'Next') }}</button>
       </div>
     {% endif %}
   </article>
+
+  <script>
+    (() => {
+      const rows = Array.from(document.querySelectorAll("[data-report-player-row]"));
+      const pagination = document.querySelector("[data-report-pagination]");
+      const pageSizeSelect = document.getElementById("report-page-size");
+      const previous = document.querySelector("[data-report-prev]");
+      const next = document.querySelector("[data-report-next]");
+      const pageLabel = document.querySelector("[data-report-page]");
+      const summary = document.querySelector("[data-report-summary]");
+      if (!pagination || !rows.length || !pageSizeSelect || !previous || !next || !pageLabel || !summary) return;
+
+      let pageSize = Number(pageSizeSelect.value) || 25;
+      let currentPage = {{ page|int }};
+      const render = (requestedPage) => {
+        const totalPages = Math.max(1, Math.ceil(rows.length / pageSize));
+        currentPage = Math.min(Math.max(1, requestedPage), totalPages);
+        const startIndex = (currentPage - 1) * pageSize;
+        const endIndex = Math.min(startIndex + pageSize, rows.length);
+        rows.forEach((row, index) => {
+          row.hidden = index < startIndex || index >= endIndex;
+        });
+        pageLabel.textContent = `${pageLabel.dataset.pageLabel} ${currentPage} ${pageLabel.dataset.ofLabel} ${totalPages}`;
+        pageLabel.setAttribute("aria-label", `${pageLabel.dataset.pageLabel} ${currentPage}`);
+        summary.textContent = `${summary.dataset.showingLabel} ${startIndex + 1}-${endIndex} ${summary.dataset.ofLabel} ${rows.length}`;
+        previous.disabled = currentPage === 1;
+        next.disabled = currentPage === totalPages;
+      };
+
+      pageSizeSelect.addEventListener("change", () => {
+        pageSize = Number(pageSizeSelect.value) || 25;
+        render(1);
+      });
+      previous.addEventListener("click", () => render(currentPage - 1));
+      next.addEventListener("click", () => render(currentPage + 1));
+      render(currentPage);
+    })();
+  </script>
 
   {% if report.selected_player_id %}
   <article class="card">
