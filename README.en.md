@@ -166,7 +166,7 @@ pytest -q
 
 ### Code organization
 
-Administrative routes are split by domain across `routes/admin_tournaments.py`, `routes/admin_matches.py`, `routes/admin_players.py`, and `routes/admin_users.py`. Tournament logic is split by responsibility across `services/tournament_gotha.py`, `services/tournament_participants.py`, `services/tournament_pairing.py`, `services/tournament_matches.py`, and `services/tournament_standings.py`. `services/tournament_service.py` remains a compatibility facade for existing imports. The current full regression suite passes 370 tests.
+Administrative routes are split by domain across `routes/admin_tournaments.py`, `routes/admin_matches.py`, `routes/admin_players.py`, and `routes/admin_users.py`. Tournament logic is split by responsibility across `services/tournament_gotha.py`, `services/tournament_participants.py`, `services/tournament_pairing.py`, `services/tournament_matches.py`, and `services/tournament_standings.py`. Translations and language selection live in `services/i18n.py`, while pure rating-chart helpers live in `services/chart_service.py`; `services/common.py` retains compatibility exports for existing imports. `services/tournament_service.py` remains a compatibility facade. The current full regression suite passes 375 tests.
 
 ### Linux hosting installation
 

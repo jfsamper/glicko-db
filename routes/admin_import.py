@@ -7,7 +7,7 @@ import sqlite3
 from flask import flash, redirect, render_template, request, url_for
 from werkzeug.utils import secure_filename
 
-from services.common import TRANSLATIONS
+from services.i18n import TRANSLATIONS
 
 
 def _admin_routes():
@@ -175,11 +175,7 @@ def admin_import():
                                 continue
 
                             match_date = admin.parse_date_value(row.get("date", ""))
-                            try:
-                                handicap_stones = int(str(row.get("handicap", "") or "0").strip() or 0)
-                            except ValueError:
-                                handicap_stones = 0
-                            handicap_stones = max(0, min(9, handicap_stones))
+                            handicap_stones = admin.parse_handicap_stones(row.get("handicap"))
                             conn.execute(
                                 """
                                 INSERT INTO matches

@@ -30,11 +30,16 @@ from routes.public import (
     _match_filter_sql,
     _parse_match_filters,
     glicko_to_category,
+)
+from routes.sort_helpers import (
+    MATCH_SORT_FIELDS,
+    TOURNAMENT_SORT_FIELDS,
+    _parse_match_order,
+    _parse_match_sort,
     parse_tournament_order,
     parse_tournament_sort,
 )
 from services.common import (
-    TRANSLATIONS,
     authenticate_user,
     bootstrap_default_admin_account,
     create_password_reset_token,
@@ -45,7 +50,6 @@ from services.common import (
     format_timezone_label,
     get_timezone_choices,
     get_db,
-    get_language,
     log_admin_action,
     migrate_auth_schema,
     reset_password_with_token,
@@ -57,6 +61,7 @@ from services.common import (
     validate_timezone,
     validate_theme,
 )
+from services.i18n import TRANSLATIONS, get_language
 from services.settings_service import (
     DEFAULT_APPLICATION_SETTINGS,
     get_application_settings,
@@ -222,21 +227,6 @@ logger = logging.getLogger(__name__)
 BACKUP_DIR = os.path.join(BASE_DIR, "backups")
 LOGIN_ATTEMPTS = {}
 DEFER_IMPORT_REPLAY_ENV = "DEFER_RATING_REPLAY_ON_IMPORT"
-MATCH_SORT_FIELDS = {
-    "date": "m.match_date",
-    "white": "LOWER(p_white.display_name)",
-    "black": "LOWER(p_black.display_name)",
-    "result": "CASE m.result WHEN '1-0' THEN 0 WHEN '1/2-1/2' THEN 1 WHEN '0-1' THEN 2 ELSE 3 END",
-    "round": "m.round_number",
-}
-TOURNAMENT_SORT_FIELDS = {
-    "name": "LOWER(name)",
-    "date": "COALESCE(begin_date, created_at)",
-    "status": "CASE status WHEN 'draft' THEN 0 WHEN 'active' THEN 1 WHEN 'canceled' THEN 2 WHEN 'completed' THEN 3 ELSE 4 END",
-    "participants": "0",
-}
-
-
 def acceleration_scheme_choice(scheme):
     scheme_text = scheme or DEFAULT_ACCELERATION_SCHEME
     for choice, option in ACCELERATION_SCHEMES.items():
@@ -278,16 +268,6 @@ def validate_mcmahon_settings(mm_bar, mm_floor, mm_zero):
     if bar_value <= floor_value or zero_value < 0:
         raise ValueError("Invalid McMahon settings")
     return bar_value, floor_value, zero_value
-
-
-def _parse_match_sort(sort_value, default_sort="date"):
-    key = (sort_value or default_sort).strip().lower()
-    return key if key in MATCH_SORT_FIELDS else default_sort
-
-
-def _parse_match_order(order_value):
-    value = (order_value or "desc").strip().lower()
-    return value if value in {"asc", "desc"} else "desc"
 
 
 def ensure_backup_dir():

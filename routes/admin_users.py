@@ -626,6 +626,13 @@ def admin_forgot_password():
     admin = _admin_routes()
     lang = admin.get_language(request.args.get("lang"))
     if request.method == "POST":
+        if admin.record_failed_login_attempt(request.remote_addr or "unknown"):
+            flash(admin.TRANSLATIONS[lang]["password_reset_requested"])
+            return render_template(
+                "admin/forgot_password.html",
+                lang=lang,
+                translations=admin.TRANSLATIONS[lang],
+            )
         email = (request.form.get("email") or "").strip().lower()
         conn = admin.get_db()
         try:

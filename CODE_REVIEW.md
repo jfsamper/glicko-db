@@ -16,36 +16,20 @@ The original route and tournament-service decomposition has been verified for th
 
 - repair_legacy_players_table() / the players_corrupt handling in app.py is defensive code for what looks like a real historical incident (a table literally renamed to players_corrupt during some past debugging session, plus dangling FKs pointing at it). It's good that it's handled robustly and tested, but it's also permanent complexity that now runs on every tournament create/delete. Worth understanding root cause well enough to be confident it can't recur, and maybe scheduling removal of this compatibility shim after a verified clean migration.
 
-- Duplicated sort/filter helpers. routes/admin.py redefines _parse_match_sort, _parse_match_order, and TOURNAMENT_SORT_FIELDS with logic identical to routes/public.py (while separately importing _match_filter_sql and parse_tournament_sort from public). Consolidating these into one shared module would remove the risk of the two copies drifting apart.
+- Shared route sort helpers — resolved. Match and tournament sort mappings and validators now live in `routes/sort_helpers.py`; `routes/admin.py` and `routes/public.py` re-export the same definitions, and the admin tournament query uses the shared `t.` SQL alias.
 
-- services/common.py is a kitchen-sink module: auth, audit logging, timezone helpers, chart-building math, and the entire multilingual TRANSLATIONS dict (well over 1,000 lines) all live in one file. Splitting TRANSLATIONS out to its own i18n.py (or per-locale JSON) would make translation edits low-risk and separate from the security-sensitive auth code sitting in the same file.
+- Common-service ownership cleanup — partially resolved by clear boundaries. `services/i18n.py` now owns `TRANSLATIONS` and `get_language`, while pure chart construction lives in `services/chart_service.py`; production consumers import those owners directly and `services/common.py` keeps compatibility re-exports. Auth, audit, timezone, database, and statistics helpers remain in `common.py` because their current connection/session/migration coupling does not provide a safe independent owner yet.
 
 - Repetitive route boilerplate. Most admin POST handlers repeat the same conn = get_db(); try: ...; except ValueError as exc: flash(...); finally: conn.close() shape. A small helper/decorator for "run this DB action, flash a translated result" would cut a lot of near-duplicate code across admin.py.
 
-### Issue-2 migration verification
-
-The originally targeted modules were checked against current blueprint registration, function ownership, and compatibility imports:
-
-| Target module | Verified ownership | Remaining caveat |
-|------|------|------|
-| [routes/admin_tournaments.py](routes/admin_tournaments.py) | Tournament listing, creation, settings, detail, participant, pairing, result, round, import, export, and unpair handlers | Uses `routes.admin` only as the shared helper/compatibility boundary; all tournament endpoints register directly to local handlers. |
-| [routes/admin_matches.py](routes/admin_matches.py) | Match listing, creation, editing, deletion, SGF handling, pagination, and SQLite recovery | Uses `routes.admin` only as the shared helper/compatibility boundary. |
-| [routes/admin_players.py](routes/admin_players.py) | Player rankings/CRUD, category configuration, and rating configuration/recalculation | Uses `routes.admin` only as the shared helper/compatibility boundary. |
-| [routes/admin_users.py](routes/admin_users.py) | Authentication, registration, result reporting/moderation, profiles, settings, password recovery, logout, audit, and user administration | Directly registers its view functions; shared helper access remains through `routes.admin`. |
-| [services/tournament_gotha.py](services/tournament_gotha.py) | OpenGotha metadata parsing, tournament creation persistence, and XML export | None in the production ownership path. |
-| [services/tournament_participants.py](services/tournament_participants.py) | Participant lookup/listing, pending-player materialization, name reconciliation, and McMahon seed persistence | None in the production ownership path. |
-| [services/tournament_pairing.py](services/tournament_pairing.py) | Pairing policy, round generation, BYE/status handling, participant mutations, pairing edits, and handicap updates | None in the production ownership path. |
-| [services/tournament_matches.py](services/tournament_matches.py) | Pairing-to-match synchronization, result updates, tournament-wide match sync/save, and round result materialization | None in the production ownership path. |
-| [services/tournament_standings.py](services/tournament_standings.py) | Tournament-specific standings assembly | None in the production ownership path. |
-
-`services/tournament_service.py` is a 27-line compatibility facade that re-exports the established public and private import surface; it contains no tournament implementation bodies. No `_legacy_admin_*` route bodies or `_legacy()` service adapters remain. The last full-suite verification passed 370 tests.
+`services/tournament_service.py` is a 27-line compatibility facade that re-exports the established public and private import surface; it contains no tournament implementation bodies. No `_legacy_admin_*` route bodies or `_legacy()` service adapters remain. The last full-suite verification passed 375 tests.
 
 ## 3. Security
 Minor fixes:
 
-- Password-reset requests aren't rate-limited (only login attempts are), so the endpoint could be used to spam the configured SMTP account. Low severity given the generic response, but easy to add the same limiter.
+- Password-reset request rate limiting — resolved. Forgot-password POST requests now use the same configurable IP-based limiter as failed logins before account lookup or email delivery; the generic response is unchanged.
 
-- handicap_stones validation is inconsistent between entry points: the match/tournament forms reject out-of-range values with a hard error (parse_handicap_stones, update_pairing_handicap), while the CSV importer silently clamps to 0–9. Not a security issue, just a UX inconsistency worth aligning.
+- handicap_stones validation consistency — resolved. CSV imports now use `parse_handicap_stones`, so invalid values fail with the same 0–9 validation as match and tournament forms instead of being silently clamped.
 
 ## 4. Design / UX (live site)
 
@@ -75,10 +59,10 @@ Minor fixes:
 	- Add route/template tests for the default period, period switching, and absence of placeholder content.
 
 4. Address the remaining low-severity consistency items.
-	- Add the same rate limiter used for login attempts to password-reset requests without changing the generic response.
-	- Make CSV handicap validation use parse_handicap_stones so invalid values fail consistently instead of being clamped.
-	- Consolidate duplicated match/tournament sort helpers into a shared module.
-	- Split TRANSLATIONS out of services/common.py, then extract the remaining common concerns only where ownership is clear.
+	- Add the same rate limiter used for login attempts to password-reset requests without changing the generic response — completed.
+	- Make CSV handicap validation use parse_handicap_stones so invalid values fail consistently instead of being clamped — completed and covered by a route-level regression test.
+	- Consolidate duplicated match/tournament sort helpers into a shared module — completed and covered by shared-definition and route/list regression tests.
+	- Split `TRANSLATIONS` and `get_language` out of `services/common.py` into `services/i18n.py`, and move pure chart helpers into `services/chart_service.py` — completed with compatibility re-exports and ownership tests. Auth, audit, timezone, database, and statistics extraction remains deferred until a cleaner ownership boundary is available.
 
 5. Retire historical compatibility complexity after verification.
 	- Document and verify the players_corrupt migration state across supported databases.

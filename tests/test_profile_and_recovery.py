@@ -210,6 +210,34 @@ def test_forgot_password_response_does_not_reveal_account_existence(tmp_path, mo
     assert known.get_data(as_text=True).count("If an account exists") == 1
 
 
+def test_forgot_password_rate_limit_preserves_generic_response(tmp_path, monkeypatch):
+    app, _db_path, _user_id = make_account_app(tmp_path, monkeypatch)
+    client = app.test_client()
+    sent = []
+    monkeypatch.setattr(admin_routes, "MAX_LOGIN_ATTEMPTS", 2)
+    monkeypatch.setattr(admin_routes, "LOGIN_WINDOW_SECONDS", 60)
+    monkeypatch.setattr(
+        admin_routes,
+        "send_password_reset_email",
+        lambda recipient, url: sent.append((recipient, url)),
+    )
+
+    responses = [
+        client.post(
+            "/admin/forgot-password?lang=en",
+            data={"email": "user@example.com"},
+        )
+        for _ in range(3)
+    ]
+
+    assert all(response.status_code == 200 for response in responses)
+    assert all(
+        response.get_data(as_text=True).count("If an account exists") == 1
+        for response in responses
+    )
+    assert len(sent) == 1
+
+
 def test_forgot_password_sends_reset_url_and_token_is_single_use(tmp_path, monkeypatch):
     app, db_path, user_id = make_account_app(tmp_path, monkeypatch)
     client = app.test_client()

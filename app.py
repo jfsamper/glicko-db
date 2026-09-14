@@ -11,9 +11,7 @@ from flask_wtf.csrf import CSRFProtect
 from config import BASE_DIR, DB_PATH, DEFAULT_RATING, DEFAULT_RD, DEFAULT_VOLATILITY, GLICKO_K, GLICKO_M, TAU
 
 from services.common import (
-    TRANSLATIONS,
     bootstrap_default_admin_account,
-    get_language,
     get_db,
     get_current_user,
     migrate_audit_log_schema,
@@ -22,6 +20,7 @@ from services.common import (
     refresh_stats,
     current_timestamp,
 )
+from services.i18n import TRANSLATIONS, get_language
 
 from services.helpers import normalize_round_note
 from services.import_service import import_workbook_data

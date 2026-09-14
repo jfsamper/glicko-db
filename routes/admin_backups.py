@@ -8,8 +8,8 @@ from flask import flash, redirect, render_template, request, url_for
 from services.common import (
     current_datetime,
     log_admin_action,
-    TRANSLATIONS,
 )
+from services.i18n import TRANSLATIONS
 
 
 def _admin_routes():

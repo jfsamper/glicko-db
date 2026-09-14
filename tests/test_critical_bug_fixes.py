@@ -1874,6 +1874,52 @@ def test_admin_import_route_renders_preview_before_commit(monkeypatch, tmp_path)
     assert "Fuzzy match" in body
 
 
+def test_csv_import_rejects_invalid_handicap_instead_of_clamping(
+    monkeypatch, tmp_path, isolate_test_database
+):
+    db_path = isolate_test_database
+    conn = sqlite3.connect(db_path)
+    conn.execute(
+        "INSERT INTO players (first_name, last_name, display_name, rating, active) VALUES (?, ?, ?, ?, 1)",
+        ("Alice", "White", "Alice White", 1500),
+    )
+    conn.execute(
+        "INSERT INTO players (first_name, last_name, display_name, rating, active) VALUES (?, ?, ?, ?, 1)",
+        ("Bob", "Black", "Bob Black", 1500),
+    )
+    conn.commit()
+    conn.close()
+
+    monkeypatch.setattr(admin_routes, "BASE_DIR", str(tmp_path))
+    (tmp_path / "uploads").mkdir()
+
+    app.testing = True
+    client = app.test_client()
+    conftest.set_admin_session(client, db_path)
+    response = client.post(
+        "/admin/import?lang=en",
+        data={
+            "file": (
+                BytesIO(
+                    b"date,white,black,result,handicap\n"
+                    b"2026-09-01,Alice White,Bob Black,1-0,10\n"
+                ),
+                "invalid-handicap.csv",
+            )
+        },
+        content_type="multipart/form-data",
+        follow_redirects=True,
+    )
+
+    assert response.status_code == 200
+    assert "handicap_stones must be between 0 and 9" in response.get_data(as_text=True)
+    with sqlite3.connect(db_path) as conn:
+        assert conn.execute(
+            "SELECT COUNT(*) FROM matches WHERE match_date = ?",
+            ("2026-09-01",),
+        ).fetchone()[0] == 0
+
+
 def test_admin_import_commit_passes_reconciliation_decisions(monkeypatch, tmp_path):
     db_path = tmp_path / "admin_commit_preview.db"
     conn = sqlite3.connect(db_path)

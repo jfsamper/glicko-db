@@ -1,4 +1,4 @@
-from services.common import TRANSLATIONS, get_language
+from services.i18n import TRANSLATIONS, get_language
 
 
 def test_unknown_language_falls_back_to_spanish():

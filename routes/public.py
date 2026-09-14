@@ -6,14 +6,21 @@ import re
 
 from flask import Blueprint, Response, abort, jsonify, render_template, request, flash, redirect, send_file, session, url_for
 
+from routes.sort_helpers import (
+    MATCH_SORT_FIELDS,
+    TOURNAMENT_SORT_FIELDS,
+    _parse_match_order,
+    _parse_match_sort,
+    parse_tournament_order,
+    parse_tournament_sort,
+)
 from services.category_service import get_category_config, glicko_to_category
 from services.common import (
-    TRANSLATIONS,
     get_current_user,
-    get_language,
     get_db,
     user_has_permission,
 )
+from services.i18n import TRANSLATIONS, get_language
 
 from services.home_stats import build_home_stats
 from services.sgf_service import (
@@ -44,24 +51,6 @@ from services.tournament_service import TOURNAMENT_STATUSES
 from services.tournament_standings import get_tournament_standings
 
 public_bp = Blueprint("public", __name__)
-
-MATCH_SORT_FIELDS = {
-    "date": "m.match_date",
-    "white": "LOWER(p_white.display_name)",
-    "black": "LOWER(p_black.display_name)",
-    "result": "CASE m.result WHEN '1-0' THEN 0 WHEN '1/2-1/2' THEN 1 WHEN '0-1' THEN 2 ELSE 3 END",
-    "round": "m.round_number",
-}
-
-
-def _parse_match_sort(sort_value, default_sort="date"):
-    key = (sort_value or default_sort).strip().lower()
-    return key if key in MATCH_SORT_FIELDS else default_sort
-
-
-def _parse_match_order(order_value):
-    value = (order_value or "desc").strip().lower()
-    return value if value in {"asc", "desc"} else "desc"
 
 
 def _parse_match_filters(args):
@@ -180,24 +169,6 @@ def get_public_tournament_status(tournament):
 
 def show_drafts_requested():
     return str(request.args.get("show_drafts", "")).strip().lower() in {"1", "true", "yes", "on"}
-
-
-TOURNAMENT_SORT_FIELDS = {
-    "name": "LOWER(t.name)",
-    "date": "COALESCE(t.begin_date, t.created_at)",
-    "status": "CASE t.status WHEN 'draft' THEN 0 WHEN 'active' THEN 1 WHEN 'canceled' THEN 2 WHEN 'completed' THEN 3 ELSE 4 END",
-    "participants": "0",
-}
-
-
-def parse_tournament_sort(sort_value, default_sort="date"):
-    key = (sort_value or default_sort).strip().lower()
-    return key if key in TOURNAMENT_SORT_FIELDS else default_sort
-
-
-def parse_tournament_order(order_value, default_order="desc"):
-    value = (order_value or default_order).strip().lower()
-    return value if value in {"asc", "desc"} else default_order
 
 
 @public_bp.route("/")

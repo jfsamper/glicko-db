@@ -13,7 +13,7 @@ from reportlab.graphics.shapes import Circle, Drawing, Line, PolyLine, Rect, Str
 from reportlab.platypus import SimpleDocTemplate, Spacer, Table, TableStyle, Paragraph
 
 from config import GLICKO_K, GLICKO_M
-from services.common import build_rating_chart_data
+from services.chart_service import build_rating_chart_data
 from services.common import server_date as configured_server_date
 from services.rating_service import glicko_to_category
 

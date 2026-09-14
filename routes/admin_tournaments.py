@@ -6,7 +6,7 @@ import sqlite3
 from flask import Response, flash, redirect, render_template, request, url_for
 from werkzeug.utils import secure_filename
 
-from services.common import TRANSLATIONS
+from services.i18n import TRANSLATIONS
 
 
 def _admin_routes():
@@ -1249,7 +1249,7 @@ def admin_tournaments():
         ).fetchall()
     }
     if sort_key == "participants" and {"tournament_participants", "tournament_pending_players"}.issubset(participant_tables):
-        participant_sort_expr = "(SELECT COUNT(*) FROM tournament_participants WHERE tournament_id = tournaments.id) + (SELECT COUNT(*) FROM tournament_pending_players WHERE tournament_id = tournaments.id)"
+        participant_sort_expr = "(SELECT COUNT(*) FROM tournament_participants WHERE tournament_id = t.id) + (SELECT COUNT(*) FROM tournament_pending_players WHERE tournament_id = t.id)"
     else:
         participant_sort_expr = "0"
     page = admin.parse_page_number(request.args.get("page"), default=1)
@@ -1264,7 +1264,7 @@ def admin_tournaments():
         else participant_sort_expr
     )
     tournaments = conn.execute(
-        f"SELECT * FROM tournaments ORDER BY {order_expression} {sort_order.upper()}, id DESC LIMIT ? OFFSET ?",
+        f"SELECT t.* FROM tournaments t ORDER BY {order_expression} {sort_order.upper()}, t.id DESC LIMIT ? OFFSET ?",
         (page_size, (page - 1) * page_size),
     ).fetchall()
     conn.close()
