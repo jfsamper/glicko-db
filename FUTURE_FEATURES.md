@@ -15,6 +15,7 @@ This document lists only unfinished product, operational, and maintainability wo
 - Browser compatibility for older clients without `requestSubmit` is preserved.
 - Search, sorting, and filtering behavior is now consistent across player, match, and tournament lists with page-state preservation for pagination.
 - Backup restore now re-runs migrations, rebuilds the FTS5 search index, and restricts recovery candidates to managed backups plus the designated `.bak` fallback.
+- The public SGF library is available with metadata, public viewing and download, role-gated match linking, administrator-only deletion, stale-link self-healing, and SGF preservation across match deletion and database restore.
 - Imported OpenGotha BYEs are persisted with participant history so pairing does not duplicate a BYE for a player who has already received one.
 - OpenGotha metadata and match records are returned through typed `GothaTournamentPayload`, `GothaPlayer`, and `GothaMatch` dataclasses while preserving legacy mapping access for existing import consumers.
 - Standings positions remain unique and sequential with deterministic tiebreak resolution.
@@ -91,6 +92,17 @@ Confirmed in code:
 - `tests/test_result_moderation.py` covers registration, member ownership restrictions, pending isolation, approval materialization, and legacy role migration.
 
 The active workflow requires staff approval. Email delivery and automatic approval by code are intentionally scaffolded but disabled until the organization defines identity, recipient, and dispute-verification policy.
+
+### Public SGF library and match linking
+
+Status: implemented and verified.
+
+Confirmed in code:
+- [services/sgf_service.py](services/sgf_service.py): validates SGF size, UTF-8 content, and structure for both uploads and library links; rewrites root metadata from the linked match; clears links when files are missing; and preserves the library through backup sidecars.
+- [routes/public.py](routes/public.py): exposes the public `/sgf-library`, SGF viewer, and download routes, and self-heals stale match links during public access.
+- [routes/admin_sgf.py](routes/admin_sgf.py): allows `administrator`, `tournament_director`, and `operator` to link or unlink SGFs, while restricting deletion to `administrator` and clearing database links before removal.
+- [templates/sgf_library.html](templates/sgf_library.html) and [templates/sgf_record.html](templates/sgf_record.html): provide library metadata, public viewing, downloads, and role-specific management controls.
+- [tests/test_sgf.py](tests/test_sgf.py): covers public access, metadata synchronization, malformed-file rejection, stale-link repair, role permissions, deletion behavior, and backup restoration.
 
 ## Remaining implementation backlog
 

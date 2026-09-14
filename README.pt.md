@@ -83,6 +83,8 @@ O painel de administração usa contas nomeadas com quatro papéis: `administrat
 
 Administradores podem ajustar o número máximo de tentativas de login, a janela de limitação e a duração do link de recuperação em `/admin/settings`. Esses valores são armazenados no SQLite, e o botão de restauração usa os valores iniciais de `config.py`. `ADMIN_PASSWORD`, caminhos e credenciais SMTP continuam sendo configuração do ambiente.
 
+A gestão de registros SGF segue as permissões da conta: `administrator`, `tournament_director` e `operator` podem vinculá-los ou desvinculá-los, enquanto apenas `administrator` pode excluí-los.
+
 ## Plano do projeto
 
 O plano detalhado e priorizado está em [FUTURE_FEATURES.md](FUTURE_FEATURES.md). A reconciliação explícita da importação, os payloads tipados do OpenGotha, a revisão administrativa por conta com busca livre e filtros por data, a melhoria do perfil do jogador e o modal explícito para excluir torneios estão implementados e verificados. Os perfis incluem atividade recente, sequências, histórico de torneios e filtro de temporada.
@@ -118,6 +120,12 @@ Quando uma importação do OpenGotha encontra um nome semelhante, ela mostra uma
 
 Cada emparelhamento recebe uma sugestão automática de handicap em pedras (uma pedra por categoria de diferença entre os jogadores), que o diretor do torneio pode editar antes de registrar o resultado. Quando a rodada é processada, o handicap é transferido para a partida e desloca o rating efetivo exatamente uma categoria logarítmica por pedra: o rating efetivo das pretas sobe e o das brancas cai apenas nesse cálculo, sem alterar os ratings base.
 
+### Biblioteca SGF
+
+A biblioteca pública está disponível em `/sgf-library`. Registros SGF opcionais são armazenados em `uploads/sgf/` com um nome seguro gerado pela aplicação e podem ser vistos ou baixados publicamente.
+
+Ao enviar ou vincular um registro, a aplicação valida o tamanho, a codificação UTF-8 e a estrutura SGF, e atualiza suas propriedades principais para corresponderem aos jogadores, cores, graduações, local/evento, data e resultado da partida. Se um arquivo vinculado desaparecer, a aplicação limpa automaticamente o vínculo no banco de dados. Desvincular um arquivo ou excluir sua partida o mantém na biblioteca; a exclusão explícita por um administrador remove o arquivo e todos os seus vínculos.
+
 ### Consultar relatórios
 
 Abra `/reports` para escolher ano, trimestre, mês, Todo o período ou intervalo personalizado. A tabela mostra apenas jogadores com partidas válidas no período e permite abrir o desempenho contra cada oponente. Ela também mostra agregados por país e clube do oponente. Os links CSV e PDF preservam os filtros selecionados e usam os mesmos totais visíveis na tela; o nome do PDF inclui o jogador e o período.
@@ -146,6 +154,8 @@ O registro grava ações administrativas que alteram o estado: importações, ci
 
 Use a tela administrativa de cópias de segurança antes de importações em massa, restaurações ou atualizações. O servidor gera e valida nomes de arquivos de backup, e bancos restaurados passam pela rota de migração da aplicação. A restauração também reconstrói o índice de busca de jogadores e considera apenas backups gerenciados pelo aplicativo ou o arquivo `.bak` designado; arquivos temporários em `data/` nunca são usados como fonte de restauração.
 
+Cada cópia de segurança inclui um diretório lateral com a biblioteca SGF, e a restauração a recupera sem quebrar os vínculos.
+
 ## Desenvolvimento
 
 Execute a suíte de regressão a partir da raiz do projeto:
@@ -170,6 +180,8 @@ Selecione Python 3.10+ x86_64 no painel da hospedagem; não compile o Pillow sem
 bibliotecas de desenvolvimento do sistema para Python, JPEG, zlib e freetype.
 
 Os testes cobrem ratings e gráficos, filtros de jogadores, suporte a idiomas, backups, migrações de torneios, emparelhamento, classificação, compatibilidade com OpenGotha, moderação de resultados e páginas públicas de torneios.
+
+A cobertura de testes também inclui a biblioteca SGF, a sincronização de seus metadados, a reparação de vínculos ausentes, suas permissões e a restauração a partir de cópias de segurança.
 
 A ordenação, os filtros e a busca consistentes já estão entregues e validados nas páginas de jogadores, partidas e torneios.
 

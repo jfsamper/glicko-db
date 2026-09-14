@@ -82,6 +82,8 @@ Los reportes de `/reports` usan rangos inclusivos `start_date` y `end_date`, y l
 El panel de administración usa cuentas nominadas con cuatro roles: `administrator`, `tournament_director`, `operator` y `member`. Las cuentas nuevas se registran como `member`; un administrador puede vincularlas manualmente a un jugador en `/admin/users`. Los miembros solo pueden enviar resultados de partidas que incluyan a su jugador vinculado. Los directores, operadores y administradores revisan la cola en `/admin/result-submissions` y solo los resultados aprobados se agregan a las partidas públicas. Si no existe ninguna cuenta, la aplicación crea un administrador inicial con la contraseña de `ADMIN_PASSWORD` durante el primer inicio; las cuentas adicionales y sus zonas horarias se gestionan en `/admin/users`. Cada usuario puede abrir `/admin/profile` para guardar idioma, tema, zona horaria, correo y contraseña. El enlace de recuperación en `/admin/login` usa tokens de un solo uso y respuestas que no revelan si un correo existe; configura SMTP en producción. Los intentos fallidos están limitados. En producción usa HTTPS y contraseñas fuertes y únicas. La autorización se basa en la sesión de usuario y permisos. Solo `administrator` y `operator` pueden modificar jugadores, ratings y categorías; `tournament_director` conserva las operaciones de torneos.
 Los administradores pueden ajustar los intentos máximos de inicio de sesión, la ventana de limitación y la duración de los enlaces de recuperación en `/admin/settings`. Estos valores se guardan en SQLite y el botón de restauración usa los valores iniciales de `config.py`. `ADMIN_PASSWORD`, las rutas y las credenciales SMTP siguen siendo configuración del entorno.
 
+La gestión de registros SGF sigue los permisos de la cuenta: `administrator`, `tournament_director` y `operator` pueden vincularlos o desvincularlos, mientras que solo `administrator` puede eliminarlos.
+
 ## Hoja de ruta del proyecto
 
 La hoja de ruta detallada y priorizada está en [FUTURE_FEATURES.md](FUTURE_FEATURES.md). La vista previa de importación con reconciliación explícita, los payloads tipados de OpenGotha, la revisión administrativa por cuenta con búsqueda de texto y filtros de fecha, la mejora del perfil del jugador y el modal explícito para eliminar torneos están implementados y verificados. Los perfiles incluyen historial reciente, rachas, torneos y filtro de temporada.
@@ -117,6 +119,12 @@ Cuando una importación de OpenGotha encuentra un nombre parecido, muestra una s
 
 Cada emparejamiento recibe una sugerencia automática de hándicap en piedras (una piedra por categoría de diferencia entre los jugadores), que el director del torneo puede editar antes de registrar el resultado. Al procesar la ronda, el hándicap se traslada a la partida y ajusta el rating al desplazar exactamente una categoría logarítmica por piedra: sube el rating efectivo de negras y baja el de blancas solo para ese cálculo, sin tocar sus ratings base.
 
+### Biblioteca SGF
+
+La biblioteca pública está disponible en `/sgf-library`. Los registros SGF opcionales se guardan en `uploads/sgf/` con un nombre seguro generado por la aplicación y se pueden ver o descargar públicamente.
+
+Al cargar o vincular un registro, la aplicación valida el tamaño, la codificación UTF-8 y la estructura SGF, y actualiza sus propiedades principales para coincidir con los jugadores, colores, rangos, lugar/evento, fecha y resultado de la partida. Si el archivo enlazado desaparece, la aplicación limpia automáticamente el enlace de la base de datos. Desvincular un archivo o eliminar su partida lo conserva en la biblioteca; la eliminación explícita por un administrador borra el archivo y todos sus enlaces.
+
 ### Consultar reportes
 
 Abre `/reports` para elegir año, trimestre, mes, Todo el tiempo o un rango personalizado. La tabla muestra solo jugadores con partidas válidas en el periodo y permite abrir el rendimiento frente a cada oponente. También se muestran agregados por país y club del oponente. Los enlaces CSV y PDF conservan los filtros seleccionados y usan los mismos totales visibles en pantalla; el nombre del PDF incluye el jugador y el periodo.
@@ -145,6 +153,8 @@ La bitácora registra las acciones administrativas que cambian el estado: import
 
 Usa la pantalla de copias de seguridad antes de importaciones masivas, restauraciones o actualizaciones. El servidor genera y valida los nombres de los archivos de respaldo; los archivos restaurados pasan por la ruta de migración de la aplicación. La restauración reconstruye el índice de búsqueda de jugadores y solo considera copias generadas por la aplicación o el archivo `.bak` administrado; nunca usa archivos temporales de `data/`.
 
+Cada copia de seguridad incluye un directorio lateral con la biblioteca SGF, y la restauración lo recupera sin romper los enlaces.
+
 ## Desarrollo
 
 Ejecuta la suite de regresión desde la raíz del proyecto:
@@ -169,6 +179,8 @@ Selecciona Python 3.10+ x86_64 en el panel del hosting; no intentes compilar Pil
 las bibliotecas de desarrollo de Python, JPEG, zlib y freetype del sistema.
 
 Las pruebas cubren ratings y gráficos, filtros de jugadores, soporte de idiomas, respaldos, migraciones de torneos, emparejamientos, clasificación, compatibilidad con OpenGotha, moderación de resultados y páginas públicas de torneos.
+
+La cobertura de pruebas también incluye la biblioteca SGF, la sincronización de sus metadatos, la reparación de enlaces faltantes, sus permisos y la restauración desde copias de seguridad.
 
 La funcionalidad de ordenación, filtros y búsqueda consistente ya está entregada y validada en las páginas de jugadores, partidas y torneos.
 
