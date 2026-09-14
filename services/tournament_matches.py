@@ -23,11 +23,14 @@ def sync_pairing_match(conn, tournament_id, pairing_id):
     from services.reporting_service import ensure_tournament_match_identity
     from services.sgf_service import ensure_sgf_schema
     from services.common import current_date
+    from services.tournament_status import PLAYED_GAME_RESULTS
     ensure_tournament_match_identity(conn); ensure_sgf_schema(conn)
+
     pairing = conn.execute("SELECT p.id, p.white_player_id, p.black_player_id, p.result, p.is_bye, p.handicap_stones, r.round_number, t.name, t.location, t.begin_date, t.end_date FROM tournament_pairings p JOIN tournament_rounds r ON r.id = p.round_id JOIN tournaments t ON t.id = r.tournament_id WHERE p.id = ? AND r.tournament_id = ?", (pairing_id, tournament_id)).fetchone()
     if pairing is None: raise ValueError("Pairing not found")
     existing = conn.execute("SELECT id, match_date, event, location, notes, round_number FROM matches WHERE tournament_pairing_id = ?", (pairing_id,)).fetchone()
-    valid_game = not pairing["is_bye"] and pairing["white_player_id"] is not None and pairing["black_player_id"] is not None and pairing["result"] in {"1-0", "0-1", "1/2-1/2", "!0-1", "1-!0", "!0-0"}
+    # Absent/default results (!0-1, 1-!0, !0-0) never produce a match row.
+    valid_game = not pairing["is_bye"] and pairing["white_player_id"] is not None and pairing["black_player_id"] is not None and pairing["result"] in PLAYED_GAME_RESULTS
     if not valid_game:
         if existing is not None: conn.execute("DELETE FROM matches WHERE id = ?", (existing["id"],))
         return False
@@ -99,7 +102,7 @@ def process_tournament_round_matches(conn, tournament_id, round_id=None, match_d
     from services.common import current_date
     from services.reporting_service import ensure_tournament_match_identity
     from services.tournament_participants import materialize_pending_players
-    from services.tournament_status import VALID_TOURNAMENT_RESULTS, _refresh_tournament_completion_state
+    from services.tournament_status import PLAYED_GAME_RESULTS, _refresh_tournament_completion_state
 
     ensure_tournament_match_identity(conn)
     if round_id is None:
@@ -119,7 +122,10 @@ def process_tournament_round_matches(conn, tournament_id, round_id=None, match_d
     materialize_pending_players(conn, tournament_id)
     pairings = conn.execute("SELECT id, white_player_id, black_player_id, result, handicap_stones FROM tournament_pairings WHERE round_id = ? AND is_bye = 0 AND result IS NOT NULL AND result != ''", (round_id,)).fetchall()
     for pairing in pairings:
-        if pairing["white_player_id"] is None or pairing["black_player_id"] is None or pairing["result"] not in VALID_TOURNAMENT_RESULTS: continue
+        if pairing["white_player_id"] is None or pairing["black_player_id"] is None or pairing["result"] not in PLAYED_GAME_RESULTS:
+            # Absent/default result: never materialize (and remove any stale match row).
+            conn.execute("DELETE FROM matches WHERE tournament_pairing_id = ?", (pairing["id"],))
+            continue
         if round_row["round_number"] <= 0 or (rounds_limit is not None and round_row["round_number"] > rounds_limit): continue
         handicap = pairing["handicap_stones"] if "handicap_stones" in pairing.keys() and pairing["handicap_stones"] is not None else 0
         existing = conn.execute("SELECT id, match_date, result, event, handicap_stones FROM matches WHERE tournament_pairing_id = ?", (pairing["id"],)).fetchone()

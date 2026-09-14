@@ -1545,7 +1545,7 @@ def test_process_tournament_round_matches_inserts_completed_pairings_into_rating
     assert all(row["round_number"] == round_number for row in matches)
 
 
-def test_absence_results_score_pairings_and_materialize_matches():
+def test_absence_results_score_pairings_and_do_not_materialize_matches():
     conn = create_db()
     seed_players(conn)
     tournament_id = create_manual_tournament(conn, rounds=1, pairing_system="swiss")
@@ -1567,9 +1567,8 @@ def test_absence_results_score_pairings_and_materialize_matches():
     assert standings[first_pairing["black_player_id"]]["score"] == 0.0
     assert standings[second_pairing["white_player_id"]]["score"] == 0.0
     assert standings[second_pairing["black_player_id"]]["score"] == 0.0
-    assert [tuple(row) for row in conn.execute("SELECT result FROM matches ORDER BY tournament_pairing_id").fetchall()] == [
-        ("1-!0",), ("!0-0",)
-    ]
+    # Absent/default results count for standings but must never create a match row.
+    assert conn.execute("SELECT COUNT(*) FROM matches").fetchone()[0] == 0
 
 
 def test_completed_pairing_and_materialized_match_stay_in_sync():

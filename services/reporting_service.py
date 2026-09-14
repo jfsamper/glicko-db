@@ -91,6 +91,11 @@ def ensure_tournament_match_identity(conn):
           )
         """
     )
+    # Absent/default results ("!0-1", "1-!0", "!0-0") never represent an actual
+    # game; drop any stale match rows materialized for them before this fix.
+    conn.execute(
+        "DELETE FROM matches WHERE tournament_pairing_id IS NOT NULL AND result IN ('!0-1', '1-!0', '!0-0')"
+    )
     conn.execute(
         """
         CREATE UNIQUE INDEX IF NOT EXISTS idx_matches_tournament_pairing_unique

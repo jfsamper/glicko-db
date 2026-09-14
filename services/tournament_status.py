@@ -2,6 +2,10 @@
 
 
 VALID_TOURNAMENT_RESULTS = {"1-0", "0-1", "1/2-1/2", "!0-1", "1-!0", "!0-0"}
+# Absent/default results ("!0-1", "1-!0", "!0-0") count toward tournament
+# standings/completion but never represent an actual game, so they must not
+# be materialized into the ratings-facing "matches" table.
+PLAYED_GAME_RESULTS = {"1-0", "0-1", "1/2-1/2"}
 
 
 def _round_is_complete(conn, round_id):
