@@ -587,6 +587,11 @@ def test_restore_db_from_backup_recreates_auth_schema_for_session_checks(tmp_pat
     response = client.get("/admin/backups?lang=en")
     assert response.status_code == 200
 
+    with sqlite3.connect(db_path) as conn:
+        assert conn.execute(
+            "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'news_articles'"
+        ).fetchone() is not None
+
 
 def test_migrate_auth_schema_rejects_unknown_roles(tmp_path, monkeypatch):
     db_path = tmp_path / "auth_role_whitelist.db"

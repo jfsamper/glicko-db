@@ -182,6 +182,7 @@ def restore_db_from_backup(path, db_path):
         migrate_config_schema,
         migrate_match_result_schema,
         migrate_matches_notes_schema,
+        migrate_news_schema,
         migrate_tournament_match_identity_schema,
         migrate_tournament_schema,
         normalize_match_round_values,
@@ -209,6 +210,7 @@ def restore_db_from_backup(path, db_path):
         migrate_tournament_match_identity_schema(conn)
         normalize_match_round_values(conn)
         migrate_handicap_schema(conn)
+        migrate_news_schema(conn)
         ensure_sgf_schema(conn)
         clear_missing_sgf_links(conn)
         conn.commit()
