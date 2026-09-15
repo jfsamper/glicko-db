@@ -6,25 +6,36 @@
     <a class="button" href="{{ url_for('admin_news_new', lang=lang) }}">{{ translations.news_new }}</a>
   </div>
   {% if articles %}
-    <div class="table-wrapper"><table class="table-stack">
-      <thead><tr><th>{{ translations.news_title }}</th><th>{{ translations.news_status }}</th><th>{{ translations.news_updated }}</th><th>{{ translations.actions_label }}</th></tr></thead>
+  <div class="table-wrapper">
+    <table class="table-stack">
+      <thead>
+        <tr>
+          <th>{{ translations.news_title }}</th>
+          <th>{{ translations.news_status }}</th>
+          <th>{{ translations.news_updated }}</th>
+          <th>{{ translations.actions_label }}</th>
+        </tr>
+      </thead>
       <tbody>
-      {% for article in articles %}
+        {% for article in articles %}
         <tr>
           <td><a href="{{ url_for('admin_news_edit', article_id=article.id, lang=lang) }}">{{ article.title }}</a></td>
           <td>{{ translations.news_published if article.is_published else translations.draft }}</td>
           <td>{{ article.updated_at }}</td>
           <td>
-            <a class="text-link" href="{{ url_for('admin_news_edit', article_id=article.id, lang=lang) }}">{{ translations.edit_heading }}</a>
-            <form method="post" action="{{ url_for('admin_news_delete', article_id=article.id, lang=lang) }}" class="inline-form">
+            <a class="text-link" href="{{ url_for('admin_news_edit', article_id=article.id, lang=lang) }}">{{
+              translations.edit_heading }}</a>
+            <form method="post" action="{{ url_for('admin_news_delete', article_id=article.id, lang=lang) }}"
+              class="inline-form">
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <button class="text-link" type="submit">{{ translations.delete_heading }}</button>
             </form>
           </td>
         </tr>
-      {% endfor %}
+        {% endfor %}
       </tbody>
-    </table></div>
+    </table>
+  </div>
   {% else %}<p class="muted">{{ translations.news_empty }}</p>{% endif %}
 </section>
 {% endblock %}

@@ -36,7 +36,8 @@ def _refresh_tournament_completion_state(conn, tournament_id, round_id=None):
         ).fetchone()
         if row is None:
             conn.execute(
-                "UPDATE tournaments SET status = 'draft' WHERE id = ?", (tournament_id,)
+                "UPDATE tournaments SET status = 'draft' WHERE id = ?", (
+                    tournament_id,)
             )
             conn.commit()
             return
@@ -66,7 +67,8 @@ def _refresh_tournament_completion_state(conn, tournament_id, round_id=None):
     ).fetchall()
     if not rounds:
         conn.execute(
-            "UPDATE tournaments SET status = 'draft' WHERE id = ?", (tournament_id,)
+            "UPDATE tournaments SET status = 'draft' WHERE id = ?", (
+                tournament_id,)
         )
         conn.commit()
         return

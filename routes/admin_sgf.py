@@ -18,7 +18,8 @@ def register_sgf_routes(admin_bp):
         ("/admin/sgf-library/unlink", "admin_unlink_sgf_alias", admin_unlink_sgf),
         ("/admin/sgf/delete", "admin_delete_sgf", admin_delete_sgf),
     ):
-        admin_bp.add_url_rule(route, endpoint=endpoint, view_func=view_func, methods=["POST"])
+        admin_bp.add_url_rule(route, endpoint=endpoint,
+                              view_func=view_func, methods=["POST"])
 
 
 def _library_redirect(lang):
@@ -32,10 +33,12 @@ def admin_link_sgf():
         return permission_error
 
     lang = admin.get_language(request.args.get("lang"))
-    filename = (request.form.get("filename") or request.form.get("sgf_filename") or "").strip()
+    filename = (request.form.get("filename")
+                or request.form.get("sgf_filename") or "").strip()
     match_id = request.form.get("match_id", type=int)
     if not filename or match_id is None or admin.get_sgf_path(filename) is None:
-        flash(admin.TRANSLATIONS[lang].get("sgf_file_not_found", admin.TRANSLATIONS[lang]["error"]))
+        flash(admin.TRANSLATIONS[lang].get(
+            "sgf_file_not_found", admin.TRANSLATIONS[lang]["error"]))
         return _library_redirect(lang)
 
     conn = admin.get_db()
@@ -69,7 +72,8 @@ def admin_link_sgf():
             (filename, match_id),
         ).fetchone()
         if existing is not None:
-            flash(admin.TRANSLATIONS[lang].get("sgf_already_linked", admin.TRANSLATIONS[lang]["error"]))
+            flash(admin.TRANSLATIONS[lang].get(
+                "sgf_already_linked", admin.TRANSLATIONS[lang]["error"]))
             return _library_redirect(lang)
 
         try:
@@ -83,15 +87,18 @@ def admin_link_sgf():
                 location=match["location"],
             )
             admin.update_sgf_metadata(filename, metadata)
-            conn.execute("UPDATE matches SET sgf_filename = ? WHERE id = ?", (filename, match_id))
+            conn.execute(
+                "UPDATE matches SET sgf_filename = ? WHERE id = ?", (filename, match_id))
             conn.commit()
         except ValueError:
             conn.rollback()
-            flash(admin.TRANSLATIONS[lang].get("invalid_sgf", admin.TRANSLATIONS[lang]["error"]))
+            flash(admin.TRANSLATIONS[lang].get(
+                "invalid_sgf", admin.TRANSLATIONS[lang]["error"]))
             return _library_redirect(lang)
         except sqlite3.IntegrityError:
             conn.rollback()
-            flash(admin.TRANSLATIONS[lang].get("sgf_already_linked", admin.TRANSLATIONS[lang]["error"]))
+            flash(admin.TRANSLATIONS[lang].get(
+                "sgf_already_linked", admin.TRANSLATIONS[lang]["error"]))
             return _library_redirect(lang)
     finally:
         conn.close()
@@ -102,7 +109,8 @@ def admin_link_sgf():
         {"filename": filename, "match_id": match_id},
         user_id=admin.session.get("user_id"),
     )
-    flash(admin.TRANSLATIONS[lang].get("sgf_linked_success", admin.TRANSLATIONS[lang]["success"]))
+    flash(admin.TRANSLATIONS[lang].get(
+        "sgf_linked_success", admin.TRANSLATIONS[lang]["success"]))
     return _library_redirect(lang)
 
 
@@ -113,7 +121,8 @@ def admin_unlink_sgf():
         return permission_error
 
     lang = admin.get_language(request.args.get("lang"))
-    filename = (request.form.get("filename") or request.form.get("sgf_filename") or "").strip()
+    filename = (request.form.get("filename")
+                or request.form.get("sgf_filename") or "").strip()
     match_id = request.form.get("match_id", type=int)
     if match_id is None:
         flash(admin.TRANSLATIONS[lang]["error"])
@@ -145,7 +154,8 @@ def admin_unlink_sgf():
         {"filename": filename or None, "match_id": match_id},
         user_id=admin.session.get("user_id"),
     )
-    flash(admin.TRANSLATIONS[lang].get("sgf_unlinked_success", admin.TRANSLATIONS[lang]["success"]))
+    flash(admin.TRANSLATIONS[lang].get(
+        "sgf_unlinked_success", admin.TRANSLATIONS[lang]["success"]))
     return _library_redirect(lang)
 
 
@@ -156,9 +166,11 @@ def admin_delete_sgf():
         return permission_error
 
     lang = admin.get_language(request.args.get("lang"))
-    filename = (request.form.get("filename") or request.form.get("sgf_filename") or "").strip()
+    filename = (request.form.get("filename")
+                or request.form.get("sgf_filename") or "").strip()
     if not filename or admin.get_sgf_path(filename) is None:
-        flash(admin.TRANSLATIONS[lang].get("sgf_file_not_found", admin.TRANSLATIONS[lang]["error"]))
+        flash(admin.TRANSLATIONS[lang].get(
+            "sgf_file_not_found", admin.TRANSLATIONS[lang]["error"]))
         return _library_redirect(lang)
 
     def action(conn):
@@ -177,5 +189,6 @@ def admin_delete_sgf():
         {"filename": filename},
         user_id=admin.session.get("user_id"),
     )
-    flash(admin.TRANSLATIONS[lang].get("sgf_deleted_success", admin.TRANSLATIONS[lang]["success"]))
+    flash(admin.TRANSLATIONS[lang].get(
+        "sgf_deleted_success", admin.TRANSLATIONS[lang]["success"]))
     return _library_redirect(lang)

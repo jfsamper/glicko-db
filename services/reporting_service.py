@@ -47,10 +47,12 @@ def _period_dates(period, today):
     if period == "quarter":
         start_month = ((today.month - 1) // 3) * 3 + 1
         end_month = start_month + 2
-        next_month = date(today.year + (end_month == 12), (end_month % 12) + 1, 1)
+        next_month = date(today.year + (end_month == 12),
+                          (end_month % 12) + 1, 1)
         return date(today.year, start_month, 1), next_month.fromordinal(next_month.toordinal() - 1)
     if period == "month":
-        next_month = date(today.year + (today.month == 12), (today.month % 12) + 1, 1)
+        next_month = date(today.year + (today.month == 12),
+                          (today.month % 12) + 1, 1)
         return date(today.year, today.month, 1), next_month.fromordinal(next_month.toordinal() - 1)
     if period == "custom":
         return None, None
@@ -76,9 +78,11 @@ def resolve_report_range(period="year", start_value=None, end_value=None, today=
 
 
 def ensure_tournament_match_identity(conn):
-    columns = {row["name"] for row in conn.execute("PRAGMA table_info(matches)").fetchall()}
+    columns = {row["name"] for row in conn.execute(
+        "PRAGMA table_info(matches)").fetchall()}
     if "tournament_pairing_id" not in columns:
-        conn.execute("ALTER TABLE matches ADD COLUMN tournament_pairing_id INTEGER")
+        conn.execute(
+            "ALTER TABLE matches ADD COLUMN tournament_pairing_id INTEGER")
     conn.execute(
         """
         DELETE FROM matches
@@ -147,7 +151,8 @@ def _empty_record(name=""):
 
 def _finish_record(record):
     games = record["games"]
-    record["win_percentage"] = round(record["wins"] * 100.0 / games, 1) if games else None
+    record["win_percentage"] = round(
+        record["wins"] * 100.0 / games, 1) if games else None
     return record
 
 
@@ -173,10 +178,12 @@ def _rating_change(conn, player, start_date, end_date, category_config):
         elif parsed:
             before_start.append(parsed[0][1])
     else:
-        before_start = [rating for snapshot_date, rating in parsed if snapshot_date <= start_date]
+        before_start = [rating for snapshot_date,
+                        rating in parsed if snapshot_date <= start_date]
         if not before_start and player["initial_rating"] is not None:
             before_start.append(float(player["initial_rating"]))
-    through_end = [rating for snapshot_date, rating in parsed if end_date is None or snapshot_date <= end_date]
+    through_end = [rating for snapshot_date,
+                   rating in parsed if end_date is None or snapshot_date <= end_date]
     if not before_start or not through_end:
         return {
             "start_rating": None,
@@ -206,7 +213,8 @@ def _rating_change(conn, player, start_date, end_date, category_config):
 
 def _load_category_config(conn):
     try:
-        row = conn.execute("SELECT glicko_k, glicko_m FROM category_config WHERE id = 1").fetchone()
+        row = conn.execute(
+            "SELECT glicko_k, glicko_m FROM category_config WHERE id = 1").fetchone()
     except Exception:
         row = None
     if row is None:
@@ -276,26 +284,32 @@ def build_date_report(conn, start_date=None, end_date=None, selected_player_id=N
     for row, _match_date in matches:
         summary["games"] += 1
         for player_id, opponent_id, is_white, opponent_name, opponent_country, opponent_club in (
-            (row["white_player_id"], row["black_player_id"], True, row["black_name"], row["black_country"], row["black_club"]),
-            (row["black_player_id"], row["white_player_id"], False, row["white_name"], row["white_country"], row["white_club"]),
+            (row["white_player_id"], row["black_player_id"], True,
+             row["black_name"], row["black_country"], row["black_club"]),
+            (row["black_player_id"], row["white_player_id"], False,
+             row["white_name"], row["white_country"], row["white_club"]),
         ):
             record = stats.get(player_id)
             if record is None:
                 continue
             result_record = {"is_white": is_white, **record}
             apply_result(result_record, row["result"])
-            record.update({key: value for key, value in result_record.items() if key != "is_white"})
-            opponent = opponent_records[player_id].setdefault(opponent_id, _empty_record(opponent_name))
+            record.update(
+                {key: value for key, value in result_record.items() if key != "is_white"})
+            opponent = opponent_records[player_id].setdefault(
+                opponent_id, _empty_record(opponent_name))
             opponent_result = {"is_white": is_white, **opponent}
             apply_result(opponent_result, row["result"])
-            opponent.update({key: value for key, value in opponent_result.items() if key != "is_white"})
+            opponent.update(
+                {key: value for key, value in opponent_result.items() if key != "is_white"})
 
             for group, value in ((country_records, opponent_country), (club_records, opponent_club)):
                 label = value or "(unknown)"
                 grouped = group.setdefault(label, _empty_record(label))
                 grouped_result = {"is_white": is_white, **grouped}
                 apply_result(grouped_result, row["result"])
-                grouped.update({key: value for key, value in grouped_result.items() if key != "is_white"})
+                grouped.update(
+                    {key: value for key, value in grouped_result.items() if key != "is_white"})
 
     for record in stats.values():
         _finish_record(record)
@@ -313,14 +327,17 @@ def build_date_report(conn, start_date=None, end_date=None, selected_player_id=N
         if stats[player_id]["games"] == 0:
             continue
         row = {"player_id": player_id, **stats[player_id]}
-        row.update(_rating_change(conn, player, start_date, end_date, category_config))
+        row.update(_rating_change(
+            conn, player, start_date, end_date, category_config))
         row["opponents"] = sorted(
-            ({"player_id": opponent_id, **record} for opponent_id, record in opponent_records[player_id].items()),
+            ({"player_id": opponent_id, **record}
+             for opponent_id, record in opponent_records[player_id].items()),
             key=lambda item: (-item["games"], item["display_name"].casefold()),
         )
         player_rows.append(row)
 
-    player_rows.sort(key=lambda row: (-row["games"], -(row["win_percentage"] or 0), -row["wins"], row["display_name"].casefold()))
+    player_rows.sort(key=lambda row: (-row["games"], -(
+        row["win_percentage"] or 0), -row["wins"], row["display_name"].casefold()))
     for rank, row in enumerate(player_rows, 1):
         row["rank"] = rank
     selector_players = sorted(
@@ -328,9 +345,12 @@ def build_date_report(conn, start_date=None, end_date=None, selected_player_id=N
         key=lambda row: (-row["games"], row["display_name"].casefold()),
     )
 
-    selected_player_id = int(selected_player_id) if selected_player_id not in (None, "") else None
-    selected_player = next((row for row in player_rows if row["player_id"] == selected_player_id), None)
-    visible_player_rows = [selected_player] if selected_player is not None else player_rows
+    selected_player_id = int(
+        selected_player_id) if selected_player_id not in (None, "") else None
+    selected_player = next(
+        (row for row in player_rows if row["player_id"] == selected_player_id), None)
+    visible_player_rows = [
+        selected_player] if selected_player is not None else player_rows
     rating_chart = build_rating_chart_data([])
     if selected_player is not None:
         snapshot_rows = conn.execute(
@@ -384,29 +404,39 @@ def export_report_csv(report):
     output = StringIO()
     output.write("\ufeff")
     writer = csv.writer(output)
-    writer.writerow(["report_start_date", report["start_date"] or "", "report_end_date", report["end_date"] or ""])
+    writer.writerow(["report_start_date", report["start_date"]
+                    or "", "report_end_date", report["end_date"] or ""])
     summary = report["summary"]
-    writer.writerow(["summary", "games", summary["games"], "players", summary["players"], "wins", summary.get("wins", ""), "losses", summary.get("losses", ""), "draws", summary.get("draws", ""), "win_percentage", summary.get("win_percentage", "") if summary.get("win_percentage") is not None else ""])
+    writer.writerow(["summary", "games", summary["games"], "players", summary["players"], "wins", summary.get("wins", ""), "losses", summary.get(
+        "losses", ""), "draws", summary.get("draws", ""), "win_percentage", summary.get("win_percentage", "") if summary.get("win_percentage") is not None else ""])
     writer.writerow([])
-    writer.writerow(["rank", "player", "games", "wins", "losses", "draws", "win_percentage", "rating_change_points", "rating_change_percentage", "category_change", "start_category", "end_category"])
+    writer.writerow(["rank", "player", "games", "wins", "losses", "draws", "win_percentage",
+                    "rating_change_points", "rating_change_percentage", "category_change", "start_category", "end_category"])
     for row in report["players"]:
-        writer.writerow([row["rank"], row["display_name"], row["games"], row["wins"], row["losses"], row["draws"], row["win_percentage"] if row["win_percentage"] is not None else "", row["rating_change_points"] if row["rating_change_points"] is not None else "", row["rating_change_percentage"] if row["rating_change_percentage"] is not None else "", row["category_change"] if row["category_change"] is not None else "", row["start_category"] or "", row["end_category"] or ""])
+        writer.writerow([row["rank"], row["display_name"], row["games"], row["wins"], row["losses"], row["draws"], row["win_percentage"] if row["win_percentage"] is not None else "", row["rating_change_points"] if row["rating_change_points"]
+                        is not None else "", row["rating_change_percentage"] if row["rating_change_percentage"] is not None else "", row["category_change"] if row["category_change"] is not None else "", row["start_category"] or "", row["end_category"] or ""])
     writer.writerow([])
     writer.writerow(["countries"])
-    writer.writerow(["country", "games", "wins", "losses", "draws", "win_percentage"])
+    writer.writerow(["country", "games", "wins",
+                    "losses", "draws", "win_percentage"])
     for row in report["countries"]:
-        writer.writerow([row["display_name"], row["games"], row["wins"], row["losses"], row["draws"], row["win_percentage"] if row["win_percentage"] is not None else ""])
+        writer.writerow([row["display_name"], row["games"], row["wins"], row["losses"],
+                        row["draws"], row["win_percentage"] if row["win_percentage"] is not None else ""])
     writer.writerow([])
     writer.writerow(["clubs"])
-    writer.writerow(["club", "games", "wins", "losses", "draws", "win_percentage"])
+    writer.writerow(["club", "games", "wins", "losses",
+                    "draws", "win_percentage"])
     for row in report["clubs"]:
-        writer.writerow([row["display_name"], row["games"], row["wins"], row["losses"], row["draws"], row["win_percentage"] if row["win_percentage"] is not None else ""])
+        writer.writerow([row["display_name"], row["games"], row["wins"], row["losses"],
+                        row["draws"], row["win_percentage"] if row["win_percentage"] is not None else ""])
     if report["selected_player_id"] is not None:
         writer.writerow([])
         writer.writerow(["opponents", report["selected_player_id"]])
-        writer.writerow(["opponent", "games", "wins", "losses", "draws", "win_percentage"])
+        writer.writerow(["opponent", "games", "wins",
+                        "losses", "draws", "win_percentage"])
         for row in report["opponents"]:
-            writer.writerow([row["display_name"], row["games"], row["wins"], row["losses"], row["draws"], row["win_percentage"] if row["win_percentage"] is not None else ""])
+            writer.writerow([row["display_name"], row["games"], row["wins"], row["losses"],
+                            row["draws"], row["win_percentage"] if row["win_percentage"] is not None else ""])
     return output.getvalue()
 
 
@@ -423,7 +453,8 @@ def export_report_pdf(report, translations=None, period_label=None):
     )
     styles = getSampleStyleSheet()
     title = translations.get("reports_title", "Reports")
-    period = period_label or report["start_date"] or translations.get("all_time", "All time")
+    period = period_label or report["start_date"] or translations.get(
+        "all_time", "All time")
     if period_label is None and report["end_date"]:
         period = f"{period} - {report['end_date']}"
     summary = report["summary"]
@@ -453,9 +484,11 @@ def export_report_pdf(report, translations=None, period_label=None):
             ]
         ),
         Spacer(1, 6 * mm),
-        Paragraph(translations.get("report_players", "Player performance"), _pdf_text_style(styles["Heading2"])),
+        Paragraph(translations.get("report_players", "Player performance"),
+                  _pdf_text_style(styles["Heading2"])),
         _pdf_table(
-            [[labels["rank"], labels["player"], labels["games"], labels["wins"], labels["losses"], labels["draws"], labels["win_percentage"], labels["rating_change_points"], labels["rating_change_percentage"]]]
+            [[labels["rank"], labels["player"], labels["games"], labels["wins"], labels["losses"], labels["draws"],
+                labels["win_percentage"], labels["rating_change_points"], labels["rating_change_percentage"]]]
             + [
                 [
                     row["rank"],
@@ -470,7 +503,8 @@ def export_report_pdf(report, translations=None, period_label=None):
                 ]
                 for row in report["players"]
             ],
-            col_widths=[22 * mm, 38 * mm, 18 * mm, 18 * mm, 18 * mm, 18 * mm, 24 * mm, 26 * mm, 24 * mm],
+            col_widths=[22 * mm, 38 * mm, 18 * mm, 18 * mm,
+                        18 * mm, 18 * mm, 24 * mm, 26 * mm, 24 * mm],
         ),
     ]
     rating_chart = report.get("rating_chart") or {}
@@ -478,7 +512,8 @@ def export_report_pdf(report, translations=None, period_label=None):
         story.extend(
             [
                 Spacer(1, 5 * mm),
-                Paragraph(translations.get("chart_title", "Rating history"), _pdf_text_style(styles["Heading2"])),
+                Paragraph(translations.get("chart_title", "Rating history"),
+                          _pdf_text_style(styles["Heading2"])),
                 _pdf_rating_chart(rating_chart),
             ]
         )
@@ -486,7 +521,8 @@ def export_report_pdf(report, translations=None, period_label=None):
         story.extend(
             [
                 Spacer(1, 6 * mm),
-                Paragraph(translations.get("opponent_records", "Results vs opponents"), _pdf_text_style(styles["Heading2"])),
+                Paragraph(translations.get(
+                    "opponent_records", "Results vs opponents"), _pdf_text_style(styles["Heading2"])),
                 _pdf_opponent_table(report["opponents"], labels),
             ]
         )
@@ -509,9 +545,12 @@ def _pdf_rating_chart(rating_chart):
     plot_width = plot_right - plot_left
     plot_height = plot_top - plot_bottom
     drawing = Drawing(width, height)
-    drawing.add(Rect(0, 0, width, height, fillColor=colors.HexColor("#f4f7f8"), strokeColor=None))
-    drawing.add(Line(plot_left, plot_bottom, plot_right, plot_bottom, strokeColor=colors.HexColor("#6b7c82")))
-    drawing.add(Line(plot_left, plot_bottom, plot_left, plot_top, strokeColor=colors.HexColor("#6b7c82")))
+    drawing.add(Rect(0, 0, width, height, fillColor=colors.HexColor(
+        "#f4f7f8"), strokeColor=None))
+    drawing.add(Line(plot_left, plot_bottom, plot_right,
+                plot_bottom, strokeColor=colors.HexColor("#6b7c82")))
+    drawing.add(Line(plot_left, plot_bottom, plot_left, plot_top,
+                strokeColor=colors.HexColor("#6b7c82")))
 
     points = rating_chart["points"]
     source_width = 620
@@ -525,19 +564,25 @@ def _pdf_rating_chart(rating_chart):
 
     line_points = [(chart_x(point), chart_y(point)) for point in points]
     if len(line_points) > 1:
-        drawing.add(PolyLine(line_points, strokeColor=colors.HexColor("#1f4e5f"), strokeWidth=1.5))
+        drawing.add(PolyLine(line_points, strokeColor=colors.HexColor(
+            "#1f4e5f"), strokeWidth=1.5))
     for x, y in line_points:
-        drawing.add(Circle(x, y, 2.5, fillColor=colors.HexColor("#d97706"), strokeColor=colors.HexColor("#1f4e5f")))
+        drawing.add(Circle(x, y, 2.5, fillColor=colors.HexColor(
+            "#d97706"), strokeColor=colors.HexColor("#1f4e5f")))
 
     for point in points[::max(1, len(points) // 3)]:
-        drawing.add(String(chart_x(point), 3, point["date"], fontName="Helvetica", fontSize=6, fillColor=colors.HexColor("#405158")))
+        drawing.add(String(chart_x(
+            point), 3, point["date"], fontName="Helvetica", fontSize=6, fillColor=colors.HexColor("#405158")))
     min_rating = rating_chart["min_rating"]
     max_rating = rating_chart["max_rating"]
     midpoint_rating = (min_rating + max_rating) / 2
     label_color = colors.HexColor("#405158")
-    drawing.add(String(plot_left, plot_top + 2, glicko_to_category(max_rating), fontName="Helvetica", fontSize=6, fillColor=label_color))
-    drawing.add(String(plot_left, (plot_bottom + plot_top) / 2, glicko_to_category(midpoint_rating), fontName="Helvetica", fontSize=6, fillColor=label_color))
-    drawing.add(String(plot_left, plot_bottom - 8, glicko_to_category(min_rating), fontName="Helvetica", fontSize=6, fillColor=label_color))
+    drawing.add(String(plot_left, plot_top + 2, glicko_to_category(max_rating),
+                fontName="Helvetica", fontSize=6, fillColor=label_color))
+    drawing.add(String(plot_left, (plot_bottom + plot_top) / 2, glicko_to_category(
+        midpoint_rating), fontName="Helvetica", fontSize=6, fillColor=label_color))
+    drawing.add(String(plot_left, plot_bottom - 8, glicko_to_category(min_rating),
+                fontName="Helvetica", fontSize=6, fillColor=label_color))
     return drawing
 
 
@@ -569,7 +614,8 @@ def _pdf_opponent_table(opponents, labels):
         rows.append(row)
     return _pdf_table(
         rows,
-        col_widths=[36 * mm, 14 * mm, 16 * mm, 16 * mm, 12.5 * mm, 5 * mm, 36 * mm, 14 * mm, 16 * mm, 16 * mm, 12.5 * mm],
+        col_widths=[36 * mm, 14 * mm, 16 * mm, 16 * mm, 12.5 * mm,
+                    5 * mm, 36 * mm, 14 * mm, 16 * mm, 16 * mm, 12.5 * mm],
         separator_columns=(5,),
         cell_padding=3,
         header_font_size=7,
@@ -591,8 +637,10 @@ def _pdf_table(rows, col_widths=None, separator_columns=(), cell_padding=5, head
         table_style.extend(
             [
                 ("BACKGROUND", (column, 0), (column, -1), colors.white),
-                ("LINEBEFORE", (column, 0), (column, -1), 1, colors.HexColor("#1f4e5f")),
-                ("LINEAFTER", (column, 0), (column, -1), 1, colors.HexColor("#1f4e5f")),
+                ("LINEBEFORE", (column, 0), (column, -1),
+                 1, colors.HexColor("#1f4e5f")),
+                ("LINEAFTER", (column, 0), (column, -1),
+                 1, colors.HexColor("#1f4e5f")),
             ]
         )
     table.setStyle(TableStyle(table_style))

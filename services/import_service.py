@@ -183,11 +183,15 @@ def import_workbook_data(file_path, reset=False):
     ratings_sheet_name = "Ratings by Player"
 
     if ratings_sheet_name in workbook.sheetnames:
-        ratings_rows = list(workbook[ratings_sheet_name].iter_rows(values_only=True))
+        ratings_rows = list(
+            workbook[ratings_sheet_name].iter_rows(values_only=True))
         if ratings_rows:
-            ratings_headers = [normalize_text(cell) for cell in ratings_rows[0]]
-            ratings_name_idx = header_index(ratings_headers, ["name", "player", "player name", "jugador"])
-            ratings_rating_idx = header_index(ratings_headers, ["glicko", "rating"])
+            ratings_headers = [normalize_text(cell)
+                               for cell in ratings_rows[0]]
+            ratings_name_idx = header_index(
+                ratings_headers, ["name", "player", "player name", "jugador"])
+            ratings_rating_idx = header_index(
+                ratings_headers, ["glicko", "rating"])
 
             for row in ratings_rows[1:]:
                 try:
@@ -205,9 +209,11 @@ def import_workbook_data(file_path, reset=False):
                         and ratings_rating_idx < len(row)
                         and row[ratings_rating_idx] not in (None, "")
                     ):
-                        current_ratings[str(player_name).strip()] = float(row[ratings_rating_idx])
+                        current_ratings[str(player_name).strip()] = float(
+                            row[ratings_rating_idx])
                 except Exception:
-                    logger.warning("Skipping invalid rating row: %r", row, exc_info=True)
+                    logger.warning(
+                        "Skipping invalid rating row: %r", row, exc_info=True)
                     continue
 
     player_sheet_name = "Player List"
@@ -216,8 +222,10 @@ def import_workbook_data(file_path, reset=False):
         rows = list(workbook[player_sheet_name].iter_rows(values_only=True))
         if rows:
             headers = [normalize_text(cell) for cell in rows[0]]
-            name_idx = header_index(headers, ["player name", "name", "player", "jugador"])
-            rating_idx = header_index(headers, ["player's rating", "players rating", "initial rating"])
+            name_idx = header_index(
+                headers, ["player name", "name", "player", "jugador"])
+            rating_idx = header_index(
+                headers, ["player's rating", "players rating", "initial rating"])
 
             for row in rows[1:]:
                 try:
@@ -244,11 +252,14 @@ def import_workbook_data(file_path, reset=False):
                                 exc_info=True,
                             )
 
-                    current_rating = current_ratings.get(str(display_name).strip(), initial_rating)
-                    ensure_player(conn, display_name, current_rating, initial_rating=initial_rating, player_lookup=player_lookup)
+                    current_rating = current_ratings.get(
+                        str(display_name).strip(), initial_rating)
+                    ensure_player(conn, display_name, current_rating,
+                                  initial_rating=initial_rating, player_lookup=player_lookup)
                     players_imported += 1
                 except Exception:
-                    logger.warning("Skipping player import row: %r", row, exc_info=True)
+                    logger.warning(
+                        "Skipping player import row: %r", row, exc_info=True)
                     continue
 
     match_sheet_name = "Matches"
@@ -260,31 +271,41 @@ def import_workbook_data(file_path, reset=False):
             time_idx = header_index(headers, ["time", "hora", "round"])
             white_idx = header_index(headers, ["white", "blanco"])
             black_idx = header_index(headers, ["black", "negro"])
-            result_idx = header_index(headers, ["winner", "ganador", "result", "resultado"])
-            comment_idx = header_index(headers, ["comments", "comentarios", "event", "evento", "notes"])
+            result_idx = header_index(
+                headers, ["winner", "ganador", "result", "resultado"])
+            comment_idx = header_index(
+                headers, ["comments", "comentarios", "event", "evento", "notes"])
 
             for row in rows[1:]:
                 try:
                     if not row:
                         continue
 
-                    white_name = row[white_idx] if white_idx is not None and white_idx < len(row) else None
-                    black_name = row[black_idx] if black_idx is not None and black_idx < len(row) else None
-                    winner = row[result_idx] if result_idx is not None and result_idx < len(row) else None
+                    white_name = row[white_idx] if white_idx is not None and white_idx < len(
+                        row) else None
+                    black_name = row[black_idx] if black_idx is not None and black_idx < len(
+                        row) else None
+                    winner = row[result_idx] if result_idx is not None and result_idx < len(
+                        row) else None
 
                     if not white_name or not black_name:
                         continue
                     if not looks_like_player_name(white_name) or not looks_like_player_name(black_name):
                         continue
 
-                    white_id = ensure_player(conn, white_name, player_lookup=player_lookup)
-                    black_id = ensure_player(conn, black_name, player_lookup=player_lookup)
+                    white_id = ensure_player(
+                        conn, white_name, player_lookup=player_lookup)
+                    black_id = ensure_player(
+                        conn, black_name, player_lookup=player_lookup)
 
-                    date_value = row[date_idx] if date_idx is not None and date_idx < len(row) else None
+                    date_value = row[date_idx] if date_idx is not None and date_idx < len(
+                        row) else None
                     match_date = parse_date_value(date_value)
 
-                    time_value = row[time_idx] if time_idx is not None and time_idx < len(row) else None
-                    event = row[comment_idx] if comment_idx is not None and comment_idx < len(row) else None
+                    time_value = row[time_idx] if time_idx is not None and time_idx < len(
+                        row) else None
+                    event = row[comment_idx] if comment_idx is not None and comment_idx < len(
+                        row) else None
 
                     winner_text = normalize_text(winner).lower()
                     white_key = normalize_key(white_name)
@@ -342,7 +363,8 @@ def import_workbook_data(file_path, reset=False):
                         if earliest_match_date is None or match_date < earliest_match_date:
                             earliest_match_date = match_date
                 except Exception:
-                    logger.warning("Skipping match import row: %r", row, exc_info=True)
+                    logger.warning(
+                        "Skipping match import row: %r", row, exc_info=True)
                     continue
     else:
         logger.warning("Matches sheet not found in workbook: %s", path)
@@ -367,7 +389,8 @@ def import_workbook_data(file_path, reset=False):
 
         headers = [normalize_text(cell) for cell in rows[header_row_idx]]
         date_idx = header_index(headers, ["date", "fecha"])
-        rating_idx = header_index(headers, ["player's rating", "players rating"])
+        rating_idx = header_index(
+            headers, ["player's rating", "players rating"])
 
         if date_idx is None or rating_idx is None:
             continue
@@ -382,7 +405,8 @@ def import_workbook_data(file_path, reset=False):
         ).fetchone()
 
         if player_row is None:
-            logger.warning("Player not found while processing snapshot sheet %r", sheetname)
+            logger.warning(
+                "Player not found while processing snapshot sheet %r", sheetname)
             continue
 
         player_id = player_row["id"]
@@ -406,7 +430,8 @@ def import_workbook_data(file_path, reset=False):
 
             try:
                 snapshot_date = parse_date_value(date_value)
-                rating = float(rating_value) if rating_value not in (None, "") else DEFAULT_RATING
+                rating = float(rating_value) if rating_value not in (
+                    None, "") else DEFAULT_RATING
             except ValueError:
                 continue
 
@@ -428,5 +453,3 @@ def import_workbook_data(file_path, reset=False):
         "players": players_imported,
         "matches": matches_imported,
     }
-
-

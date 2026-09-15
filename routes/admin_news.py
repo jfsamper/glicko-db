@@ -11,10 +11,14 @@ def _admin_routes():
 
 
 def register_news_routes(admin_bp):
-    admin_bp.add_url_rule("/admin/news", endpoint="admin_news", view_func=admin_news, methods=["GET"])
-    admin_bp.add_url_rule("/admin/news/new", endpoint="admin_news_new", view_func=admin_news_new, methods=["GET", "POST"])
-    admin_bp.add_url_rule("/admin/news/<int:article_id>/edit", endpoint="admin_news_edit", view_func=admin_news_edit, methods=["GET", "POST"])
-    admin_bp.add_url_rule("/admin/news/<int:article_id>/delete", endpoint="admin_news_delete", view_func=admin_news_delete, methods=["POST"])
+    admin_bp.add_url_rule("/admin/news", endpoint="admin_news",
+                          view_func=admin_news, methods=["GET"])
+    admin_bp.add_url_rule("/admin/news/new", endpoint="admin_news_new",
+                          view_func=admin_news_new, methods=["GET", "POST"])
+    admin_bp.add_url_rule("/admin/news/<int:article_id>/edit", endpoint="admin_news_edit",
+                          view_func=admin_news_edit, methods=["GET", "POST"])
+    admin_bp.add_url_rule("/admin/news/<int:article_id>/delete",
+                          endpoint="admin_news_delete", view_func=admin_news_delete, methods=["POST"])
 
 
 def _tag_form_data():
@@ -35,7 +39,8 @@ def _render_form(admin, lang, article=None, error=None):
         "admin/news_form.html",
         lang=lang,
         translations=TRANSLATIONS[lang],
-        article=article or {"title": "", "body": "", "is_published": 0, "tags": []},
+        article=article or {"title": "", "body": "",
+                            "is_published": 0, "tags": []},
         tag_options=options,
         error=error,
     )
@@ -73,11 +78,13 @@ def _save_news(article_id=None):
         )
     except ValueError as exc:
         conn.rollback()
-        article = {"title": request.form.get("title", ""), "body": request.form.get("body", ""), "is_published": int(request.form.get("is_published") == "1"), "tags": _tag_form_data()}
+        article = {"title": request.form.get("title", ""), "body": request.form.get(
+            "body", ""), "is_published": int(request.form.get("is_published") == "1"), "tags": _tag_form_data()}
         return _render_form(admin, lang, article, str(exc))
     finally:
         conn.close()
-    admin.log_admin_action("news_article_saved", "news", {"article_id": saved_id}, user_id=admin.session.get("user_id"))
+    admin.log_admin_action("news_article_saved", "news", {
+                           "article_id": saved_id}, user_id=admin.session.get("user_id"))
     flash(TRANSLATIONS[lang]["success"])
     return redirect(url_for("admin_news", lang=lang))
 
@@ -125,7 +132,8 @@ def admin_news_delete(article_id):
         conn.rollback()
         flash(f"{TRANSLATIONS[lang]['error']}: {exc}")
     else:
-        admin.log_admin_action("news_article_deleted", "news", {"article_id": article_id}, user_id=admin.session.get("user_id"))
+        admin.log_admin_action("news_article_deleted", "news", {
+                               "article_id": article_id}, user_id=admin.session.get("user_id"))
         flash(TRANSLATIONS[lang]["success"])
     finally:
         conn.close()

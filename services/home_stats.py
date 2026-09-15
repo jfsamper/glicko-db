@@ -177,7 +177,8 @@ def _period_stats(conn, period):
 
     for player in player_rows:
         player_id = player["player_id"]
-        stats = player_stats.get(player_id, {"games": 0, "wins": 0, "wins_as_white": 0, "wins_as_black": 0})
+        stats = player_stats.get(
+            player_id, {"games": 0, "wins": 0, "wins_as_white": 0, "wins_as_black": 0})
         metric_values["most_active"][player_id] = stats["games"]
         metric_values["most_wins"][player_id] = stats["wins"]
         metric_values["most_wins_as_white"][player_id] = stats["wins_as_white"]
@@ -196,8 +197,10 @@ def _period_stats(conn, period):
                 if len(snapshots) < 2:
                     metric_values["relative_glicko_gain"][player_id] = 0
                 else:
-                    delta = ((end_rating - start_rating) / start_rating) * 100.0
-                    metric_values["relative_glicko_gain"][player_id] = round(delta, 1)
+                    delta = ((end_rating - start_rating) /
+                             start_rating) * 100.0
+                    metric_values["relative_glicko_gain"][player_id] = round(
+                        delta, 1)
 
     return {
         "most_active": _build_metric_entries(player_rows, metric_values["most_active"], min_value=1),
@@ -234,7 +237,8 @@ def build_player_badges(player_id, translations=None, conn=None):
     if conn is None:
         conn = get_db()
 
-    columns = {row["name"] for row in conn.execute("PRAGMA table_info(players)").fetchall()}
+    columns = {row["name"] for row in conn.execute(
+        "PRAGMA table_info(players)").fetchall()}
     if "games_played" in columns:
         player_row = conn.execute(
             "SELECT games_played FROM players WHERE id = ?",
@@ -267,7 +271,8 @@ def build_player_badges(player_id, translations=None, conn=None):
         year = match["year"]
         metrics = yearly_metrics.setdefault(year, {})
         for participant_id in (match["white_player_id"], match["black_player_id"]):
-            player_metrics = metrics.setdefault(participant_id, {"games": 0, "wins": 0})
+            player_metrics = metrics.setdefault(
+                participant_id, {"games": 0, "wins": 0})
             player_metrics["games"] += 1
         winner_id = (
             match["white_player_id"] if match["result"] == "1-0"
@@ -306,7 +311,8 @@ def build_player_badges(player_id, translations=None, conn=None):
             ]
             if not entries:
                 continue
-            top_value, top_player_id = sorted(entries, key=lambda item: (-item[0], item[1]))[0]
+            top_value, top_player_id = sorted(
+                entries, key=lambda item: (-item[0], item[1]))[0]
             if top_player_id == player_id:
                 badges.append({
                     "label": label,
@@ -336,17 +342,24 @@ def build_player_badges(player_id, translations=None, conn=None):
         })
         return True
 
-    add_badge("most_active", translations["stats_metric_active"], "all_time", translations["stats_period_all_time"])
-    add_badge("most_wins", translations["stats_metric_wins"], "all_time", translations["stats_period_all_time"])
+    add_badge("most_active", translations["stats_metric_active"],
+              "all_time", translations["stats_period_all_time"])
+    add_badge("most_wins", translations["stats_metric_wins"],
+              "all_time", translations["stats_period_all_time"])
     add_yearly_badge("games", translations["stats_metric_active"])
     add_yearly_badge("wins", translations["stats_metric_wins"])
     add_yearly_badge("rating_increase", translations["stats_metric_glicko"])
-    add_badge("most_active", translations["stats_metric_active"], "quarter", translations["stats_period_quarter"])
-    add_badge("most_wins", translations["stats_metric_wins"], "quarter", translations["stats_period_quarter"])
+    add_badge("most_active", translations["stats_metric_active"],
+              "quarter", translations["stats_period_quarter"])
+    add_badge("most_wins", translations["stats_metric_wins"],
+              "quarter", translations["stats_period_quarter"])
 
-    add_badge("relative_glicko_gain", translations["stats_metric_glicko"], "all_time", translations["stats_period_all_time"])
-    add_badge("relative_glicko_gain", translations["stats_metric_glicko"], "year", translations["stats_period_year"])
-    add_badge("relative_glicko_gain", translations["stats_metric_glicko"], "quarter", translations["stats_period_quarter"])
+    add_badge("relative_glicko_gain",
+              translations["stats_metric_glicko"], "all_time", translations["stats_period_all_time"])
+    add_badge("relative_glicko_gain",
+              translations["stats_metric_glicko"], "year", translations["stats_period_year"])
+    add_badge("relative_glicko_gain",
+              translations["stats_metric_glicko"], "quarter", translations["stats_period_quarter"])
 
     top_player = conn.execute(
         "SELECT id, rating FROM players WHERE rating IS NOT NULL ORDER BY rating DESC, id ASC LIMIT 1"

@@ -1,44 +1,53 @@
 {% extends 'base.html' %}
 {% block content %}
 <section class="panel">
-  <div class="panel-header"><h2>{{ translations.news_new if not article.id else translations.news_edit }}</h2></div>
-  {% if error %}<div class="flash"><p>{{ translations.error }}: {{ error }}</p></div>{% endif %}
+  <div class="panel-header">
+    <h2>{{ translations.news_new if not article.id else translations.news_edit }}</h2>
+  </div>
+  {% if error %}<div class="flash">
+    <p>{{ translations.error }}: {{ error }}</p>
+  </div>{% endif %}
   <form method="post">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <label for="news-title">{{ translations.news_title }}</label>
     <input id="news-title" name="title" value="{{ article.title }}" required maxlength="200">
     <label for="news-body">{{ translations.news_body }}</label>
     <textarea id="news-body" name="body" rows="10" required>{{ article.body }}</textarea>
-    <label><input type="checkbox" name="is_published" value="1" {% if article.is_published %}checked{% endif %}> {{ translations.news_publish_now }}</label>
+    <label><input type="checkbox" name="is_published" value="1" {% if article.is_published %}checked{% endif %}> {{
+      translations.news_publish_now }}</label>
 
     <fieldset>
       <legend>{{ translations.news_links }}</legend>
       <p class="muted">{{ translations.news_links_help }}</p>
       <div id="news-tags">
         {% for index in range([4, article.tags|length]|max) %}
-          {% set selected = article.tags[index] if article.tags|length > index else {} %}
-          <div class="news-tag-row">
-            <select name="tag_type" aria-label="{{ translations.news_link_type }}">
-              <option value="">{{ translations.news_no_link }}</option>
-              {% for tag_type in ('player', 'tournament', 'match') %}
-                <option value="{{ tag_type }}" {% if selected.tag_type == tag_type %}selected{% endif %}>{{ translations['news_tag_' + tag_type] }}</option>
-              {% endfor %}
-            </select>
-            <select name="entity_id" aria-label="{{ translations.news_link_target }}">
-              <option value="">{{ translations.news_choose_target }}</option>
-              {% for tag_type, options in tag_options.items() %}
-                {% for option in options %}
-                  <option value="{{ option.id }}" data-tag-type="{{ tag_type }}" {% if selected.tag_type == tag_type and selected.entity_id == option.id %}selected{% endif %}>{{ option.label }}</option>
-                {% endfor %}
-              {% endfor %}
-            </select>
-            <button type="button" class="button secondary news-insert-tag">{{ translations.news_insert_tag }}</button>
-          </div>
+        {% set selected = article.tags[index] if article.tags|length > index else {} %}
+        <div class="news-tag-row">
+          <select name="tag_type" aria-label="{{ translations.news_link_type }}">
+            <option value="">{{ translations.news_no_link }}</option>
+            {% for tag_type in ('player', 'tournament', 'match') %}
+            <option value="{{ tag_type }}" {% if selected.tag_type==tag_type %}selected{% endif %}>{{
+              translations['news_tag_' + tag_type] }}</option>
+            {% endfor %}
+          </select>
+          <select name="entity_id" aria-label="{{ translations.news_link_target }}">
+            <option value="">{{ translations.news_choose_target }}</option>
+            {% for tag_type, options in tag_options.items() %}
+            {% for option in options %}
+            <option value="{{ option.id }}" data-tag-type="{{ tag_type }}" {% if selected.tag_type==tag_type and
+              selected.entity_id==option.id %}selected{% endif %}>{{ option.label }}</option>
+            {% endfor %}
+            {% endfor %}
+          </select>
+          <button type="button" class="button secondary news-insert-tag">{{ translations.news_insert_tag }}</button>
+        </div>
         {% endfor %}
       </div>
       <button type="button" class="button secondary" id="add-news-tag">{{ translations.news_add_link }}</button>
     </fieldset>
-    <div class="actions"><button class="button" type="submit">{{ translations.save_profile_button }}</button><a class="button secondary" href="{{ url_for('admin_news', lang=lang) }}">{{ translations.cancel_button }}</a></div>
+    <div class="actions"><button class="button" type="submit">{{ translations.save_profile_button }}</button><a
+        class="button secondary" href="{{ url_for('admin_news', lang=lang) }}">{{ translations.cancel_button }}</a>
+    </div>
   </form>
 </section>
 <script>

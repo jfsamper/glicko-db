@@ -7,7 +7,7 @@ def refresh_stats(conn=None):
     conn = conn or get_db()
     try:
         conn.execute(
-        """
+            """
         WITH player_results AS (
             SELECT
                 white_player_id AS player_id,

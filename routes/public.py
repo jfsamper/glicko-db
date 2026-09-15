@@ -55,7 +55,7 @@ NEWS_TAG_TOKEN_RE = re.compile(r"\[(player|tournament|match):(\d+)\]")
 
 
 def render_news_body(body, tags, lang):
-    tag_lookup = {(tag["tag_type"], int(tag["entity_id"])): tag for tag in tags}
+    tag_lookup = {(tag["tag_type"], int(tag["entity_id"]))                  : tag for tag in tags}
     parts = []
     cursor = 0
     for match in NEWS_TAG_TOKEN_RE.finditer(body or ""):
@@ -69,12 +69,15 @@ def render_news_body(body, tags, lang):
             if tag_type == "player":
                 target_url = url_for("player_profile", id=entity_id, lang=lang)
             elif tag_type == "tournament":
-                target_url = url_for("tournament_page", tournament_id=entity_id, lang=lang)
+                target_url = url_for(
+                    "tournament_page", tournament_id=entity_id, lang=lang)
             elif tag.get("has_sgf"):
-                target_url = url_for("match_record", match_id=entity_id, lang=lang)
+                target_url = url_for(
+                    "match_record", match_id=entity_id, lang=lang)
             else:
                 target_url = url_for("matches", lang=lang)
-            parts.append(Markup('<a class="news-inline-link" href="{}">{}</a>').format(target_url, tag["label"]))
+            parts.append(Markup(
+                '<a class="news-inline-link" href="{}">{}</a>').format(target_url, tag["label"]))
         cursor = match.end()
     parts.append(escape((body or "")[cursor:]))
     return Markup("".join(parts)).replace("\n", Markup("<br>\n"))
@@ -201,7 +204,8 @@ def show_drafts_requested():
 @public_bp.route("/")
 def index():
     lang = get_language(request.args.get("lang"))
-    stats_period = (request.args.get("stats_period") or "all_time").strip().lower()
+    stats_period = (request.args.get("stats_period")
+                    or "all_time").strip().lower()
     if stats_period not in HOME_STATS_PERIODS:
         stats_period = "all_time"
     rankings = load_rankings()
@@ -213,7 +217,8 @@ def index():
     try:
         for article in news_articles:
             tags = resolve_news_tags(conn, article["body"], article["tags"])
-            article["body_html"] = render_news_body(article["body"], tags, lang)
+            article["body_html"] = render_news_body(
+                article["body"], tags, lang)
     finally:
         conn.close()
 
@@ -242,8 +247,10 @@ def news_article(article_id):
     try:
         article = get_article(conn, article_id)
         if article is not None and article["is_published"]:
-            article_tags = resolve_news_tags(conn, article["body"], article["tags"])
-            news_body_html = render_news_body(article["body"], article_tags, lang)
+            article_tags = resolve_news_tags(
+                conn, article["body"], article["tags"])
+            news_body_html = render_news_body(
+                article["body"], article_tags, lang)
     finally:
         conn.close()
     if article is None or not article["is_published"]:
@@ -280,7 +287,8 @@ def save_preferences():
         session["user_theme"] = theme
 
     response = jsonify({"language": language, "theme": theme})
-    response.set_cookie("user_language", language, max_age=31536000, samesite="Lax")
+    response.set_cookie("user_language", language,
+                        max_age=31536000, samesite="Lax")
     response.set_cookie("user_theme", theme, max_age=31536000, samesite="Lax")
     return response
 
@@ -348,7 +356,8 @@ def reports():
     total_count = len(report["players"])
     all_report_players = report["players"]
     page_details = pagination_details(total_count, page, page_size)
-    report["players"] = report["players"][(page_details["page"] - 1) * page_details["page_size"]:page_details["page"] * page_details["page_size"]]
+    report["players"] = report["players"][(
+        page_details["page"] - 1) * page_details["page_size"]:page_details["page"] * page_details["page_size"]]
     return render_template(
         "reports.html",
         lang=lang,
@@ -358,7 +367,8 @@ def reports():
         period=period,
         season=season,
         report_seasons=report_seasons,
-        period_label=season or _report_period_label(period, report, TRANSLATIONS[lang]),
+        period_label=season or _report_period_label(
+            period, report, TRANSLATIONS[lang]),
         total_count=total_count,
         **page_details,
     )
@@ -376,7 +386,8 @@ def report_export():
     return Response(
         export_report_csv(report),
         content_type="text/csv; charset=utf-8",
-        headers={"Content-Disposition": f"attachment; filename=report_{start}_{end}.csv"},
+        headers={
+            "Content-Disposition": f"attachment; filename=report_{start}_{end}.csv"},
     )
 
 
@@ -390,11 +401,14 @@ def report_export_pdf_file():
     except ValueError as exc:
         return Response(str(exc), status=400)
     selected_player = next(
-        (row for row in report["players"] if row["player_id"] == report["selected_player_id"]),
+        (row for row in report["players"] if row["player_id"]
+         == report["selected_player_id"]),
         None,
     )
-    player_part = _report_filename_part(selected_player["display_name"]) if selected_player else "all-players"
-    period_label = season or _report_period_label(period, report, TRANSLATIONS[lang])
+    player_part = _report_filename_part(
+        selected_player["display_name"]) if selected_player else "all-players"
+    period_label = season or _report_period_label(
+        period, report, TRANSLATIONS[lang])
     period_part = (
         f"{report['start_date'] or 'start'}_to_{report['end_date'] or 'end'}"
         if period == "custom"
@@ -403,7 +417,8 @@ def report_export_pdf_file():
     return Response(
         export_report_pdf(report, TRANSLATIONS[lang], period_label),
         content_type="application/pdf",
-        headers={"Content-Disposition": f"attachment; filename=report_{player_part}_{period_part}.pdf"},
+        headers={
+            "Content-Disposition": f"attachment; filename=report_{player_part}_{period_part}.pdf"},
     )
 
 
@@ -527,7 +542,8 @@ def player_profile():
     page = parse_page_number(request.args.get("page"), default=1)
     page_size = parse_page_size(request.args.get("page_size"), default=25)
     season = request.args.get("season", "")
-    tournament_page = parse_page_number(request.args.get("tournament_page"), default=1)
+    tournament_page = parse_page_number(
+        request.args.get("tournament_page"), default=1)
 
     data = load_player(
         player_id, page=page, page_size=page_size, season=season,
@@ -564,7 +580,8 @@ def player_profile():
         season=data.get("season", ""),
         profile_seasons=data.get("profile_seasons", []),
         tournaments=data.get("tournaments", []),
-        profile_tournaments=data.get("all_tournaments", data.get("tournaments", [])),
+        profile_tournaments=data.get(
+            "all_tournaments", data.get("tournaments", [])),
         total_tournaments=data.get("total_tournaments", 0),
         tournament_pagination=data.get("tournament_pagination", {}),
         glicko_to_category=lambda rating, decimals=0: glicko_to_category(
@@ -584,11 +601,13 @@ def matches():
     sort_key = _parse_match_sort(request.args.get("sort"))
     sort_order = _parse_match_order(request.args.get("order"))
     date_from, date_to, player_id = _parse_match_filters(request.args)
-    filter_sql, filter_params = _match_filter_sql(date_from, date_to, player_id)
+    filter_sql, filter_params = _match_filter_sql(
+        date_from, date_to, player_id)
 
     conn = get_db()
     clear_missing_sgf_links(conn)
-    sgf_select = "m.sgf_filename" if has_sgf_column(conn) else "NULL AS sgf_filename"
+    sgf_select = "m.sgf_filename" if has_sgf_column(
+        conn) else "NULL AS sgf_filename"
 
     total_count = conn.execute(
         f"SELECT COUNT(*) FROM matches m {filter_sql}",
@@ -687,7 +706,8 @@ def sgf_library():
     files = []
     for record in list_sgf_files():
         file_record = dict(record)
-        file_record["linked_match"] = linked_by_filename.get(record["filename"])
+        file_record["linked_match"] = linked_by_filename.get(
+            record["filename"])
         files.append(file_record)
 
     return render_template(
@@ -717,7 +737,8 @@ def sgf_library_record(filename):
         translations=TRANSLATIONS[lang],
         sgf=metadata,
         theme=theme,
-        sgf_url=url_for("sgf_file", filename=metadata["filename"], lang=lang, _external=True),
+        sgf_url=url_for(
+            "sgf_file", filename=metadata["filename"], lang=lang, _external=True),
     )
 
 
@@ -793,7 +814,8 @@ def match_record(match_id):
         match=dict(row),
         lang=lang,
         theme=theme,
-        sgf_url=url_for("match_sgf", match_id=match_id, lang=lang, _external=True),
+        sgf_url=url_for("match_sgf", match_id=match_id,
+                        lang=lang, _external=True),
         translations=TRANSLATIONS[lang],
     )
 
@@ -817,7 +839,8 @@ def tournaments():
             "SELECT name FROM sqlite_master WHERE type='table' AND name IN ('tournament_participants', 'tournament_pending_players')"
         ).fetchall()
     }
-    has_participant_tables = {"tournament_participants", "tournament_pending_players"}.issubset(participant_tables)
+    has_participant_tables = {"tournament_participants",
+                              "tournament_pending_players"}.issubset(participant_tables)
     participant_count_expr = "0" if not has_participant_tables else "(SELECT COUNT(*) FROM tournament_participants WHERE tournament_id = t.id) + (SELECT COUNT(*) FROM tournament_pending_players WHERE tournament_id = t.id)"
     sort_expr = TOURNAMENT_SORT_FIELDS[sort_key] if sort_key != "participants" else participant_count_expr
     tournament_columns = {
@@ -841,12 +864,14 @@ def tournaments():
         search_conditions.append("LOWER(t.name) LIKE LOWER(?)")
         search_params.append(search_pattern)
         if "description" in tournament_columns:
-            search_conditions.append("LOWER(COALESCE(t.description, '')) LIKE LOWER(?)")
+            search_conditions.append(
+                "LOWER(COALESCE(t.description, '')) LIKE LOWER(?)")
             search_params.append(search_pattern)
         match_conditions = []
         for column in ("event", "notes", "result", "match_date"):
             if column in match_columns:
-                match_conditions.append(f"LOWER(COALESCE(m.{column}, '')) LIKE LOWER(?)")
+                match_conditions.append(
+                    f"LOWER(COALESCE(m.{column}, '')) LIKE LOWER(?)")
                 search_params.append(search_pattern)
         if has_linked_match_tables and {"tournament_pairing_id"}.issubset(match_columns) and match_conditions:
             search_conditions.append(
@@ -998,4 +1023,3 @@ def tournament_page(tournament_id):
 def register_public_routes(app):
     if "public" not in app.blueprints:
         app.register_blueprint(public_bp)
-

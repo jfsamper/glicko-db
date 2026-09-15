@@ -16,13 +16,16 @@ def delete_tournament(conn, tournament_id):
             (tournament_id,),
         )
         conn.execute(
-            "DELETE FROM tournament_rounds WHERE tournament_id = ?", (tournament_id,)
+            "DELETE FROM tournament_rounds WHERE tournament_id = ?", (
+                tournament_id,)
         )
         conn.execute(
-            "DELETE FROM tournament_participants WHERE tournament_id = ?", (tournament_id,)
+            "DELETE FROM tournament_participants WHERE tournament_id = ?", (
+                tournament_id,)
         )
         conn.execute(
-            "DELETE FROM tournament_pending_players WHERE tournament_id = ?", (tournament_id,)
+            "DELETE FROM tournament_pending_players WHERE tournament_id = ?", (
+                tournament_id,)
         )
         conn.execute(
             "DELETE FROM tournaments WHERE id = ?", (tournament_id,)

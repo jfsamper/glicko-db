@@ -17,11 +17,13 @@ def ensure_backup_dir(backup_dir):
 def get_backup_path(filename, backup_dir):
     """Return a safe, server-generated backup path or ``None``."""
     if not isinstance(filename, str):
-        logger.warning("Rejected backup path with non-string filename: %r", filename)
+        logger.warning(
+            "Rejected backup path with non-string filename: %r", filename)
         return None
 
     if not BACKUP_NAME_PATTERN.fullmatch(filename):
-        logger.warning("Rejected backup path with invalid filename pattern: %r", filename)
+        logger.warning(
+            "Rejected backup path with invalid filename pattern: %r", filename)
         return None
 
     backup_root = Path(backup_dir).resolve()
@@ -30,7 +32,8 @@ def get_backup_path(filename, backup_dir):
     try:
         path.relative_to(backup_root)
     except ValueError:
-        logger.warning("Rejected backup path outside backup directory: %r", filename)
+        logger.warning(
+            "Rejected backup path outside backup directory: %r", filename)
         return None
 
     return path

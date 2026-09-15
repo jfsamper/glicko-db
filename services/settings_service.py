@@ -43,9 +43,12 @@ def ensure_application_settings_table(conn, defaults=None):
             VALUES (1, ?, ?, ?, ?)
             """,
             (
-                (defaults or DEFAULT_APPLICATION_SETTINGS)["max_login_attempts"],
-                (defaults or DEFAULT_APPLICATION_SETTINGS)["login_window_seconds"],
-                (defaults or DEFAULT_APPLICATION_SETTINGS)["password_reset_ttl_seconds"],
+                (defaults or DEFAULT_APPLICATION_SETTINGS)[
+                    "max_login_attempts"],
+                (defaults or DEFAULT_APPLICATION_SETTINGS)[
+                    "login_window_seconds"],
+                (defaults or DEFAULT_APPLICATION_SETTINGS)[
+                    "password_reset_ttl_seconds"],
                 current_timestamp(),
             ),
         )

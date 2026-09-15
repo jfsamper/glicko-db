@@ -26,28 +26,48 @@ def register_tournament_routes(admin_bp):
 
 def register_tournament_detail_routes(admin_bp):
     routes = (
-        ("/admin/tournaments/<int:tournament_id>/delete", "admin_delete_tournament", ("POST",)),
-        ("/admin/tournaments/<int:tournament_id>/status", "admin_update_tournament_status", ("POST",)),
-        ("/admin/tournaments/<int:tournament_id>/settings", "admin_update_tournament_settings", ("POST",)),
-        ("/admin/tournaments/<int:tournament_id>/settings", "admin_tournament_settings", ("GET",)),
-        ("/admin/tournaments/<int:tournament_id>/pending-player-resolve", "admin_resolve_pending_player", ("POST",)),
+        ("/admin/tournaments/<int:tournament_id>/delete",
+         "admin_delete_tournament", ("POST",)),
+        ("/admin/tournaments/<int:tournament_id>/status",
+         "admin_update_tournament_status", ("POST",)),
+        ("/admin/tournaments/<int:tournament_id>/settings",
+         "admin_update_tournament_settings", ("POST",)),
+        ("/admin/tournaments/<int:tournament_id>/settings",
+         "admin_tournament_settings", ("GET",)),
+        ("/admin/tournaments/<int:tournament_id>/pending-player-resolve",
+         "admin_resolve_pending_player", ("POST",)),
         ("/admin/tournaments/<int:tournament_id>", "admin_tournament", ("GET",)),
-        ("/admin/tournaments/<int:tournament_id>/export", "admin_export_tournament_results", ("GET",)),
-        ("/admin/tournaments/<int:tournament_id>/players", "admin_tournament_players", ("GET",)),
-        ("/admin/tournaments/<int:tournament_id>/participants/add", "admin_add_tournament_participant", ("POST",)),
-        ("/admin/tournaments/<int:tournament_id>/players/create", "admin_create_tournament_player", ("POST",)),
-        ("/admin/tournaments/<int:tournament_id>/pending-player/delete", "admin_delete_pending_player", ("POST",)),
-        ("/admin/tournaments/<int:tournament_id>/participants/remove", "admin_remove_tournament_participant", ("POST",)),
-        ("/admin/tournaments/<int:tournament_id>/pairing-handicap", "admin_update_pairing_handicap", ("POST",)),
-        ("/admin/tournaments/<int:tournament_id>/pair", "admin_manual_pair", ("POST",)),
-        ("/admin/tournaments/<int:tournament_id>/pair-selected", "admin_pair_selected_players", ("POST",)),
-        ("/admin/tournaments/<int:tournament_id>/pairing-edit", "admin_edit_pairing", ("POST",)),
+        ("/admin/tournaments/<int:tournament_id>/export",
+         "admin_export_tournament_results", ("GET",)),
+        ("/admin/tournaments/<int:tournament_id>/players",
+         "admin_tournament_players", ("GET",)),
+        ("/admin/tournaments/<int:tournament_id>/participants/add",
+         "admin_add_tournament_participant", ("POST",)),
+        ("/admin/tournaments/<int:tournament_id>/players/create",
+         "admin_create_tournament_player", ("POST",)),
+        ("/admin/tournaments/<int:tournament_id>/pending-player/delete",
+         "admin_delete_pending_player", ("POST",)),
+        ("/admin/tournaments/<int:tournament_id>/participants/remove",
+         "admin_remove_tournament_participant", ("POST",)),
+        ("/admin/tournaments/<int:tournament_id>/pairing-handicap",
+         "admin_update_pairing_handicap", ("POST",)),
+        ("/admin/tournaments/<int:tournament_id>/pair",
+         "admin_manual_pair", ("POST",)),
+        ("/admin/tournaments/<int:tournament_id>/pair-selected",
+         "admin_pair_selected_players", ("POST",)),
+        ("/admin/tournaments/<int:tournament_id>/pairing-edit",
+         "admin_edit_pairing", ("POST",)),
         ("/admin/tournaments/<int:tournament_id>/unpair", "admin_unpair", ("POST",)),
-        ("/admin/tournaments/<int:tournament_id>/unpair-all", "admin_unpair_all", ("POST",)),
-        ("/admin/tournaments/<int:tournament_id>/result", "admin_set_tournament_result", ("POST",)),
-        ("/admin/tournaments/<int:tournament_id>/generate", "admin_generate_tournament_round", ("POST",)),
-        ("/admin/tournaments/<int:tournament_id>/save", "admin_save_tournament", ("POST",)),
-        ("/admin/tournaments/<int:tournament_id>/process-round", "admin_process_tournament_round", ("POST",)),
+        ("/admin/tournaments/<int:tournament_id>/unpair-all",
+         "admin_unpair_all", ("POST",)),
+        ("/admin/tournaments/<int:tournament_id>/result",
+         "admin_set_tournament_result", ("POST",)),
+        ("/admin/tournaments/<int:tournament_id>/generate",
+         "admin_generate_tournament_round", ("POST",)),
+        ("/admin/tournaments/<int:tournament_id>/save",
+         "admin_save_tournament", ("POST",)),
+        ("/admin/tournaments/<int:tournament_id>/process-round",
+         "admin_process_tournament_round", ("POST",)),
     )
     handler_map = {
         "admin_delete_tournament": admin_delete_tournament,
@@ -119,7 +139,8 @@ def admin_update_tournament_status(tournament_id):
             flash(TRANSLATIONS[lang]["success"])
     except sqlite3.DatabaseError as exc:
         conn.rollback()
-        admin.logger.exception("Tournament settings update failed for %s", tournament_id)
+        admin.logger.exception(
+            "Tournament settings update failed for %s", tournament_id)
         flash(f"{TRANSLATIONS[lang]['error']}: {exc}")
     finally:
         conn.close()
@@ -133,6 +154,7 @@ def admin_delete_tournament(tournament_id):
     if not admin.admin_required():
         return redirect(url_for("admin_login", lang=admin.get_language(request.args.get("lang"))))
     lang = admin.get_language(request.args.get("lang"))
+
     def action(conn):
         admin.delete_tournament(conn, tournament_id)
         admin.log_admin_action(
@@ -162,11 +184,13 @@ def admin_tournament_settings(tournament_id):
         "admin/tournament_settings.html",
         tournament=tournament,
         acceleration_categories=admin.acceleration_category_settings(
-            tournament["acceleration_scheme"] if "acceleration_scheme" in tournament.keys() else None
+            tournament["acceleration_scheme"] if "acceleration_scheme" in tournament.keys(
+            ) else None
         ),
         acceleration_scheme_options=admin.ACCELERATION_SCHEMES,
         acceleration_scheme_choice=admin.acceleration_scheme_choice(
-            tournament["acceleration_scheme"] if "acceleration_scheme" in tournament.keys() else None
+            tournament["acceleration_scheme"] if "acceleration_scheme" in tournament.keys(
+            ) else None
         ),
         acceleration_rounds=(
             tournament["acceleration_rounds"]
@@ -187,7 +211,8 @@ def admin_update_tournament_settings(tournament_id):
     admin = _admin_routes()
     if not admin.admin_required():
         return redirect(
-            url_for("admin_login", lang=admin.get_language(request.args.get("lang")))
+            url_for("admin_login", lang=admin.get_language(
+                request.args.get("lang")))
         )
     lang = admin.get_language(request.args.get("lang"))
     name = request.form.get("name", "").strip()
@@ -195,7 +220,8 @@ def admin_update_tournament_settings(tournament_id):
     description = request.form.get("description")
     begin_date = request.form.get("begin_date")
     end_date = request.form.get("end_date")
-    rounds = admin.normalize_tournament_rounds(request.form.get("rounds", 1, type=int))
+    rounds = admin.normalize_tournament_rounds(
+        request.form.get("rounds", 1, type=int))
     bye_points = request.form.get("bye_points", type=float)
     absent_points = request.form.get("absent_points", type=float)
     handicap_enabled = request.form.get("handicap_enabled") == "1"
@@ -233,13 +259,17 @@ def admin_update_tournament_settings(tournament_id):
             return redirect(url_for("admin_tournaments", lang=lang))
 
         if begin_date is None:
-            begin_date = current_tournament["begin_date"] if "begin_date" in current_tournament.keys() else ""
+            begin_date = current_tournament["begin_date"] if "begin_date" in current_tournament.keys(
+            ) else ""
         if end_date is None:
-            end_date = current_tournament["end_date"] if "end_date" in current_tournament.keys() else ""
+            end_date = current_tournament["end_date"] if "end_date" in current_tournament.keys(
+            ) else ""
         if description is None:
-            description = current_tournament["description"] if "description" in current_tournament.keys() else ""
+            description = current_tournament["description"] if "description" in current_tournament.keys(
+            ) else ""
         try:
-            begin_date = admin.parse_date_value(begin_date) if begin_date else None
+            begin_date = admin.parse_date_value(
+                begin_date) if begin_date else None
             end_date = admin.parse_date_value(end_date) if end_date else None
             if begin_date and end_date and begin_date > end_date:
                 raise ValueError
@@ -247,7 +277,8 @@ def admin_update_tournament_settings(tournament_id):
             flash(TRANSLATIONS[lang]["error"])
             return redirect(url_for("admin_tournament_settings", tournament_id=tournament_id, lang=lang))
 
-        pairing_system = admin.normalize_tournament_system(current_tournament["pairing_system"])
+        pairing_system = admin.normalize_tournament_system(
+            current_tournament["pairing_system"])
         acceleration_scheme = (
             current_tournament["acceleration_scheme"]
             if "acceleration_scheme" in tournament_columns
@@ -255,13 +286,15 @@ def admin_update_tournament_settings(tournament_id):
         ) or admin.DEFAULT_ACCELERATION_SCHEME
         if pairing_system == "accelerated_swiss":
             try:
-                acceleration_scheme = admin.acceleration_scheme_from_form(request.form)
+                acceleration_scheme = admin.acceleration_scheme_from_form(
+                    request.form)
             except (TypeError, ValueError):
                 flash(TRANSLATIONS[lang]["error"])
                 return redirect(url_for("admin_tournament_settings", tournament_id=tournament_id, lang=lang))
         if pairing_system == "mcmahon":
             try:
-                mm_bar_value, mm_floor_value, mm_zero_value = admin.validate_mcmahon_settings(mm_bar, mm_floor, mm_zero)
+                mm_bar_value, mm_floor_value, mm_zero_value = admin.validate_mcmahon_settings(
+                    mm_bar, mm_floor, mm_zero)
             except (TypeError, ValueError):
                 flash(TRANSLATIONS[lang]["error"])
                 return redirect(url_for("admin_tournament_settings", tournament_id=tournament_id, lang=lang))
@@ -287,7 +320,8 @@ def admin_update_tournament_settings(tournament_id):
             "name = ?", "location = ?", "rounds = ?", "bye_points = ?",
             "absent_points = ?", "handicap_enabled = ?", "tournament_type = ?", "pairing_system = ?",
         ]
-        update_values = [name, location, rounds, bye_points, absent_points, int(handicap_enabled), pairing_system, pairing_system]
+        update_values = [name, location, rounds, bye_points, absent_points, int(
+            handicap_enabled), pairing_system, pairing_system]
         if "begin_date" in tournament_columns:
             update_fields.append("begin_date = ?")
             update_values.append(begin_date)
@@ -385,7 +419,8 @@ def admin_resolve_pending_player(tournament_id):
             raise ValueError("Pending player not found")
         if resolved_player_id is not None:
             player_row = conn.execute(
-                "SELECT display_name FROM players WHERE id = ?", (resolved_player_id,)
+                "SELECT display_name FROM players WHERE id = ?", (
+                    resolved_player_id,)
             ).fetchone()
             if player_row is None:
                 raise ValueError("Resolved player not found")
@@ -395,7 +430,8 @@ def admin_resolve_pending_player(tournament_id):
                 SET resolved_player_id = ?, display_name = ?
                 WHERE tournament_id = ? AND id = ?
                 """,
-                (resolved_player_id, player_row["display_name"], tournament_id, pending_id),
+                (resolved_player_id,
+                 player_row["display_name"], tournament_id, pending_id),
             ).rowcount
         else:
             updated = conn.execute(
@@ -414,7 +450,8 @@ def admin_resolve_pending_player(tournament_id):
         admin.log_admin_action(
             "pending_player_resolved",
             "tournament_pending_player",
-            {"tournament_id": tournament_id, "pending_id": pending_id, "resolved_player_id": resolved_player_id},
+            {"tournament_id": tournament_id, "pending_id": pending_id,
+                "resolved_player_id": resolved_player_id},
             user_id=admin.session.get("user_id"),
         )
         flash(TRANSLATIONS[lang]["success"])
@@ -443,7 +480,8 @@ def admin_export_tournament_results(tournament_id):
     return Response(
         xml_text,
         content_type="application/xml; charset=utf-8",
-        headers={"Content-Disposition": f"attachment; filename=tournament_{tournament_id}.xml"},
+        headers={
+            "Content-Disposition": f"attachment; filename=tournament_{tournament_id}.xml"},
     )
 
 
@@ -453,7 +491,8 @@ def admin_tournament(tournament_id):
         return redirect(url_for("admin_login", lang=admin.get_language(request.args.get("lang"))))
     lang = admin.get_language(request.args.get("lang"))
     conn = admin.get_db()
-    tournament = conn.execute("SELECT * FROM tournaments WHERE id = ?", (tournament_id,)).fetchone()
+    tournament = conn.execute(
+        "SELECT * FROM tournaments WHERE id = ?", (tournament_id,)).fetchone()
     if tournament is None:
         conn.close()
         flash(TRANSLATIONS[lang]["error"])
@@ -481,7 +520,8 @@ def admin_tournament(tournament_id):
         """,
         (tournament_id,),
     ).fetchall()
-    selected_pairings = [row for row in pairings if row["round_id"] == selected_round_id]
+    selected_pairings = [
+        row for row in pairings if row["round_id"] == selected_round_id]
     round_statuses = {
         row["player_id"]: row["status"]
         for row in conn.execute(
@@ -517,16 +557,19 @@ def admin_tournament(tournament_id):
         row for row in participants
         if row["player_id"] not in paired_player_ids and row["player_id"] not in round_status_player_ids
     ]
-    absent_players = [row for row in participants if round_statuses.get(row["player_id"]) == "absent"]
+    absent_players = [row for row in participants if round_statuses.get(
+        row["player_id"]) == "absent"]
     pending_rows = conn.execute(
         "SELECT * FROM tournament_pending_players WHERE tournament_id = ? ORDER BY rank, display_name",
         (tournament_id,),
     ).fetchall()
-    suggested_player_ids = {row["display_name"]: row["id"] for row in available_players}
+    suggested_player_ids = {row["display_name"]: row["id"]
+                            for row in available_players}
     pending_players = []
     for row in pending_rows:
         pending = dict(row)
-        pending["suggested_player_id"] = suggested_player_ids.get(pending.get("suggested_name"))
+        pending["suggested_player_id"] = suggested_player_ids.get(
+            pending.get("suggested_name"))
         pending_players.append(pending)
     standings = admin.get_tournament_standings(conn, tournament_id)
     conn.close()
@@ -605,14 +648,16 @@ def admin_create_tournament_player(tournament_id):
     first_name = request.form.get("first_name", "").strip()
     last_name = request.form.get("last_name", "").strip()
     if not first_name or not last_name:
-        flash(f"{TRANSLATIONS[lang]['error']}: {TRANSLATIONS[lang]['player_name_required']}")
+        flash(
+            f"{TRANSLATIONS[lang]['error']}: {TRANSLATIONS[lang]['player_name_required']}")
         return redirect(url_for("admin_tournament_players", tournament_id=tournament_id, lang=lang))
 
     display_name = f"{first_name} {last_name}"
     selected_glicko = request.form.get("glicko", "").strip()
     category_config = admin.get_category_config()
     valid_glickos = {
-        round(category_config["glicko_m"] * math.exp((rank_value + 29) / category_config["glicko_k"]))
+        round(category_config["glicko_m"] *
+              math.exp((rank_value + 29) / category_config["glicko_k"]))
         for rank_value in range(8, -31, -1)
     }
     try:
@@ -620,25 +665,31 @@ def admin_create_tournament_player(tournament_id):
             raise ValueError
         glicko = float(selected_glicko)
     except ValueError:
-        flash(f"{TRANSLATIONS[lang]['error']}: {TRANSLATIONS[lang]['invalid_rating']}")
+        flash(
+            f"{TRANSLATIONS[lang]['error']}: {TRANSLATIONS[lang]['invalid_rating']}")
         return redirect(url_for("admin_tournament_players", tournament_id=tournament_id, lang=lang))
 
     conn = admin.get_db()
     try:
-        existing_player = admin._player_lookup(conn).get(admin.normalize_key(display_name))
+        existing_player = admin._player_lookup(
+            conn).get(admin.normalize_key(display_name))
         if existing_player is not None:
-            raise ValueError(TRANSLATIONS[lang]["player_already_exists"].format(name=existing_player["display_name"]))
+            raise ValueError(TRANSLATIONS[lang]["player_already_exists"].format(
+                name=existing_player["display_name"]))
         similar_player = admin._suggest_player_name(display_name, conn)
         if similar_player:
-            raise ValueError(TRANSLATIONS[lang]["similar_player_exists"].format(name=similar_player))
+            raise ValueError(
+                TRANSLATIONS[lang]["similar_player_exists"].format(name=similar_player))
         if conn.execute("SELECT 1 FROM tournaments WHERE id = ?", (tournament_id,)).fetchone() is None:
             raise ValueError("Tournament not found")
         rank = conn.execute(
             "SELECT COALESCE(MAX(rank), 0) + 1 FROM tournament_pending_players WHERE tournament_id = ?",
             (tournament_id,),
         ).fetchone()[0]
-        pending_columns = {row[1] for row in conn.execute("PRAGMA table_info(tournament_pending_players)").fetchall()}
-        pending_values = (tournament_id, display_name, glicko, rank, f"manual:{first_name}:{last_name}")
+        pending_columns = {row[1] for row in conn.execute(
+            "PRAGMA table_info(tournament_pending_players)").fetchall()}
+        pending_values = (tournament_id, display_name, glicko,
+                          rank, f"manual:{first_name}:{last_name}")
         if "created_at" in pending_columns:
             conn.execute(
                 """
@@ -661,7 +712,8 @@ def admin_create_tournament_player(tournament_id):
         admin.log_admin_action(
             "tournament_pending_player_created",
             "tournament_pending_player",
-            {"tournament_id": tournament_id, "display_name": display_name, "glicko": glicko},
+            {"tournament_id": tournament_id,
+                "display_name": display_name, "glicko": glicko},
             user_id=admin.session.get("user_id"),
         )
         flash(TRANSLATIONS[lang]["pending_player_created"])
@@ -678,6 +730,7 @@ def admin_add_tournament_participant(tournament_id):
     if not admin.admin_required():
         return redirect(url_for("admin_login", lang=admin.get_language(request.args.get("lang"))))
     lang = admin.get_language(request.args.get("lang"))
+
     def action(conn):
         player_id = request.form.get("player_id", type=int)
         admin.add_participant(conn, tournament_id, player_id)
@@ -719,7 +772,8 @@ def admin_delete_pending_player(tournament_id):
         flash(f"{TRANSLATIONS[lang]['error']}: {exc}")
     finally:
         conn.close()
-    destination = "admin_tournament_players" if request.form.get("return_to") == "players" else "admin_tournament"
+    destination = "admin_tournament_players" if request.form.get(
+        "return_to") == "players" else "admin_tournament"
     return redirect(url_for(destination, tournament_id=tournament_id, lang=lang))
 
 
@@ -728,6 +782,7 @@ def admin_remove_tournament_participant(tournament_id):
     if not admin.admin_required():
         return redirect(url_for("admin_login", lang=admin.get_language(request.args.get("lang"))))
     lang = admin.get_language(request.args.get("lang"))
+
     def action(conn):
         player_id = request.form.get("player_id", type=int)
         admin.remove_participant(conn, tournament_id, player_id)
@@ -753,19 +808,23 @@ def admin_update_pairing_handicap(tournament_id):
     if not admin.admin_required():
         return redirect(url_for("admin_login", lang=admin.get_language(request.args.get("lang"))))
     lang = admin.get_language(request.args.get("lang"))
+
     def action(conn):
         pairing_id = request.form.get("pairing_id", type=int)
         handicap_stones = request.form.get("handicap_stones", type=int)
-        admin.update_pairing_handicap(conn, tournament_id, pairing_id, handicap_stones)
+        admin.update_pairing_handicap(
+            conn, tournament_id, pairing_id, handicap_stones)
         admin.log_admin_action(
             "tournament_pairing_handicap_updated",
             "tournament_pairing",
-            {"tournament_id": tournament_id, "pairing_id": pairing_id, "handicap_stones": handicap_stones},
+            {"tournament_id": tournament_id, "pairing_id": pairing_id,
+                "handicap_stones": handicap_stones},
             user_id=admin.session.get("user_id"),
         )
     admin.run_admin_db_action(action, lang, TRANSLATIONS[lang]["success"])
     return admin.redirect_or_json(
-        url_for("admin_tournament", tournament_id=tournament_id, lang=lang, round_id=request.form.get("round_id", type=int))
+        url_for("admin_tournament", tournament_id=tournament_id,
+                lang=lang, round_id=request.form.get("round_id", type=int))
     )
 
 
@@ -774,6 +833,7 @@ def admin_manual_pair(tournament_id):
     if not admin.admin_required():
         return redirect(url_for("admin_login", lang=admin.get_language(request.args.get("lang"))))
     lang = admin.get_language(request.args.get("lang"))
+
     def action(conn):
         round_id = request.form.get("round_id", type=int)
         white_player_id = request.form.get("white_player_id", type=int)
@@ -787,7 +847,8 @@ def admin_manual_pair(tournament_id):
         admin.log_admin_action(
             "tournament_pairing_created",
             "tournament_pairing",
-            {"tournament_id": tournament_id, "round_id": round_id, "white_player_id": white_player_id, "black_player_id": black_player_id},
+            {"tournament_id": tournament_id, "round_id": round_id,
+                "white_player_id": white_player_id, "black_player_id": black_player_id},
             user_id=admin.session.get("user_id"),
         )
     admin.run_admin_db_action(action, lang, TRANSLATIONS[lang]["success"])
@@ -799,6 +860,7 @@ def admin_pair_selected_players(tournament_id):
     if not admin.admin_required():
         return redirect(url_for("admin_login", lang=admin.get_language(request.args.get("lang"))))
     lang = admin.get_language(request.args.get("lang"))
+
     def action(conn):
         round_id = request.form.get("round_id", type=int)
         player_ids = request.form.getlist("player_ids")
@@ -806,7 +868,8 @@ def admin_pair_selected_players(tournament_id):
         admin.log_admin_action(
             "tournament_pairings_created",
             "tournament_round",
-            {"tournament_id": tournament_id, "round_id": round_id, "player_count": len(player_ids)},
+            {"tournament_id": tournament_id, "round_id": round_id,
+                "player_count": len(player_ids)},
             user_id=admin.session.get("user_id"),
         )
     admin.run_admin_db_action(action, lang, TRANSLATIONS[lang]["success"])
@@ -854,7 +917,8 @@ def admin_edit_pairing(tournament_id):
     finally:
         conn.close()
     return admin.redirect_or_json(
-        url_for("admin_tournament", tournament_id=tournament_id, lang=lang, round_id=round_id)
+        url_for("admin_tournament", tournament_id=tournament_id,
+                lang=lang, round_id=round_id)
     )
 
 
@@ -919,7 +983,8 @@ def admin_unpair_all(tournament_id):
         admin.log_admin_action(
             "tournament_round_pairings_removed",
             "tournament_round",
-            {"tournament_id": tournament_id, "round_id": round_id, "pairing_ids": pairing_ids},
+            {"tournament_id": tournament_id,
+                "round_id": round_id, "pairing_ids": pairing_ids},
             user_id=admin.session.get("user_id"),
         )
         if removed:
@@ -950,12 +1015,15 @@ def admin_set_tournament_result(tournament_id):
     conn = admin.get_db()
     pairing_id = request.form.get("pairing_id", type=int)
     previous_dates = conn.execute(
-        "SELECT match_date FROM matches WHERE tournament_pairing_id = ?", (pairing_id,)
+        "SELECT match_date FROM matches WHERE tournament_pairing_id = ?", (
+            pairing_id,)
     ).fetchall()
     try:
-        admin.set_pairing_result(conn, tournament_id, pairing_id, request.form.get("result", ""))
+        admin.set_pairing_result(
+            conn, tournament_id, pairing_id, request.form.get("result", ""))
         current_dates = conn.execute(
-            "SELECT match_date FROM matches WHERE tournament_pairing_id = ?", (pairing_id,)
+            "SELECT match_date FROM matches WHERE tournament_pairing_id = ?", (
+                pairing_id,)
         ).fetchall()
         admin.refresh_stats()
         for row in previous_dates + current_dates:
@@ -980,10 +1048,12 @@ def admin_generate_tournament_round(tournament_id):
     if not admin.admin_required():
         return redirect(url_for("admin_login", lang=admin.get_language(request.args.get("lang"))))
     lang = admin.get_language(request.args.get("lang"))
+
     def action(conn):
         admin.generate_next_round(conn, tournament_id)
         admin.log_admin_action(
-            "tournament_round_generated", "tournament", {"tournament_id": tournament_id},
+            "tournament_round_generated", "tournament", {
+                "tournament_id": tournament_id},
             user_id=admin.session.get("user_id"),
         )
     admin.run_admin_db_action(action, lang, TRANSLATIONS[lang]["success"])
@@ -1048,7 +1118,8 @@ def admin_process_tournament_round(tournament_id):
         conn.commit()
         admin.log_admin_action(
             "tournament_round_processed", "tournament_round",
-            {"tournament_id": tournament_id, "round_id": round_id, "matches": inserted},
+            {"tournament_id": tournament_id,
+                "round_id": round_id, "matches": inserted},
             user_id=admin.session.get("user_id"),
         )
         if inserted:
@@ -1099,11 +1170,13 @@ def admin_tournaments():
                 upload_path = os.path.join(admin.BASE_DIR, "uploads", filename)
                 file.save(upload_path)
                 try:
-                    tournament_id, metadata, matched = admin.create_tournament_from_gotha(conn, upload_path)
+                    tournament_id, metadata, matched = admin.create_tournament_from_gotha(
+                        conn, upload_path)
                     admin.log_admin_action(
                         "tournament_imported",
                         "tournament",
-                        {"tournament_id": tournament_id, "filename": filename, "matched_players": matched},
+                        {"tournament_id": tournament_id,
+                            "filename": filename, "matched_players": matched},
                         user_id=admin.session.get("user_id"),
                     )
                     flash(f"{translations['success']} ({matched} players)")
@@ -1113,7 +1186,8 @@ def admin_tournaments():
                     flash(f"{translations['error']}: {exc}")
                 except sqlite3.DatabaseError as exc:
                     conn.rollback()
-                    admin.logger.exception("OpenGotha tournament import failed for %s", upload_path)
+                    admin.logger.exception(
+                        "OpenGotha tournament import failed for %s", upload_path)
                     flash(f"{translations['error']}: {exc}")
                     conn.close()
                     return render_template(
@@ -1128,10 +1202,13 @@ def admin_tournaments():
             if not name:
                 flash(translations["error"])
             else:
-                rounds = admin.normalize_tournament_rounds(request.form.get("rounds", 1, type=int))
+                rounds = admin.normalize_tournament_rounds(
+                    request.form.get("rounds", 1, type=int))
                 bye_points = request.form.get("bye_points", 1.0, type=float)
-                absent_points = request.form.get("absent_points", 0.0, type=float)
-                handicap_enabled = 1 if request.form.get("handicap_enabled") == "1" else 0
+                absent_points = request.form.get(
+                    "absent_points", 0.0, type=float)
+                handicap_enabled = 1 if request.form.get(
+                    "handicap_enabled") == "1" else 0
                 try:
                     acceleration_scheme = (
                         admin.acceleration_scheme_from_form(request.form)
@@ -1148,7 +1225,8 @@ def admin_tournaments():
                     flash(translations["error"])
                     bye_points = absent_points = None
                 if bye_points is None:
-                    tournaments = conn.execute("SELECT * FROM tournaments ORDER BY id DESC").fetchall()
+                    tournaments = conn.execute(
+                        "SELECT * FROM tournaments ORDER BY id DESC").fetchall()
                     conn.close()
                     return render_template(
                         "admin/tournaments.html",
@@ -1175,13 +1253,15 @@ def admin_tournaments():
                 ]
                 if "description" in tournament_columns:
                     insert_columns.insert(1, "description")
-                    tournament_values.insert(1, request.form.get("description", "").strip())
+                    tournament_values.insert(
+                        1, request.form.get("description", "").strip())
                 if "acceleration_scheme" in tournament_columns:
                     insert_columns.append("acceleration_scheme")
                     tournament_values.append(acceleration_scheme)
                 if pairing_system == "accelerated_swiss" and "acceleration_rounds" in tournament_columns:
                     insert_columns.append("acceleration_rounds")
-                    tournament_values.append(admin.default_acceleration_rounds(rounds))
+                    tournament_values.append(
+                        admin.default_acceleration_rounds(rounds))
                 if "handicap_enabled" in tournament_columns:
                     insert_columns.append("handicap_enabled")
                     tournament_values.append(handicap_enabled)
@@ -1192,12 +1272,14 @@ def admin_tournaments():
                     f"INSERT INTO tournaments ({', '.join(insert_columns)}) VALUES ({placeholders})",
                     tournament_values,
                 )
-                tournament_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
+                tournament_id = conn.execute(
+                    "SELECT last_insert_rowid()").fetchone()[0]
                 conn.commit()
                 admin.log_admin_action(
                     "tournament_created",
                     "tournament",
-                    {"tournament_id": tournament_id, "name": name, "pairing_system": pairing_system},
+                    {"tournament_id": tournament_id, "name": name,
+                        "pairing_system": pairing_system},
                     user_id=admin.session.get("user_id"),
                 )
                 flash(translations["success"])
@@ -1218,8 +1300,10 @@ def admin_tournaments():
     else:
         participant_sort_expr = "0"
     page = admin.parse_page_number(request.args.get("page"), default=1)
-    page_size = admin.parse_page_size(request.args.get("page_size"), default=25)
-    total_count = conn.execute("SELECT COUNT(*) FROM tournaments").fetchone()[0]
+    page_size = admin.parse_page_size(
+        request.args.get("page_size"), default=25)
+    total_count = conn.execute(
+        "SELECT COUNT(*) FROM tournaments").fetchone()[0]
     page_details = admin.pagination_details(total_count, page, page_size)
     page = page_details["page"]
     page_size = page_details["page_size"]

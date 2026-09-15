@@ -7,7 +7,8 @@ from flask import session
 from services.db import get_db
 from services.timezone_service import current_timestamp, timestamp_days_ago
 
-AUDIT_RETENTION_DAYS = max(1, int(os.environ.get("AUDIT_RETENTION_DAYS", "730")))
+AUDIT_RETENTION_DAYS = max(
+    1, int(os.environ.get("AUDIT_RETENTION_DAYS", "730")))
 AUDIT_DETAILS_MAX_BYTES = 2048
 
 
@@ -59,7 +60,8 @@ def log_admin_action(action_type, resource_type=None, details=None, user_id=None
         if details is None:
             encoded_details = "{}"
         elif isinstance(details, (dict, list, tuple)):
-            encoded_details = json.dumps(details, ensure_ascii=False, sort_keys=True, default=str)
+            encoded_details = json.dumps(
+                details, ensure_ascii=False, sort_keys=True, default=str)
         else:
             encoded_details = json.dumps(str(details), ensure_ascii=False)
 
@@ -72,7 +74,8 @@ def log_admin_action(action_type, resource_type=None, details=None, user_id=None
             INSERT INTO audit_log (user_id, action_type, resource_type, details, created_at)
             VALUES (?, ?, ?, ?, ?)
             """,
-            (user_id, action_type, resource_type, encoded_details, current_timestamp()),
+            (user_id, action_type, resource_type,
+             encoded_details, current_timestamp()),
         )
         if owns_connection:
             conn.commit()

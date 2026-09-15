@@ -11,15 +11,19 @@ def _admin_routes():
 
     return admin
 
+
 def register_user_routes(admin_bp):
     routes = (
         ("/admin/login", "admin_login", ("GET", "POST")),
         ("/admin/register", "admin_register", ("GET", "POST")),
         ("/admin/report-results", "admin_report_results", ("GET", "POST")),
         ("/admin/result-submissions", "admin_result_submissions", ("GET",)),
-        ("/admin/result-submissions/<int:submission_id>/sgf", "admin_result_submission_sgf", ("GET",)),
-        ("/admin/result-submissions/<int:submission_id>/approve", "admin_approve_result_submission", ("POST",)),
-        ("/admin/result-submissions/<int:submission_id>/reject", "admin_reject_result_submission", ("POST",)),
+        ("/admin/result-submissions/<int:submission_id>/sgf",
+         "admin_result_submission_sgf", ("GET",)),
+        ("/admin/result-submissions/<int:submission_id>/approve",
+         "admin_approve_result_submission", ("POST",)),
+        ("/admin/result-submissions/<int:submission_id>/reject",
+         "admin_reject_result_submission", ("POST",)),
         ("/admin/settings", "admin_settings", ("GET", "POST")),
         ("/admin/profile", "admin_profile", ("GET", "POST")),
         ("/admin/forgot-password", "admin_forgot_password", ("GET", "POST")),
@@ -199,7 +203,8 @@ def admin_report_results():
                     lang,
                 )
                 try:
-                    handicap_stones = admin.parse_handicap_stones(request.form.get("handicap_stones"))
+                    handicap_stones = admin.parse_handicap_stones(
+                        request.form.get("handicap_stones"))
                 except ValueError:
                     valid = False
                     message = admin.TRANSLATIONS[lang]["error"]
@@ -211,7 +216,8 @@ def admin_report_results():
                           AND match_date = ? AND white_player_id = ?
                           AND black_player_id = ? AND result = ?
                         """,
-                        (user["id"], match_date, white_player_id, black_player_id, result),
+                        (user["id"], match_date, white_player_id,
+                         black_player_id, result),
                     ).fetchone()
                     if duplicate is not None:
                         valid = False
@@ -258,7 +264,8 @@ def admin_report_results():
                     admin.log_admin_action(
                         "result_submitted",
                         "result_submission",
-                        {"submission_id": conn.execute("SELECT last_insert_rowid()").fetchone()[0]},
+                        {"submission_id": conn.execute(
+                            "SELECT last_insert_rowid()").fetchone()[0]},
                         user_id=user["id"],
                     )
                     flash(admin.TRANSLATIONS[lang]["result_submitted_success"])
@@ -401,12 +408,14 @@ def admin_approve_result_submission(submission_id):
             SET status = 'approved', reviewed_by_user_id = ?, reviewed_at = ?, review_notes = ?
             WHERE id = ? AND status = 'pending'
             """,
-            (session.get("user_id"), now, request.form.get("review_notes", "").strip(), submission_id),
+            (session.get("user_id"), now, request.form.get(
+                "review_notes", "").strip(), submission_id),
         )
         conn.commit()
     except sqlite3.DatabaseError:
         conn.rollback()
-        admin.logger.exception("Could not approve result submission %s", submission_id)
+        admin.logger.exception(
+            "Could not approve result submission %s", submission_id)
         flash(admin.TRANSLATIONS[lang]["error"])
         return redirect(url_for("admin_result_submissions", lang=lang))
     finally:
@@ -442,7 +451,8 @@ def admin_reject_result_submission(submission_id):
             SET status = 'rejected', reviewed_by_user_id = ?, reviewed_at = ?, review_notes = ?
             WHERE id = ? AND status = 'pending'
             """,
-            (session.get("user_id"), admin.current_timestamp(), request.form.get("review_notes", "").strip(), submission_id),
+            (session.get("user_id"), admin.current_timestamp(),
+             request.form.get("review_notes", "").strip(), submission_id),
         ).rowcount
         conn.commit()
     finally:
@@ -547,7 +557,8 @@ def admin_profile():
                 "unsupported theme": "invalid_theme",
             }.get(str(exc), "error")
             flash(admin.TRANSLATIONS[lang][message_key])
-            user.update(email=email, language=language, theme=theme, timezone=timezone_name)
+            user.update(email=email, language=language,
+                        theme=theme, timezone=timezone_name)
             return render_template(
                 "admin/profile.html",
                 lang=lang,
@@ -588,7 +599,8 @@ def admin_profile():
             if password_hash:
                 conn.execute(
                     "UPDATE users SET email = ?, language = ?, theme = ?, timezone = ?, password_hash = ? WHERE id = ?",
-                    (email, language, theme, timezone_name, password_hash, user["id"]),
+                    (email, language, theme, timezone_name,
+                     password_hash, user["id"]),
                 )
             else:
                 conn.execute(
@@ -603,7 +615,8 @@ def admin_profile():
         admin.log_admin_action(
             "profile_updated",
             "user",
-            {"email_changed": email != user.get("email"), "password_changed": bool(password_hash)},
+            {"email_changed": email != user.get(
+                "email"), "password_changed": bool(password_hash)},
             user_id=user["id"],
         )
         flash(admin.TRANSLATIONS[lang]["profile_updated_success"])
@@ -640,7 +653,8 @@ def admin_forgot_password():
                 (email,),
             ).fetchone() if email else None
             if user is not None and user["email"]:
-                token = admin.create_password_reset_token(user["id"], conn=conn)
+                token = admin.create_password_reset_token(
+                    user["id"], conn=conn)
                 conn.commit()
                 reset_url = url_for(
                     "admin.admin_reset_password",
@@ -651,7 +665,8 @@ def admin_forgot_password():
                 try:
                     admin.send_password_reset_email(user["email"], reset_url)
                 except Exception:
-                    admin.logger.exception("Password reset email delivery failed")
+                    admin.logger.exception(
+                        "Password reset email delivery failed")
         finally:
             conn.close()
         flash(admin.TRANSLATIONS[lang]["password_reset_requested"])
@@ -832,7 +847,8 @@ def admin_users():
         player["id"]: player["display_name"]
         for player in admin.load_players_for_user_link()
     }
-    users = [dict(user, player_name=player_names.get(user["player_id"])) for user in users]
+    users = [dict(user, player_name=player_names.get(user["player_id"]))
+             for user in users]
 
     return render_template(
         "admin/users.html",
@@ -891,7 +907,8 @@ def admin_create_user():
                 "invalid email": "invalid_email",
                 "email already exists": "email_taken",
             }.get(str(exc))
-            flash(admin.TRANSLATIONS[lang][message_key] if message_key else admin.TRANSLATIONS[lang]["error"])
+            flash(admin.TRANSLATIONS[lang][message_key]
+                  if message_key else admin.TRANSLATIONS[lang]["error"])
 
     return render_template(
         "admin/create_user.html",
@@ -937,7 +954,8 @@ def admin_edit_user(user_id):
     if request.method == "POST":
         username = (request.form.get("username") or "").strip()
         password = request.form.get("password") or ""
-        role_name = (request.form.get("role_name") or user["role_name"] or "operator").strip()
+        role_name = (request.form.get("role_name")
+                     or user["role_name"] or "operator").strip()
         timezone_name = (request.form.get("timezone") or "").strip()
         email = (request.form.get("email") or "").strip()
         player_id = request.form.get("player_id") or None
@@ -947,7 +965,8 @@ def admin_edit_user(user_id):
             except ValueError:
                 player_id = None
         is_active_raw = request.form.get("is_active", "1")
-        is_active = 1 if str(is_active_raw).lower() in {"1", "true", "on", "yes"} else 0
+        is_active = 1 if str(is_active_raw).lower() in {
+            "1", "true", "on", "yes"} else 0
 
         if not username:
             flash(admin.TRANSLATIONS[lang]["user_username_required"])
@@ -956,7 +975,8 @@ def admin_edit_user(user_id):
             timezone_name = admin.validate_timezone(timezone_name)
             email = admin.validate_email_address(email) if email else None
         except ValueError as exc:
-            message_key = "invalid_email" if str(exc) == "invalid email" else "invalid_timezone"
+            message_key = "invalid_email" if str(
+                exc) == "invalid email" else "invalid_timezone"
             flash(admin.TRANSLATIONS[lang][message_key])
             return redirect(url_for("admin_edit_user", user_id=user_id, lang=lang))
 
@@ -990,8 +1010,10 @@ def admin_edit_user(user_id):
                     (generate_password_hash(password), user_id),
                 )
 
-            conn.execute("DELETE FROM user_roles WHERE user_id = ?", (user_id,))
-            role = conn.execute("SELECT id FROM roles WHERE name = ?", (role_name,)).fetchone()
+            conn.execute(
+                "DELETE FROM user_roles WHERE user_id = ?", (user_id,))
+            role = conn.execute(
+                "SELECT id FROM roles WHERE name = ?", (role_name,)).fetchone()
             if role is not None:
                 conn.execute(
                     "INSERT INTO user_roles (user_id, role_id) VALUES (?, ?)",
@@ -1037,6 +1059,7 @@ def admin_delete_user(user_id):
         return permission_error
 
     lang = admin.get_language(request.args.get("lang"))
+
     def action(conn):
         conn.execute("DELETE FROM user_roles WHERE user_id = ?", (user_id,))
         conn.execute("DELETE FROM users WHERE id = ?", (user_id,))
@@ -1047,6 +1070,7 @@ def admin_delete_user(user_id):
             {"target_user_id": user_id},
             user_id=session.get("user_id"),
         )
-    admin.run_admin_db_action(action, lang, admin.TRANSLATIONS[lang]["user_deleted_success"])
+    admin.run_admin_db_action(
+        action, lang, admin.TRANSLATIONS[lang]["user_deleted_success"])
 
     return redirect(url_for("admin_users", lang=lang))

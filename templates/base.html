@@ -1,102 +1,130 @@
 <!doctype html>
 <html lang="{{ lang }}">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>{{ translations.title }}</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
-    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}" />
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/nouislider@15.8.1/dist/nouislider.min.css" /> 
-    <script src="https://cdn.bootcss.com/noUiSlider/15.8.1/nouislider.js"></script>
-    {% block head_extra %}{% endblock %}
-  </head>
-  <body>
-    {% set current_endpoint = (request.endpoint or '').rsplit('.', 1)[-1] %}
-    <header class="topbar">
-      <div class="brand">
-        <a href="{{ url_for('index', lang=lang) }}"><img src="{{ url_for('static', filename='favicon.svg') }}" alt="Logo" class="logo" width="200px" style="background-color: var(--border); border-radius: 50%;" /></a>
-      </div>
-      <div class="brand">
-        <a href="{{ url_for('index', lang=lang) }}"><h1 class="centered-header topbar-title">{{ translations.title }}</h1></a>
-        <p>{{ translations.database }} {{translations.subtitle}}</p>
-      </div>
-      <div class="top-actions">
-        <nav class="top-nav" aria-label="Primary navigation">
-          <button class="top-nav-toggle" type="button" aria-expanded="false" aria-controls="top-nav-menu">
-            <span class="top-nav-toggle-icon" aria-hidden="true"><span></span><span></span><span></span></span>
-            <span>{{ translations.get('menu', 'Menu') }}</span>
-          </button>
-          <ul class="top-nav-menu" id="top-nav-menu">
-            <li><a class="top-nav-link{% if current_endpoint == 'index' %} is-active{% endif %}" href="{{ url_for('index', lang=lang) }}"{% if current_endpoint == 'index' %} aria-current="page"{% endif %}>{{ translations.home }}</a></li>
-            <li><a class="top-nav-link{% if current_endpoint == 'rankings' %} is-active{% endif %}" href="{{ url_for('rankings', lang=lang) }}"{% if current_endpoint == 'rankings' %} aria-current="page"{% endif %}>{{ translations.rankings }}</a></li>
-            <li><a class="top-nav-link{% if current_endpoint in ['tournaments', 'public_tournament'] %} is-active{% endif %}" href="{{ url_for('tournaments', lang=lang) }}"{% if current_endpoint in ['tournaments', 'public_tournament'] %} aria-current="page"{% endif %}>{{ translations.tournaments_title }}</a></li>
-            <li><a class="top-nav-link{% if current_endpoint in ['matches', 'admin_matches'] %} is-active{% endif %}" href="{{ url_for('matches', lang=lang) }}"{% if current_endpoint in ['matches', 'admin_matches'] %} aria-current="page"{% endif %}>{{ translations.games }}</a></li>
-            <li><a class="top-nav-link{% if current_endpoint == 'players' %} is-active{% endif %}" href="{{ url_for('players', lang=lang) }}"{% if current_endpoint == 'players' %} aria-current="page"{% endif %}>{{ translations.players }}</a></li>
-            <li><a class="top-nav-link{% if current_endpoint in ['reports', 'report_export', 'report_export_pdf_file'] %} is-active{% endif %}" href="{{ url_for('reports', lang=lang) }}"{% if current_endpoint in ['reports', 'report_export', 'report_export_pdf_file'] %} aria-current="page"{% endif %}>{{ translations.get('reports_title', 'Reports') }}</a></li>
-            <li><a class="top-nav-link{% if current_endpoint == 'category_converter' %} is-active{% endif %}" href="{{ url_for('category_converter', lang=lang) }}"{% if current_endpoint == 'category_converter' %} aria-current="page"{% endif %}>{{ translations.category }}</a></li>
-            {% if session.get('user_id') %}
-            <li><a class="top-nav-link{% if current_endpoint == 'admin_profile' %} is-active{% endif %}" href="{{ url_for('admin_profile', lang=lang) }}"{% if current_endpoint == 'admin_profile' %} aria-current="page"{% endif %}>{{ translations.profile_title }}</a></li>
-            {% else %}
-            <li><a class="top-nav-link{% if current_endpoint == 'admin_login' %} is-active{% endif %}" href="{{ url_for('admin_login', lang=lang) }}"{% if current_endpoint == 'admin_login' %} aria-current="page"{% endif %}>{{ translations.login_button }}</a></li>
-            {% endif %}
-          </ul>
-        </nav>
-        <div id="floating-controls">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{{ translations.title }}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
+  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/nouislider@15.8.1/dist/nouislider.min.css" />
+  <script src="https://cdn.bootcss.com/noUiSlider/15.8.1/nouislider.js"></script>
+  {% block head_extra %}{% endblock %}
+</head>
+
+<body>
+  {% set current_endpoint = (request.endpoint or '').rsplit('.', 1)[-1] %}
+  <header class="topbar">
+    <div class="brand">
+      <a href="{{ url_for('index', lang=lang) }}"><img src="{{ url_for('static', filename='favicon.svg') }}" alt="Logo"
+          class="logo" width="200px" style="background-color: var(--border); border-radius: 50%;" /></a>
+    </div>
+    <div class="brand">
+      <a href="{{ url_for('index', lang=lang) }}">
+        <h1 class="centered-header topbar-title">{{ translations.title }}</h1>
+      </a>
+      <p>{{ translations.database }} {{translations.subtitle}}</p>
+    </div>
+    <div class="top-actions">
+      <nav class="top-nav" aria-label="Primary navigation">
+        <button class="top-nav-toggle" type="button" aria-expanded="false" aria-controls="top-nav-menu">
+          <span class="top-nav-toggle-icon" aria-hidden="true"><span></span><span></span><span></span></span>
+          <span>{{ translations.get('menu', 'Menu') }}</span>
+        </button>
+        <ul class="top-nav-menu" id="top-nav-menu">
+          <li><a class="top-nav-link{% if current_endpoint == 'index' %} is-active{% endif %}"
+              href="{{ url_for('index', lang=lang) }}" {% if current_endpoint=='index' %} aria-current="page" {% endif
+              %}>{{ translations.home }}</a></li>
+          <li><a class="top-nav-link{% if current_endpoint == 'rankings' %} is-active{% endif %}"
+              href="{{ url_for('rankings', lang=lang) }}" {% if current_endpoint=='rankings' %} aria-current="page" {%
+              endif %}>{{ translations.rankings }}</a></li>
+          <li><a
+              class="top-nav-link{% if current_endpoint in ['tournaments', 'public_tournament'] %} is-active{% endif %}"
+              href="{{ url_for('tournaments', lang=lang) }}" {% if current_endpoint in
+              ['tournaments', 'public_tournament' ] %} aria-current="page" {% endif %}>{{ translations.tournaments_title
+              }}</a></li>
+          <li><a class="top-nav-link{% if current_endpoint in ['matches', 'admin_matches'] %} is-active{% endif %}"
+              href="{{ url_for('matches', lang=lang) }}" {% if current_endpoint in ['matches', 'admin_matches' ] %}
+              aria-current="page" {% endif %}>{{ translations.games }}</a></li>
+          <li><a class="top-nav-link{% if current_endpoint == 'players' %} is-active{% endif %}"
+              href="{{ url_for('players', lang=lang) }}" {% if current_endpoint=='players' %} aria-current="page" {%
+              endif %}>{{ translations.players }}</a></li>
+          <li><a
+              class="top-nav-link{% if current_endpoint in ['reports', 'report_export', 'report_export_pdf_file'] %} is-active{% endif %}"
+              href="{{ url_for('reports', lang=lang) }}" {% if current_endpoint in ['reports', 'report_export'
+              , 'report_export_pdf_file' ] %} aria-current="page" {% endif %}>{{ translations.get('reports_title',
+              'Reports') }}</a></li>
+          <li><a class="top-nav-link{% if current_endpoint == 'category_converter' %} is-active{% endif %}"
+              href="{{ url_for('category_converter', lang=lang) }}" {% if current_endpoint=='category_converter' %}
+              aria-current="page" {% endif %}>{{ translations.category }}</a></li>
+          {% if session.get('user_id') %}
+          <li><a class="top-nav-link{% if current_endpoint == 'admin_profile' %} is-active{% endif %}"
+              href="{{ url_for('admin_profile', lang=lang) }}" {% if current_endpoint=='admin_profile' %}
+              aria-current="page" {% endif %}>{{ translations.profile_title }}</a></li>
+          {% else %}
+          <li><a class="top-nav-link{% if current_endpoint == 'admin_login' %} is-active{% endif %}"
+              href="{{ url_for('admin_login', lang=lang) }}" {% if current_endpoint=='admin_login' %}
+              aria-current="page" {% endif %}>{{ translations.login_button }}</a></li>
+          {% endif %}
+        </ul>
+      </nav>
+      <div id="floating-controls">
         <label class="language-control" for="language-select">
           <span class="visually-hidden">{{ translations.language }}</span>
           <select id="language-select" class="language-select" aria-label="{{ translations.language }}">
-            <option value="es"{% if lang == 'es' %} selected{% endif %}>{{ translations.spanish }}</option>
-            <option value="en"{% if lang == 'en' %} selected{% endif %}>{{ translations.english }}</option>
-            <option value="pt"{% if lang == 'pt' %} selected{% endif %}>{{ translations.portuguese }}</option>
+            <option value="es" {% if lang=='es' %} selected{% endif %}>{{ translations.spanish }}</option>
+            <option value="en" {% if lang=='en' %} selected{% endif %}>{{ translations.english }}</option>
+            <option value="pt" {% if lang=='pt' %} selected{% endif %}>{{ translations.portuguese }}</option>
           </select>
         </label>
         <button id="theme-toggle" type="button">⚫</button>
-        </div>
+      </div>
     </div>
-    </header>
+  </header>
 
-    <div class="page-shell">
-      <aside class="sidebar">
-        <div class="sidebar-block small">
-          <h3>{{ translations.contact }}</h3>
-          <a href="tel:318-007-9047">318-007-9047</a>
-          <a href="mailto:contacto@colombiago.org">contacto@colombiago.org</a>
-          <a href="https://colombiago.org">colombiago.org</a>
-        </div>
-        <div class="sidebar-block small">
-          {% if current_user %}
-            <h4>{{ translations.welcome_user }}, {{ current_user.username }}</h4>
-            {% if current_user.role in ['administrator', 'tournament_director', 'operator'] %}
-              <p><a href="{{ url_for('admin', lang=lang) }}">{{ translations.admin_menu_link }}</a></p>
-            {% endif %}
-            <p><a href="{{ url_for('admin_report_results', lang=lang) }}">{{ translations.report_results }}</a></p>
-            <p><a href="{{ url_for('admin_logout', lang=lang) }}">{{ translations.logout_button }}</a></p>
-          {% else %}
-            <h4>{{ translations.report_results }}</h4>
-            <p>{{ translations.report_results_help }} <a href="{{ url_for('admin_login', lang=lang) }}">{{ translations.here }}.</a></p>
-          {% endif %}
-        </div>
-      </aside>
+  <div class="page-shell">
+    <aside class="sidebar">
+      <div class="sidebar-block small">
+        <h3>{{ translations.contact }}</h3>
+        <a href="tel:318-007-9047">318-007-9047</a>
+        <a href="mailto:contacto@colombiago.org">contacto@colombiago.org</a>
+        <a href="https://colombiago.org">colombiago.org</a>
+      </div>
+      <div class="sidebar-block small">
+        {% if current_user %}
+        <h4>{{ translations.welcome_user }}, {{ current_user.username }}</h4>
+        {% if current_user.role in ['administrator', 'tournament_director', 'operator'] %}
+        <p><a href="{{ url_for('admin', lang=lang) }}">{{ translations.admin_menu_link }}</a></p>
+        {% endif %}
+        <p><a href="{{ url_for('admin_report_results', lang=lang) }}">{{ translations.report_results }}</a></p>
+        <p><a href="{{ url_for('admin_logout', lang=lang) }}">{{ translations.logout_button }}</a></p>
+        {% else %}
+        <h4>{{ translations.report_results }}</h4>
+        <p>{{ translations.report_results_help }} <a href="{{ url_for('admin_login', lang=lang) }}">{{ translations.here
+            }}.</a></p>
+        {% endif %}
+      </div>
+    </aside>
 
-      <main class="content-area">
-        {% with messages = get_flashed_messages() %}
-          {% if messages %}
-            <div class="flash">
-              {% for message in messages %}
-                <p>{{ message }}</p>
-              {% endfor %}
-            </div>
-          {% endif %}
-        {% endwith %}
-        {% block content %}{% endblock %}
-      </main>
-    </div>
+    <main class="content-area">
+      {% with messages = get_flashed_messages() %}
+      {% if messages %}
+      <div class="flash">
+        {% for message in messages %}
+        <p>{{ message }}</p>
+        {% endfor %}
+      </div>
+      {% endif %}
+      {% endwith %}
+      {% block content %}{% endblock %}
+    </main>
+  </div>
 
-    <footer>
-      <p>{{ translations.footer }}</p>
-    </footer>
+  <footer>
+    <p>{{ translations.footer }}</p>
+  </footer>
 
-    <script id="frontend-i18n-data" type="application/json">
+  <script id="frontend-i18n-data" type="application/json">
       {{
         {
           "ratingSuffix": translations.get("glicko_label", "Glicko"),
@@ -107,11 +135,11 @@
         } | tojson
       }}
     </script>
-    <meta name="csrf-token" content="{{ csrf_token() }}">
+  <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <script>
+  <script>
     const defaultFrontendI18n = {
-        ratingSuffix: "Glicko",
+      ratingSuffix: "Glicko",
       categoryScale: { k: 16.6, m: 338 },
     };
 
@@ -119,12 +147,12 @@
     let frontendI18n = defaultFrontendI18n;
 
     if (frontendI18nNode) {
-        try {
-            const parsed = JSON.parse(frontendI18nNode.textContent);
-            frontendI18n = Object.assign({}, defaultFrontendI18n, parsed);
-        } catch (_error) {
-            frontendI18n = defaultFrontendI18n;
-        }
+      try {
+        const parsed = JSON.parse(frontendI18nNode.textContent);
+        frontendI18n = Object.assign({}, defaultFrontendI18n, parsed);
+      } catch (_error) {
+        frontendI18n = defaultFrontendI18n;
+      }
     }
 
     window.frontendI18n = frontendI18n;
@@ -134,16 +162,16 @@
     const savedTheme = {{ session.get('user_theme') | tojson }} || {{ request.cookies.get('user_theme') | tojson }} || localStorage.getItem("theme") || "light";
 
     if (savedTheme === "dark") {
-        root.setAttribute("data-theme", "dark");
+      root.setAttribute("data-theme", "dark");
     }
 
     const themeButton = document.getElementById("theme-toggle");
 
     function updateThemeButton() {
-        themeButton.textContent =
+      themeButton.textContent =
         root.getAttribute("data-theme") === "dark"
-            ? "⚪"
-            : "⚫";
+          ? "⚪"
+          : "⚫";
     }
 
     updateThemeButton();
@@ -160,31 +188,31 @@
     }
 
     themeButton.addEventListener("click", () => {
-        const dark =
+      const dark =
         root.getAttribute("data-theme") === "dark";
 
-        if (dark) {
+      if (dark) {
         root.removeAttribute("data-theme");
         localStorage.setItem("theme", "light");
-        } else {
+      } else {
         root.setAttribute("data-theme", "dark");
         localStorage.setItem("theme", "dark");
-        }
+      }
 
-        updateThemeButton();
-        savePreferences({
-          language: new URLSearchParams(window.location.search).get("lang") || "{{ lang }}",
-          theme: dark ? "light" : "dark",
-        });
+      updateThemeButton();
+      savePreferences({
+        language: new URLSearchParams(window.location.search).get("lang") || "{{ lang }}",
+        theme: dark ? "light" : "dark",
+      });
     });
 
     const languageSelect = document.getElementById("language-select");
 
     languageSelect.addEventListener("change", async () => {
-        const selectedLang = languageSelect.value;
-        const url = new URL(window.location);
+      const selectedLang = languageSelect.value;
+      const url = new URL(window.location);
 
-        url.searchParams.set("lang", selectedLang);
+      url.searchParams.set("lang", selectedLang);
 
       await savePreferences({
         language: selectedLang,
@@ -236,58 +264,59 @@
         if (!window.matchMedia("(max-width: 900px)").matches) closeTopNav();
       });
     }
-    </script>
-  </body>
-  <script>
-    const slider = document.getElementById("rating-slider");
+  </script>
+</body>
+<script>
+  const slider = document.getElementById("rating-slider");
 
-    if (slider) {
+  if (slider) {
 
-        const minInput = document.getElementById("glicko_min");
-        const maxInput = document.getElementById("glicko_max");
-        const display = document.getElementById("rating-range-display");
+    const minInput = document.getElementById("glicko_min");
+    const maxInput = document.getElementById("glicko_max");
+    const display = document.getElementById("rating-range-display");
 
-        function glickoToCategory(glicko) {
-          const scale = frontendI18n.categoryScale || defaultFrontendI18n.categoryScale;
-          const value = (Math.log(glicko / scale.m) * scale.k) - 29;
-          const rank = Math.floor(value);
-          return rank < 0 ? `${Math.abs(rank)} kyu` : `${rank + 1} dan`;
-        }
-
-        noUiSlider.create(slider, {
-            start: [
-                Number(minInput.value),
-                Number(maxInput.value)
-            ],
-            connect: true,
-            range: {
-                min: 300,
-                max: 3000
-            },
-            step: 10
-        });
-
-        slider.noUiSlider.on("update", function(values) {
-
-            const min = Math.round(values[0]);
-            const max = Math.round(values[1]);
-
-            minInput.value = min;
-            maxInput.value = max;
-
-            display.textContent = `${min} (${glickoToCategory(min)}) - ${max} (${glickoToCategory(max)})`;
-        });
+    function glickoToCategory(glicko) {
+      const scale = frontendI18n.categoryScale || defaultFrontendI18n.categoryScale;
+      const value = (Math.log(glicko / scale.m) * scale.k) - 29;
+      const rank = Math.floor(value);
+      return rank < 0 ? `${Math.abs(rank)} kyu` : `${rank + 1} dan`;
     }
-  </script>
-  <script>
-      window.MathJax = {
-          tex: {
-              inlineMath: [['$', '$'], ['\\(', '\\)']]
-          },
-          svg: {
-              fontCache: 'global'
-          }
-      };
-  </script>
-  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
+
+    noUiSlider.create(slider, {
+      start: [
+        Number(minInput.value),
+        Number(maxInput.value)
+      ],
+      connect: true,
+      range: {
+        min: 300,
+        max: 3000
+      },
+      step: 10
+    });
+
+    slider.noUiSlider.on("update", function (values) {
+
+      const min = Math.round(values[0]);
+      const max = Math.round(values[1]);
+
+      minInput.value = min;
+      maxInput.value = max;
+
+      display.textContent = `${min} (${glickoToCategory(min)}) - ${max} (${glickoToCategory(max)})`;
+    });
+  }
+</script>
+<script>
+  window.MathJax = {
+    tex: {
+      inlineMath: [['$', '$'], ['\\(', '\\)']]
+    },
+    svg: {
+      fontCache: 'global'
+    }
+  };
+</script>
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
+
 </html>

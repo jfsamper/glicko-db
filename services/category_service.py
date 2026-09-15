@@ -19,6 +19,7 @@ def _as_positive_float(value, field_name):
 
     return numeric_value
 
+
 def get_category_config(conn=None):
     owns_conn = conn is None
     if conn is None:
@@ -71,7 +72,8 @@ def update_category_config(
         )
         """
     )
-    columns = {row["name"] for row in conn.execute("PRAGMA table_info(category_config)").fetchall()}
+    columns = {row["name"] for row in conn.execute(
+        "PRAGMA table_info(category_config)").fetchall()}
     if "updated_at" not in columns:
         conn.execute("ALTER TABLE category_config ADD COLUMN updated_at TEXT")
 
@@ -181,7 +183,7 @@ def suggested_handicap_stones(rating_stronger, rating_weaker, k=None, m=None, ma
         k = config["glicko_k"] if k is None else k
         m = config["glicko_m"] if m is None else m
 
-    gap = category_value(rating_stronger, k=k, m=m) - category_value(rating_weaker, k=k, m=m)
+    gap = category_value(rating_stronger, k=k, m=m) - \
+        category_value(rating_weaker, k=k, m=m)
     stones = round(gap)
     return max(0, min(max_stones, stones))
-

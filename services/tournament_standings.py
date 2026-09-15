@@ -9,7 +9,8 @@ def get_tournament_standings(conn, tournament_id):
     """Load tournament state and calculate its OpenGotha-style standings."""
     from services.tournament_participants import list_tournament_participants
 
-    tournament = conn.execute("SELECT * FROM tournaments WHERE id = ?", (tournament_id,)).fetchone()
+    tournament = conn.execute(
+        "SELECT * FROM tournaments WHERE id = ?", (tournament_id,)).fetchone()
     if tournament is None:
         raise ValueError("Tournament not found")
     participant_rows = list_tournament_participants(conn, tournament_id)
@@ -42,8 +43,10 @@ def get_tournament_standings(conn, tournament_id):
     ).fetchall()
     games = []
     for row in game_rows:
-        white_id = row["white_player_id"] or pending_id_by_name.get(row["white_player_name"])
-        black_id = row["black_player_id"] or pending_id_by_name.get(row["black_player_name"])
+        white_id = row["white_player_id"] or pending_id_by_name.get(
+            row["white_player_name"])
+        black_id = row["black_player_id"] or pending_id_by_name.get(
+            row["black_player_name"])
         games.append({
             "white_player_id": white_id,
             "black_player_id": black_id,
@@ -89,20 +92,24 @@ def get_tournament_standings(conn, tournament_id):
         and 1 <= current_round <= acceleration_rounds
     )
     if tournament["pairing_system"] == "accelerated_swiss":
-        seed_order = sorted(players, key=lambda player: (-float(player["rating"] or 0), player["id"]))
+        seed_order = sorted(
+            players, key=lambda player: (-float(player["rating"] or 0), player["id"]))
         for seed_rank, player in enumerate(seed_order, 1):
             player["acceleration"] = (
                 acceleration_for_rank(
                     seed_rank,
                     len(players),
-                    scheme=tournament["acceleration_scheme"] if "acceleration_scheme" in tournament.keys() else None,
-                    player_rank=round(category_value(player["rating"] or DEFAULT_RATING)),
+                    scheme=tournament["acceleration_scheme"] if "acceleration_scheme" in tournament.keys(
+                    ) else None,
+                    player_rank=round(category_value(
+                        player["rating"] or DEFAULT_RATING)),
                 )
                 if acceleration_active
                 else 0.0
             )
     settings = conn.execute(
-        "SELECT bye_points, absent_points FROM tournaments WHERE id = ?", (tournament_id,)
+        "SELECT bye_points, absent_points FROM tournaments WHERE id = ?", (
+            tournament_id,)
     ).fetchone()
     return calculate_standings(
         players,

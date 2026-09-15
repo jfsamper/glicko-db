@@ -19,7 +19,7 @@
   </div>
 
   <form method="post" class="filter-form">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
     <div class="filter-panel">
       <div class="filter-header">
         <h3>{{ user.username }}</h3>
@@ -45,7 +45,7 @@
           <label for="role_name">{{ translations.role_label }}</label>
           <select id="role_name" name="role_name">
             {% for role in roles %}
-              <option value="{{ role }}" {% if role == user.role_name %}selected{% endif %}>{{ role }}</option>
+            <option value="{{ role }}" {% if role==user.role_name %}selected{% endif %}>{{ role }}</option>
             {% endfor %}
           </select>
         </div>
@@ -55,7 +55,8 @@
           <select id="player_id" name="player_id">
             <option value="">-</option>
             {% for player in players %}
-              <option value="{{ player.id }}" {% if player.id == user.player_id %}selected{% endif %}>{{ player.display_name }}</option>
+            <option value="{{ player.id }}" {% if player.id==user.player_id %}selected{% endif %}>{{ player.display_name
+              }}</option>
             {% endfor %}
           </select>
         </div>
@@ -65,7 +66,8 @@
           <select id="timezone" name="timezone">
             <option value="">{{ translations.timezone_default }}</option>
             {% for timezone in timezone_choices %}
-              <option value="{{ timezone }}" {% if timezone == user.timezone %}selected{% endif %}>{{ timezone_labels.get(timezone, timezone) }}</option>
+            <option value="{{ timezone }}" {% if timezone==user.timezone %}selected{% endif %}>{{
+              timezone_labels.get(timezone, timezone) }}</option>
             {% endfor %}
           </select>
         </div>

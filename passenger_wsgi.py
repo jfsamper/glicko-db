@@ -1,3 +1,4 @@
+from app import create_app
 import os
 import sys
 
@@ -9,10 +10,9 @@ VENV_SITE_PACKAGES = os.path.join(
     "Lib",
     "site-packages"
 )
- 
+
 sys.path.insert(0, PROJECT_ROOT)
 sys.path.insert(0, VENV_SITE_PACKAGES)
 
-from app import create_app
 
 application = create_app(auto_init=True)

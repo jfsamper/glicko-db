@@ -3,16 +3,18 @@ from datetime import timedelta, timezone
 
 # Require an explicit admin password in every environment.
 # For local development, set ADMIN_PASSWORD in the shell or user environment.
-ADMIN_PASSWORD = os.environ["ADMIN_PASSWORD"] #dev-example-password
+ADMIN_PASSWORD = os.environ["ADMIN_PASSWORD"]  # dev-example-password
 MAX_LOGIN_ATTEMPTS = int(os.getenv("MAX_LOGIN_ATTEMPTS", "5"))
 LOGIN_WINDOW_SECONDS = int(os.getenv("LOGIN_WINDOW_SECONDS", "60"))
 MAIL_SERVER = os.getenv("MAIL_SERVER", "")
 MAIL_PORT = int(os.getenv("MAIL_PORT", "587"))
 MAIL_USERNAME = os.getenv("MAIL_USERNAME", "")
 MAIL_PASSWORD = os.getenv("MAIL_PASSWORD", "")
-MAIL_USE_TLS = os.getenv("MAIL_USE_TLS", "true").lower() in ("true", "1", "yes")
+MAIL_USE_TLS = os.getenv(
+    "MAIL_USE_TLS", "true").lower() in ("true", "1", "yes")
 MAIL_FROM = os.getenv("MAIL_FROM", "")
-PASSWORD_RESET_TTL_SECONDS = int(os.getenv("PASSWORD_RESET_TTL_SECONDS", "3600"))
+PASSWORD_RESET_TTL_SECONDS = int(
+    os.getenv("PASSWORD_RESET_TTL_SECONDS", "3600"))
 RECAPTCHA_SITE_KEY = os.getenv("RECAPTCHA_SITE_KEY", "")
 RECAPTCHA_SECRET_KEY = os.getenv("RECAPTCHA_SECRET_KEY", "")
 RECAPTCHA_MIN_SCORE = float(os.getenv("RECAPTCHA_MIN_SCORE", "0.5"))
@@ -47,8 +49,8 @@ TIMEZONE_CHOICES = (
 LANGUAGE_CHOICES = ("es", "en", "pt")
 THEME_CHOICES = ("light", "dark")
 
-GLICKO_K = 16.6 #17 #18 #19
-GLICKO_M = 340 #338 #336 #352 #405 #423
+GLICKO_K = 16.6  # 17 #18 #19
+GLICKO_M = 340  # 338 #336 #352 #405 #423
 
 SKIP_SHEETS = {
     "index",

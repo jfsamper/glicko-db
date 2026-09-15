@@ -107,7 +107,8 @@ class GothaTournamentPayload:
 def parse_gotha_xml(xml_path) -> list[GothaMatch]:
     tree = ET.parse(xml_path)
     root = tree.getroot()
-    tournament_root = root.find("TournamentParameterSet") if root.tag != "TournamentParameterSet" else root
+    tournament_root = root.find(
+        "TournamentParameterSet") if root.tag != "TournamentParameterSet" else root
     if tournament_root is None:
         tournament_root = root
 

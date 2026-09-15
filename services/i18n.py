@@ -1531,6 +1531,7 @@ TRANSLATIONS = {
     }
 }
 
+
 def get_language(value):
     if value in TRANSLATIONS:
         return value
@@ -1545,4 +1546,3 @@ def get_language(value):
             except RuntimeError:
                 value = None
     return value if value in TRANSLATIONS else "es"
-

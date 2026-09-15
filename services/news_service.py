@@ -39,7 +39,8 @@ def migrate_news_schema(conn):
 
 
 def _tag_target(conn, tag_type, entity_id):
-    table = {"player": "players", "tournament": "tournaments", "match": "matches"}.get(tag_type)
+    table = {"player": "players", "tournament": "tournaments",
+             "match": "matches"}.get(tag_type)
     if table is None:
         return None
     return conn.execute(f"SELECT 1 FROM {table} WHERE id = ?", (entity_id,)).fetchone()
@@ -117,14 +118,16 @@ def save_article(conn, title, body, is_published, tags, article_id=None):
         )
         article_id = cursor.lastrowid
     else:
-        exists = conn.execute("SELECT 1 FROM news_articles WHERE id = ?", (article_id,)).fetchone()
+        exists = conn.execute(
+            "SELECT 1 FROM news_articles WHERE id = ?", (article_id,)).fetchone()
         if exists is None:
             raise ValueError("News article not found")
         conn.execute(
             f"UPDATE news_articles SET title = ?, body = ?, is_published = ?, published_at = {published_at}, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
             (title, body, int(bool(is_published)), article_id),
         )
-        conn.execute("DELETE FROM news_tags WHERE article_id = ?", (article_id,))
+        conn.execute(
+            "DELETE FROM news_tags WHERE article_id = ?", (article_id,))
 
     for tag_type, entity_id in normalize_tags(conn, tags):
         conn.execute(

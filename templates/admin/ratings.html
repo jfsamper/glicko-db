@@ -46,7 +46,7 @@
     </div>
 
   </div>
-  
+
   <div class="card" style="width: 100%; text-align: center; align-content: center;">
 
     <h3>{{ translations.glicko_formula }}</h3>
@@ -76,7 +76,10 @@
     <math display="block">
       <mi>g</mi>
       <mo>(</mo>
-      <msub><mi>φ</mi><mi>j</mi></msub>
+      <msub>
+        <mi>φ</mi>
+        <mi>j</mi>
+      </msub>
       <mo>)</mo>
       <mo>=</mo>
       <mfrac>
@@ -93,9 +96,15 @@
                   <mi>j</mi>
                   <mn>2</mn>
                 </msubsup>
-                <msup><mi>q</mi><mn>2</mn></msup>
+                <msup>
+                  <mi>q</mi>
+                  <mn>2</mn>
+                </msup>
               </mrow>
-              <msup><mi>π</mi><mn>2</mn></msup>
+              <msup>
+                <mi>π</mi>
+                <mn>2</mn>
+              </msup>
             </mfrac>
           </mrow>
         </msqrt>
@@ -115,12 +124,18 @@
           <mo>−</mo>
           <mi>g</mi>
           <mo>(</mo>
-          <msub><mi>φ</mi><mi>j</mi></msub>
+          <msub>
+            <mi>φ</mi>
+            <mi>j</mi>
+          </msub>
           <mo>)</mo>
           <mo>(</mo>
           <mi>μ</mi>
           <mo>−</mo>
-          <msub><mi>μ</mi><mi>j</mi></msub>
+          <msub>
+            <mi>μ</mi>
+            <mi>j</mi>
+          </msub>
           <mo>)</mo>
           <mo>)</mo>
         </mrow>
@@ -139,7 +154,10 @@
             <mrow>
               <mi>g</mi>
               <mo>(</mo>
-              <msub><mi>φ</mi><mi>j</mi></msub>
+              <msub>
+                <mi>φ</mi>
+                <mi>j</mi>
+              </msub>
               <mo>)</mo>
             </mrow>
             <mn>2</mn>
@@ -166,11 +184,17 @@
       <mo>[</mo>
       <mi>g</mi>
       <mo>(</mo>
-      <msub><mi>φ</mi><mi>j</mi></msub>
+      <msub>
+        <mi>φ</mi>
+        <mi>j</mi>
+      </msub>
       <mo>)</mo>
       <mo>⋅</mo>
       <mo>(</mo>
-      <msub><mi>s</mi><mi>j</mi></msub>
+      <msub>
+        <mi>s</mi>
+        <mi>j</mi>
+      </msub>
       <mo>−</mo>
       <mi>E</mi>
       <mo>)</mo>
@@ -178,12 +202,18 @@
     </math>
 
     <math display="block">
-      <msup><mi>μ</mi><mo>′</mo></msup>
+      <msup>
+        <mi>μ</mi>
+        <mo>′</mo>
+      </msup>
       <mo>=</mo>
       <mi>μ</mi>
       <mo>+</mo>
       <msup>
-        <msup><mi>φ</mi><mo>′</mo></msup>
+        <msup>
+          <mi>φ</mi>
+          <mo>′</mo>
+        </msup>
         <mn>2</mn>
       </msup>
       <mo>⋅</mo>
@@ -191,11 +221,17 @@
       <mo>[</mo>
       <mi>g</mi>
       <mo>(</mo>
-      <msub><mi>φ</mi><mi>j</mi></msub>
+      <msub>
+        <mi>φ</mi>
+        <mi>j</mi>
+      </msub>
       <mo>)</mo>
       <mo>⋅</mo>
       <mo>(</mo>
-      <msub><mi>s</mi><mi>j</mi></msub>
+      <msub>
+        <mi>s</mi>
+        <mi>j</mi>
+      </msub>
       <mo>−</mo>
       <mi>E</mi>
       <mo>)</mo>
@@ -203,9 +239,15 @@
     </math>
 
     <math display="block">
-      <msup><mi>Rating</mi><mo>′</mo></msup>
+      <msup>
+        <mi>Rating</mi>
+        <mo>′</mo>
+      </msup>
       <mo>=</mo>
-      <msup><mi>μ</mi><mo>′</mo></msup>
+      <msup>
+        <mi>μ</mi>
+        <mo>′</mo>
+      </msup>
       <mo>×</mo>
       <mn>173.7178</mn>
       <mo>+</mo>
@@ -219,61 +261,36 @@
     <h3>{{ translations.rating_parameters }}</h3>
 
     <form method="post" class="filter-form">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
       <div class="filter-panel">
         <div class="filter-grid">
           <div class="filter-item">
             <label for="tau">{{ translations.tau_label }}</label>
-            <input
-              id="tau"
-              name="tau"
-              type="number"
-              step="0.01"
-              value="{{ config.tau }}"
-              required
-            >
+            <input id="tau" name="tau" type="number" step="0.01" value="{{ config.tau }}" required>
           </div>
 
           <div class="filter-item">
             <label for="default_rating">{{ translations.default_rating_label }}</label>
-            <input
-              id="default_rating"
-              name="default_rating"
-              type="number"
-              step="1"
-              value="{{ config.default_rating }}"
-              required
-            >
+            <input id="default_rating" name="default_rating" type="number" step="1" value="{{ config.default_rating }}"
+              required>
           </div>
 
           <div class="filter-item">
             <label for="default_rd">{{ translations.default_rd_label }}</label>
-            <input
-              id="default_rd"
-              name="default_rd"
-              type="number"
-              step="1"
-              value="{{ config.default_rd }}"
-              required
-            >
+            <input id="default_rd" name="default_rd" type="number" step="1" value="{{ config.default_rd }}" required>
           </div>
 
           <div class="filter-item">
             <label for="default_volatility">{{ translations.default_volatility_label }}</label>
-            <input
-              id="default_volatility"
-              name="default_volatility"
-              type="number"
-              step="0.000001"
-              value="{{ config.default_volatility }}"
-              required
-            >
+            <input id="default_volatility" name="default_volatility" type="number" step="0.000001"
+              value="{{ config.default_volatility }}" required>
           </div>
         </div>
 
         <div class="filter-actions">
           <button type="submit" name="action" value="save" class="button">{{ translations.save_parameters }}</button>
-          <button type="submit" name="action" value="reset" class="button secondary">{{ translations.reset_to_default }}</button>
+          <button type="submit" name="action" value="reset" class="button secondary">{{ translations.reset_to_default
+            }}</button>
         </div>
       </div>
     </form>
@@ -286,32 +303,28 @@
 
     {% if dirty_date %}
 
-      <p>
-        {{ translations.ratings_out_of_date_since }}
-        <strong>{{ dirty_date }}</strong>
-      </p>
+    <p>
+      {{ translations.ratings_out_of_date_since }}
+      <strong>{{ dirty_date }}</strong>
+    </p>
 
-      <form
-        class="filter-form"
-        method="post"
-        onsubmit="return confirm(
+    <form class="filter-form" method="post" onsubmit="return confirm(
           '{{ translations.update_latest_snapshot_confirm }}'
-        );"
-      >
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-        <div class="filter-panel">
-          <input type="hidden" name="action" value="update">
-          <div class="filter-actions">
-            <button type="submit" class="button">{{ translations.update_latest_snapshot }}</button>
-          </div>
+        );">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+      <div class="filter-panel">
+        <input type="hidden" name="action" value="update">
+        <div class="filter-actions">
+          <button type="submit" class="button">{{ translations.update_latest_snapshot }}</button>
         </div>
-      </form>
+      </div>
+    </form>
 
     {% else %}
 
-      <p>
-        {{ translations.ratings_up_to_date }}
-      </p>
+    <p>
+      {{ translations.ratings_up_to_date }}
+    </p>
 
     {% endif %}
 
@@ -325,14 +338,10 @@
       {{ translations.recalculate_description }}
     </p>
 
-    <form
-      class="filter-form"
-      method="post"
-      onsubmit="return confirm(
+    <form class="filter-form" method="post" onsubmit="return confirm(
         '{{ translations.recalculate_confirm }}'
-      );"
-    >
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+      );">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
       <div class="filter-panel">
         <input type="hidden" name="action" value="recalculate">
         <div class="filter-actions">

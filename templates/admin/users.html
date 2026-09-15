@@ -25,58 +25,62 @@
 
   </div>
 
-  <div class="table-wrapper"><table class="table-stack">
+  <div class="table-wrapper">
+    <table class="table-stack">
 
-    <thead>
-      <tr>
-        <th>{{ translations.username_label }}</th>
-        <th>{{ translations.email_label }}</th>
-        <th>{{ translations.role_label }}</th>
-        <th>{{ translations.linked_player_label }}</th>
-        <th>{{ translations.timezone_label }}</th>
-        <th>{{ translations.status }}</th>
-        <th>{{ translations.actions_label }}</th>
-      </tr>
-    </thead>
+      <thead>
+        <tr>
+          <th>{{ translations.username_label }}</th>
+          <th>{{ translations.email_label }}</th>
+          <th>{{ translations.role_label }}</th>
+          <th>{{ translations.linked_player_label }}</th>
+          <th>{{ translations.timezone_label }}</th>
+          <th>{{ translations.status }}</th>
+          <th>{{ translations.actions_label }}</th>
+        </tr>
+      </thead>
 
-    <tbody>
+      <tbody>
 
-      {% for user in users %}
+        {% for user in users %}
 
-      <tr>
-        <td>{{ user.username }}</td>
-        <td>{{ user.email or '-' }}</td>
-        <td>{{ user.role_names or '-' }}</td>
-        <td>{{ user.player_name or '-' }}</td>
-        <td>{{ timezone_labels.get(user.timezone, user.timezone) if user.timezone else translations.timezone_default }}</td>
-        <td>{{ translations.active_label if user.is_active else translations.inactive_label }}</td>
-        <td>
-          <div class="inline-actions">
-            <a href="{{ url_for('admin_edit_user', user_id=user.id, lang=lang) }}" class="button secondary">
-              {{ translations.edit_heading }}
-            </a>
+        <tr>
+          <td>{{ user.username }}</td>
+          <td>{{ user.email or '-' }}</td>
+          <td>{{ user.role_names or '-' }}</td>
+          <td>{{ user.player_name or '-' }}</td>
+          <td>{{ timezone_labels.get(user.timezone, user.timezone) if user.timezone else translations.timezone_default
+            }}</td>
+          <td>{{ translations.active_label if user.is_active else translations.inactive_label }}</td>
+          <td>
+            <div class="inline-actions">
+              <a href="{{ url_for('admin_edit_user', user_id=user.id, lang=lang) }}" class="button secondary">
+                {{ translations.edit_heading }}
+              </a>
 
-            <form method="post" action="{{ url_for('admin_delete_user', user_id=user.id, lang=lang) }}" class="inline-form" onsubmit="return confirm('{{ translations.delete_user_confirm }}');">
-              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-              <button type="submit" class="button danger">
-                {{ translations.delete_heading }}
-              </button>
-            </form>
-          </div>
-        </td>
-      </tr>
+              <form method="post" action="{{ url_for('admin_delete_user', user_id=user.id, lang=lang) }}"
+                class="inline-form" onsubmit="return confirm('{{ translations.delete_user_confirm }}');">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                <button type="submit" class="button danger">
+                  {{ translations.delete_heading }}
+                </button>
+              </form>
+            </div>
+          </td>
+        </tr>
 
-      {% else %}
+        {% else %}
 
-      <tr>
-        <td colspan="7">{{ translations.no_users }}</td>
-      </tr>
+        <tr>
+          <td colspan="7">{{ translations.no_users }}</td>
+        </tr>
 
-      {% endfor %}
+        {% endfor %}
 
-    </tbody>
+      </tbody>
 
-  </table></div>
+    </table>
+  </div>
 
 </section>
 

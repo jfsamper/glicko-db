@@ -1,5 +1,6 @@
 # services/player_service.py
 """Service for managing player records, lookups, and related operations."""
+from config import DEFAULT_RATING, DEFAULT_RD, DEFAULT_VOLATILITY, GLICKO_M
 from datetime import date
 import math
 import sqlite3
@@ -45,9 +46,6 @@ def get_player_rank_badge(conn, player_id):
     return ranked_player["player_rank"]
 
 
-from config import DEFAULT_RATING, DEFAULT_RD, DEFAULT_VOLATILITY, GLICKO_M
-
-
 def parse_rating_filter(value):
     """Return a finite rating bound, or ``None`` for an invalid filter."""
     if value in (None, ""):
@@ -72,11 +70,13 @@ def _normalize_player_rating(value):
 
 
 def build_player_lookup(conn):
-    columns = {row["name"] for row in conn.execute("PRAGMA table_info(players)").fetchall()}
+    columns = {row["name"] for row in conn.execute(
+        "PRAGMA table_info(players)").fetchall()}
     query_columns = ["id", "display_name"]
     if "slug" in columns:
         query_columns.append("slug")
-    rows = conn.execute(f"SELECT {', '.join(query_columns)} FROM players").fetchall()
+    rows = conn.execute(
+        f"SELECT {', '.join(query_columns)} FROM players").fetchall()
     lookup = {}
     for row in rows:
         display_name = row["display_name"]
@@ -95,7 +95,8 @@ def ensure_player(conn, display_name, rating=None, initial_rating=None, active=N
     if not display_name:
         return None
 
-    columns = {row["name"] for row in conn.execute("PRAGMA table_info(players)").fetchall()}
+    columns = {row["name"] for row in conn.execute(
+        "PRAGMA table_info(players)").fetchall()}
     has_slug = "slug" in columns
     has_first_name = "first_name" in columns
     has_last_name = "last_name" in columns
@@ -123,7 +124,8 @@ def ensure_player(conn, display_name, rating=None, initial_rating=None, active=N
     if key in player_lookup:
         existing_id = player_lookup[key]
         row = conn.execute(
-            "SELECT id, display_name" + (", slug" if has_slug else "") + " FROM players WHERE id = ?",
+            "SELECT id, display_name" +
+            (", slug" if has_slug else "") + " FROM players WHERE id = ?",
             (existing_id,),
         ).fetchone()
         if row is not None:
@@ -138,7 +140,8 @@ def ensure_player(conn, display_name, rating=None, initial_rating=None, active=N
                     params.append(normalized_rating)
                 if has_initial_rating:
                     update_sql += ", initial_rating = COALESCE(initial_rating, ?)"
-                    params.append(normalized_initial_rating or normalized_rating)
+                    params.append(
+                        normalized_initial_rating or normalized_rating)
                 if active is not None and has_active:
                     update_sql += ", active = ?"
                     params.append(int(active))
@@ -171,7 +174,8 @@ def ensure_player(conn, display_name, rating=None, initial_rating=None, active=N
 
     if has_slug and has_first_name and has_last_name and has_country and has_club and has_initial_rating and has_rating and has_rd and has_volatility:
         insert_sql = "INSERT INTO players (first_name, last_name, display_name, country, club, slug, initial_rating, rating, rd, volatility"
-        insert_values = [first_name, last_name, display_name, "COL", "", slug, normalized_initial_rating or normalized_rating, normalized_rating, DEFAULT_RD, DEFAULT_VOLATILITY]
+        insert_values = [first_name, last_name, display_name, "COL", "", slug,
+                         normalized_initial_rating or normalized_rating, normalized_rating, DEFAULT_RD, DEFAULT_VOLATILITY]
         if has_active:
             insert_sql += ", active"
             insert_values.append(int(active) if active is not None else 1)
@@ -182,7 +186,8 @@ def ensure_player(conn, display_name, rating=None, initial_rating=None, active=N
         conn.execute(insert_sql, insert_values)
     elif has_first_name and has_last_name and has_rating:
         insert_sql = "INSERT INTO players (first_name, last_name, display_name, rating"
-        insert_values = [first_name, last_name, display_name, normalized_rating]
+        insert_values = [first_name, last_name,
+                         display_name, normalized_rating]
         if has_active:
             insert_sql += ", active"
             insert_values.append(int(active) if active is not None else 1)
@@ -226,7 +231,8 @@ def _player_result_record(player_id, match):
 
 def _summarize_matches_for_period(conn, player_id, start_date=None, end_date=None):
     result = {"wins": 0, "losses": 0, "draws": 0}
-    clauses = ["(white_player_id = ? OR black_player_id = ?)", "result NOT LIKE '%!%'"]
+    clauses = ["(white_player_id = ? OR black_player_id = ?)",
+               "result NOT LIKE '%!%'"]
     params = [player_id, player_id]
 
     if start_date is not None and end_date is not None:
@@ -259,7 +265,8 @@ def load_player(
 ):
     conn = get_db()
     clear_missing_sgf_links(conn)
-    player = conn.execute("SELECT * FROM players WHERE id = ?", (player_id,)).fetchone()
+    player = conn.execute(
+        "SELECT * FROM players WHERE id = ?", (player_id,)).fetchone()
 
     if not player:
         conn.close()
@@ -312,11 +319,13 @@ def load_player(
         match_sgf_select = "NULL AS sgf_filename"
 
     matches = conn.execute(
-        match_select.format(event_select=match_event_select, sgf_select=match_sgf_select, match_condition=match_condition) + " LIMIT ? OFFSET ?",
+        match_select.format(event_select=match_event_select, sgf_select=match_sgf_select,
+                            match_condition=match_condition) + " LIMIT ? OFFSET ?",
         (*match_params, page_size, offset),
     ).fetchall()
     all_matches = conn.execute(
-        match_select.format(event_select=match_event_select, sgf_select=match_sgf_select, match_condition=match_condition) + " LIMIT -1 OFFSET 0",
+        match_select.format(event_select=match_event_select, sgf_select=match_sgf_select,
+                            match_condition=match_condition) + " LIMIT -1 OFFSET 0",
         match_params,
     ).fetchall()
     white_stats = {"games": 0, "wins": 0, "losses": 0, "draws": 0}
@@ -331,7 +340,7 @@ def load_player(
             stats["losses"] += 1
         else:
             stats["draws"] += 1
-    
+
     #
     opponent_records = {}
 
@@ -378,7 +387,8 @@ def load_player(
 
     translations = TRANSLATIONS.get(lang, TRANSLATIONS["es"])
 
-    badges = build_player_badges(player["id"], translations=translations, conn=conn)
+    badges = build_player_badges(
+        player["id"], translations=translations, conn=conn)
     rank_badge = get_player_rank_badge(conn, player["id"])
     if rank_badge is not None:
         badges.append({
@@ -395,10 +405,13 @@ def load_player(
     start_month = (quarter - 1) * 3 + 1
     end_month = quarter * 3
     from calendar import monthrange
-    yearly_results = _summarize_matches_for_period(conn, player["id"], yearly_start, yearly_end)
+    yearly_results = _summarize_matches_for_period(
+        conn, player["id"], yearly_start, yearly_end)
     quarter_start = date(today.year, start_month, 1)
-    quarter_end = date(today.year, end_month, monthrange(today.year, end_month)[1])
-    quarterly_results = _summarize_matches_for_period(conn, player["id"], quarter_start, quarter_end)
+    quarter_end = date(today.year, end_month,
+                       monthrange(today.year, end_month)[1])
+    quarterly_results = _summarize_matches_for_period(
+        conn, player["id"], quarter_start, quarter_end)
     total_results = {"wins": 0, "losses": 0, "draws": 0}
     for match in all_matches:
         wins, losses, draws = _player_result_record(player["id"], match)
@@ -406,13 +419,19 @@ def load_player(
         total_results["losses"] += losses
         total_results["draws"] += draws
 
-    total_games = (total_results["wins"] + total_results["losses"] + total_results["draws"])
-    white_games = (white_stats["wins"] or 0) + (white_stats["losses"] or 0) + (white_stats["draws"] or 0)
-    black_games = (black_stats["wins"] or 0) + (black_stats["losses"] or 0) + (black_stats["draws"] or 0)
+    total_games = (total_results["wins"] +
+                   total_results["losses"] + total_results["draws"])
+    white_games = (white_stats["wins"] or 0) + \
+        (white_stats["losses"] or 0) + (white_stats["draws"] or 0)
+    black_games = (black_stats["wins"] or 0) + \
+        (black_stats["losses"] or 0) + (black_stats["draws"] or 0)
 
-    overall_win_rate = (total_results["wins"] / total_games * 100) if total_games else 0
-    white_win_rate = (white_stats["wins"] / white_games * 100) if white_games else 0
-    black_win_rate = (black_stats["wins"] / black_games * 100) if black_games else 0
+    overall_win_rate = (
+        total_results["wins"] / total_games * 100) if total_games else 0
+    white_win_rate = (white_stats["wins"] /
+                      white_games * 100) if white_games else 0
+    black_win_rate = (black_stats["wins"] /
+                      black_games * 100) if black_games else 0
 
     recent_streak = []
     for match in all_matches[:10]:
@@ -486,11 +505,14 @@ def load_player(
             """,
             (player["id"],),
         ).fetchall()
-        available_categories = sorted({row["category"] for row in tournament_rows if row["category"]})
+        available_categories = sorted(
+            {row["category"] for row in tournament_rows if row["category"]})
         if category in available_categories:
-            tournament_rows = [row for row in tournament_rows if row["category"] == category]
+            tournament_rows = [
+                row for row in tournament_rows if row["category"] == category]
         if season:
-            tournament_rows = [row for row in tournament_rows if str(row["begin_date"] or "").startswith(season)]
+            tournament_rows = [row for row in tournament_rows if str(
+                row["begin_date"] or "").startswith(season)]
         for tournament in tournament_rows:
             tournament_id = tournament["id"]
             participants = conn.execute(
@@ -541,7 +563,8 @@ def load_player(
             tournament_page * tournament_page_size
         ]
     else:
-        tournament_pagination = pagination_details(total_tournaments, 1, total_tournaments or 10)
+        tournament_pagination = pagination_details(
+            total_tournaments, 1, total_tournaments or 10)
 
     conn.close()
 
@@ -612,7 +635,6 @@ def load_player(
         "opponent_records": [dict(row) for row in opponent_records],
         "badges": badges,
     }
-
 
 
 def parse_page_number(value, default=1, minimum=1):
@@ -718,7 +740,8 @@ def count_rankings(filters=None):
         params = []
 
         if display_name:
-            name_clause, name_params = _build_player_name_clause(conn, display_name)
+            name_clause, name_params = _build_player_name_clause(
+                conn, display_name)
             query += name_clause
             params.extend(name_params)
 
@@ -771,7 +794,8 @@ def load_rankings(filters=None):
         params = []
 
         if display_name:
-            name_clause, name_params = _build_player_name_clause(conn, display_name)
+            name_clause, name_params = _build_player_name_clause(
+                conn, display_name)
             query += name_clause
             params.extend(name_params)
 

@@ -15,18 +15,18 @@
     <article class="card stats-card">
       <h3>{{ translations.news }}</h3>
       {% if news_articles %}
-        {% for article in news_articles %}
-          <h4><a href="{{ url_for('news_article', article_id=article.id, lang=lang) }}">{{ article.title }}</a></h4>
-          <p class="muted news-preview">{{ article.body_html }}</p>
-        {% endfor %}
+      {% for article in news_articles %}
+      <h4><a href="{{ url_for('news_article', article_id=article.id, lang=lang) }}">{{ article.title }}</a></h4>
+      <p class="muted news-preview">{{ article.body_html }}</p>
+      {% endfor %}
       {% else %}<p class="muted">{{ translations.news_empty }}</p>{% endif %}
 
       <h3>{{ translations.team }}</h3>
       {% for member in team_members %}
-        <a href="{{ url_for('player_profile', id=member.player.id, lang=lang) }}">
-          {{ member.player.display_name }}
-        </a>
-        <span class="muted">- {{ member.role }}</span><br/>
+      <a href="{{ url_for('player_profile', id=member.player.id, lang=lang) }}">
+        {{ member.player.display_name }}
+      </a>
+      <span class="muted">- {{ member.role }}</span><br />
       {% endfor %}
     </article>
     <article class="card">
@@ -36,21 +36,20 @@
         {% set count = namespace(value=0) %}
 
         {% for player in rankings %}
-          {% if player.games_played > 0 and count.value < 5 %}
-            <div class="mini-row">
-              <strong>
-                <a href="{{ url_for('player_profile', id=player.id, lang=lang) }}">
-                  {{ player.display_name }}
-                </a>
-              </strong>
-              <span>{{ player.rating | round(1) }} ({{glicko_to_category(player.rating, 1)}})</span>
-            </div>
-
-            {% set count.value = count.value + 1 %}
-          {% endif %}
-        {% endfor %}
+        {% if player.games_played > 0 and count.value < 5 %} <div class="mini-row">
+          <strong>
+            <a href="{{ url_for('player_profile', id=player.id, lang=lang) }}">
+              {{ player.display_name }}
+            </a>
+          </strong>
+          <span>{{ player.rating | round(1) }} ({{glicko_to_category(player.rating, 1)}})</span>
       </div>
-    </article>
+
+      {% set count.value = count.value + 1 %}
+      {% endif %}
+      {% endfor %}
+  </div>
+  </article>
   </div>
 </section>
 
@@ -63,47 +62,43 @@
   </div>
 
   <nav class="home-stats-tabs" aria-label="{{ translations.stats_title }}" role="tablist">
-    {% for period_key, period_label in [('all_time', translations.stats_period_all_time), ('year', translations.stats_period_year), ('quarter', translations.stats_period_quarter)] %}
-      <button
-        type="button"
-        class="home-stats-tab{% if stats_period == period_key %} is-active{% endif %}"
-        id="home-stats-tab-{{ period_key }}"
-        role="tab"
-        aria-controls="home-stats-period-{{ period_key }}"
-        aria-selected="{{ 'true' if stats_period == period_key else 'false' }}"
-      >{{ period_label }}</button>
+    {% for period_key, period_label in [('all_time', translations.stats_period_all_time), ('year',
+    translations.stats_period_year), ('quarter', translations.stats_period_quarter)] %}
+    <button type="button" class="home-stats-tab{% if stats_period == period_key %} is-active{% endif %}"
+      id="home-stats-tab-{{ period_key }}" role="tab" aria-controls="home-stats-period-{{ period_key }}"
+      aria-selected="{{ 'true' if stats_period == period_key else 'false' }}">{{ period_label }}</button>
     {% endfor %}
   </nav>
 
-  {% for period_key, period_label in [('all_time', translations.stats_period_all_time), ('year', translations.stats_period_year), ('quarter', translations.stats_period_quarter)] %}
-    {% set period_stats = home_stats[period_key] %}
-    <article
-      class="stats-panel centered-header home-stats-panel"
-      id="home-stats-period-{{ period_key }}"
-      role="tabpanel"
-      aria-labelledby="home-stats-tab-{{ period_key }}"
-      {% if stats_period != period_key %}hidden{% endif %}
-    >
-      <h4>{{ period_label }}</h4>
-      <div class="stats-list">
-        {% for metric_key, metric_label in [('most_active', translations.stats_metric_active), ('most_wins', translations.stats_metric_wins), ('relative_glicko_gain', translations.stats_metric_glicko), ('most_wins_as_white', translations.stats_metric_white), ('most_wins_as_black', translations.stats_metric_black)] %}
-        <div class="stats-group">
-          <h5>{{ metric_label }}</h5>
-          {% set entries = period_stats[metric_key] %}
-          {% if entries %}
-            {% for entry in entries %}
-            <div class="mini-row">
-              <strong><a href="{{ url_for('player_profile', id=entry.player_id, lang=lang) }}">{{ entry.display_name }}</a></strong>
-              <span>{{ entry.display_value }}</span>
-            </div>
-            {% endfor %}
-          {% else %}
-            <p class="muted">{{ translations.stats_empty }}</p>
-          {% endif %}
+  {% for period_key, period_label in [('all_time', translations.stats_period_all_time), ('year',
+  translations.stats_period_year), ('quarter', translations.stats_period_quarter)] %}
+  {% set period_stats = home_stats[period_key] %}
+  <article class="stats-panel centered-header home-stats-panel" id="home-stats-period-{{ period_key }}" role="tabpanel"
+    aria-labelledby="home-stats-tab-{{ period_key }}" {% if stats_period !=period_key %}hidden{% endif %}>
+    <h4>{{ period_label }}</h4>
+    <div class="stats-list">
+      {% for metric_key, metric_label in [('most_active', translations.stats_metric_active), ('most_wins',
+      translations.stats_metric_wins), ('relative_glicko_gain', translations.stats_metric_glicko),
+      ('most_wins_as_white', translations.stats_metric_white), ('most_wins_as_black', translations.stats_metric_black)]
+      %}
+      <div class="stats-group">
+        <h5>{{ metric_label }}</h5>
+        {% set entries = period_stats[metric_key] %}
+        {% if entries %}
+        {% for entry in entries %}
+        <div class="mini-row">
+          <strong><a href="{{ url_for('player_profile', id=entry.player_id, lang=lang) }}">{{ entry.display_name
+              }}</a></strong>
+          <span>{{ entry.display_value }}</span>
         </div>
         {% endfor %}
+        {% else %}
+        <p class="muted">{{ translations.stats_empty }}</p>
+        {% endif %}
       </div>
-    </article>
+      {% endfor %}
+    </div>
+  </article>
   {% endfor %}
 </section>
 <script>

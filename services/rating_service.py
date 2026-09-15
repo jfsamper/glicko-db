@@ -69,6 +69,7 @@ def parse_result(result):
         return 0.5
     return None
 
+
 def _handicap_stones(match):
     """Reads handicap_stones off a matches row, defaulting to 0 for rows
     or databases predating the handicap_stones column (pre-migration DBs,
@@ -99,6 +100,7 @@ def black_handicap_points(white_rating, black_rating, handicap_stones, category_
     if not handicap_stones:
         return 0.0
     return handicap_points(white_rating, black_rating, handicap_stones, k=category_k, m=category_m)
+
 
 def glicko2_update(
     rating,
@@ -142,6 +144,7 @@ def glicko2_update(
         "rd": round(player.rd, 2),
         "volatility": round(player.vol, 6),
     }
+
 
 def recompute_ratings(conn=None):
     owns_conn = conn is None
@@ -240,19 +243,23 @@ def recompute_ratings(conn=None):
             }
             conn.execute(
                 "UPDATE players SET rating = ?, rd = ?, volatility = ? WHERE id = ?",
-                (states[match["white_player_id"]]["rating"], states[match["white_player_id"]]["rd"], states[match["white_player_id"]]["volatility"], match["white_player_id"]),
+                (states[match["white_player_id"]]["rating"], states[match["white_player_id"]]
+                 ["rd"], states[match["white_player_id"]]["volatility"], match["white_player_id"]),
             )
             conn.execute(
                 "UPDATE players SET rating = ?, rd = ?, volatility = ? WHERE id = ?",
-                (states[match["black_player_id"]]["rating"], states[match["black_player_id"]]["rd"], states[match["black_player_id"]]["volatility"], match["black_player_id"]),
+                (states[match["black_player_id"]]["rating"], states[match["black_player_id"]]
+                 ["rd"], states[match["black_player_id"]]["volatility"], match["black_player_id"]),
             )
             conn.execute(
                 "INSERT INTO rating_snapshots (player_id, snapshot_date, rating, rd, volatility) VALUES (?, ?, ?, ?, ?)",
-                (match["white_player_id"], match["match_date"], states[match["white_player_id"]]["rating"], states[match["white_player_id"]]["rd"], states[match["white_player_id"]]["volatility"]),
+                (match["white_player_id"], match["match_date"], states[match["white_player_id"]]["rating"],
+                 states[match["white_player_id"]]["rd"], states[match["white_player_id"]]["volatility"]),
             )
             conn.execute(
                 "INSERT INTO rating_snapshots (player_id, snapshot_date, rating, rd, volatility) VALUES (?, ?, ?, ?, ?)",
-                (match["black_player_id"], match["match_date"], states[match["black_player_id"]]["rating"], states[match["black_player_id"]]["rd"], states[match["black_player_id"]]["volatility"]),
+                (match["black_player_id"], match["match_date"], states[match["black_player_id"]]["rating"],
+                 states[match["black_player_id"]]["rd"], states[match["black_player_id"]]["volatility"]),
             )
 
         if owns_conn:
@@ -263,6 +270,7 @@ def recompute_ratings(conn=None):
             conn.close()
 
     logger.debug("Ratings recomputed.")
+
 
 def get_rating_config(conn=None):
     owns_conn = conn is None
@@ -295,6 +303,7 @@ def get_rating_config(conn=None):
 
     return dict(row)
 
+
 def update_rating_config(
     tau,
     default_rating,
@@ -316,7 +325,8 @@ def update_rating_config(
         )
         """
     )
-    columns = {row["name"] for row in conn.execute("PRAGMA table_info(rating_config)").fetchall()}
+    columns = {row["name"] for row in conn.execute(
+        "PRAGMA table_info(rating_config)").fetchall()}
     if "updated_at" not in columns:
         conn.execute("ALTER TABLE rating_config ADD COLUMN updated_at TEXT")
 
@@ -342,6 +352,7 @@ def update_rating_config(
 
     conn.commit()
     conn.close()
+
 
 def players_needing_update():
 
@@ -371,6 +382,7 @@ def players_needing_update():
     conn.close()
 
     return [row["id"] for row in rows]
+
 
 def mark_dirty(match_date, conn=None):
     owns_conn = conn is None
@@ -410,6 +422,7 @@ def mark_dirty(match_date, conn=None):
         if owns_conn:
             conn.close()
 
+
 def get_dirty_date(conn=None):
     owns_conn = conn is None
     if conn is None:
@@ -432,6 +445,7 @@ def get_dirty_date(conn=None):
         if owns_conn:
             conn.close()
 
+
 def clear_dirty_date(conn=None):
     owns_conn = conn is None
     if conn is None:
@@ -450,6 +464,7 @@ def clear_dirty_date(conn=None):
     finally:
         if owns_conn:
             conn.close()
+
 
 def update_from_latest_snapshot():
     conn = get_db()
@@ -704,5 +719,3 @@ def _replay_from_dirty_date(conn, dirty_date):
                 player_id,
             ),
         )
-
-

@@ -54,10 +54,12 @@ def format_rank_category(rank):
 def parse_rank_category(category):
     """Parse a Go category label into an integer rank unit."""
     if not isinstance(category, str):
-        raise ValueError("Acceleration category floors must use dan or kyu labels")
+        raise ValueError(
+            "Acceleration category floors must use dan or kyu labels")
     match = re.fullmatch(r"(\d+)\s*(dan|kyu)", category.strip(), re.IGNORECASE)
     if not match or int(match.group(1)) < 1:
-        raise ValueError("Acceleration category floors must use dan or kyu labels")
+        raise ValueError(
+            "Acceleration category floors must use dan or kyu labels")
     value, label = int(match.group(1)), match.group(2).lower()
     return value - 1 if label == "dan" else -value
 
@@ -103,7 +105,8 @@ def _effective_score(player, system):
 def _sort_key(player, system):
     return (
         -_effective_score(player, system),
-        str(_value(player, "category", "")).casefold() if system == "swiss_cat" else "",
+        str(_value(player, "category", "")).casefold(
+        ) if system == "swiss_cat" else "",
         -float(_value(player, "rating", 0)),
         str(_value(player, "name", _player_id(player))).casefold(),
         _player_id(player),
@@ -144,7 +147,8 @@ def _pair_group(group, category_strict=False):
     while remaining:
         first = remaining.pop(0)
         partner_index = next(
-            (index for index, candidate in enumerate(remaining) if _can_pair(first, candidate, category_strict)),
+            (index for index, candidate in enumerate(remaining)
+             if _can_pair(first, candidate, category_strict)),
             None,
         )
         if partner_index is None:
@@ -206,7 +210,8 @@ def _choose_bye(players, system):
 def _groups(players, system, category_strict=False):
     grouped = defaultdict(list)
     for player in sorted(players, key=lambda item: _sort_key(item, system)):
-        group_key = (_value(player, "category", ""), _effective_score(player, system)) if category_strict else _effective_score(player, system)
+        group_key = (_value(player, "category", ""), _effective_score(
+            player, system)) if category_strict else _effective_score(player, system)
         grouped[group_key].append(player)
     return [grouped[key] for key in sorted(grouped, reverse=True)]
 
@@ -227,13 +232,15 @@ def _pairing_positions(players, system):
     """Return each player's position within its OpenGotha score group."""
     groups = defaultdict(list)
     for player in sorted(players, key=lambda item: _sort_key(item, system)):
-        category = _value(player, "category", "") if system == "swiss_cat" else ""
+        category = _value(player, "category",
+                          "") if system == "swiss_cat" else ""
         groups[(category, _effective_score(player, system))].append(player)
 
     positions = {}
     for group_number, group in enumerate(groups.values()):
         for placement, player in enumerate(group):
-            positions[_player_id(player)] = (group_number, len(group), placement)
+            positions[_player_id(player)] = (
+                group_number, len(group), placement)
     return positions
 
 
@@ -254,11 +261,14 @@ def _seed_weight(first, second, positions, system, seed_system=None):
         raise ValueError(f"Unknown seeding system: {seed_system}")
     max_weight = 5_000_000
     if seed_system == "split_random":
-        different_halves = (2 * first_placement < group_size) != (2 * second_placement < group_size)
+        different_halves = (2 * first_placement <
+                            group_size) != (2 * second_placement < group_size)
         if not different_halves:
             return 0
-        name = "|".join(sorted((str(_value(first, "name", _player_id(first))), str(_value(second, "name", _player_id(second))))))
-        deterministic_value = sum(ord(character) * (index + 1) for index, character in enumerate(name))
+        name = "|".join(sorted((str(_value(first, "name", _player_id(first))), str(
+            _value(second, "name", _player_id(second))))))
+        deterministic_value = sum(ord(character) * (index + 1)
+                                  for index, character in enumerate(name))
         return int(max_weight * 0.8) + deterministic_value % int(max_weight * 0.2)
     if seed_system == "split_fold":
         x = first_placement + second_placement - (group_size - 1)
@@ -271,13 +281,18 @@ def _seed_weight(first, second, positions, system, seed_system=None):
 def _draw_up_down_weight(first, second, positions, system):
     if _effective_score(first, system) == _effective_score(second, system):
         return 0
-    first_group, first_group_size, first_placement = positions[_player_id(first)]
-    second_group, second_group_size, second_placement = positions[_player_id(second)]
+    first_group, first_group_size, first_placement = positions[_player_id(
+        first)]
+    second_group, second_group_size, second_placement = positions[_player_id(
+        second)]
     if abs(first_group - second_group) >= 4:
         return 0
-    first_is_upper = _effective_score(first, system) > _effective_score(second, system)
-    upper_size, upper_placement = (first_group_size, first_placement) if first_is_upper else (second_group_size, second_placement)
-    lower_size, lower_placement = (second_group_size, second_placement) if first_is_upper else (first_group_size, first_placement)
+    first_is_upper = _effective_score(
+        first, system) > _effective_score(second, system)
+    upper_size, upper_placement = (first_group_size, first_placement) if first_is_upper else (
+        second_group_size, second_placement)
+    lower_size, lower_placement = (second_group_size, second_placement) if first_is_upper else (
+        first_group_size, first_placement)
     upper = first if first_is_upper else second
     lower = second if first_is_upper else first
     upper_up = int(_value(upper, "draw_up_count", 0) or 0)
@@ -322,15 +337,20 @@ def _pair_weight(first, second, players, system, positions, seed_system=None):
         max(_effective_score(player, system) for player in players)
         - min(_effective_score(player, system) for player in players),
     )
-    score_weight = int(SCORE_DIFFERENCE_WEIGHT * _concavity(abs(first_score - second_score) / score_range))
+    score_weight = int(SCORE_DIFFERENCE_WEIGHT *
+                       _concavity(abs(first_score - second_score) / score_range))
 
     category_gap = 0
     if system == "swiss_cat":
-        category_gap = int(_value(first, "category_order", 0) or 0) - int(_value(second, "category_order", 0) or 0)
+        category_gap = int(_value(first, "category_order", 0)
+                           or 0) - int(_value(second, "category_order", 0) or 0)
         if not category_gap:
-            category_gap = 0 if _value(first, "category", "") == _value(second, "category", "") else 1
-    category_count = max(1, len({str(_value(player, "category", "")) for player in players}))
-    category_weight = int(CATEGORY_WEIGHT * _concavity(abs(category_gap) / category_count))
+            category_gap = 0 if _value(first, "category", "") == _value(
+                second, "category", "") else 1
+    category_count = max(
+        1, len({str(_value(player, "category", "")) for player in players}))
+    category_weight = int(
+        CATEGORY_WEIGHT * _concavity(abs(category_gap) / category_count))
 
     color_weight = 0
     if _color_balance(first) * _color_balance(second) < 0:
@@ -363,9 +383,10 @@ def _maximum_weight_pairing(players, system, seed_system=None, category_strict=F
     graph = nx.Graph()
     graph.add_nodes_from(_player_id(player) for player in ordered_players)
     for index, first in enumerate(ordered_players):
-        for second in ordered_players[index + 1 :]:
+        for second in ordered_players[index + 1:]:
             if _category_allows_pair(first, second, category_strict):
-                duplicate_weight = 0 if _is_repeat(first, second) else AVOID_DUPLICATE_GAME_WEIGHT
+                duplicate_weight = 0 if _is_repeat(
+                    first, second) else AVOID_DUPLICATE_GAME_WEIGHT
                 graph.add_edge(
                     _player_id(first),
                     _player_id(second),
@@ -382,7 +403,8 @@ def _maximum_weight_pairing(players, system, seed_system=None, category_strict=F
                     ),
                 )
 
-    matching = nx.max_weight_matching(graph, maxcardinality=True, weight="weight")
+    matching = nx.max_weight_matching(
+        graph, maxcardinality=True, weight="weight")
     if len(matching) * 2 < len(ordered_players):
         return None
 
@@ -392,7 +414,8 @@ def _maximum_weight_pairing(players, system, seed_system=None, category_strict=F
         first = player_by_id[first_id]
         second = player_by_id[second_id]
         white_id, black_id = _color_assignment(first, second)
-        pairs.append({"white_player_id": white_id, "black_player_id": black_id, "is_bye": False})
+        pairs.append({"white_player_id": white_id,
+                     "black_player_id": black_id, "is_bye": False})
     return sorted(pairs, key=lambda pairing: (str(pairing["white_player_id"]), str(pairing["black_player_id"])))
 
 
@@ -428,7 +451,8 @@ def pair_players(players, system="swiss", seed_system=None, category_strict=None
                 category_players, system, seed_system, category_strict=True
             )
             if category_pairings is None:
-                category_groups = _groups(category_players, system, category_strict=True)
+                category_groups = _groups(
+                    category_players, system, category_strict=True)
                 category_pairings = []
                 floating = []
                 for group in category_groups:
@@ -449,7 +473,8 @@ def pair_players(players, system="swiss", seed_system=None, category_strict=None
                         }
                     )
                 if floating:
-                    raise ValueError("Strict category pairing left an unpaired player")
+                    raise ValueError(
+                        "Strict category pairing left an unpaired player")
             pairings.extend(category_pairings)
             if category_bye:
                 pairings.append(category_bye)
@@ -461,13 +486,15 @@ def pair_players(players, system="swiss", seed_system=None, category_strict=None
         working_players.remove(bye_player)
         bye = _assign_bye([bye_player], system)
 
-    pairings = _maximum_weight_pairing(working_players, system, seed_system, category_strict)
+    pairings = _maximum_weight_pairing(
+        working_players, system, seed_system, category_strict)
     floating = []
     if pairings is None:
         groups = _groups(working_players, system, category_strict)
         pairings = []
         for group in groups:
-            group_pairings, group_floats = _pair_group(floating + group, category_strict)
+            group_pairings, group_floats = _pair_group(
+                floating + group, category_strict)
             pairings.extend(group_pairings)
             floating = group_floats
 
@@ -478,7 +505,8 @@ def pair_players(players, system="swiss", seed_system=None, category_strict=None
         while len(floating) > 1:
             first = floating.pop(0)
             partner_index = next(
-                (index for index, candidate in enumerate(floating) if _can_pair(first, candidate, category_strict)),
+                (index for index, candidate in enumerate(floating)
+                 if _can_pair(first, candidate, category_strict)),
                 None,
             )
             if partner_index is None:
@@ -495,7 +523,8 @@ def pair_players(players, system="swiss", seed_system=None, category_strict=None
             )
 
     if floating and category_strict:
-        raise ValueError("Strict category pairing cannot pair all players within their categories")
+        raise ValueError(
+            "Strict category pairing cannot pair all players within their categories")
 
     if bye:
         pairings.append(bye)
@@ -521,7 +550,8 @@ def _acceleration_bands(scheme):
     for item in scheme.split(","):
         parts = item.strip().split(":")
         if len(parts) != 2:
-            raise ValueError("Acceleration scheme must use percentage:bonus entries")
+            raise ValueError(
+                "Acceleration scheme must use percentage:bonus entries")
         fraction, bonus = float(parts[0]) / 100.0, float(parts[1])
         if fraction <= 0 or bonus < 0:
             raise ValueError("Acceleration scheme values must be non-negative")
@@ -536,7 +566,8 @@ def validate_acceleration_categories(number_of_categories, floors):
     try:
         category_count = int(number_of_categories)
     except (TypeError, ValueError) as exc:
-        raise ValueError("Number of acceleration categories must be an integer") from exc
+        raise ValueError(
+            "Number of acceleration categories must be an integer") from exc
     if not 1 <= category_count <= MAX_ACCELERATION_CATEGORIES:
         raise ValueError(
             f"Number of acceleration categories must be between 1 and {MAX_ACCELERATION_CATEGORIES}"
@@ -547,7 +578,8 @@ def validate_acceleration_categories(number_of_categories, floors):
     else:
         floor_values = list(floors)
     if len(floor_values) != category_count - 1:
-        raise ValueError("Acceleration categories require one floor between each category")
+        raise ValueError(
+            "Acceleration categories require one floor between each category")
 
     normalized_floors = []
     for floor in floor_values:
@@ -557,7 +589,8 @@ def validate_acceleration_categories(number_of_categories, floors):
         try:
             numeric_floor = float(floor)
         except (TypeError, ValueError) as exc:
-            raise ValueError("Acceleration category floors must use dan or kyu labels") from exc
+            raise ValueError(
+                "Acceleration category floors must use dan or kyu labels") from exc
         if not numeric_floor.is_integer():
             raise ValueError("Acceleration category floors must be integers")
         normalized_floors.append(int(numeric_floor))
@@ -565,9 +598,11 @@ def validate_acceleration_categories(number_of_categories, floors):
         floor < MIN_CATEGORY_RANK or floor > MAX_CATEGORY_RANK
         for floor in normalized_floors
     ):
-        raise ValueError(f"Acceleration category floors must be between {MIN_CATEGORY_RANK} and {MAX_CATEGORY_RANK}")
+        raise ValueError(
+            f"Acceleration category floors must be between {MIN_CATEGORY_RANK} and {MAX_CATEGORY_RANK}")
     if any(first <= second for first, second in zip(normalized_floors, normalized_floors[1:])):
-        raise ValueError("Acceleration category floors must descend from strongest to weakest")
+        raise ValueError(
+            "Acceleration category floors must descend from strongest to weakest")
     return category_count, tuple(normalized_floors)
 
 

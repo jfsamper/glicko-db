@@ -24,9 +24,9 @@
         {% for badge in badges %}
         <span class="badge-pill">
           {% if badge.is_rank_badge %}
-            {{ badge.label }} · {{ translations.country_colombia }}
+          {{ badge.label }} · {{ translations.country_colombia }}
           {% else %}
-            {{ badge.label }} · {{ badge.period }}
+          {{ badge.label }} · {{ badge.period }}
           {% endif %}
         </span>
         {% endfor %}
@@ -44,7 +44,8 @@
         <label for="profile-season">{{ translations.season }}</label>
         <select id="profile-season" name="season" onchange="this.form.submit()">
           <option value="">{{ translations.all_seasons }}</option>
-          {% for year in profile_seasons %}<option value="{{ year }}" {% if season == year|string %}selected{% endif %}>{{ year }}</option>{% endfor %}
+          {% for year in profile_seasons %}<option value="{{ year }}" {% if season==year|string %}selected{% endif %}>{{
+            year }}</option>{% endfor %}
         </select>
       </div>
     </div>
@@ -54,17 +55,20 @@
     <div class="player-result-cards">
       <article class="card player-profile-card">
         <h3>{{ translations.total_results }}</h3>
-        <p class="metric small">{{ stats.total.wins }}-{{ stats.total.losses }}{% if stats.total.draws %}-{{ stats.total.draws }}{% endif %}</p>
+        <p class="metric small">{{ stats.total.wins }}-{{ stats.total.losses }}{% if stats.total.draws %}-{{
+          stats.total.draws }}{% endif %}</p>
       </article>
 
       <article class="card player-profile-card">
         <h3>{{ translations.yearly_results }}</h3>
-        <p class="metric small">{{ stats.yearly.wins }}-{{ stats.yearly.losses }}{% if stats.yearly.draws %}-{{ stats.yearly.draws }}{% endif %}</p>
+        <p class="metric small">{{ stats.yearly.wins }}-{{ stats.yearly.losses }}{% if stats.yearly.draws %}-{{
+          stats.yearly.draws }}{% endif %}</p>
       </article>
 
       <article class="card player-profile-card">
         <h3>{{ translations.quarterly_results }}</h3>
-        <p class="metric small">{{ stats.quarterly.wins }}-{{ stats.quarterly.losses }}{% if stats.quarterly.draws %}-{{ stats.quarterly.draws }}{% endif %}</p>
+        <p class="metric small">{{ stats.quarterly.wins }}-{{ stats.quarterly.losses }}{% if stats.quarterly.draws %}-{{
+          stats.quarterly.draws }}{% endif %}</p>
       </article>
     </div>
 
@@ -81,23 +85,27 @@
       <article class="card player-profile-card">
         <h3>{{ translations.recent_streak }}</h3>
         {% if stats.recent_streak %}
-          <div class="badge-list player-streak-list">
-            {% for symbol in stats.recent_streak %}
-              <span class="badge-pill player-streak-symbol {% if symbol == 'X' %}record-win{% elif symbol == 'O' %}record-loss{% else %}record-even{% endif %}">{{ symbol }}</span>
-            {% endfor %}
-          </div>
+        <div class="badge-list player-streak-list">
+          {% for symbol in stats.recent_streak %}
+          <span
+            class="badge-pill player-streak-symbol {% if symbol == 'X' %}record-win{% elif symbol == 'O' %}record-loss{% else %}record-even{% endif %}">{{
+            symbol }}</span>
+          {% endfor %}
+        </div>
         {% else %}
-          <p class="muted">—</p>
+        <p class="muted">—</p>
         {% endif %}
       </article>
 
       <article class="card player-profile-card">
         <h3>{{ translations.career_milestones }}</h3>
         <div class="player-profile-details">
-          <div><strong>{{ translations.best_rating }}</strong>: {{ stats.milestones.best_rating | round(1) }} ({{ glicko_to_category(stats.milestones.best_rating, 1) }})</div>
+          <div><strong>{{ translations.best_rating }}</strong>: {{ stats.milestones.best_rating | round(1) }} ({{
+            glicko_to_category(stats.milestones.best_rating, 1) }})</div>
           <div><strong>{{ translations.streak_count }}</strong>: {{ stats.milestones.streak_count }}</div>
           <div><strong>{{ translations.current_streak }}</strong>: {{ stats.milestones.current_streak }}</div>
-          <div><strong>{{ translations.last_played }}</strong>: {{ stats.milestones.last_played if stats.milestones.last_played else '—' }}</div>
+          <div><strong>{{ translations.last_played }}</strong>: {{ stats.milestones.last_played if
+            stats.milestones.last_played else '—' }}</div>
         </div>
       </article>
     </div>
@@ -110,96 +118,111 @@
         </div>
       </div>
       {% if rating_chart.points %}
-        <div class="chart-viewport">
-          <svg viewBox="0 0 600 225" class="rating-chart" role="img" aria-label="{{ translations.chart_title }}">
-            <rect x="-35" y="2" width="675" height="220" rx="20" class="chart-surface"></rect>
-            <line x1="24" y1="196" x2="596" y2="196" class="axis"></line>
-            <line x1="24" y1="24" x2="24" y2="196" class="axis"></line>
-            <line x1="24" y1="24" x2="596" y2="24" class="grid"></line>
-            <line x1="24" y1="110" x2="596" y2="110" class="grid"></line>
-            <line x1="24" y1="196" x2="596" y2="196" class="grid"></line>
-            <line x1="24" y1="{{ rating_chart.baseline_y }}" x2="596" y2="{{ rating_chart.baseline_y }}" class="baseline">
-              {{glicko_to_category(rating_chart.baseline_y, 1)}}
-            </line>
-            <path d="{{ rating_chart.path }}" class="trend"></path>
-            {% for point in rating_chart.points %}
-              <circle
-                cx="{{ point.x }}"
-                cy="{{ point.y }}"
-                r="4"
-                class="point"
-                data-date="{{ point.date }}"
-                data-rating="{{ point.rating | round(1) }}"
-                data-category="{{ glicko_to_category(point.rating, 1) }}"
-                data-x="{{ point.x }}"
-                data-y="{{ point.y }}">
-              </circle>
-            {% endfor %}
-            <circle
-              cx="{{ rating_chart.points[-1].x }}"
-              cy="{{ rating_chart.points[-1].y }}"
-              r="6"
-              class="current-point"
-              data-date="{{ rating_chart.points[-1].date }}"
-              data-rating="{{ rating_chart.points[-1].rating | round(1) }}"
-              data-category="{{ glicko_to_category(rating_chart.points[-1].rating, 1) }}"
-              data-x="{{ rating_chart.points[-1].x }}"
-              data-y="{{ rating_chart.points[-1].y }}"></circle>
-            <text x="4" y="18" class="chart-label">{{ glicko_to_category(rating_chart.label_max, 1) }}</text>
-            <text x="4" y="110" class="chart-label">{{ glicko_to_category(((rating_chart.label_max + rating_chart.label_min) / 2), 1) }}</text>
-            <text x="4" y="195" class="chart-label">{{ glicko_to_category(rating_chart.label_min, 1) }}</text>
-            {% for axis_label in rating_chart.axis_labels %}
-              <text x="{{ axis_label.x }}" y="215" text-anchor="{{ axis_label.anchor }}" class="chart-label">{{ axis_label.label }}</text>
-            {% endfor %}
-          </svg>
-          <div id="chart-tooltip" class="chart-tooltip" role="status" aria-live="polite">
-            <div class="chart-tooltip__content">
-              <strong class="chart-tooltip__date">-</strong>
-              <span class="chart-tooltip__rating">-</span>
-              <span class="chart-tooltip__category">-</span>
-            </div>
+      <div class="chart-viewport">
+        <svg viewBox="0 0 600 225" class="rating-chart" role="img" aria-label="{{ translations.chart_title }}">
+          <rect x="-35" y="2" width="675" height="220" rx="20" class="chart-surface"></rect>
+          <line x1="24" y1="196" x2="596" y2="196" class="axis"></line>
+          <line x1="24" y1="24" x2="24" y2="196" class="axis"></line>
+          <line x1="24" y1="24" x2="596" y2="24" class="grid"></line>
+          <line x1="24" y1="110" x2="596" y2="110" class="grid"></line>
+          <line x1="24" y1="196" x2="596" y2="196" class="grid"></line>
+          <line x1="24" y1="{{ rating_chart.baseline_y }}" x2="596" y2="{{ rating_chart.baseline_y }}" class="baseline">
+            {{glicko_to_category(rating_chart.baseline_y, 1)}}
+          </line>
+          <path d="{{ rating_chart.path }}" class="trend"></path>
+          {% for point in rating_chart.points %}
+          <circle cx="{{ point.x }}" cy="{{ point.y }}" r="4" class="point" data-date="{{ point.date }}"
+            data-rating="{{ point.rating | round(1) }}" data-category="{{ glicko_to_category(point.rating, 1) }}"
+            data-x="{{ point.x }}" data-y="{{ point.y }}">
+          </circle>
+          {% endfor %}
+          <circle cx="{{ rating_chart.points[-1].x }}" cy="{{ rating_chart.points[-1].y }}" r="6" class="current-point"
+            data-date="{{ rating_chart.points[-1].date }}" data-rating="{{ rating_chart.points[-1].rating | round(1) }}"
+            data-category="{{ glicko_to_category(rating_chart.points[-1].rating, 1) }}"
+            data-x="{{ rating_chart.points[-1].x }}" data-y="{{ rating_chart.points[-1].y }}"></circle>
+          <text x="4" y="18" class="chart-label">{{ glicko_to_category(rating_chart.label_max, 1) }}</text>
+          <text x="4" y="110" class="chart-label">{{ glicko_to_category(((rating_chart.label_max +
+            rating_chart.label_min) / 2), 1) }}</text>
+          <text x="4" y="195" class="chart-label">{{ glicko_to_category(rating_chart.label_min, 1) }}</text>
+          {% for axis_label in rating_chart.axis_labels %}
+          <text x="{{ axis_label.x }}" y="215" text-anchor="{{ axis_label.anchor }}" class="chart-label">{{
+            axis_label.label }}</text>
+          {% endfor %}
+        </svg>
+        <div id="chart-tooltip" class="chart-tooltip" role="status" aria-live="polite">
+          <div class="chart-tooltip__content">
+            <strong class="chart-tooltip__date">-</strong>
+            <span class="chart-tooltip__rating">-</span>
+            <span class="chart-tooltip__category">-</span>
           </div>
         </div>
-        <div class="chart-meta">
-          <span class="chart-current">{{ datetime.strptime(rating_chart.points[0].date, '%Y-%m-%d').strftime('%d/%m/%y') }}: {{ rating_chart.points[0].rating | round(1) }} ({{ glicko_to_category(rating_chart.points[0].rating, 1) }})</span>
-          <!-- Change in rating, if positive prefix + if negative prefix - -->
-          <span class="chart-current">
-            {% set rating_change = rating_chart.points[-1].rating - rating_chart.points[0].rating %}
-            {% if rating_change > 0 %}
-              {{ translations.change }} +{{ rating_change | round(1) }} 
-            {% elif rating_change < 0 %}
-              {{ translations.change }} {{ rating_change | round(1) }}
-            {% else %}
-              {{ translations.change }} +0
-            {% endif %} 
-            
-          </span>
-          <span class="chart-current">{{ datetime.strptime(rating_chart.points[-1].date, '%Y-%m-%d').strftime('%d/%m/%y') }}: {{ rating_chart.points[-1].rating | round(1) }} ({{ glicko_to_category(rating_chart.points[-1].rating, 1) }})</span>
+      </div>
+      <div class="chart-meta">
+        <span class="chart-current">{{ datetime.strptime(rating_chart.points[0].date, '%Y-%m-%d').strftime('%d/%m/%y')
+          }}: {{ rating_chart.points[0].rating | round(1) }} ({{ glicko_to_category(rating_chart.points[0].rating, 1)
+          }})</span>
+        <!-- Change in rating, if positive prefix + if negative prefix - -->
+        <span class="chart-current">
+          {% set rating_change = rating_chart.points[-1].rating - rating_chart.points[0].rating %}
+          {% if rating_change > 0 %}
+          {{ translations.change }} +{{ rating_change | round(1) }}
+          {% elif rating_change < 0 %} {{ translations.change }} {{ rating_change | round(1) }} {% else %} {{
+            translations.change }} +0 {% endif %} </span>
+            <span class="chart-current">{{ datetime.strptime(rating_chart.points[-1].date,
+              '%Y-%m-%d').strftime('%d/%m/%y') }}: {{ rating_chart.points[-1].rating | round(1) }} ({{
+              glicko_to_category(rating_chart.points[-1].rating, 1) }})</span>
 
-        </div>
+      </div>
       {% else %}
-        <p class="muted centered-header">{{ translations.no_rating_history }}</p>
+      <p class="muted centered-header">{{ translations.no_rating_history }}</p>
       {% endif %}
     </article>
   </div>
 </section>
 
 <section class="panel">
-  <div class="panel-header centered-header"><h3>{{ translations.tournament_overview }}</h3></div>
+  <div class="panel-header centered-header">
+    <h3>{{ translations.tournament_overview }}</h3>
+  </div>
   {% if profile_tournaments %}
-    <div class="table-wrapper"><table class="table-stack"><thead><tr><th>{{ translations.final_position }}</th><th>{{ translations.date }}</th><th>{{ translations.tournament_name }}</th><th>{{ translations.score }}</th><th>{{ translations.tournament_type }}</th></tr></thead>
-      <tbody>{% for tournament in profile_tournaments %}<tr data-profile-tournament-row><td class="{% if tournament.final_position|int == 1 %}position-medal position-gold{% elif tournament.final_position|int == 2 %}position-medal position-silver{% elif tournament.final_position|int == 3 %}position-medal position-copper{% endif %}">{{ tournament.final_position }}</td><td>{{ tournament.begin_date }}</td><td><a href="{{ url_for('tournament_page', tournament_id=tournament.id, lang=lang) }}">{{ tournament.name }}</a></td><td>{{ tournament.score }}</td><td>{{ translations.get(tournament.tournament_type, tournament.tournament_type) }}</td></tr>{% endfor %}</tbody>
-    </table></div>
+  <div class="table-wrapper">
+    <table class="table-stack">
+      <thead>
+        <tr>
+          <th>{{ translations.final_position }}</th>
+          <th>{{ translations.date }}</th>
+          <th>{{ translations.tournament_name }}</th>
+          <th>{{ translations.score }}</th>
+          <th>{{ translations.tournament_type }}</th>
+        </tr>
+      </thead>
+      <tbody>{% for tournament in profile_tournaments %}<tr data-profile-tournament-row>
+          <td
+            class="{% if tournament.final_position|int == 1 %}position-medal position-gold{% elif tournament.final_position|int == 2 %}position-medal position-silver{% elif tournament.final_position|int == 3 %}position-medal position-copper{% endif %}">
+            {{ tournament.final_position }}</td>
+          <td>{{ tournament.begin_date }}</td>
+          <td><a href="{{ url_for('tournament_page', tournament_id=tournament.id, lang=lang) }}">{{ tournament.name
+              }}</a></td>
+          <td>{{ tournament.score }}</td>
+          <td>{{ translations.get(tournament.tournament_type, tournament.tournament_type) }}</td>
+        </tr>{% endfor %}</tbody>
+    </table>
+  </div>
   {% else %}<p class="muted">{{ translations.no_tournament_history }}</p>{% endif %}
   {% if total_tournaments > 10 %}
-    <div class="pagination-summary" data-profile-tournament-summary data-showing-label="{{ translations.showing_results }}" data-of-label="{{ translations.of_label }}">
-      {{ translations.showing_results }} {{ tournament_pagination.result_start }}-{{ tournament_pagination.result_end }} {{ translations.of_label }} {{ total_tournaments }}
-    </div>
-    <div class="pagination-row">
-      <button type="button" class="button secondary" data-profile-tournament-prev>{{ translations.prev_page }}</button>
-      <span data-profile-tournament-page data-page-label="{{ translations.page_label }}" data-of-label="{{ translations.of_label }}" aria-label="{{ translations.page_label }} {{ tournament_pagination.page }}">{{ translations.page_label }} {{ tournament_pagination.page }} {{ translations.of_label }} {{ tournament_pagination.total_pages }}</span>
-      <button type="button" class="button" data-profile-tournament-next>{{ translations.next_page }}</button>
-    </div>
+  <div class="pagination-summary" data-profile-tournament-summary
+    data-showing-label="{{ translations.showing_results }}" data-of-label="{{ translations.of_label }}">
+    {{ translations.showing_results }} {{ tournament_pagination.result_start }}-{{ tournament_pagination.result_end }}
+    {{ translations.of_label }} {{ total_tournaments }}
+  </div>
+  <div class="pagination-row">
+    <button type="button" class="button secondary" data-profile-tournament-prev>{{ translations.prev_page }}</button>
+    <span data-profile-tournament-page data-page-label="{{ translations.page_label }}"
+      data-of-label="{{ translations.of_label }}"
+      aria-label="{{ translations.page_label }} {{ tournament_pagination.page }}">{{ translations.page_label }} {{
+      tournament_pagination.page }} {{ translations.of_label }} {{ tournament_pagination.total_pages }}</span>
+    <button type="button" class="button" data-profile-tournament-next>{{ translations.next_page }}</button>
+  </div>
   {% endif %}
 </section>
 
@@ -208,38 +231,36 @@
     <h3>{{ translations.opponent_records }}</h3>
   </div>
 
-  <div class="table-wrapper"><table class="table-stack">
-    <thead>
-      <tr>
-        <th class="table-cell-left">{{ translations.opponent }}</th>
-        <th>{{ translations.rating }}</th>
-        <th>{{ translations.result }}</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for opponent in opponent_records %}
-      
-      <tr
-      class="
+  <div class="table-wrapper">
+    <table class="table-stack">
+      <thead>
+        <tr>
+          <th class="table-cell-left">{{ translations.opponent }}</th>
+          <th>{{ translations.rating }}</th>
+          <th>{{ translations.result }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for opponent in opponent_records %}
+
+        <tr class="
       {% if opponent.is_self %}
         record-even
       {% endif %}
-      "
-      >
-        <td class="table-cell-left">
-          {% if opponent.is_self %}
-          {{ opponent.name }}
-          {% else %}
-          <a href="{{ url_for('player_profile', id=opponent.id, lang=lang) }}">
+      ">
+          <td class="table-cell-left">
+            {% if opponent.is_self %}
             {{ opponent.name }}
-          </a>
-          {% endif %}
-        </td>
+            {% else %}
+            <a href="{{ url_for('player_profile', id=opponent.id, lang=lang) }}">
+              {{ opponent.name }}
+            </a>
+            {% endif %}
+          </td>
 
-        <td>{{ opponent.rating | round(1) }}</td>
+          <td>{{ opponent.rating | round(1) }}</td>
 
-        <td
-        class="
+          <td class="
         {% if opponent.is_self %}
           
         {% elif opponent.wins > opponent.losses %}
@@ -249,43 +270,42 @@
         {% else %}
           record-even
         {% endif %}
-        "
-        >
-          {% if opponent.is_self %}
-            
-          {% else %}
+        ">
+            {% if opponent.is_self %}
+
+            {% else %}
             {{ opponent.wins }}-{{ opponent.losses }}
             {% if opponent.draws %}
-              -{{ opponent.draws }}
+            -{{ opponent.draws }}
             {% endif %}
-          {% endif %}
-        </td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table></div>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
 </section>
 
 <section class="panel">
   <div class="panel-header centered-header">
     <h3>{{ translations.match_history }}</h3>
   </div>
-  <div class="table-wrapper"><table class="table-stack">
-    <thead>
-      <tr>
-        <th>{{ translations.date }}</th>
-        <th>{{ translations.white }}</th>
-        <th>{{ translations.black }}</th>
-        <th>{{ translations.result }}</th>
-        <th>{{ translations.match_record }}</th>
-      </tr>
-    </thead>
-    <tbody>
-    
-    {% for match in profile_matches %}
-    <tr
-      data-profile-match-row
-      class="
+  <div class="table-wrapper">
+    <table class="table-stack">
+      <thead>
+        <tr>
+          <th>{{ translations.date }}</th>
+          <th>{{ translations.white }}</th>
+          <th>{{ translations.black }}</th>
+          <th>{{ translations.result }}</th>
+          <th>{{ translations.match_record }}</th>
+        </tr>
+      </thead>
+      <tbody>
+
+        {% for match in profile_matches %}
+        <tr data-profile-match-row class="
       {% set result_text =
           format_match_result(
             match.result,
@@ -303,63 +323,68 @@
       {% else %}
         record-even
       {% endif %}
-      "
-    >
-        <td>{{ match.match_date }}</td>
+      ">
+          <td>{{ match.match_date }}</td>
 
-        <td>
-        {% if match.white_player_id == player.id %}
+          <td>
+            {% if match.white_player_id == player.id %}
             {{ match.white_name }}
-        {% else %}
+            {% else %}
             <a href="{{ url_for('player_profile', id=match.white_player_id, lang=lang) }}"> {{ match.white_name }} </a>
-        {% endif %}
-        </td>
+            {% endif %}
+          </td>
 
-        <td>
-        {% if match.black_player_id == player.id %}
+          <td>
+            {% if match.black_player_id == player.id %}
             {{ match.black_name }}
-        {% else %}
+            {% else %}
             <a href="{{ url_for('player_profile', id=match.black_player_id, lang=lang) }}"> {{ match.black_name }} </a>
-        {% endif %}
-        </td>
+            {% endif %}
+          </td>
 
-        <td>
-        {{ format_match_result(
+          <td>
+            {{ format_match_result(
             match.result,
             lang,
             player_id=player.id,
             white_player_id=match.white_player_id,
             black_player_id=match.black_player_id
-        ) }}
-        </td>
+            ) }}
+          </td>
 
-        <td>
-          {% if match.sgf_filename %}
-            <a class="text-link" href="{{ url_for('match_record', match_id=match.id, lang=lang) }}">{{ translations.view_record }}</a>
-          {% else %}
+          <td>
+            {% if match.sgf_filename %}
+            <a class="text-link" href="{{ url_for('match_record', match_id=match.id, lang=lang) }}">{{
+              translations.view_record }}</a>
+            {% else %}
             -
-          {% endif %}
-        </td>
-    </tr>
-    {% endfor %}
-    </tbody>
-  </table></div>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
 
   {% if total_matches > 10 %}
-    <div class="pagination-summary" data-profile-match-summary data-showing-label="{{ translations.showing_results }}" data-of-label="{{ translations.of_label }}">
-      {{ translations.showing_results }} {{ result_start }}-{{ result_end }} {{ translations.of_label }} {{ total_matches }}
-    </div>
-    <div class="pagination-row">
-      <label for="player-page-size">{{ translations.page_size_label }}</label>
-      <select id="player-page-size">
-        {% for option in [10, 25, 50, 100] %}
-          <option value="{{ option }}" {% if page_size == option %}selected{% endif %}>{{ option }}</option>
-        {% endfor %}
-      </select>
-      <button type="button" class="button secondary" data-profile-match-prev>{{ translations.prev_page }}</button>
-      <span data-profile-match-page data-page-label="{{ translations.page_label }}" data-of-label="{{ translations.of_label }}" aria-label="{{ translations.page_label }} {{ page }}">{{ translations.page_label }} {{ page }} {{ translations.of_label }} {{ total_pages }}</span>
-      <button type="button" class="button" data-profile-match-next>{{ translations.next_page }}</button>
-    </div>
+  <div class="pagination-summary" data-profile-match-summary data-showing-label="{{ translations.showing_results }}"
+    data-of-label="{{ translations.of_label }}">
+    {{ translations.showing_results }} {{ result_start }}-{{ result_end }} {{ translations.of_label }} {{ total_matches
+    }}
+  </div>
+  <div class="pagination-row">
+    <label for="player-page-size">{{ translations.page_size_label }}</label>
+    <select id="player-page-size">
+      {% for option in [10, 25, 50, 100] %}
+      <option value="{{ option }}" {% if page_size==option %}selected{% endif %}>{{ option }}</option>
+      {% endfor %}
+    </select>
+    <button type="button" class="button secondary" data-profile-match-prev>{{ translations.prev_page }}</button>
+    <span data-profile-match-page data-page-label="{{ translations.page_label }}"
+      data-of-label="{{ translations.of_label }}" aria-label="{{ translations.page_label }} {{ page }}">{{
+      translations.page_label }} {{ page }} {{ translations.of_label }} {{ total_pages }}</span>
+    <button type="button" class="button" data-profile-match-next>{{ translations.next_page }}</button>
+  </div>
   {% endif %}
 </section>
 
@@ -406,41 +431,43 @@
       const pageLabel = document.querySelector("[data-profile-match-page]");
       const summary = document.querySelector("[data-profile-match-summary]");
       if (profileRows.length && previous && next && pageLabel && summary) {
-        let currentPage = {{ page|int }};
-        const renderMatches = (requestedPage) => {
-          const totalPages = Math.max(1, Math.ceil(profileRows.length / pageSize));
-          currentPage = Math.min(Math.max(1, requestedPage), totalPages);
-          const startIndex = (currentPage - 1) * pageSize;
-          const endIndex = Math.min(startIndex + pageSize, profileRows.length);
-          profileRows.forEach((row, index) => {
-            row.hidden = index < startIndex || index >= endIndex;
-          });
-          pageLabel.textContent = `${pageLabel.dataset.pageLabel} ${currentPage} ${pageLabel.dataset.ofLabel} ${totalPages}`;
-          pageLabel.setAttribute("aria-label", `${pageLabel.dataset.pageLabel} ${currentPage}`);
-          summary.textContent = `${summary.dataset.showingLabel} ${startIndex + 1}-${endIndex} ${summary.dataset.ofLabel} ${profileRows.length}`;
-          previous.disabled = currentPage === 1;
-          next.disabled = currentPage === totalPages;
-        };
-        pageSizeSelect.addEventListener("change", () => {
-          pageSize = Number(pageSizeSelect.value) || 25;
-          renderMatches(1);
-        });
-        previous.addEventListener("click", () => renderMatches(currentPage - 1));
-        next.addEventListener("click", () => renderMatches(currentPage + 1));
-        renderMatches(currentPage);
+        let currentPage = {{ page| int
       }
+    };
+    const renderMatches = (requestedPage) => {
+      const totalPages = Math.max(1, Math.ceil(profileRows.length / pageSize));
+      currentPage = Math.min(Math.max(1, requestedPage), totalPages);
+      const startIndex = (currentPage - 1) * pageSize;
+      const endIndex = Math.min(startIndex + pageSize, profileRows.length);
+      profileRows.forEach((row, index) => {
+        row.hidden = index < startIndex || index >= endIndex;
+      });
+      pageLabel.textContent = `${pageLabel.dataset.pageLabel} ${currentPage} ${pageLabel.dataset.ofLabel} ${totalPages}`;
+      pageLabel.setAttribute("aria-label", `${pageLabel.dataset.pageLabel} ${currentPage}`);
+      summary.textContent = `${summary.dataset.showingLabel} ${startIndex + 1}-${endIndex} ${summary.dataset.ofLabel} ${profileRows.length}`;
+      previous.disabled = currentPage === 1;
+      next.disabled = currentPage === totalPages;
+    };
+    pageSizeSelect.addEventListener("change", () => {
+      pageSize = Number(pageSizeSelect.value) || 25;
+      renderMatches(1);
+    });
+    previous.addEventListener("click", () => renderMatches(currentPage - 1));
+    next.addEventListener("click", () => renderMatches(currentPage + 1));
+    renderMatches(currentPage);
+  }
     }
 
-    setupPagination({
-      rowSelector: "[data-profile-tournament-row]",
-      pageSize: 10,
-      initialPage: {{ tournament_pagination.page|int if tournament_pagination else 1 }},
-      prevSelector: "[data-profile-tournament-prev]",
-      nextSelector: "[data-profile-tournament-next]",
-      pageSelector: "[data-profile-tournament-page]",
-      summarySelector: "[data-profile-tournament-summary]",
+  setupPagination({
+    rowSelector: "[data-profile-tournament-row]",
+    pageSize: 10,
+    initialPage: {{ tournament_pagination.page | int if tournament_pagination else 1 }},
+    prevSelector: "[data-profile-tournament-prev]",
+    nextSelector: "[data-profile-tournament-next]",
+    pageSelector: "[data-profile-tournament-page]",
+    summarySelector: "[data-profile-tournament-summary]",
     });
-  })();
+  }) ();
 </script>
 
 <script>
@@ -494,7 +521,7 @@
     });
   })();
 </script>
-  {% else %}
-    <p class="muted centered-header">{{ translations.no_rating_history }}</p>
-  {% endif %}
+{% else %}
+<p class="muted centered-header">{{ translations.no_rating_history }}</p>
+{% endif %}
 {% endblock %}

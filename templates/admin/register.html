@@ -27,7 +27,8 @@
         </div>
         <div class="filter-item wide">
           <label for="confirm_password">{{ translations.confirm_password_label }}</label>
-          <input id="confirm_password" name="confirm_password" type="password" autocomplete="new-password" minlength="8" required />
+          <input id="confirm_password" name="confirm_password" type="password" autocomplete="new-password" minlength="8"
+            required />
         </div>
       </div>
       <div class="filter-actions">
@@ -37,9 +38,11 @@
       {% if recaptcha_site_key %}
       <p class="recaptcha-notice">
         {{ translations.recaptcha_notice }}
-        <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer">{{ translations.recaptcha_privacy }}</a>
+        <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer">{{
+          translations.recaptcha_privacy }}</a>
         {{ translations.recaptcha_and }}
-        <a href="https://policies.google.com/terms" target="_blank" rel="noopener noreferrer">{{ translations.recaptcha_terms }}</a>.
+        <a href="https://policies.google.com/terms" target="_blank" rel="noopener noreferrer">{{
+          translations.recaptcha_terms }}</a>.
       </p>
       {% endif %}
     </div>

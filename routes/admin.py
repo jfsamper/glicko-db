@@ -230,6 +230,8 @@ logger = logging.getLogger(__name__)
 BACKUP_DIR = os.path.join(BASE_DIR, "backups")
 LOGIN_ATTEMPTS = {}
 DEFER_IMPORT_REPLAY_ENV = "DEFER_RATING_REPLAY_ON_IMPORT"
+
+
 def acceleration_scheme_choice(scheme):
     scheme_text = scheme or DEFAULT_ACCELERATION_SCHEME
     for choice, option in ACCELERATION_SCHEMES.items():
@@ -427,9 +429,11 @@ def run_post_import_replay():
     refresh_stats()
     return True
 
+
 def is_async_request():
     """Check if the request is an AJAX XMLHttpRequest."""
     return request.headers.get("X-Requested-With", "").lower() == "xmlhttprequest"
+
 
 def redirect_or_json(url):
     """Return JSON redirect response for AJAX, or regular redirect otherwise."""
@@ -458,6 +462,7 @@ def load_players_for_user_link():
             return []
     finally:
         conn.close()
+
 
 def get_backup_path(filename):
     return backup_service.get_backup_path(filename, BACKUP_DIR)
@@ -535,18 +540,24 @@ ADMIN_MENU_SECTIONS = (
         "admin_tournament_operations_heading",
         (
             ("admin_import", "admin_import_title", "admin_import_desc", "operator"),
-            ("admin_matches", "admin_matches_title", "admin_matches_desc", "operator"),
+            ("admin_matches", "admin_matches_title",
+             "admin_matches_desc", "operator"),
             ("sgf_library", "sgf_library_title", "sgf_library_desc", "operator"),
-            ("admin_tournaments", "tournaments_title", "tournaments_desc", "operator"),
+            ("admin_tournaments", "tournaments_title",
+             "tournaments_desc", "operator"),
         ),
     ),
     (
         "admin_data_management_heading",
         (
-            ("admin_players", "admin_players_title", "admin_players_desc", "data_admin"),
-            ("admin_ratings", "admin_ratings_title", "admin_ratings_desc", "data_admin"),
-            ("admin_categories", "admin_categories_title", "admin_categories_desc", "data_admin"),
-            ("admin_result_submissions", "result_submissions_title", "result_submissions_desc", "operator"),
+            ("admin_players", "admin_players_title",
+             "admin_players_desc", "data_admin"),
+            ("admin_ratings", "admin_ratings_title",
+             "admin_ratings_desc", "data_admin"),
+            ("admin_categories", "admin_categories_title",
+             "admin_categories_desc", "data_admin"),
+            ("admin_result_submissions", "result_submissions_title",
+             "result_submissions_desc", "operator"),
         ),
     ),
     (
@@ -555,8 +566,10 @@ ADMIN_MENU_SECTIONS = (
             ("admin_backups", "admin_backups_title", "admin_backups_desc", "admin"),
             ("admin_users", "admin_users_title", "admin_users_desc", "admin"),
             ("admin_news", "news", "news", "operator"),
-            ("admin_audit_review", "audit_review_heading", "audit_review_desc", "admin"),
-            ("admin_settings", "admin_settings_title", "admin_settings_desc", "admin"),
+            ("admin_audit_review", "audit_review_heading",
+             "audit_review_desc", "admin"),
+            ("admin_settings", "admin_settings_title",
+             "admin_settings_desc", "admin"),
         ),
     ),
 )
@@ -585,7 +598,8 @@ def admin_auth_check():
             session["user_theme"] = user["theme"]
         if request.path == "/admin" and user.get("role") == "member":
             return redirect(url_for("admin_report_results", lang=get_language(request.args.get("lang"))))
-        required_permission = get_required_permission_for_route(request.endpoint)
+        required_permission = get_required_permission_for_route(
+            request.endpoint)
         if not user_has_permission(required_permission):
             from flask import abort
             abort(403)
@@ -597,6 +611,7 @@ def admin_auth_check():
     lang = get_language(request.args.get("lang"))
     flash(TRANSLATIONS[lang]["invalid_password"])
     return redirect(url_for("admin.admin_login", lang=lang))
+
 
 @admin_bp.route("/admin")
 def admin():
@@ -614,7 +629,8 @@ def admin():
             if user_has_permission(permission)
         ]
         if visible_items:
-            menu_sections.append({"heading": heading_key, "items": visible_items})
+            menu_sections.append(
+                {"heading": heading_key, "items": visible_items})
 
     return render_template(
         "admin/index.html",
@@ -622,6 +638,7 @@ def admin():
         translations=TRANSLATIONS[lang],
         menu_sections=menu_sections,
     )
+
 
 admin_login = admin_user_routes.admin_login
 admin_register = admin_user_routes.admin_register
@@ -636,6 +653,7 @@ admin_forgot_password = admin_user_routes.admin_forgot_password
 admin_reset_password = admin_user_routes.admin_reset_password
 admin_logout = admin_user_routes.admin_logout
 
+
 def _audit_details_summary(details):
     if not details:
         return "—"
@@ -649,7 +667,8 @@ def _audit_details_summary(details):
         items = []
         for key, value in list(payload.items())[:3]:
             if isinstance(value, (dict, list, tuple)):
-                value = json.dumps(value, ensure_ascii=False, sort_keys=True, default=str)
+                value = json.dumps(value, ensure_ascii=False,
+                                   sort_keys=True, default=str)
             items.append(f"{key}: {value}")
         summary = ", ".join(items)
         return summary if summary and len(summary) <= 120 else f"{summary[:117]}..."

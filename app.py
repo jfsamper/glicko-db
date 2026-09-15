@@ -45,7 +45,8 @@ def create_app(test_config=None, auto_init=True):
     app_instance = Flask(__name__)
     app_instance.config.update(
         SECRET_KEY=os.environ["APP_SECRET_KEY"],
-        SESSION_COOKIE_SECURE=(os.getenv("SESSION_COOKIE_SECURE", "true").lower() in ("true", "1")),
+        SESSION_COOKIE_SECURE=(
+            os.getenv("SESSION_COOKIE_SECURE", "true").lower() in ("true", "1")),
         SESSION_COOKIE_HTTPONLY=True,
         SESSION_COOKIE_SAMESITE="Lax",
         WTF_CSRF_TIME_LIMIT=None,
@@ -263,7 +264,6 @@ def format_match_result(result, lang="es", player_id=None, white_player_id=None,
     return translations["result_draw"]
 
 
-
 def refresh_startup_stats(seeded):
     """Refresh per-startup caches after seeding data or explicit refresh requests."""
     if seeded:
@@ -303,7 +303,8 @@ def migrate_matches_notes_schema(conn):
         )
     conn.commit()
 
-    notes_column = next((column for column in table_info if column[1] == "notes"), None)
+    notes_column = next(
+        (column for column in table_info if column[1] == "notes"), None)
     if notes_column is None:
         return
     if notes_column[2].upper() in {"TEXT", "NULL"}:
@@ -386,7 +387,8 @@ def migrate_match_result_schema(conn):
     pairing_select = "tournament_pairing_id" if "tournament_pairing_id" in legacy_columns else "NULL"
     handicap_select = "handicap_stones" if "handicap_stones" in legacy_columns else "0"
     if "location" not in legacy_columns:
-        conn.execute("ALTER TABLE matches__legacy_result_values ADD COLUMN location TEXT")
+        conn.execute(
+            "ALTER TABLE matches__legacy_result_values ADD COLUMN location TEXT")
     conn.execute(
         """
         CREATE TABLE matches (
@@ -429,7 +431,8 @@ def migrate_tournament_match_identity_schema(conn):
         return
     columns = {row["name"] for row in table_info}
     if "tournament_pairing_id" not in columns:
-        conn.execute("ALTER TABLE matches ADD COLUMN tournament_pairing_id INTEGER")
+        conn.execute(
+            "ALTER TABLE matches ADD COLUMN tournament_pairing_id INTEGER")
     conn.execute(
         """
         DELETE FROM matches
@@ -468,7 +471,8 @@ def normalize_match_round_values(conn):
         conn.commit()
         return
 
-    rows = conn.execute("SELECT id, notes, round_number FROM matches").fetchall()
+    rows = conn.execute(
+        "SELECT id, notes, round_number FROM matches").fetchall()
     for row in rows:
         normalized = normalize_round_note(row["notes"])
         if row["round_number"] != normalized:
@@ -500,18 +504,25 @@ def seed_initial_players():
     for first_name, last_name, display_name, country, club, slug in players:
         conn.execute(
             "INSERT INTO players (first_name, last_name, display_name, country, club, slug, rating, rd, volatility) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            (first_name, last_name, display_name, country, club, slug, DEFAULT_RATING, DEFAULT_RD, DEFAULT_VOLATILITY),
+            (first_name, last_name, display_name, country, club,
+             slug, DEFAULT_RATING, DEFAULT_RD, DEFAULT_VOLATILITY),
         )
     conn.commit()
 
-    player_rows = conn.execute("SELECT id, slug FROM players ORDER BY id").fetchall()
+    player_rows = conn.execute(
+        "SELECT id, slug FROM players ORDER BY id").fetchall()
     player_map = {row["slug"]: row["id"] for row in player_rows}
     sample_matches = [
-        ("2026-06-01", player_map["juan-samper"], player_map["camilo-acuna"], "1-0", "Round 1", 1, 1),
-        ("2026-06-02", player_map["fabio-moreno"], player_map["jaime-ramirez"], "1-0", "Round 2", 2, 2),
-        ("2026-06-03", player_map["juan-samper"], player_map["fabio-moreno"], "0-1", "Round 3", 3, 3),
-        ("2026-06-04", player_map["camilo-acuna"], player_map["jaime-ramirez"], "1/2-1/2", "Round 4", 4, 4),
-        ("2026-06-05", player_map["sofia-lopez"], player_map["juan-samper"], "0-1", "Round 5", 5, 5),
+        ("2026-06-01", player_map["juan-samper"],
+         player_map["camilo-acuna"], "1-0", "Round 1", 1, 1),
+        ("2026-06-02", player_map["fabio-moreno"],
+         player_map["jaime-ramirez"], "1-0", "Round 2", 2, 2),
+        ("2026-06-03", player_map["juan-samper"],
+         player_map["fabio-moreno"], "0-1", "Round 3", 3, 3),
+        ("2026-06-04", player_map["camilo-acuna"],
+         player_map["jaime-ramirez"], "1/2-1/2", "Round 4", 4, 4),
+        ("2026-06-05", player_map["sofia-lopez"],
+         player_map["juan-samper"], "0-1", "Round 5", 5, 5),
     ]
     conn.executemany(
         "INSERT INTO matches (match_date, white_player_id, black_player_id, result, event, notes, round_number) VALUES (?, ?, ?, ?, ?, ?, ?)",
@@ -545,7 +556,8 @@ def migrate_config_schema(conn):
             """,
             (
                 "INSERT OR IGNORE INTO rating_config (id, tau, default_rating, default_rd, default_volatility, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
-                (1, TAU, DEFAULT_RATING, DEFAULT_RD, DEFAULT_VOLATILITY, current_timestamp()),
+                (1, TAU, DEFAULT_RATING, DEFAULT_RD,
+                 DEFAULT_VOLATILITY, current_timestamp()),
             ),
         ),
         "category_config": (
@@ -566,7 +578,8 @@ def migrate_config_schema(conn):
 
     for table, (create_sql, seed_sql) in tables.items():
         conn.execute(create_sql)
-        existing = {row["name"] for row in conn.execute(f"PRAGMA table_info({table})").fetchall()}
+        existing = {row["name"] for row in conn.execute(
+            f"PRAGMA table_info({table})").fetchall()}
         if "updated_at" not in existing:
             conn.execute(f"ALTER TABLE {table} ADD COLUMN updated_at TEXT")
         if conn.execute(f"SELECT COUNT(*) FROM {table} WHERE id = 1").fetchone()[0] == 0:
@@ -707,7 +720,8 @@ def migrate_tournament_schema(conn):
             row[1]: row[3] for row in conn.execute("PRAGMA table_info(tournament_pairings)").fetchall()
         }
         if "white_player_id" in pairing_columns and pairing_columns["white_player_id"] == 1:
-            conn.execute("ALTER TABLE tournament_pairings RENAME TO tournament_pairings_legacy")
+            conn.execute(
+                "ALTER TABLE tournament_pairings RENAME TO tournament_pairings_legacy")
             conn.execute(
                 """
                 CREATE TABLE tournament_pairings (
@@ -746,7 +760,8 @@ def migrate_tournament_schema(conn):
             }
             for column, definition in columns.items():
                 if column not in existing:
-                    conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {definition}")
+                    conn.execute(
+                        f"ALTER TABLE {table} ADD COLUMN {column} {definition}")
 
         conn.execute(
             """
@@ -793,7 +808,8 @@ def migrate_tournament_schema(conn):
         conn.commit()
     except sqlite3.Error as exc:
         conn.rollback()
-        raise RuntimeError(f"Tournament schema migration failed: {exc}") from exc
+        raise RuntimeError(
+            f"Tournament schema migration failed: {exc}") from exc
 
 
 def _tables_referencing_legacy_players(conn):
@@ -882,7 +898,8 @@ def ensure_player_schema_columns(conn):
 
     for column_name, definition in column_definitions.items():
         if column_name not in player_columns:
-            conn.execute(f"ALTER TABLE players ADD COLUMN {column_name} {definition}")
+            conn.execute(
+                f"ALTER TABLE players ADD COLUMN {column_name} {definition}")
 
     conn.commit()
 
@@ -894,7 +911,7 @@ def initialize_app():
     conn = get_db()
     assert_legacy_players_state_clean(conn)
 
-    #migrations
+    # migrations
 
     migrate_tournament_schema(conn)
     migrate_config_schema(conn)
@@ -1122,7 +1139,7 @@ def initialize_app():
 
     conn.commit()
     conn.close()
-    #end migrations
+    # end migrations
 
     seeded = seed_data()
     refresh_startup_stats(seeded)
@@ -1131,7 +1148,7 @@ def initialize_app():
 app = create_app(auto_init=False)
 
 
-### ------------------------------------ REMOVE BELOW FROM PROD ---------------------------------------------- 
+# ------------------------------------ REMOVE BELOW FROM PROD ----------------------------------------------
 
 if __name__ == "__main__":
     initialize_app()

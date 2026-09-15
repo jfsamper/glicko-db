@@ -1,7 +1,8 @@
 {% set current_sort = request.args.get('sort', 'date') %}
 {% set current_order = request.args.get('order', 'desc') %}
 {% set matches_endpoint = 'matches' if not admin_mode else 'admin_matches' %}
-{% set base_query_args = {'lang': lang, 'page': 1, 'page_size': page_size, 'date_from': date_from, 'date_to': date_to, 'player_id': player_id} %}
+{% set base_query_args = {'lang': lang, 'page': 1, 'page_size': page_size, 'date_from': date_from, 'date_to': date_to,
+'player_id': player_id} %}
 
 <div class="matches-library-link">
   <a class="button secondary" href="{{ url_for('sgf_library', lang=lang) }}">
@@ -33,7 +34,8 @@
         <select id="matches-player" name="player_id">
           <option value="">{{ translations.all_players }}</option>
           {% for player in match_players %}
-            <option value="{{ player.id }}" {% if player_id == player.id|string %}selected{% endif %}>{{ player.display_name }}</option>
+          <option value="{{ player.id }}" {% if player_id==player.id|string %}selected{% endif %}>{{ player.display_name
+            }}</option>
           {% endfor %}
         </select>
       </div>
@@ -51,42 +53,46 @@
 </form>
 
 <div class="table-wrapper">
-<table class="table-stack">
+  <table class="table-stack">
 
-  <thead>
-    <tr>
-      <th>
-        <a href="{{ url_for(matches_endpoint, **dict(base_query_args, sort='date', order='asc' if current_sort == 'date' and current_order == 'desc' else 'desc')) }}">
-          {{translations.date}}
-        </a>
-      </th>
-      <th>{{translations.time_round}}</th>
-      <th>
-        <a href="{{ url_for(matches_endpoint, **dict(base_query_args, sort='white', order='asc' if current_sort != 'white' or current_order == 'desc' else 'desc')) }}">
-          {{translations.white}}
-        </a>
-      </th>
-      <th>
-        <a href="{{ url_for(matches_endpoint, **dict(base_query_args, sort='black', order='asc' if current_sort != 'black' or current_order == 'desc' else 'desc')) }}">
-          {{translations.black}}
-        </a>
-      </th>
-      <th>
-        <a href="{{ url_for(matches_endpoint, **dict(base_query_args, sort='result', order='asc' if current_sort != 'result' or current_order == 'desc' else 'desc')) }}">
-          {{translations.winner}}
-        </a>
-      </th>
-      <th>{{translations.event}}</th>
-      <th>{{ translations.match_record }}</th>
-      {% if admin_mode %}
+    <thead>
+      <tr>
+        <th>
+          <a
+            href="{{ url_for(matches_endpoint, **dict(base_query_args, sort='date', order='asc' if current_sort == 'date' and current_order == 'desc' else 'desc')) }}">
+            {{translations.date}}
+          </a>
+        </th>
+        <th>{{translations.time_round}}</th>
+        <th>
+          <a
+            href="{{ url_for(matches_endpoint, **dict(base_query_args, sort='white', order='asc' if current_sort != 'white' or current_order == 'desc' else 'desc')) }}">
+            {{translations.white}}
+          </a>
+        </th>
+        <th>
+          <a
+            href="{{ url_for(matches_endpoint, **dict(base_query_args, sort='black', order='asc' if current_sort != 'black' or current_order == 'desc' else 'desc')) }}">
+            {{translations.black}}
+          </a>
+        </th>
+        <th>
+          <a
+            href="{{ url_for(matches_endpoint, **dict(base_query_args, sort='result', order='asc' if current_sort != 'result' or current_order == 'desc' else 'desc')) }}">
+            {{translations.winner}}
+          </a>
+        </th>
+        <th>{{translations.event}}</th>
+        <th>{{ translations.match_record }}</th>
+        {% if admin_mode %}
         <th>{{ translations.actions_label }}</th>
-      {% endif %}
-    </tr>
-  </thead>
+        {% endif %}
+      </tr>
+    </thead>
 
-  <tbody>
+    <tbody>
 
-    {% for match in matches %}
+      {% for match in matches %}
 
       <tr>
 
@@ -95,26 +101,24 @@
         <td>{{ match.round_number if match.round_number else (match.notes or "") }}</td>
 
         <td>
-          <a href="{{ url_for('player_profile', id=match.white_id, lang=lang) }}"
-            >
+          <a href="{{ url_for('player_profile', id=match.white_id, lang=lang) }}">
             {{ match.white_name }}
           </a>
         </td>
 
         <td>
-          <a href="{{ url_for('player_profile', id=match.black_id, lang=lang) }}"
-            >
+          <a href="{{ url_for('player_profile', id=match.black_id, lang=lang) }}">
             {{ match.black_name }}
           </a>
         </td>
 
         <td>
           {% if match.result == "1-0" %}
-            {{ match.white_name }}
+          {{ match.white_name }}
           {% elif match.result == "0-1" %}
-            {{ match.black_name }}
+          {{ match.black_name }}
           {% else %}
-            {{ translations.result_draw }}
+          {{ translations.result_draw }}
           {% endif %}
         </td>
 
@@ -122,32 +126,30 @@
 
         <td>
           {% if match.sgf_filename %}
-            <a class="text-link" href="{{ url_for('match_record', match_id=match.id, lang=lang) }}">{{ translations.view_record }}</a>
+          <a class="text-link" href="{{ url_for('match_record', match_id=match.id, lang=lang) }}">{{
+            translations.view_record }}</a>
           {% else %}
-            -
+          -
           {% endif %}
         </td>
 
         {% if admin_mode %}
-          <td>
-            <a class="text-link" href="{{ url_for('admin_edit_match', id=match.id, lang=lang) }}">
-              <button type="button">{{ translations.edit_heading }}</button>
-            </a>
-            <form
-              style="display:inline; background: transparent; padding: 0;"
-              action="{{ url_for('admin_delete_match', id=match.id, lang=lang) }}"
-              method="post"
-              onsubmit="return confirm('{{ translations.delete_match_confirmation }}');"
-            >
-              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-              <button type="submit">{{ translations.delete_heading }}</button>
-            </form>
-          </td>
+        <td>
+          <a class="text-link" href="{{ url_for('admin_edit_match', id=match.id, lang=lang) }}">
+            <button type="button">{{ translations.edit_heading }}</button>
+          </a>
+          <form style="display:inline; background: transparent; padding: 0;"
+            action="{{ url_for('admin_delete_match', id=match.id, lang=lang) }}" method="post"
+            onsubmit="return confirm('{{ translations.delete_match_confirmation }}');">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+            <button type="submit">{{ translations.delete_heading }}</button>
+          </form>
+        </td>
         {% endif %}
 
       </tr>
 
-    {% else %}
+      {% else %}
 
       <tr>
         <td colspan="{% if admin_mode %}8{% else %}7{% endif %}">
@@ -155,30 +157,36 @@
         </td>
       </tr>
 
-    {% endfor %}
+      {% endfor %}
 
-  </tbody>
+    </tbody>
 
-</table>
+  </table>
 </div>
 
 {% if total_count is defined and total_count > 10 %}
-  <div class="pagination-summary">
-    {{ translations.showing_results }} {{ result_start }}-{{ result_end }} {{ translations.of_label }} {{ total_count }}
-  </div>
-  <div class="pagination-row">
-    <label for="matches-page-size">{{ translations.page_size_label }}</label>
-    <select id="matches-page-size" onchange="window.location.href = this.value">
-      {% for option in [10, 25, 50, 100] %}
-        <option value="{{ url_for(matches_endpoint, **dict(base_query_args, page=1, page_size=option, sort=current_sort, order=current_order)) }}" {% if page_size == option %}selected{% endif %}>{{ option }}</option>
-      {% endfor %}
-    </select>
-    {% if page > 1 %}
-      <a class="button secondary" href="{{ url_for(matches_endpoint, **dict(base_query_args, page=page - 1, page_size=page_size, sort=current_sort, order=current_order)) }}">{{ translations.prev_page }}</a>
+<div class="pagination-summary">
+  {{ translations.showing_results }} {{ result_start }}-{{ result_end }} {{ translations.of_label }} {{ total_count }}
+</div>
+<div class="pagination-row">
+  <label for="matches-page-size">{{ translations.page_size_label }}</label>
+  <select id="matches-page-size" onchange="window.location.href = this.value">
+    {% for option in [10, 25, 50, 100] %}
+    <option
+      value="{{ url_for(matches_endpoint, **dict(base_query_args, page=1, page_size=option, sort=current_sort, order=current_order)) }}"
+      {% if page_size==option %}selected{% endif %}>{{ option }}</option>
+    {% endfor %}
+  </select>
+  {% if page > 1 %}
+  <a class="button secondary"
+    href="{{ url_for(matches_endpoint, **dict(base_query_args, page=page - 1, page_size=page_size, sort=current_sort, order=current_order)) }}">{{
+    translations.prev_page }}</a>
+  {% endif %}
+  <span aria-label="{{ translations.page_label }} {{ page }}">{{ translations.page_label }} {{ page }} {{
+    translations.of_label }} {{ total_pages }}</span>
+  {% if total_count == 0 or page * page_size < total_count %} <a class="button"
+    href="{{ url_for(matches_endpoint, **dict(base_query_args, page=page + 1, page_size=page_size, sort=current_sort, order=current_order)) }}">
+    {{ translations.next_page }}</a>
     {% endif %}
-    <span aria-label="{{ translations.page_label }} {{ page }}">{{ translations.page_label }} {{ page }} {{ translations.of_label }} {{ total_pages }}</span>
-    {% if total_count == 0 or page * page_size < total_count %}
-      <a class="button" href="{{ url_for(matches_endpoint, **dict(base_query_args, page=page + 1, page_size=page_size, sort=current_sort, order=current_order)) }}">{{ translations.next_page }}</a>
-    {% endif %}
-  </div>
+</div>
 {% endif %}

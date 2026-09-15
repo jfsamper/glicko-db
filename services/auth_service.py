@@ -38,7 +38,8 @@ def migrate_auth_schema(conn):
         "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'roles'"
     ).fetchone()
     if roles_schema is not None and "'member'" not in (roles_schema[0] or ""):
-        foreign_keys_enabled = bool(conn.execute("PRAGMA foreign_keys").fetchone()[0])
+        foreign_keys_enabled = bool(conn.execute(
+            "PRAGMA foreign_keys").fetchone()[0])
         conn.commit()
         conn.execute("PRAGMA foreign_keys = OFF")
         conn.execute("DROP TRIGGER IF EXISTS roles_validate_insert")
@@ -52,11 +53,13 @@ def migrate_auth_schema(conn):
             )
             """
         )
-        conn.execute("INSERT INTO roles_migrated (id, name, description) SELECT id, name, description FROM roles")
+        conn.execute(
+            "INSERT INTO roles_migrated (id, name, description) SELECT id, name, description FROM roles")
         conn.execute("DROP TABLE roles")
         conn.execute("ALTER TABLE roles_migrated RENAME TO roles")
         conn.commit()
-        conn.execute(f"PRAGMA foreign_keys = {'ON' if foreign_keys_enabled else 'OFF'}")
+        conn.execute(
+            f"PRAGMA foreign_keys = {'ON' if foreign_keys_enabled else 'OFF'}")
     conn.execute(
         """
         CREATE TABLE IF NOT EXISTS roles (
@@ -113,7 +116,8 @@ def migrate_auth_schema(conn):
     for column_name in ("timezone", "email", "player_id", "language", "theme"):
         if column_name not in user_columns:
             definition = "INTEGER" if column_name == "player_id" else "TEXT"
-            conn.execute(f"ALTER TABLE users ADD COLUMN {column_name} {definition}")
+            conn.execute(
+                f"ALTER TABLE users ADD COLUMN {column_name} {definition}")
     conn.execute("UPDATE users SET language = 'es' WHERE language IS NULL")
     conn.execute("UPDATE users SET theme = 'light' WHERE theme IS NULL")
     conn.execute(
@@ -191,7 +195,8 @@ def migrate_result_submissions_schema(conn):
         row[1] for row in conn.execute("PRAGMA table_info(result_submissions)").fetchall()
     }
     if submission_columns and "sgf_filename" not in submission_columns:
-        conn.execute("ALTER TABLE result_submissions ADD COLUMN sgf_filename TEXT")
+        conn.execute(
+            "ALTER TABLE result_submissions ADD COLUMN sgf_filename TEXT")
     if submission_columns and "location" not in submission_columns:
         conn.execute("ALTER TABLE result_submissions ADD COLUMN location TEXT")
     conn.execute(
@@ -210,7 +215,8 @@ def create_result_approval_code(submission_id, conn=None, ttl_hours=48):
     try:
         raw_code = f"{secrets.randbelow(100000000):08d}"
         code_hash = hashlib.sha256(raw_code.encode("utf-8")).hexdigest()
-        expires_at = datetime.now(datetime_timezone.utc) + timedelta(hours=ttl_hours)
+        expires_at = datetime.now(
+            datetime_timezone.utc) + timedelta(hours=ttl_hours)
         conn.execute(
             """
             UPDATE result_submissions
@@ -232,7 +238,8 @@ def consume_result_approval_code(raw_code, conn=None):
     owns_connection = conn is None
     conn = conn or get_db()
     try:
-        code_hash = hashlib.sha256((raw_code or "").encode("utf-8")).hexdigest()
+        code_hash = hashlib.sha256(
+            (raw_code or "").encode("utf-8")).hexdigest()
         now = _utc_timestamp(datetime.now(datetime_timezone.utc))
         row = conn.execute(
             """
@@ -333,17 +340,20 @@ def create_user_account(
         if email and conn.execute("SELECT 1 FROM users WHERE email = ?", (email,)).fetchone():
             raise ValueError("email already exists")
         if player_id is not None:
-            player = conn.execute("SELECT id FROM players WHERE id = ?", (player_id,)).fetchone()
+            player = conn.execute(
+                "SELECT id FROM players WHERE id = ?", (player_id,)).fetchone()
             if player is None:
                 raise ValueError("player not found")
 
-        role = conn.execute("SELECT id FROM roles WHERE name = ?", (role_name,)).fetchone()
+        role = conn.execute(
+            "SELECT id FROM roles WHERE name = ?", (role_name,)).fetchone()
         if role is None:
             raise ValueError("role not found")
 
         user_id = conn.execute(
             "INSERT INTO users (username, password_hash, is_active, created_at, timezone, email, player_id, language, theme) VALUES (?, ?, 1, ?, ?, ?, ?, 'es', 'light')",
-            (normalized_username, generate_password_hash(password), current_timestamp(), timezone_name, email, player_id),
+            (normalized_username, generate_password_hash(password),
+             current_timestamp(), timezone_name, email, player_id),
         ).lastrowid
         conn.execute(
             "INSERT INTO user_roles (user_id, role_id) VALUES (?, ?)",
@@ -481,7 +491,8 @@ def create_password_reset_token(user_id, conn=None):
         raw_token = secrets.token_urlsafe(32)
         token_hash = hashlib.sha256(raw_token.encode("utf-8")).hexdigest()
         now = datetime.now(datetime_timezone.utc)
-        reset_ttl = get_application_settings(conn=conn)["password_reset_ttl_seconds"]
+        reset_ttl = get_application_settings(
+            conn=conn)["password_reset_ttl_seconds"]
         expires_at = now + timedelta(seconds=reset_ttl)
         conn.execute(
             "DELETE FROM password_reset_tokens WHERE user_id = ? AND used_at IS NULL",
@@ -510,7 +521,8 @@ def reset_password_with_token(raw_token, new_password, conn=None):
     owns_connection = conn is None
     conn = conn or get_db()
     try:
-        token_hash = hashlib.sha256((raw_token or "").encode("utf-8")).hexdigest()
+        token_hash = hashlib.sha256(
+            (raw_token or "").encode("utf-8")).hexdigest()
         now = _utc_timestamp(datetime.now(datetime_timezone.utc))
         row = conn.execute(
             """

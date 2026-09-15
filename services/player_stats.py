@@ -1,6 +1,7 @@
 # services/player_stats.py
 """Service for calculating player statistics and performance metrics."""
 
+
 def summarize_result(player_id, match):
     if match["white_player_id"] == player_id:
         if match["result"] == "1-0":
@@ -13,6 +14,7 @@ def summarize_result(player_id, match):
     if match["result"] == "0-1":
         return "X"
     return "D"
+
 
 def build_player_result_summary(player_id, conn):
     matches = conn.execute(
@@ -51,4 +53,3 @@ def build_recent_result_summaries(conn, limit=8, days=90):
         player_id: "".join(results)
         for player_id, results in summaries.items()
     }
-

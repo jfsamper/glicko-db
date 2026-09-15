@@ -21,10 +21,14 @@
         <div class="filter-item">
           <label for="status">{{ translations.status }}</label>
           <select id="status" name="status">
-            <option value="pending" {% if selected_status == 'pending' %}selected{% endif %}>{{ translations.pending_status }}</option>
-            <option value="approved" {% if selected_status == 'approved' %}selected{% endif %}>{{ translations.approved_status }}</option>
-            <option value="rejected" {% if selected_status == 'rejected' %}selected{% endif %}>{{ translations.rejected_status }}</option>
-            <option value="all" {% if selected_status == 'all' %}selected{% endif %}>{{ translations.all_statuses }}</option>
+            <option value="pending" {% if selected_status=='pending' %}selected{% endif %}>{{
+              translations.pending_status }}</option>
+            <option value="approved" {% if selected_status=='approved' %}selected{% endif %}>{{
+              translations.approved_status }}</option>
+            <option value="rejected" {% if selected_status=='rejected' %}selected{% endif %}>{{
+              translations.rejected_status }}</option>
+            <option value="all" {% if selected_status=='all' %}selected{% endif %}>{{ translations.all_statuses }}
+            </option>
           </select>
         </div>
       </div>
@@ -32,48 +36,66 @@
     </div>
   </form>
   {% if submissions %}
-    <div class="table-wrapper result-submissions-table-wrap">
-      <table class="table-stack result-submissions-table">
-        <thead><tr><th>{{ translations.date }}</th><th>{{ translations.submitted_by }}</th><th>{{ translations.white }}</th><th>{{ translations.black }}</th><th>{{ translations.result }}</th><th>{{ translations.match_record }}</th><th>{{ translations.event }}</th><th>{{ translations.actions_label }}</th></tr></thead>
-        <tbody>
-          {% for submission in submissions %}
-            <tr>
-              <td>{{ submission.match_date }}</td>
-              <td>{{ submission.submitter_username }}</td>
-              <td>{{ submission.white_name }}</td>
-              <td>{{ submission.black_name }}</td>
-              <td>{{ submission.result }}</td>
-              <td>
-                {% if submission.sgf_filename %}
-                  <a class="text-link" href="{{ url_for('admin_result_submission_sgf', submission_id=submission.id, lang=lang) }}">{{ translations.view_record }}</a>
-                {% else %}
-                  -
-                {% endif %}
-              </td>
-              <td>{{ submission.event or '-' }}</td>
-              <td>
-                {% if submission.status == 'pending' %}
-                  <form method="post" action="{{ url_for('admin_approve_result_submission', submission_id=submission.id, lang=lang) }}" class="inline-form">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-                    <input type="text" name="review_notes" placeholder="{{ translations.review_note_label }}" />
-                    <button type="submit" class="button">{{ translations.approve_button }}</button>
-                  </form>
-                  <form method="post" action="{{ url_for('admin_reject_result_submission', submission_id=submission.id, lang=lang) }}" class="inline-form">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-                    <input type="text" name="review_notes" placeholder="{{ translations.review_note_label }}" />
-                    <button type="submit" class="button secondary">{{ translations.reject_button }}</button>
-                  </form>
-                {% else %}
-                  {{ translations.get(submission.status + '_status', submission.status) }}{% if submission.reviewer_username %} ({{ submission.reviewer_username }}){% endif %}
-                {% endif %}
-              </td>
-            </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
+  <div class="table-wrapper result-submissions-table-wrap">
+    <table class="table-stack result-submissions-table">
+      <thead>
+        <tr>
+          <th>{{ translations.date }}</th>
+          <th>{{ translations.submitted_by }}</th>
+          <th>{{ translations.white }}</th>
+          <th>{{ translations.black }}</th>
+          <th>{{ translations.result }}</th>
+          <th>{{ translations.match_record }}</th>
+          <th>{{ translations.event }}</th>
+          <th>{{ translations.actions_label }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for submission in submissions %}
+        <tr>
+          <td>{{ submission.match_date }}</td>
+          <td>{{ submission.submitter_username }}</td>
+          <td>{{ submission.white_name }}</td>
+          <td>{{ submission.black_name }}</td>
+          <td>{{ submission.result }}</td>
+          <td>
+            {% if submission.sgf_filename %}
+            <a class="text-link"
+              href="{{ url_for('admin_result_submission_sgf', submission_id=submission.id, lang=lang) }}">{{
+              translations.view_record }}</a>
+            {% else %}
+            -
+            {% endif %}
+          </td>
+          <td>{{ submission.event or '-' }}</td>
+          <td>
+            {% if submission.status == 'pending' %}
+            <form method="post"
+              action="{{ url_for('admin_approve_result_submission', submission_id=submission.id, lang=lang) }}"
+              class="inline-form">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+              <input type="text" name="review_notes" placeholder="{{ translations.review_note_label }}" />
+              <button type="submit" class="button">{{ translations.approve_button }}</button>
+            </form>
+            <form method="post"
+              action="{{ url_for('admin_reject_result_submission', submission_id=submission.id, lang=lang) }}"
+              class="inline-form">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+              <input type="text" name="review_notes" placeholder="{{ translations.review_note_label }}" />
+              <button type="submit" class="button secondary">{{ translations.reject_button }}</button>
+            </form>
+            {% else %}
+            {{ translations.get(submission.status + '_status', submission.status) }}{% if submission.reviewer_username
+            %} ({{ submission.reviewer_username }}){% endif %}
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
   {% else %}
-    <p>{{ translations.no_submissions }}</p>
+  <p>{{ translations.no_submissions }}</p>
   {% endif %}
 </section>
 {% endblock %}

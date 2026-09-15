@@ -83,7 +83,8 @@ def get_timezone_choices():
         except (TypeError, ZoneInfoNotFoundError):
             continue
         if offset is not None:
-            choices_by_offset.setdefault(int(offset.total_seconds()), timezone_name)
+            choices_by_offset.setdefault(
+                int(offset.total_seconds()), timezone_name)
     return tuple(
         timezone_name
         for _, timezone_name in sorted(choices_by_offset.items())

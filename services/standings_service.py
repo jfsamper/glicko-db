@@ -87,7 +87,8 @@ def calculate_standings(
         if black_id not in standings:
             continue
         result = _value(game, "result")
-        white_points, played = _result_points(result, white_id, white_id, black_id)
+        white_points, played = _result_points(
+            result, white_id, white_id, black_id)
         black_points, _ = _result_points(result, black_id, white_id, black_id)
         if not played:
             continue
@@ -107,11 +108,14 @@ def calculate_standings(
         row["primary_score"] = effective_score_for_player(row, tournament_type)
 
     for row in standings.values():
-        row["sos"] = sum(standings[opponent]["primary_score"] for opponent in row["opponents"])
-        row["sodos"] = sum(standings[opponent]["primary_score"] for opponent in row["defeated_opponents"])
+        row["sos"] = sum(standings[opponent]["primary_score"]
+                         for opponent in row["opponents"])
+        row["sodos"] = sum(standings[opponent]["primary_score"]
+                           for opponent in row["defeated_opponents"])
 
     for row in standings.values():
-        row["sosos"] = sum(standings[opponent]["sos"] for opponent in row["opponents"])
+        row["sosos"] = sum(standings[opponent]["sos"]
+                           for opponent in row["opponents"])
 
     ordered = sorted(
         standings.values(),
@@ -139,18 +143,24 @@ def calculate_standings(
         round_number = _value(game, "round_number")
         if _value(game, "is_bye", 0):
             ordered_player = standings[white_id]
-            ordered_player["round_results"].append({"round": round_number, "opponent": "BYE", "result": "+"})
+            ordered_player["round_results"].append(
+                {"round": round_number, "opponent": "BYE", "result": "+"})
             continue
         if _value(game, "is_absent", 0):
-            standings[white_id]["round_results"].append({"round": round_number, "opponent": "ABS", "result": "-"})
+            standings[white_id]["round_results"].append(
+                {"round": round_number, "opponent": "ABS", "result": "-"})
             continue
         if black_id not in rank_by_player:
             continue
         result = _value(game, "result")
-        white_result = "+" if result in {"1-0", "1-!0"} else "-" if result in {"0-1", "!0-1"} else "=" if result == "1/2-1/2" else "-" if result == "!0-0" else "?"
-        black_result = "+" if result in {"0-1", "!0-1"} else "-" if result in {"1-0", "1-!0", "!0-0"} else "=" if result == "1/2-1/2" else "?"
-        white_round_result = {"round": round_number, "opponent": rank_by_player[black_id], "result": white_result}
-        black_round_result = {"round": round_number, "opponent": rank_by_player[white_id], "result": black_result}
+        white_result = "+" if result in {"1-0", "1-!0"} else "-" if result in {
+            "0-1", "!0-1"} else "=" if result == "1/2-1/2" else "-" if result == "!0-0" else "?"
+        black_result = "+" if result in {"0-1", "!0-1"} else "-" if result in {
+            "1-0", "1-!0", "!0-0"} else "=" if result == "1/2-1/2" else "?"
+        white_round_result = {
+            "round": round_number, "opponent": rank_by_player[black_id], "result": white_result}
+        black_round_result = {
+            "round": round_number, "opponent": rank_by_player[white_id], "result": black_result}
         if "!" in str(result or ""):
             white_round_result["display"] = f"!{rank_by_player[black_id]}{white_result}"
             black_round_result["display"] = f"!{rank_by_player[white_id]}{black_result}"

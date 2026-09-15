@@ -123,7 +123,8 @@ def _sgf_metadata_for_path(path):
     }
     try:
         text = path.read_text(encoding="utf-8-sig")
-        properties = _root_properties(text[text.find("(;") + 2:]) if "(;" in text else {}
+        properties = _root_properties(
+            text[text.find("(;") + 2:]) if "(;" in text else {}
     except (OSError, UnicodeDecodeError):
         properties = {}
 
@@ -231,7 +232,7 @@ def _result_kind(value):
 
 
 def rewrite_sgf_root(text, metadata):
-    start = text.find("(;" )
+    start = text.find("(;")
     if start < 0:
         raise ValueError("Invalid SGF file")
     root_start = start + 2
@@ -268,7 +269,8 @@ def rewrite_sgf_root(text, metadata):
     property_pattern = re.compile(
         r"(?:" + "|".join(sorted(replace_keys)) + r")(?:\[(?:\\.|[^]])*\])+"
     ) if replace_keys else None
-    root_body = property_pattern.sub("", original_root_body) if property_pattern else original_root_body
+    root_body = property_pattern.sub(
+        "", original_root_body) if property_pattern else original_root_body
     additions = "".join(
         f"{key}[{_escape_sgf_value(value)}]"
         for key, value in metadata.items()
@@ -278,7 +280,8 @@ def rewrite_sgf_root(text, metadata):
 
 
 def _rank_label(rating, config):
-    value = math.floor(category_value(rating, k=config["glicko_k"], m=config["glicko_m"]))
+    value = math.floor(category_value(
+        rating, k=config["glicko_k"], m=config["glicko_m"]))
     return f"{value + 1}d" if value >= 0 else f"{abs(value)}k"
 
 
@@ -292,7 +295,8 @@ def match_sgf_metadata(conn, white_player_id, black_player_id, match_date, resul
     black = by_id.get(int(black_player_id))
     if white is None or black is None:
         raise ValueError("Players not found for SGF metadata")
-    result_value = {"1-0": "W+R", "0-1": "B+R", "1/2-1/2": "0"}.get(result, result)
+    result_value = {"1-0": "W+R", "0-1": "B+R",
+                    "1/2-1/2": "0"}.get(result, result)
     category_config = get_category_config(conn=conn)
     return {
         "PW": white["display_name"],

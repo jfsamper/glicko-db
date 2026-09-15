@@ -24,95 +24,91 @@
   </div>
 
   {% if files %}
-    <div class="table-wrapper">
-      <table class="table-stack sgf-library-table">
-        <thead>
-          <tr>
-            <th>{{ translations.sgf_file_label }}</th>
-            <th>{{ translations.date }}</th>
-            <th>{{ translations.white }} / {{ translations.black }}</th>
-            <th>{{ translations.event }}</th>
-            <th>{{ translations.result }}</th>
-            <th>{{ translations.sgf_linked_match }}</th>
-            {% if can_manage_sgf or can_delete_sgf %}<th class="sgf-library-actions-heading">{{ translations.actions_label }}</th>{% endif %}
-          </tr>
-        </thead>
-        <tbody>
-          {% for sgf in files %}
-            <tr>
-              <td class="sgf-library-file">
-                <a
-                  class="text-link sgf-library-filename"
-                  href="{{ url_for('sgf_library_record', filename=sgf.filename, lang=lang) }}"
-                  title="{{ sgf.filename }}"
-                  aria-label="{{ sgf.filename }}"
-                >
-                  {{ sgf.filename[:4] }}
-                </a>
-                <br><span class="muted">{{ "%.1f"|format(sgf.size_bytes / 1024) }} KB</span>
-              </td>
-              <td>{{ sgf.DT or "-" }}</td>
-              <td>{{ sgf.PW or "-" }} / {{ sgf.PB or "-" }}</td>
-              <td>{{ sgf.EV or "-" }}</td>
-              <td>{{ sgf.RE or "-" }}</td>
-              <td>
-                {% if sgf.linked_match %}
-                  <a class="text-link" href="{{ url_for('match_record', match_id=sgf.linked_match.id, lang=lang) }}">
-                    {{ sgf.linked_match.white_name }} / {{ sgf.linked_match.black_name }}
-                  </a>
-                  <br><span class="muted">{{ sgf.linked_match.match_date }}</span>
-                {% else %}
-                  {{ translations.sgf_not_linked }}
-                {% endif %}
-              </td>
-              {% if can_manage_sgf or can_delete_sgf %}
-                <td class="sgf-library-actions">
-                  {% if sgf.linked_match %}
-                    {% if can_manage_sgf %}
-                    <form class="sgf-library-action-form" action="{{ url_for('admin_unlink_sgf', lang=lang) }}" method="post">
-                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                      <input type="hidden" name="filename" value="{{ sgf.filename }}">
-                      <input type="hidden" name="match_id" value="{{ sgf.linked_match.id }}">
-                      <button type="submit">{{ translations.sgf_unlink }}</button>
-                    </form>
-                    {% endif %}
-                  {% else %}
-                    {% if can_manage_sgf %}
-                    <form class="sgf-library-action-form" action="{{ url_for('admin_link_sgf', lang=lang) }}" method="post">
-                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                      <input type="hidden" name="filename" value="{{ sgf.filename }}">
-                      <label class="sr-only" for="sgf-match-{{ loop.index }}"> </label>
-                      <select class="sgf-library-match-select" id="sgf-match-{{ loop.index }}" name="match_id" required>
-                        <option value="">{{ translations.sgf_select_match }}</option>
-                        {% for match in match_options %}
-                          <option value="{{ match.id }}">{{ match.match_date }}: {{ match.white_name }} / {{ match.black_name }}{% if match.event %} ({{ match.event }}){% endif %}</option>
-                        {% endfor %}
-                      </select>
-                      <button type="submit">{{ translations.sgf_link }}</button>
-                    </form>
-                    {% endif %}
-                  {% endif %}
-                  {% if can_delete_sgf %}
-                    <form
-                      class="sgf-library-action-form sgf-library-delete-form"
-                      action="{{ url_for('admin_delete_sgf', lang=lang) }}"
-                      method="post"
-                      onsubmit="return confirm('{{ translations.sgf_delete_confirmation }}');"
-                    >
-                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                      <input type="hidden" name="filename" value="{{ sgf.filename }}">
-                      <button class="sgf-library-delete-button" type="submit">{{ translations.delete_heading }}</button>
-                    </form>
-                  {% endif %}
-                </td>
-              {% endif %}
-            </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
+  <div class="table-wrapper">
+    <table class="table-stack sgf-library-table">
+      <thead>
+        <tr>
+          <th>{{ translations.sgf_file_label }}</th>
+          <th>{{ translations.date }}</th>
+          <th>{{ translations.white }} / {{ translations.black }}</th>
+          <th>{{ translations.event }}</th>
+          <th>{{ translations.result }}</th>
+          <th>{{ translations.sgf_linked_match }}</th>
+          {% if can_manage_sgf or can_delete_sgf %}<th class="sgf-library-actions-heading">{{ translations.actions_label
+            }}</th>{% endif %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for sgf in files %}
+        <tr>
+          <td class="sgf-library-file">
+            <a class="text-link sgf-library-filename"
+              href="{{ url_for('sgf_library_record', filename=sgf.filename, lang=lang) }}" title="{{ sgf.filename }}"
+              aria-label="{{ sgf.filename }}">
+              {{ sgf.filename[:4] }}
+            </a>
+            <br><span class="muted">{{ "%.1f"|format(sgf.size_bytes / 1024) }} KB</span>
+          </td>
+          <td>{{ sgf.DT or "-" }}</td>
+          <td>{{ sgf.PW or "-" }} / {{ sgf.PB or "-" }}</td>
+          <td>{{ sgf.EV or "-" }}</td>
+          <td>{{ sgf.RE or "-" }}</td>
+          <td>
+            {% if sgf.linked_match %}
+            <a class="text-link" href="{{ url_for('match_record', match_id=sgf.linked_match.id, lang=lang) }}">
+              {{ sgf.linked_match.white_name }} / {{ sgf.linked_match.black_name }}
+            </a>
+            <br><span class="muted">{{ sgf.linked_match.match_date }}</span>
+            {% else %}
+            {{ translations.sgf_not_linked }}
+            {% endif %}
+          </td>
+          {% if can_manage_sgf or can_delete_sgf %}
+          <td class="sgf-library-actions">
+            {% if sgf.linked_match %}
+            {% if can_manage_sgf %}
+            <form class="sgf-library-action-form" action="{{ url_for('admin_unlink_sgf', lang=lang) }}" method="post">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <input type="hidden" name="filename" value="{{ sgf.filename }}">
+              <input type="hidden" name="match_id" value="{{ sgf.linked_match.id }}">
+              <button type="submit">{{ translations.sgf_unlink }}</button>
+            </form>
+            {% endif %}
+            {% else %}
+            {% if can_manage_sgf %}
+            <form class="sgf-library-action-form" action="{{ url_for('admin_link_sgf', lang=lang) }}" method="post">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <input type="hidden" name="filename" value="{{ sgf.filename }}">
+              <label class="sr-only" for="sgf-match-{{ loop.index }}"> </label>
+              <select class="sgf-library-match-select" id="sgf-match-{{ loop.index }}" name="match_id" required>
+                <option value="">{{ translations.sgf_select_match }}</option>
+                {% for match in match_options %}
+                <option value="{{ match.id }}">{{ match.match_date }}: {{ match.white_name }} / {{ match.black_name }}{%
+                  if match.event %} ({{ match.event }}){% endif %}</option>
+                {% endfor %}
+              </select>
+              <button type="submit">{{ translations.sgf_link }}</button>
+            </form>
+            {% endif %}
+            {% endif %}
+            {% if can_delete_sgf %}
+            <form class="sgf-library-action-form sgf-library-delete-form"
+              action="{{ url_for('admin_delete_sgf', lang=lang) }}" method="post"
+              onsubmit="return confirm('{{ translations.sgf_delete_confirmation }}');">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <input type="hidden" name="filename" value="{{ sgf.filename }}">
+              <button class="sgf-library-delete-button" type="submit">{{ translations.delete_heading }}</button>
+            </form>
+            {% endif %}
+          </td>
+          {% endif %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
   {% else %}
-    <p>{{ translations.sgf_library_empty }}</p>
+  <p>{{ translations.sgf_library_empty }}</p>
   {% endif %}
 </section>
 {% endblock %}

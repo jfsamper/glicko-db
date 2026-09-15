@@ -45,7 +45,8 @@ def admin_import():
 
     lang = admin.get_language(request.args.get("lang"))
     preview = None
-    preview_file = request.form.get("preview_file") or request.args.get("preview_file")
+    preview_file = request.form.get(
+        "preview_file") or request.args.get("preview_file")
 
     if request.method == "POST":
         action = request.form.get("action")
@@ -73,8 +74,10 @@ def admin_import():
                     ),
                 }
                 if metadata_overrides["pairing_system"] == "accelerated_swiss":
-                    metadata_overrides["acceleration_scheme"] = admin.acceleration_scheme_from_form(request.form)
-                    metadata_rounds = request.form.get("metadata_rounds", type=int) or 1
+                    metadata_overrides["acceleration_scheme"] = admin.acceleration_scheme_from_form(
+                        request.form)
+                    metadata_rounds = request.form.get(
+                        "metadata_rounds", type=int) or 1
                     metadata_overrides["acceleration_rounds"] = request.form.get(
                         "metadata_acceleration_rounds",
                         admin.default_acceleration_rounds(metadata_rounds),
@@ -94,11 +97,13 @@ def admin_import():
                     key: value for key, value in metadata_overrides.items() if value not in (None, "")
                 }
                 if "metadata_description" in request.form:
-                    metadata_overrides["description"] = (request.form.get("metadata_description") or "").strip()
+                    metadata_overrides["description"] = (
+                        request.form.get("metadata_description") or "").strip()
                 conn = admin.get_db()
                 try:
                     if request.form.get("metadata_decision") == "reject":
-                        raise ValueError("Import rejected during metadata review")
+                        raise ValueError(
+                            "Import rejected during metadata review")
                     tournament_id, metadata, matched = admin.create_tournament_from_gotha(
                         conn,
                         upload_path,
@@ -156,26 +161,33 @@ def admin_import():
                 with open(upload_path, newline="", encoding="utf-8-sig") as csv_file:
                     reader = csv.DictReader(csv_file)
                     required_columns = {"date", "white", "black", "result"}
-                    columns = {col.strip().lower() for col in reader.fieldnames or []}
+                    columns = {col.strip().lower()
+                               for col in reader.fieldnames or []}
                     if not required_columns.issubset(columns):
-                        raise ValueError(TRANSLATIONS[lang]["required_columns_missing"])
+                        raise ValueError(
+                            TRANSLATIONS[lang]["required_columns_missing"])
 
                     conn = admin.get_db()
                     try:
-                        players = conn.execute("SELECT id, display_name FROM players").fetchall()
+                        players = conn.execute(
+                            "SELECT id, display_name FROM players").fetchall()
                         player_lookup = {
                             admin.normalize_key(row["display_name"]): row["id"] for row in players
                         }
                         imported_matches = 0
                         earliest_match_date = None
                         for row in reader:
-                            white_id = player_lookup.get(admin.normalize_key(str(row.get("white", "")).strip()))
-                            black_id = player_lookup.get(admin.normalize_key(str(row.get("black", "")).strip()))
+                            white_id = player_lookup.get(
+                                admin.normalize_key(str(row.get("white", "")).strip()))
+                            black_id = player_lookup.get(
+                                admin.normalize_key(str(row.get("black", "")).strip()))
                             if white_id is None or black_id is None:
                                 continue
 
-                            match_date = admin.parse_date_value(row.get("date", ""))
-                            handicap_stones = admin.parse_handicap_stones(row.get("handicap"))
+                            match_date = admin.parse_date_value(
+                                row.get("date", ""))
+                            handicap_stones = admin.parse_handicap_stones(
+                                row.get("handicap"))
                             conn.execute(
                                 """
                                 INSERT INTO matches
@@ -192,7 +204,8 @@ def admin_import():
                                     admin.normalize_round_note_for_storage(
                                         row.get("notes", row.get("round", ""))
                                     ),
-                                    admin.normalize_round_note(row.get("notes", row.get("round", ""))),
+                                    admin.normalize_round_note(
+                                        row.get("notes", row.get("round", ""))),
                                     handicap_stones,
                                 ),
                             )
@@ -208,7 +221,8 @@ def admin_import():
                     admin.run_post_import_replay()
                 else:
                     admin.refresh_stats()
-                flash(f"{TRANSLATIONS[lang]['success']} ({imported_matches} matches)")
+                flash(
+                    f"{TRANSLATIONS[lang]['success']} ({imported_matches} matches)")
                 return redirect(url_for("import_matches", lang=lang))
 
             raise ValueError(TRANSLATIONS[lang]["unsupported_file_format"])

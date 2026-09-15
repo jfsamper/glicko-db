@@ -1,10 +1,11 @@
 # services/helpers.py
 """Service for providing utility functions and helpers for tournament data processing."""
-from datetime import datetime 
+from datetime import datetime
 import hashlib
 import re
 
 from config import SKIP_SHEETS
+
 
 def normalize_text(value):
     if value is None:
@@ -13,6 +14,7 @@ def normalize_text(value):
     text = text.replace("\u00a0", " ")
     text = re.sub(r"\s+", " ", text)
     return text
+
 
 def normalize_key(value):
     text = normalize_text(value).lower()
@@ -27,6 +29,7 @@ def normalize_key(value):
     for source, target in replacements.items():
         text = text.replace(source, target)
     return re.sub(r"[^a-z0-9]+", "", text)
+
 
 def header_index(headers, candidates):
     """Return the index for a canonical header match.
@@ -71,6 +74,7 @@ def header_index(headers, candidates):
 
     return next(iter(match_indexes))
 
+
 def parse_date_value(value, date_format=None):
     if value is None or value == "":
         raise ValueError("Date value is required")
@@ -83,10 +87,12 @@ def parse_date_value(value, date_format=None):
     if date_format is None and re.fullmatch(r"\d{1,2}/\d{1,2}/\d{2,4}", text):
         slash_dates = []
         year_digits = len(text.split("/")[-1])
-        candidate_formats = ["%d/%m/%Y", "%m/%d/%Y"] if year_digits == 4 else ["%d/%m/%y", "%m/%d/%y"]
+        candidate_formats = [
+            "%d/%m/%Y", "%m/%d/%Y"] if year_digits == 4 else ["%d/%m/%y", "%m/%d/%y"]
         for fmt in candidate_formats:
             try:
-                slash_dates.append(datetime.strptime(text, fmt).date().isoformat())
+                slash_dates.append(datetime.strptime(
+                    text, fmt).date().isoformat())
             except ValueError:
                 continue
         if len(set(slash_dates)) > 1:
@@ -110,6 +116,7 @@ def parse_date_value(value, date_format=None):
         except ValueError:
             continue
     raise ValueError(f"Unsupported date value: {value!r}")
+
 
 def normalize_round_note(value):
     """Normalize match round metadata to an integer round number.
@@ -145,7 +152,8 @@ def normalize_round_note(value):
     if am_pm_match:
         return int(re.search(r"\d{1,2}", text).group())
 
-    match = re.search(r"(?:round|ronda|turno|rounds)\s*[:\-]?\s*(\d{1,3})", lower)
+    match = re.search(
+        r"(?:round|ronda|turno|rounds)\s*[:\-]?\s*(\d{1,3})", lower)
     if match:
         return int(match.group(1))
 
@@ -219,11 +227,13 @@ def looks_like_player_name(value):
         return True
     return False
 
+
 def should_skip_sheet(sheet_name):
     return normalize_key(sheet_name) in {
         normalize_key(x)
         for x in SKIP_SHEETS
     }
+
 
 def slugify(value):
     raw = str(value or "")
@@ -233,6 +243,7 @@ def slugify(value):
 
     digest = hashlib.sha1(raw.encode("utf-8")).hexdigest()[:10]
     return f"player-{digest}"
+
 
 def split_name(display_name):
     text = normalize_text(display_name)

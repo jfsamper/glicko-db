@@ -114,12 +114,14 @@ def admin_restore_backup():
         return redirect(url_for("admin_backups", lang=lang))
 
     if not admin.is_valid_sqlite_backup(path):
-        admin.logger.warning("Backup restore rejected: invalid SQLite backup %s", path)
+        admin.logger.warning(
+            "Backup restore rejected: invalid SQLite backup %s", path)
         flash(TRANSLATIONS[lang]["error"])
         return redirect(url_for("admin_backups", lang=lang))
 
     if not admin.restore_db_from_backup(path):
-        admin.logger.warning("Backup restore failed during restore step for %s", path)
+        admin.logger.warning(
+            "Backup restore failed during restore step for %s", path)
         flash(TRANSLATIONS[lang]["error"])
         return redirect(url_for("admin_backups", lang=lang))
 

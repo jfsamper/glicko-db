@@ -22,8 +22,10 @@
   </div>
 
   <div class="card tournament-settings-card">
-    <form method="post" action="{{ url_for('admin_update_tournament_settings', tournament_id=tournament.id, lang=lang) }}" class="filter-form">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+    <form method="post"
+      action="{{ url_for('admin_update_tournament_settings', tournament_id=tournament.id, lang=lang) }}"
+      class="filter-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
       <div class="filter-grid">
         <div class="filter-item wide">
           <label for="tournament_name">{{ translations.tournament_name }}</label>
@@ -35,7 +37,8 @@
         </div>
         <div class="filter-item wide">
           <label for="tournament_description">{{ translations.tournament_description }}</label>
-          <textarea id="tournament_description" name="description" rows="4">{{ tournament.description or '' }}</textarea>
+          <textarea id="tournament_description" name="description"
+            rows="4">{{ tournament.description or '' }}</textarea>
         </div>
         <div class="filter-item">
           <label for="tournament_begin_date">{{ translations.report_start_date }}</label>
@@ -52,90 +55,106 @@
         <div class="filter-item">
           <label for="tournament_bye_points">{{ translations.bye_points }}</label>
           <select id="tournament_bye_points" name="bye_points">
-            {% for points in (1, 0.5, 0) %}<option value="{{ points }}" {% if tournament.bye_points == points %}selected{% endif %}>{{ points }}</option>{% endfor %}
+            {% for points in (1, 0.5, 0) %}<option value="{{ points }}" {% if tournament.bye_points==points %}selected{%
+              endif %}>{{ points }}</option>{% endfor %}
           </select>
         </div>
         <div class="filter-item">
           <label for="tournament_absent_points">{{ translations.absent_points }}</label>
           <select id="tournament_absent_points" name="absent_points">
-            {% for points in (0, 0.5, 1) %}<option value="{{ points }}" {% if tournament.absent_points == points %}selected{% endif %}>{{ points }}</option>{% endfor %}
+            {% for points in (0, 0.5, 1) %}<option value="{{ points }}" {% if tournament.absent_points==points
+              %}selected{% endif %}>{{ points }}</option>{% endfor %}
           </select>
         </div>
         <div class="filter-item">
           <label for="tournament_handicap_enabled">
-            <input id="tournament_handicap_enabled" name="handicap_enabled" type="checkbox" value="1" {% if tournament.handicap_enabled %}checked{% endif %}>
+            <input id="tournament_handicap_enabled" name="handicap_enabled" type="checkbox" value="1" {% if
+              tournament.handicap_enabled %}checked{% endif %}>
             {{ translations.handicap_tournament_label }}
           </label>
           <input type="hidden" name="apply_auto_handicap" value="0">
         </div>
       </div>
       {% if tournament.tournament_type == 'accelerated_swiss' %}
-        {% set category_count = acceleration_categories[0] %}
-        {% set category_floors = acceleration_categories[1] %}
-        <fieldset class="settings-section" id="acceleration-categories">
-          <legend>{{ translations.acceleration_categories }}</legend>
-          <div class="filter-grid">
-            <div class="filter-item">
-              <label for="acceleration_rounds">{{ translations.acceleration_rounds }}</label>
-              <input id="acceleration_rounds" name="acceleration_rounds" type="number" min="0" max="{{ tournament.rounds }}" value="{{ acceleration_rounds }}" required>
-            </div>
-            <div class="filter-item">
-              <label for="acceleration_scheme_choice">{{ translations.acceleration_scheme }}</label>
-              <select id="acceleration_scheme_choice" name="acceleration_scheme_choice">
-                {% for choice, option in acceleration_scheme_options.items() %}
-                  <option value="{{ choice }}" {% if acceleration_scheme_choice == choice %}selected{% endif %}>{{ option.label }}</option>
-                {% endfor %}
-                <option value="category_limits" {% if acceleration_scheme_choice == 'category_limits' %}selected{% endif %}>{{ translations.acceleration_category_limits }}</option>
-              </select>
-            </div>
-            <div class="filter-item acceleration-category-setting" {% if acceleration_scheme_choice != 'category_limits' %}hidden{% endif %}>
-              <label for="number_of_categories">{{ translations.acceleration_category_count }}</label>
-              <input id="number_of_categories" name="number_of_categories" type="number" min="1" max="10" value="{{ category_count }}" {% if acceleration_scheme_choice == 'category_limits' %}required{% endif %}>
-            </div>
+      {% set category_count = acceleration_categories[0] %}
+      {% set category_floors = acceleration_categories[1] %}
+      <fieldset class="settings-section" id="acceleration-categories">
+        <legend>{{ translations.acceleration_categories }}</legend>
+        <div class="filter-grid">
+          <div class="filter-item">
+            <label for="acceleration_rounds">{{ translations.acceleration_rounds }}</label>
+            <input id="acceleration_rounds" name="acceleration_rounds" type="number" min="0"
+              max="{{ tournament.rounds }}" value="{{ acceleration_rounds }}" required>
           </div>
-          <div id="category-floors" class="filter-grid acceleration-category-setting" {% if acceleration_scheme_choice != 'category_limits' %}hidden{% endif %}>
-            {% for index in range(category_count - 1) %}
-              <div class="filter-item">
-                <label for="acceleration_floor_{{ index }}">{{ translations.acceleration_category_floor }} {{ index + 1 }}</label>
-                <select id="acceleration_floor_{{ index }}" name="category_floor" {% if acceleration_scheme_choice == 'category_limits' %}required{% endif %}>
-                  {% for rank in range(8, -31, -1) %}
-                    <option value="{{ rank }}" {% if index < category_floors|length and category_floors[index] == rank %}selected{% endif %}>{{ format_rank_category(rank) }}</option>
-                  {% endfor %}
-                </select>
-              </div>
-            {% endfor %}
+          <div class="filter-item">
+            <label for="acceleration_scheme_choice">{{ translations.acceleration_scheme }}</label>
+            <select id="acceleration_scheme_choice" name="acceleration_scheme_choice">
+              {% for choice, option in acceleration_scheme_options.items() %}
+              <option value="{{ choice }}" {% if acceleration_scheme_choice==choice %}selected{% endif %}>{{
+                option.label }}</option>
+              {% endfor %}
+              <option value="category_limits" {% if acceleration_scheme_choice=='category_limits' %}selected{% endif %}>
+                {{ translations.acceleration_category_limits }}</option>
+            </select>
           </div>
-        </fieldset>
+          <div class="filter-item acceleration-category-setting" {% if acceleration_scheme_choice !='category_limits'
+            %}hidden{% endif %}>
+            <label for="number_of_categories">{{ translations.acceleration_category_count }}</label>
+            <input id="number_of_categories" name="number_of_categories" type="number" min="1" max="10"
+              value="{{ category_count }}" {% if acceleration_scheme_choice=='category_limits' %}required{% endif %}>
+          </div>
+        </div>
+        <div id="category-floors" class="filter-grid acceleration-category-setting" {% if acceleration_scheme_choice
+          !='category_limits' %}hidden{% endif %}>
+          {% for index in range(category_count - 1) %}
+          <div class="filter-item">
+            <label for="acceleration_floor_{{ index }}">{{ translations.acceleration_category_floor }} {{ index + 1
+              }}</label>
+            <select id="acceleration_floor_{{ index }}" name="category_floor" {% if
+              acceleration_scheme_choice=='category_limits' %}required{% endif %}>
+              {% for rank in range(8, -31, -1) %}
+              <option value="{{ rank }}" {% if index < category_floors|length and category_floors[index]==rank
+                %}selected{% endif %}>{{ format_rank_category(rank) }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          {% endfor %}
+        </div>
+      </fieldset>
       {% endif %}
       {% if tournament.tournament_type == 'mcmahon' %}
-        <fieldset class="settings-section" id="mcmahon-settings">
-          <legend>{{ translations.mcmahon_settings }}</legend>
-          <div class="filter-grid">
-            <div class="filter-item">
-              <label for="mm_bar">{{ translations.mcmahon_bar }}</label>
-              <input id="mm_bar" name="mm_bar" type="text" inputmode="text" value="{{ tournament.mm_bar if tournament.mm_bar is not none else 8 }}" required>
-            </div>
-            <div class="filter-item">
-              <label for="mm_floor">{{ translations.mcmahon_floor }}</label>
-              <input id="mm_floor" name="mm_floor" type="text" inputmode="text" value="{{ tournament.mm_floor if tournament.mm_floor is not none else -30 }}" required>
-            </div>
-            <div class="filter-item">
-              <label for="mm_zero">{{ translations.mcmahon_zero }}</label>
-              <input id="mm_zero" name="mm_zero" type="number" min="0" value="{{ tournament.mm_zero if tournament.mm_zero is not none else 0 }}" required>
-            </div>
+      <fieldset class="settings-section" id="mcmahon-settings">
+        <legend>{{ translations.mcmahon_settings }}</legend>
+        <div class="filter-grid">
+          <div class="filter-item">
+            <label for="mm_bar">{{ translations.mcmahon_bar }}</label>
+            <input id="mm_bar" name="mm_bar" type="text" inputmode="text"
+              value="{{ tournament.mm_bar if tournament.mm_bar is not none else 8 }}" required>
           </div>
-        </fieldset>
+          <div class="filter-item">
+            <label for="mm_floor">{{ translations.mcmahon_floor }}</label>
+            <input id="mm_floor" name="mm_floor" type="text" inputmode="text"
+              value="{{ tournament.mm_floor if tournament.mm_floor is not none else -30 }}" required>
+          </div>
+          <div class="filter-item">
+            <label for="mm_zero">{{ translations.mcmahon_zero }}</label>
+            <input id="mm_zero" name="mm_zero" type="number" min="0"
+              value="{{ tournament.mm_zero if tournament.mm_zero is not none else 0 }}" required>
+          </div>
+        </div>
+      </fieldset>
       {% endif %}
       {% if tournament.tournament_type == 'swiss_cat' %}
-        <fieldset class="settings-section" id="category-sections">
-          <legend>{{ translations.category_sections }}</legend>
-          <div class="filter-grid">
-            <div class="filter-item">
-              <label for="category_rounds">{{ translations.category_rounds }}</label>
-              <input id="category_rounds" name="category_rounds" type="number" min="0" max="{{ tournament.rounds }}" value="{{ category_rounds }}" required>
-            </div>
+      <fieldset class="settings-section" id="category-sections">
+        <legend>{{ translations.category_sections }}</legend>
+        <div class="filter-grid">
+          <div class="filter-item">
+            <label for="category_rounds">{{ translations.category_rounds }}</label>
+            <input id="category_rounds" name="category_rounds" type="number" min="0" max="{{ tournament.rounds }}"
+              value="{{ category_rounds }}" required>
           </div>
-        </fieldset>
+        </div>
+      </fieldset>
       {% endif %}
       <div class="filter-actions">
         <button type="submit" class="button">{{ translations.save_changes }}</button>
