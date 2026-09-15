@@ -10,7 +10,7 @@ if str(ROOT) not in sys.path:
 from services.category_service import glicko_to_category
 
 DB_PATH = ROOT / "data" / "acg_ratings.db"
-OUTPUT_FILE = ROOT / "player_categories.csv"
+OUTPUT_FILE = ROOT / "exports" / "player_categories.csv"
 
 
 def main():
