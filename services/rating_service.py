@@ -258,8 +258,6 @@ def recompute_ratings(conn=None):
         if owns_conn:
             conn.commit()
         clear_dirty_date(conn=conn)
-        if owns_conn:
-            conn.close()
     finally:
         if owns_conn:
             conn.close()
