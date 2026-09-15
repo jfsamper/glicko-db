@@ -49,10 +49,14 @@ def _mms_offset(value, default=0):
         return default
 
 
-def read_gotha_tournament(xml_path: str | Path, pairing_system: str | None = None) -> GothaTournamentPayload:
+def read_gotha_tournament(
+    xml_path: str | Path,
+    pairing_system: str | None = None,
+    root=None,
+) -> GothaTournamentPayload:
     """Read OpenGotha XML and return a typed tournament metadata payload."""
     xml_path = _resolve_gotha_path(xml_path)
-    root = ET.parse(xml_path).getroot()
+    root = root if root is not None else ET.parse(xml_path).getroot()
     tournament_root = root.find("TournamentParameterSet") if root.tag != "TournamentParameterSet" else root
     if tournament_root is None:
         tournament_root = root
@@ -151,7 +155,8 @@ def create_tournament_from_gotha(conn, xml_path, pairing_system=None, player_dec
     from services.tournament_status import _refresh_tournament_completion_state
 
     xml_path = _resolve_gotha_path(xml_path)
-    metadata = read_gotha_tournament(xml_path)
+    root = ET.parse(xml_path).getroot()
+    metadata = read_gotha_tournament(xml_path, root=root)
     metadata.update(metadata_overrides or {})
     pairing_system = (pairing_system or metadata["pairing_system"]).strip().lower().replace("-", "_")
     if pairing_system == "swiss_by_category":
@@ -181,7 +186,7 @@ def create_tournament_from_gotha(conn, xml_path, pairing_system=None, player_dec
     if "acceleration_rounds" in columns:
         insert_columns.append("acceleration_rounds"); insert_values.append(metadata.get("acceleration_rounds") or default_acceleration_rounds(tournament_rounds))
     if "handicap_enabled" in columns:
-        has_handicap = any(int(game.get("handicap") or 0) > 0 for game in ET.parse(xml_path).getroot().findall("Games/Game") if str(game.get("handicap") or "0").strip().lstrip("-").isdigit())
+        has_handicap = any(int(game.get("handicap") or 0) > 0 for game in root.findall("Games/Game") if str(game.get("handicap") or "0").strip().lstrip("-").isdigit())
         insert_columns.append("handicap_enabled"); insert_values.append(int(has_handicap))
     insert_columns.extend(["status", "source_format", "created_at"]); insert_values.extend(["draft", "OpenGotha XML", current_timestamp()])
     placeholders = ", ".join("?" for _ in insert_values)
@@ -222,7 +227,7 @@ def create_tournament_from_gotha(conn, xml_path, pairing_system=None, player_dec
             conn.execute("INSERT OR IGNORE INTO tournament_participants (tournament_id, player_id, seed_rating, seed_rank, category, initial_score, acceleration) VALUES (?, ?, ?, ?, ?, ?, ?)", (tournament_id, player["id"], seed_rating, rank, participant["category"], initial_score, acceleration))
         matched += 1
 
-    root = ET.parse(xml_path).getroot(); participant_names = {player["key"]: player["display_name"] for player in metadata["players"]}; round_ids = {}
+    participant_names = {player["key"]: player["display_name"] for player in metadata["players"]}; round_ids = {}
     def ensure_round(round_number):
         if round_number not in round_ids:
             conn.execute("INSERT OR IGNORE INTO tournament_rounds (tournament_id, round_number, status) VALUES (?, ?, 'completed')", (tournament_id, round_number))
