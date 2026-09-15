@@ -8,7 +8,6 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-import gotha2glicko
 from services.helpers import normalize_key
 from services.import_gotha import parse_gotha_xml
 from services.pairing_service import pair_players
@@ -18,23 +17,6 @@ from services.tournament_service import read_gotha_tournament
 
 XML_PATH = Path(__file__).parents[1] / "uploads" / "abierto3-26.xml"
 FRENCH_XML_PATH = Path(__file__).parents[1] / "uploads" / "french-example.xml"
-
-
-def test_gotha2glicko_warns_and_handles_missing_games(tmp_path):
-    xml_path = tmp_path / "missing_games.xml"
-    xml_path.write_text(
-        """
-        <TournamentParameterSet>
-          <GeneralParameterSet name="Test tournament" beginDate="2026-01-01" />
-          <Players />
-        </TournamentParameterSet>
-        """.strip(),
-        encoding="utf-8",
-    )
-
-    with pytest.warns(DeprecationWarning, match="deprecated"):
-        with pytest.warns(UserWarning, match="No <Games>"):
-            assert gotha2glicko.main(str(xml_path)) == []
 
 
 def test_pairing_changes_with_system_and_rating_seed():

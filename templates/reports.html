@@ -69,8 +69,7 @@
           </thead>
           <tbody>
             {% for player in all_report_players %}
-            <tr data-report-player-row{% if loop.index0 < (page - 1) * page_size or loop.index0>= page * page_size %}
-              hidden{% endif %}>
+            <tr data-report-player-row{% if loop.index0 < (page - 1) * page_size or loop.index0>= page * page_size %} hidden{% endif %}>
               <td>{{ player.rank }}</td>
               <td><a href="{{ url_for('player_profile', id=player.player_id, lang=lang) }}">{{ player.display_name
                   }}</a></td>

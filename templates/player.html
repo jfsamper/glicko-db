@@ -226,6 +226,7 @@
   {% endif %}
 </section>
 
+{% if total_matches > 0 %}
 <section class="panel">
   <div class="panel-header centered-header">
     <h3>{{ translations.opponent_records }}</h3>
@@ -387,6 +388,7 @@
   </div>
   {% endif %}
 </section>
+{% endif %}
 
 <script>
   (() => {
@@ -431,7 +433,7 @@
       const pageLabel = document.querySelector("[data-profile-match-page]");
       const summary = document.querySelector("[data-profile-match-summary]");
       if (profileRows.length && previous && next && pageLabel && summary) {
-        let currentPage = {{ page| int
+        let currentPage = {{ page | int }};
       }
     };
     const renderMatches = (requestedPage) => {

@@ -72,9 +72,9 @@
         <label class="language-control" for="language-select">
           <span class="visually-hidden">{{ translations.language }}</span>
           <select id="language-select" class="language-select" aria-label="{{ translations.language }}">
-            <option value="es" {% if lang=='es' %} selected{% endif %}>{{ translations.spanish }}</option>
-            <option value="en" {% if lang=='en' %} selected{% endif %}>{{ translations.english }}</option>
-            <option value="pt" {% if lang=='pt' %} selected{% endif %}>{{ translations.portuguese }}</option>
+            <option value="es"{% if lang=='es' %} selected{% endif %}>{{ translations.spanish }}</option>
+            <option value="en"{% if lang=='en' %} selected{% endif %}>{{ translations.english }}</option>
+            <option value="pt"{% if lang=='pt' %} selected{% endif %}>{{ translations.portuguese }}</option>
           </select>
         </label>
         <button id="theme-toggle" type="button">⚫</button>
