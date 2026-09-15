@@ -22,7 +22,7 @@
             <input type="text" value="{{ user.username }} ({{ user.player_name }})" readonly />
           </div>
           <div class="filter-item wide">
-            <label for="match_date">{{ translations.match_date_label }}</label>
+            <label for="match_date">{{ translations.date }}</label>
             <input id="match_date" name="match_date" type="date" required />
           </div>
           <div class="filter-item wide">
@@ -37,8 +37,8 @@
           <div class="filter-item wide">
             <label for="color">{{ translations.my_color_label }}</label>
             <select id="color" name="color" required>
-              <option value="white">{{ translations.white_side }}</option>
-              <option value="black">{{ translations.black_side }}</option>
+              <option value="white">{{ translations.white }}</option>
+              <option value="black">{{ translations.black }}</option>
             </select>
           </div>
           <div class="filter-item wide">
@@ -46,7 +46,7 @@
             <input id="handicap_stones" name="handicap_stones" type="number" min="0" max="9" value="0" />
           </div>
           <div class="filter-item wide">
-            <label for="result">{{ translations.result_label }}</label>
+            <label for="result">{{ translations.result }}</label>
             <select id="result" name="result" required>
               <option id="result-white" value="1-0">{{ translations.white_wins }}</option>
               <option id="result-black" value="0-1">{{ translations.black_wins }}</option>
@@ -54,7 +54,7 @@
             </select>
           </div>
           <div class="filter-item wide">
-            <label for="event">{{ translations.event_label }}</label>
+            <label for="event">{{ translations.event }}</label>
             <input id="event" name="event" type="text" />
           </div>
           <div class="filter-item wide">

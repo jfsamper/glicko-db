@@ -10,7 +10,7 @@
       <h3>{{ translations.news_links }}</h3>
       {% for tag in article.tags %}
         {% if tag.tag_type == 'player' %}
-          <a class="text-link" href="{{ url_for('player_profile', id=tag.entity_id, lang=lang) }}">{{ translations.news_tag_player }}: {{ tag.label }}</a>
+          <a class="text-link" href="{{ url_for('player_profile', id=tag.entity_id, lang=lang) }}">{{ translations.player }}: {{ tag.label }}</a>
         {% elif tag.tag_type == 'tournament' %}
           <a class="text-link" href="{{ url_for('tournament_page', tournament_id=tag.entity_id, lang=lang) }}">{{ translations.news_tag_tournament }}: {{ tag.label }}</a>
         {% elif tag.tag_type == 'match' %}

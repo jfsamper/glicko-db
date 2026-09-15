@@ -10,13 +10,13 @@
       <span> &gt; </span>
       <a href="{{ url_for('admin_matches', lang=lang) }}">{{ translations.matches_heading_admin }}</a>
       <span> &gt; </span>
-      <span>{{ translations.edit_match_heading if match else translations.add_match_heading }}</span>
+      <span>{{ translations.edit_match_heading if match else translations.add_match }}</span>
     </nav>
   </div>
 
   <div class="panel-header">
     <div>
-      <h2>{{ translations.edit_match_heading if match else translations.add_match_heading }}</h2>
+      <h2>{{ translations.edit_match_heading if match else translations.add_match }}</h2>
     </div>
   </div>
 
@@ -24,12 +24,12 @@
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
     <div class="filter-panel">
       <div class="filter-header">
-        <h3>{{ translations.edit_match_heading if match else translations.add_match_heading }}</h3>
+        <h3>{{ translations.edit_match_heading if match else translations.add_match }}</h3>
       </div>
 
       <div class="filter-grid">
         <div class="filter-item">
-          <label for="match_date">{{ translations.match_date_label }}</label>
+          <label for="match_date">{{ translations.date }}</label>
           <input
             id="match_date"
             type="date"
@@ -40,7 +40,7 @@
         </div>
 
         <div class="filter-item">
-          <label for="result">{{ translations.result_label }}</label>
+          <label for="result">{{ translations.result }}</label>
           <select id="result" name="result" required>
             <option value="1-0" {% if match and match.result == "1-0" %}selected{% endif %}>{{ translations.white_wins }}</option>
             <option value="0-1" {% if match and match.result == "0-1" %}selected{% endif %}>{{ translations.black_wins }}</option>
@@ -49,7 +49,7 @@
         </div>
 
         <div class="filter-item">
-          <label for="white_player_id">{{ translations.white_player_label }}</label>
+          <label for="white_player_id">{{ translations.white }}</label>
           <select id="white_player_id" name="white_player_id" required>
             <option value="" disabled {% if not match %}selected{% endif %}>{{ translations.select_player }}</option>
             {% for p in players %}
@@ -61,7 +61,7 @@
         </div>
 
         <div class="filter-item">
-          <label for="black_player_id">{{ translations.black_player_label }}</label>
+          <label for="black_player_id">{{ translations.black }}</label>
           <select id="black_player_id" name="black_player_id" required>
             <option value="" disabled {% if not match %}selected{% endif %}>{{ translations.select_player }}</option>
             {% for p in players %}
@@ -73,7 +73,7 @@
         </div>
 
         <div class="filter-item wide">
-          <label for="event">{{ translations.event_label }}</label>
+          <label for="event">{{ translations.event }}</label>
           <input
             id="event"
             type="text"

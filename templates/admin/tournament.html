@@ -111,7 +111,7 @@
               <label for="round_id">{{ translations.select_round }}</label>
               <select id="round_id" name="round_id" onchange="this.form.requestSubmit ? this.form.requestSubmit() : this.form.submit()">
                 {% for round in rounds %}
-                  <option value="{{ round.id }}" {% if round.id == selected_round_id %}selected{% endif %}>{{ translations.tournament_round }} {{ round.round_number }}</option>
+                  <option value="{{ round.id }}" {% if round.id == selected_round_id %}selected{% endif %}>{{ translations.time_round }} {{ round.round_number }}</option>
                 {% endfor %}
               </select>
             </div>
@@ -157,7 +157,7 @@
         <button type="submit" class="unpair-button" title="{{ translations.unpair_all }}">{{ translations.unpair_all }}</button>
       </form>
       <div class="table-wrapper"><table class="table-stack">
-        <thead><tr><th>{{ translations.tournament_round }}</th><th>{{ translations.board }}</th><th>{{ translations.white }}</th><th>{{ translations.black }}</th><th>{{ translations.result }}</th><th>{{ translations.actions_label }}</th></tr></thead>
+        <thead><tr><th>{{ translations.time_round }}</th><th>{{ translations.board }}</th><th>{{ translations.white }}</th><th>{{ translations.black }}</th><th>{{ translations.result }}</th><th>{{ translations.actions_label }}</th></tr></thead>
         <tbody>
           {% for pairing in selected_pairings if not pairing.is_bye %}
           <tr>

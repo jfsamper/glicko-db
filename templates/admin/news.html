@@ -12,7 +12,7 @@
       {% for article in articles %}
         <tr>
           <td><a href="{{ url_for('admin_news_edit', article_id=article.id, lang=lang) }}">{{ article.title }}</a></td>
-          <td>{{ translations.news_published if article.is_published else translations.news_draft }}</td>
+          <td>{{ translations.news_published if article.is_published else translations.draft }}</td>
           <td>{{ article.updated_at }}</td>
           <td>
             <a class="text-link" href="{{ url_for('admin_news_edit', article_id=article.id, lang=lang) }}">{{ translations.edit_heading }}</a>

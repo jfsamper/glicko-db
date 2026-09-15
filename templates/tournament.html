@@ -23,7 +23,7 @@
             <label for="round_id">{{ translations.select_round }}</label>
             <select id="round_id" class="round-selector" {% if not rounds %}disabled{% endif %}>
               {% for round in rounds %}
-                <option value="{{ round.id }}" {% if round.id == selected_round_id %}selected{% endif %}>{{ translations.tournament_round }} {{ round.round_number }}</option>
+                <option value="{{ round.id }}" {% if round.id == selected_round_id %}selected{% endif %}>{{ translations.time_round }} {{ round.round_number }}</option>
               {% endfor %}
             </select>
           </div>

@@ -8,14 +8,14 @@
     <nav aria-label="Breadcrumb" class="breadcrumb">
       <a href="{{ url_for('admin', lang=lang) }}">{{ translations.admin_heading }}</a>
       <span> &gt; </span>
-      <a href="{{ url_for('admin_users', lang=lang) }}">{{ translations.admin_users_title }}</a>
+      <a href="{{ url_for('admin_users', lang=lang) }}">{{ translations.user_management_heading }}</a>
       <span> &gt; </span>
-      <span>{{ translations.create_user_heading }}</span>
+      <span>{{ translations.create_user_button }}</span>
     </nav>
   </div>
 
   <div class="panel-header">
-    <h2>{{ translations.create_user_heading }}</h2>
+    <h2>{{ translations.create_user_button }}</h2>
   </div>
 
   <form method="post" class="filter-form">

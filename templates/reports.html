@@ -129,7 +129,7 @@
       <input type="hidden" name="period" value="{{ period }}">
       <input type="hidden" name="start_date" value="{{ report.start_date or '' }}">
       <input type="hidden" name="end_date" value="{{ report.end_date or '' }}">
-      <label for="report-export-player">{{ translations.get('report_player', 'Player') }}</label>
+      <label for="report-export-player">{{ translations.get('player', 'Player') }}</label>
       <select id="report-export-player" name="player_id" required>
         <option value="">{{ translations.get('select_player', 'Select a player') }}</option>
         {% for player in report.selector_players %}

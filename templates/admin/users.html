@@ -59,7 +59,7 @@
             <form method="post" action="{{ url_for('admin_delete_user', user_id=user.id, lang=lang) }}" class="inline-form" onsubmit="return confirm('{{ translations.delete_user_confirm }}');">
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
               <button type="submit" class="button danger">
-                {{ translations.delete_user_button }}
+                {{ translations.delete_heading }}
               </button>
             </form>
           </div>
