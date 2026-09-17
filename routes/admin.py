@@ -565,7 +565,7 @@ ADMIN_MENU_SECTIONS = (
         (
             ("admin_backups", "admin_backups_title", "admin_backups_desc", "admin"),
             ("admin_users", "admin_users_title", "admin_users_desc", "admin"),
-            ("admin_news", "news", "news", "operator"),
+            ("admin_news", "news", "news_desc", "operator"),
             ("admin_audit_review", "audit_review_heading",
              "audit_review_desc", "admin"),
             ("admin_settings", "admin_settings_title",
