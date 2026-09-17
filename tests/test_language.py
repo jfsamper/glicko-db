@@ -1,3 +1,7 @@
+from pathlib import Path
+import re
+
+from routes.admin import ADMIN_MENU_SECTIONS
 from services.i18n import TRANSLATIONS, get_language
 
 
@@ -46,3 +50,28 @@ def test_all_languages_have_the_same_translation_keys():
     expected_keys = set(TRANSLATIONS["en"])
     for language, translations in TRANSLATIONS.items():
         assert set(translations) == expected_keys, language
+
+
+def test_template_translation_keys_exist_in_every_language():
+    template_root = Path(__file__).resolve().parents[1] / "templates"
+    patterns = (
+        re.compile(r"translations\.(?!get\b)([A-Za-z_]\w*)"),
+        re.compile(r"translations\s*\[\s*['\"]([^'\"]+)['\"]\s*\]"),
+        re.compile(r"translations\.get\(\s*['\"]([^'\"]+)['\"]"),
+    )
+    template_keys = set()
+    for template_path in template_root.rglob("*.html"):
+        template = template_path.read_text(encoding="utf-8")
+        for pattern in patterns:
+            template_keys.update(
+                match.group(1) for match in pattern.finditer(template)
+            )
+
+    for heading, items in ADMIN_MENU_SECTIONS:
+        template_keys.add(heading)
+        for _endpoint, title, description, _permission in items:
+            template_keys.update((title, description))
+
+    for language, translations in TRANSLATIONS.items():
+        missing = template_keys - set(translations)
+        assert not missing, f"{language}: {sorted(missing)}"
