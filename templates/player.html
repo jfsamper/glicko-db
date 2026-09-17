@@ -215,7 +215,8 @@
     {{ translations.showing_results }} {{ tournament_pagination.result_start }}-{{ tournament_pagination.result_end }}
     {{ translations.of_label }} {{ total_tournaments }}
   </div>
-  <div class="pagination-row">
+  <div class="pagination-row" data-profile-tournament-pagination
+    data-initial-page="{{ tournament_pagination.page | int if tournament_pagination else 1 }}">
     <button type="button" class="button secondary" data-profile-tournament-prev>{{ translations.prev_page }}</button>
     <span data-profile-tournament-page data-page-label="{{ translations.page_label }}"
       data-of-label="{{ translations.of_label }}"
@@ -373,7 +374,8 @@
     {{ translations.showing_results }} {{ result_start }}-{{ result_end }} {{ translations.of_label }} {{ total_matches
     }}
   </div>
-  <div class="pagination-row">
+  <div class="pagination-row" data-profile-match-pagination data-page-size="{{ page_size | int }}"
+    data-initial-page="{{ page | int }}">
     <label for="player-page-size">{{ translations.page_size_label }}</label>
     <select id="player-page-size">
       {% for option in [10, 25, 50, 100] %}
@@ -392,15 +394,32 @@
 
 <script>
   (() => {
-    const setupPagination = ({ rowSelector, pageSize, initialPage, prevSelector, nextSelector, pageSelector, summarySelector }) => {
+    const setupPagination = ({
+      rowSelector,
+      pageSize: initialPageSize,
+      initialPage,
+      prevSelector,
+      nextSelector,
+      pageSelector,
+      summarySelector,
+      pageSizeSelector,
+    }) => {
       const rows = Array.from(document.querySelectorAll(rowSelector));
       const previous = document.querySelector(prevSelector);
       const next = document.querySelector(nextSelector);
       const pageLabel = document.querySelector(pageSelector);
       const summary = document.querySelector(summarySelector);
+      const pageSizeControl = pageSizeSelector
+        ? document.querySelector(pageSizeSelector)
+        : null;
       if (!rows.length || !previous || !next || !pageLabel || !summary) return;
 
-      let currentPage = initialPage;
+      let pageSize = Number(initialPageSize) || 1;
+      let currentPage = Number(initialPage) || 1;
+
+      if (pageSizeControl) {
+        pageSize = Number(pageSizeControl.value) || pageSize;
+      }
 
       const render = (requestedPage) => {
         const totalPages = Math.max(1, Math.ceil(rows.length / pageSize));
@@ -421,55 +440,43 @@
 
       previous.addEventListener("click", () => render(currentPage - 1));
       next.addEventListener("click", () => render(currentPage + 1));
+      if (pageSizeControl) {
+        pageSizeControl.addEventListener("change", () => {
+          pageSize = Number(pageSizeControl.value) || pageSize;
+          render(1);
+        });
+      }
       render(currentPage);
     };
 
-    const pageSizeSelect = document.getElementById("player-page-size");
-    if (pageSizeSelect) {
-      let pageSize = Number(pageSizeSelect.value) || 25;
-      const profileRows = Array.from(document.querySelectorAll("[data-profile-match-row]"));
-      const previous = document.querySelector("[data-profile-match-prev]");
-      const next = document.querySelector("[data-profile-match-next]");
-      const pageLabel = document.querySelector("[data-profile-match-page]");
-      const summary = document.querySelector("[data-profile-match-summary]");
-      if (profileRows.length && previous && next && pageLabel && summary) {
-        let currentPage = {{ page | int }};
-      }
-    };
-    const renderMatches = (requestedPage) => {
-      const totalPages = Math.max(1, Math.ceil(profileRows.length / pageSize));
-      currentPage = Math.min(Math.max(1, requestedPage), totalPages);
-      const startIndex = (currentPage - 1) * pageSize;
-      const endIndex = Math.min(startIndex + pageSize, profileRows.length);
-      profileRows.forEach((row, index) => {
-        row.hidden = index < startIndex || index >= endIndex;
-      });
-      pageLabel.textContent = `${pageLabel.dataset.pageLabel} ${currentPage} ${pageLabel.dataset.ofLabel} ${totalPages}`;
-      pageLabel.setAttribute("aria-label", `${pageLabel.dataset.pageLabel} ${currentPage}`);
-      summary.textContent = `${summary.dataset.showingLabel} ${startIndex + 1}-${endIndex} ${summary.dataset.ofLabel} ${profileRows.length}`;
-      previous.disabled = currentPage === 1;
-      next.disabled = currentPage === totalPages;
-    };
-    pageSizeSelect.addEventListener("change", () => {
-      pageSize = Number(pageSizeSelect.value) || 25;
-      renderMatches(1);
-    });
-    previous.addEventListener("click", () => renderMatches(currentPage - 1));
-    next.addEventListener("click", () => renderMatches(currentPage + 1));
-    renderMatches(currentPage);
-  }
-    }
+    const matchPagination = document.querySelector(
+      "[data-profile-match-pagination]"
+    );
+    const tournamentPagination = document.querySelector(
+      "[data-profile-tournament-pagination]"
+    );
 
-  setupPagination({
-    rowSelector: "[data-profile-tournament-row]",
-    pageSize: 10,
-    initialPage: {{ tournament_pagination.page | int if tournament_pagination else 1 }},
-    prevSelector: "[data-profile-tournament-prev]",
-    nextSelector: "[data-profile-tournament-next]",
-    pageSelector: "[data-profile-tournament-page]",
-    summarySelector: "[data-profile-tournament-summary]",
+    setupPagination({
+      rowSelector: "[data-profile-match-row]",
+      pageSize: Number(matchPagination?.dataset.pageSize) || 1,
+      initialPage: Number(matchPagination?.dataset.initialPage) || 1,
+      prevSelector: "[data-profile-match-prev]",
+      nextSelector: "[data-profile-match-next]",
+      pageSelector: "[data-profile-match-page]",
+      summarySelector: "[data-profile-match-summary]",
+      pageSizeSelector: "#player-page-size",
     });
-  }) ();
+
+    setupPagination({
+      rowSelector: "[data-profile-tournament-row]",
+      pageSize: 10,
+      initialPage: Number(tournamentPagination?.dataset.initialPage) || 1,
+      prevSelector: "[data-profile-tournament-prev]",
+      nextSelector: "[data-profile-tournament-next]",
+      pageSelector: "[data-profile-tournament-page]",
+      summarySelector: "[data-profile-tournament-summary]",
+    });
+  })();
 </script>
 
 <script>
