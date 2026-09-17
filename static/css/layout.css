@@ -127,6 +127,13 @@ nav a,
   transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
 }
 
+.top-nav-help-link {
+  min-width: 2.15rem;
+  padding-right: 0.45rem;
+  padding-left: 0.45rem;
+  text-align: center;
+}
+
 .top-nav-link:hover,
 .top-nav-link:focus-visible,
 .top-nav-link.is-active {

@@ -4,6 +4,19 @@ Documentación: Español | [English](README.en.md) | [Português](README.pt.md)
 
 Glicko DB es una aplicación Flask y SQLite para administrar jugadores, ratings, partidas y torneos de una communidad de Go. Ofrece posiciones y estadísticas públicas, junto con pantallas de administración protegidas para importaciones, configuración del rating, copias de seguridad y operaciones de torneos.
 
+## Tabla de contenidos
+
+- [Funciones](#funciones)
+- [Ayuda para usuarios](#ayuda-para-usuarios)
+- [Requisitos](#requisitos)
+- [Ejecución local](#ejecución-local)
+- [Configuración](#configuración)
+- [Hoja de ruta del proyecto](#hoja-de-ruta-del-proyecto)
+- [Desarrollo](#desarrollo)
+  - [Organización del código](#organización-del-código)
+  - [Instalación en hosting Linux](#instalación-en-hosting-linux)
+- [Licencia y atribución](#licencia-y-atribución)
+
 ## Funciones
 
 - Posiciones públicas, búsqueda de jugadores, perfiles, historial de partidas, gráficos de rating y conversión de categorías
@@ -20,6 +33,13 @@ Glicko DB es una aplicación Flask y SQLite para administrar jugadores, ratings,
 - Manejo de descansos y ausencias, copias de seguridad, protecciones de restauración y migraciones SQLite
 - Torneos en estado borrador ocultos de los listados públicos, con opción administrativa para mostrar borradores
 - Partidas con hándicap en piedras (estilo Go), con sugerencia automática por diferencia de categoría y ajuste de rating estilo OGS
+
+## Ayuda para usuarios
+
+La guía de la interfaz es la referencia para las tareas diarias. También está disponible desde el botón `?` de la barra superior o en `/help?lang=es`.
+
+- [Ayuda de la interfaz](docs/user_interface.md)
+- [Rutas y notas de integración](docs/api_endpoints.md)
 
 ## Requisitos
 
@@ -76,89 +96,23 @@ Los valores predeterminados están en `config.py`.
 - `RECAPTCHA_MIN_SCORE`: puntuación v3 mínima aceptada para el registro; por defecto es `0.5`.
 - `RECAPTCHA_EXPECTED_HOSTNAME`: comprobación opcional del hostname en la respuesta; déjalo vacío si la clave sirve para varios hostnames configurados.
 
-Las fechas y horas generadas por la aplicación usan UTC-5 por defecto. Cada cuenta puede elegir una zona horaria IANA en la gestión de usuarios; las cuentas sin preferencia mantienen UTC-5. Los selectores de zona horaria muestran un representante por cada desplazamiento UTC común actual, ordenado de menor a mayor. Python usa los datos IANA del sistema en Linux y `tzdata` proporciona el respaldo portátil en Windows o en imágenes Linux mínimas. Si no se puede cargar la zona guardada de una cuenta, la presentación vuelve a UTC-5. Al calcular ratings, las partidas del mismo día se procesan por número de ronda y después por su orden de inserción; las rondas desconocidas se tratan como la ronda 1.
-
-Los reportes de `/reports` usan rangos inclusivos `start_date` y `end_date`, y la pertenencia a un periodo se determina con la zona horaria fija del servidor (UTC-5 por defecto), no con la zona horaria de la cuenta. La vista general y los reportes filtrados por jugador comienzan en Todo el tiempo. Los porcentajes de victoria son victorias divididas por partidas. Cada fila muestra cambio absoluto de puntos, cambio porcentual y cambio entero de categoría. El selector de jugadores se ordena por número total de partidas. Los totales se calculan en el servidor una vez y se reutilizan en la vista y en las exportaciones CSV/PDF; las etiquetas y los textos del PDF siguen el idioma actual, y los registros con fecha o resultado no válidos se excluyen y se contabilizan. Las partidas materializadas desde torneos conservan una identidad única por emparejamiento para impedir importaciones o conteos duplicados.
-
-El panel de administración usa cuentas nominadas con cuatro roles: `administrator`, `tournament_director`, `operator` y `member`. Las cuentas nuevas se registran como `member`; un administrador puede vincularlas manualmente a un jugador en `/admin/users`. Los miembros solo pueden enviar resultados de partidas que incluyan a su jugador vinculado. Los directores, operadores y administradores revisan la cola en `/admin/result-submissions` y solo los resultados aprobados se agregan a las partidas públicas. Si no existe ninguna cuenta, la aplicación crea un administrador inicial con la contraseña de `ADMIN_PASSWORD` durante el primer inicio; las cuentas adicionales y sus zonas horarias se gestionan en `/admin/users`. Cada usuario puede abrir `/admin/profile` para guardar idioma, tema, zona horaria, correo y contraseña. El enlace de recuperación en `/admin/login` usa tokens de un solo uso y respuestas que no revelan si un correo existe; configura SMTP en producción. Los intentos fallidos están limitados. En producción usa HTTPS y contraseñas fuertes y únicas. La autorización se basa en la sesión de usuario y permisos. Solo `administrator` y `operator` pueden modificar jugadores, ratings y categorías; `tournament_director` conserva las operaciones de torneos.
-Los administradores pueden ajustar los intentos máximos de inicio de sesión, la ventana de limitación y la duración de los enlaces de recuperación en `/admin/settings`. Estos valores se guardan en SQLite y el botón de restauración usa los valores iniciales de `config.py`. `ADMIN_PASSWORD`, las rutas y las credenciales SMTP siguen siendo configuración del entorno.
-
-La gestión de registros SGF sigue los permisos de la cuenta: `administrator`, `tournament_director` y `operator` pueden vincularlos o desvincularlos, mientras que solo `administrator` puede eliminarlos.
+- La hora predeterminada es UTC-5. Cada cuenta puede elegir una zona IANA; las partidas del mismo día se procesan por ronda y luego por orden de inserción.
+- `/reports` usa rangos inclusivos `start_date` y `end_date` en la zona fija del servidor. Los totales de pantalla y de las exportaciones CSV/PDF se calculan con los mismos filtros.
+- Las cuentas tienen roles `administrator`, `tournament_director`, `operator` y `member`. Los miembros solo envían resultados de su jugador vinculado; los demás roles revisan la cola de aprobación.
+- `/admin/settings` permite ajustar los límites de inicio de sesión y la caducidad de recuperación. En producción usa HTTPS, contraseñas únicas y secretos solo en variables de entorno.
+- Los permisos de SGF permiten vincular y desvincular a administradores, directores y operadores; solo los administradores pueden eliminar archivos.
 
 ## Hoja de ruta del proyecto
 
-La hoja de ruta detallada y priorizada está en [FUTURE_FEATURES.md](FUTURE_FEATURES.md). La vista previa de importación con reconciliación explícita, los payloads tipados de OpenGotha, la revisión administrativa por cuenta con búsqueda de texto y filtros de fecha, la mejora del perfil del jugador y el modal explícito para eliminar torneos están implementados y verificados. Los próximos elementos de producto incluyen crear archivos de ayuda y mejorar el tema oscuro de Besogo. Los perfiles incluyen historial reciente, rachas, torneos y filtro de temporada.
-
-## Operaciones habituales
-
-### Importar ratings y partidas
-
-1. Inicia sesión en `/admin/login`.
-2. Abre la pantalla de importación.
-3. Carga uno de los formatos compatibles:
-   - Libro `.xlsx` o `.xls`: importa los datos y reemplaza el conjunto de datos actual.
-   - Archivo `.xml` de OpenGotha: importa partidas y metadatos del torneo. El atributo `handicap` de cada partida (número de piedras dadas a Negro) se conserva si está presente.
-  - Archivo `.csv` con las columnas `date`, `white`, `black` y `result`. Una columna opcional `handicap` (número de piedras, 0-9) se conserva; si falta se usa 0, pero un valor no válido rechaza la importación y no se confirma ningún cambio.
-4. Confirma las posiciones y perfiles de jugadores resultantes.
-
-Conserva una copia de seguridad antes de importar un libro que reemplace los datos.
-
-### Gestionar un torneo
-
-1. En administración, crea un torneo o importa un XML de OpenGotha.
-2. Agrega participantes y elige suizo, suizo por categoría, suizo acelerado o McMahon.
-3. Genera o administra manualmente los emparejamientos de cada ronda.
-4. En la pantalla del torneo puedes editar el nombre, lugar, número de rondas, puntos de BYE y puntos de ausencia.
-5. Registra resultados haciendo clic en el nombre del jugador ganador o en el texto del resultado. El texto recorre `-`, `1-0`, `1/2-1/2`, `0-1`, `1-!0`, `!0-1` y `!0-0`; volver a hacer clic en el ganador lo deselecciona. Los tres últimos resultados registran la ausencia de negras, la ausencia de blancas o la ausencia de ambos, respectivamente. Cuentan para la clasificación del torneo, pero no para ratings, perfiles ni resúmenes de jugadores. El ganador queda resaltado en negrita y verde.
-6. Registra descansos, genera la siguiente ronda, revisa la clasificación y exporta los resultados con los botones de administración.
-
-Los registros SGF opcionales cargados con una partida se guardan en `uploads/sgf/` con un nombre seguro. Al guardarlos, se actualizan sus propiedades principales para coincidir con los jugadores, rangos, lugar/evento, fecha y resultado registrados en la base de datos. Los registros aprobados desde `Reportar Resultados` siguen el mismo proceso.
-
-Las posiciones de la clasificación son siempre únicas y secuenciales; los empates se resuelven con SOS, SOSOS, SODOS, rating y nombre. El emparejamiento evita repetir el BYE en un mismo jugador mientras otro participante no lo haya recibido, y los BYE importados de OpenGotha quedan registrados para que las rondas futuras respeten ese historial.
-
-Cuando una importación de OpenGotha encuentra un nombre parecido, muestra una sugerencia de un jugador en la base de datos. Haz clic en el nombre sugerido para vincularlo inmediatamente al jugador existente, o usa el selector para crear un jugador nuevo o elegir otro jugador.
-
-Cada emparejamiento recibe una sugerencia automática de hándicap en piedras (una piedra por categoría de diferencia entre los jugadores), que el director del torneo puede editar antes de registrar el resultado. Al procesar la ronda, el hándicap se traslada a la partida y ajusta el rating al desplazar exactamente una categoría logarítmica por piedra: sube el rating efectivo de negras y baja el de blancas solo para ese cálculo, sin tocar sus ratings base.
-
-### Biblioteca SGF
-
-La biblioteca pública está disponible en `/sgf-library`. Los registros SGF opcionales se guardan en `uploads/sgf/` con un nombre seguro generado por la aplicación y se pueden ver o descargar públicamente.
-
-Al cargar o vincular un registro, la aplicación valida el tamaño, la codificación UTF-8 y la estructura SGF, y actualiza sus propiedades principales para coincidir con los jugadores, colores, rangos, lugar/evento, fecha y resultado de la partida. Si el archivo enlazado desaparece, la aplicación limpia automáticamente el enlace de la base de datos. Desvincular un archivo o eliminar su partida lo conserva en la biblioteca; la eliminación explícita por un administrador borra el archivo y todos sus enlaces.
-
-### Consultar reportes
-
-Abre `/reports` para elegir año, trimestre, mes, Todo el tiempo o un rango personalizado. La tabla muestra solo jugadores con partidas válidas en el periodo y permite abrir el rendimiento frente a cada oponente. También se muestran agregados por país y club del oponente. Los enlaces CSV y PDF conservan los filtros seleccionados y usan los mismos totales visibles en pantalla; el nombre del PDF incluye el jugador y el periodo.
-
-### Reportar resultados
-
-Usa el botón `Reportar resultados` después de crear una cuenta. Un administrador debe vincular la cuenta a un jugador en `/admin/users`; el formulario solo permite enviar una partida que incluya ese jugador. Los envíos quedan pendientes y no afectan rankings, ratings ni reportes hasta que un director, operador o administrador los apruebe en `/admin/result-submissions`. El esquema ya incluye códigos hash con vencimiento y de un solo uso para un futuro enlace de aprobación por correo; la publicación automática por código permanece desactivada hasta definir la política de verificación.
-
-Cuando se materializan resultados de ronda en la tabla principal de partidas, la columna `event` conserva el nombre del torneo o evento. La columna `notes` (visible como `Round` en la interfaz) guarda el número de ronda en formato canónico como un entero sin etiqueta, por ejemplo `5` (no `Round 5`). Si la entrada esta en un formato de legado (por ej. `15:00:00`), se converva y convierte en ronda numérica. Si no se encuentra un valor numérico, se deja el texto y se trata como `0`.
-
-Las tablas de torneos se migran automáticamente al iniciar para mantener la compatibilidad con bases de datos existentes.
-
-Al recalcular ratings, el orden de las rondas se respeta dentro de cada día, tanto en el recálculo completo como en la actualización incremental. Si no se puede determinar la ronda, se usa la ronda 1.
-
-### Revisar la auditoría administrativa
-
-1. Inicia sesión en `/admin/login`.
-2. Abre la pantalla de administración y usa la opción de auditoría.
-3. Filtra por usuario o acción para revisar cambios en jugadores, partidas, ratings, importaciones, usuarios y configuraciones.
-
-La pantalla de auditoría conserva el historial de actividad para cada cuenta y ayuda a revisar quién realizó cada cambio antes de tomar acciones de recuperación o soporte.
-
-La bitácora registra las acciones administrativas que cambian el estado: importaciones, ciclo de vida y resultados de torneos, cambios de jugadores y partidas, ratings y categorías, usuarios y copias de seguridad. Guarda un resumen JSON compacto, limita los detalles a 2 KiB por evento y elimina por defecto las entradas con más de 730 días. Define `AUDIT_RETENTION_DAYS` antes de iniciar para usar otro periodo positivo.
-
-### Copias de seguridad y restauración
-
-Usa la pantalla de copias de seguridad antes de importaciones masivas, restauraciones o actualizaciones. El servidor genera y valida los nombres de los archivos de respaldo; los archivos restaurados pasan por la ruta de migración de la aplicación. La restauración reconstruye el índice de búsqueda de jugadores y solo considera copias generadas por la aplicación o el archivo `.bak` administrado; nunca usa archivos temporales de `data/`.
-
-Cada copia de seguridad incluye un directorio lateral con la biblioteca SGF, y la restauración lo recupera sin romper los enlaces.
-
-Ejecuta `python scripts/check_legacy_players_state.py` para auditar la base de datos activa y las copias administradas en busca de la tabla histórica `players_corrupt` o de claves foráneas hijas. La auditoría del 13/09/2026 encontró limpias las ocho bases administradas y la ruta de reparación de compatibilidad ya fue retirada; el arranque ahora rechaza cualquier base que todavía la necesite.
+La hoja de ruta está en [FUTURE_FEATURES.md](FUTURE_FEATURES.md). La reconciliación de importaciones, los payloads tipados de OpenGotha, los filtros de auditoría, las mejoras de perfiles y la eliminación explícita de torneos ya están implementados. El trabajo restante incluye mejorar el tema oscuro de BesoGo.
 
 ## Desarrollo
+
+Regenera las guías HTML después de cambiar sus fuentes Markdown:
+
+```powershell
+python scripts/build_help_html.py
+```
 
 Ejecuta la suite de regresión desde la raíz del proyecto:
 

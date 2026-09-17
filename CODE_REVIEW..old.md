@@ -2,6 +2,17 @@
 
 This review is intentionally short and action-oriented. The project is currently green: the full suite passes with 344 tests, and the remaining work is mainly follow-up cleanup rather than new production risk.
 
+## Table of contents
+
+- [1. Critical bugs](#1-critical-bugs)
+- [2. High-priority issues](#2-high-priority-issues)
+- [3. Medium-priority issues](#3-medium-priority-issues)
+- [4. Low-priority / refactoring](#4-low-priority--refactoring)
+- [Status summary](#status-summary)
+- [5. Remaining low-priority follow-ups](#5-remaining-low-priority-follow-ups)
+- [6. Recommended order of work](#6-recommended-order-of-work)
+- [7. Files reviewed (with notes)](#7-files-reviewed-with-notes)
+
 ## 1. Critical bugs
 
 - OpenGotha import robustness: missing tournament metadata and missing player-name attributes are now guarded; malformed XML is rejected without crashing the import path.

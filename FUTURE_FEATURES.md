@@ -2,6 +2,24 @@
 
 This document lists only unfinished product, operational, and maintainability work. Completed import, audit, search, pagination, account profile/recovery, timezone-default, rating-order, and reporting work is summarized below rather than repeated in the backlog.
 
+## Table of contents
+
+- [Current status](#current-status)
+- [Verified implementation status](#verified-implementation-status)
+   - [Import preview and reconciliation report](#import-preview-and-reconciliation-report)
+   - [Admin audit log and review workflow](#admin-audit-log-and-review-workflow)
+   - [Timezone preferences and round-aware rating replay](#timezone-preferences-and-round-aware-rating-replay)
+   - [Account profile and password recovery](#account-profile-and-password-recovery)
+   - [Result moderation workflow](#result-moderation-workflow)
+   - [Public SGF library and match linking](#public-sgf-library-and-match-linking)
+- [Remaining implementation backlog](#remaining-implementation-backlog)
+   - [P1 — Admin and platform](#p1--admin-and-platform)
+   - [P2 — Reporting and analytics](#p2--reporting-and-analytics)
+   - [P3 — Operational enhancements](#p3--operational-enhancements)
+   - [P4 — Workflow enhancements](#p4--workflow-enhancements)
+- [Technical implementation order](#technical-implementation-order)
+- [Documentation rules](#documentation-rules)
+
 ## Current status
 
 - Tournament pairing, standings, and import compatibility are stable for the main Swiss and McMahon flows.
@@ -127,13 +145,15 @@ No remaining P1 items.
    - Add clear operator feedback when rating replay is deferred
    - Expand operational summaries only where they support troubleshooting
 
-6. Help and embedded viewer polish
+6. Help files
    - Create help files for the main public and administrative workflows
+
+7. Embedded viewer polish
    - Improve the Besogo dark theme for more consistent readability and contrast
 
 ### P4 — Workflow enhancements
 
-6. Tournament preflight and dry-run approval workflow
+8. Tournament preflight and dry-run approval workflow
    - Improve tournament and submission workflow
    - Evaluate need for pairings and BYE previews
 

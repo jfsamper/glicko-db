@@ -1,0 +1,643 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ayuda de la interfaz | Glicko DB</title>
+  <script>
+    try {
+      const cookieTheme = document.cookie
+        .split("; ")
+        .find((part) => part.startsWith("user_theme="));
+      const storedTheme = (cookieTheme && cookieTheme.slice("user_theme=".length))
+        || localStorage.getItem("theme");
+      if (storedTheme === "dark") {
+        document.documentElement.setAttribute("data-theme", "dark");
+      }
+    } catch (_error) {}
+  </script>
+  <style>
+:root {
+  color-scheme: light;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --help-background: #f4f7f9;
+  --help-panel: #fff;
+  --help-text: #1f2933;
+  --help-heading: #17324d;
+  --help-header: #17324d;
+  --help-link: #075985;
+  --help-border: #d9e1e7;
+  --help-border-soft: #e5eaee;
+  --help-code: #eef3f6;
+  --help-table-border: #cbd5dc;
+  --help-shadow: rgba(23, 50, 77, 0.08);
+  color: var(--help-text);
+  background: var(--help-background);
+}
+[data-theme="dark"] {
+  color-scheme: dark;
+  --help-background: #111827;
+  --help-panel: #1f2937;
+  --help-text: #f3f4f6;
+  --help-heading: #bfdbfe;
+  --help-header: #0b1220;
+  --help-link: #7dd3fc;
+  --help-border: #374151;
+  --help-border-soft: #4b5563;
+  --help-code: #273548;
+  --help-table-border: #4b5563;
+  --help-shadow: rgba(0, 0, 0, 0.35);
+}
+body {
+  margin: 0;
+  line-height: 1.6;
+  color: var(--help-text);
+  background: var(--help-background);
+}
+.help-header {
+  padding: 1.5rem max(1rem, calc((100vw - 1100px) / 2));
+  color: #fff;
+  background: var(--help-header);
+}
+.help-header-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+.help-header-controls {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-left: auto;
+}
+.help-brand,
+.help-language a,
+.help-document-links a {
+  color: inherit;
+}
+.help-brand {
+  font-size: 1.2rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+.help-language {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+  margin: 0;
+  font-size: 0.95rem;
+}
+.help-document-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+  margin-left: 0;
+  font-size: 0.95rem;
+}
+.help-language a[aria-current="page"] {
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+.help-theme-toggle {
+  min-width: 2.4rem;
+  min-height: 2.4rem;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.1);
+  font: inherit;
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+}
+.help-theme-toggle:hover,
+.help-theme-toggle:focus-visible {
+  background: var(--help-link);
+}
+.help-theme-toggle:focus-visible {
+  outline: 3px solid #facc15;
+  outline-offset: 2px;
+}
+.help-document {
+  box-sizing: border-box;
+  max-width: 1100px;
+  margin: 2rem auto;
+  padding: 2rem clamp(1rem, 4vw, 3rem);
+  color: var(--help-text);
+  background: var(--help-panel);
+  border: 1px solid var(--help-border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px var(--help-shadow);
+}
+.help-document h1,
+.help-document h2,
+.help-document h3,
+.help-document h4 {
+  color: var(--help-heading);
+  line-height: 1.25;
+  scroll-margin-top: 1rem;
+}
+.help-document h1 {
+  margin-top: 0;
+  font-size: clamp(1.8rem, 4vw, 2.6rem);
+}
+.help-document h2 {
+  margin-top: 2.2rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--help-border-soft);
+}
+.help-document h3,
+.help-document h4 {
+  margin-top: 1.7rem;
+}
+.help-document a {
+  color: var(--help-link);
+}
+.help-document img {
+  display: block;
+  width: min(100%, 560px);
+  height: auto;
+  margin: 1rem 0;
+  border: 1px solid var(--help-border);
+  border-radius: 4px;
+}
+.help-document pre {
+  overflow-x: auto;
+  padding: 1rem;
+  background: var(--help-code);
+  border-radius: 4px;
+}
+.help-document code {
+  padding: 0.08em 0.25em;
+  background: var(--help-code);
+  border-radius: 3px;
+}
+.help-document pre code {
+  padding: 0;
+  background: transparent;
+}
+.help-document table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+  border-collapse: collapse;
+}
+.help-document th,
+.help-document td {
+  padding: 0.45rem 0.65rem;
+  border: 1px solid var(--help-table-border);
+  text-align: left;
+}
+@media (max-width: 640px) {
+  .help-header-inner {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .help-header-controls {
+    justify-content: flex-start;
+    margin-left: 0;
+  }
+  .help-document {
+    margin: 1rem 0;
+    border-right: 0;
+    border-left: 0;
+    border-radius: 0;
+  }
+}
+</style>
+</head>
+<body>
+  <header class="help-header">
+    <div class="help-header-inner">
+      <a class="help-brand" href="/?lang=es">Glicko DB</a>
+      <div class="help-header-controls">
+        <nav class="help-document-links" aria-label="Documentation">
+          <a href="/help?lang=es">Ayuda de la interfaz</a>
+          <a href="/help/api?lang=es">Rutas</a>
+        </nav>
+        <nav class="help-language" aria-label="Language"><a href="/help?lang=es" aria-current="page">Español</a> <a href="/help?lang=en">English</a> <a href="/help?lang=pt">Português</a></nav>
+        <button id="theme-toggle" class="help-theme-toggle" type="button"
+          aria-label="Activar tema oscuro"
+          title="Activar tema oscuro" aria-pressed="false">⚫</button>
+      </div>
+    </div>
+  </header>
+  <main class="help-document">
+<h1 id="ayuda-de-la-interfaz">Ayuda de la interfaz</h1>
+<p>Consulta las <a href="/help/api?lang=es">rutas y notas de integración</a> y el <a href="/?lang=es">README en español</a>.
+También puedes abrir esta guía desde el botón <code>?</code> de la barra superior o en <code>/help?lang=es</code>.</p>
+<h2 id="tabla-de-contenidos">Tabla de contenidos</h2>
+<ul>
+<li><a href="#interfaz-publica">Interfaz pública</a></li>
+<li><a href="#posiciones-y-directorio-de-jugadores">Posiciones y directorio de jugadores</a></li>
+<li><a href="#partidas-y-visor-sgf">Partidas y visor SGF</a></li>
+<li><a href="#torneos-publicos">Torneos públicos</a></li>
+<li><a href="#reportes-periodicos-y-exportacion">Reportes periódicos y exportación</a></li>
+<li><a href="#conversor-de-categoria">Conversor de categoría</a></li>
+<li><a href="#noticias-publicas">Noticias públicas</a></li>
+<li><a href="#biblioteca-sgf">Biblioteca SGF</a></li>
+<li><a href="#interfaz-de-miembros">Interfaz de miembros</a></li>
+<li><a href="#registro-e-inicio-de-sesion">Registro e inicio de sesión</a></li>
+<li><a href="#gestion-de-perfil-y-preferencias">Gestión de perfil y preferencias</a></li>
+<li><a href="#recuperacion-de-contrasena">Recuperación de contraseña</a></li>
+<li><a href="#reportar-resultados">Reportar resultados</a>
+-- <a href="#panel-de-administracion">Panel de administración</a></li>
+<li><a href="#gestion-de-torneos">Gestión de torneos</a><ul>
+<li><a href="#1-creacion-y-configuracion-de-torneos-admintournaments">1. Creación y configuración de torneos (<code>/admin/tournaments</code>)</a></li>
+<li><a href="#2-gestion-de-participantes">2. Gestión de participantes</a></li>
+<li><a href="#3-emparejamientos-rondas-y-registro-de-resultados">3. Emparejamientos, rondas y registro de resultados</a></li>
+<li><a href="#4-procesamiento-de-rondas-y-calculo-de-rating">4. Procesamiento de rondas y cálculo de rating</a></li>
+</ul>
+</li>
+<li><a href="#gestion-de-datos">Gestión de datos</a><ul>
+<li><a href="#1-asistente-de-importacion-con-vista-previa-adminimport">1. Asistente de importación con vista previa (<code>/admin/import</code>)</a></li>
+<li><a href="#2-administracion-de-jugadores-adminplayers">2. Administración de jugadores (<code>/admin/players</code>)</a></li>
+<li><a href="#3-administracion-de-partidas-adminmatches">3. Administración de partidas (<code>/admin/matches</code>)</a></li>
+<li><a href="#4-configuracion-de-ratings-y-categorias-adminratings-y-admincategories">4. Configuración de ratings y categorías (<code>/admin/ratings</code> y <code>/admin/categories</code>)</a></li>
+<li><a href="#5-moderacion-de-resultados-adminresult-submissions">5. Moderación de resultados (<code>/admin/result-submissions</code>)</a></li>
+</ul>
+</li>
+<li><a href="#tareas-administrativas-y-de-seguridad">Tareas administrativas y de seguridad</a><ul>
+<li><a href="#1-copias-de-seguridad-y-restauracion-adminbackups">1. Copias de seguridad y restauración (<code>/admin/backups</code>)</a></li>
+<li><a href="#2-gestion-de-usuarios-adminusers">2. Gestión de usuarios (<code>/admin/users</code>)</a></li>
+<li><a href="#3-publicacion-de-noticias-adminnews">3. Publicación de noticias (<code>/admin/news</code>)</a></li>
+<li><a href="#4-registro-y-revision-de-auditoria-adminaudit">4. Registro y revisión de auditoría (<code>/admin/audit</code>)</a></li>
+<li><a href="#5-configuracion-de-seguridad-de-la-aplicacion-adminsettings">5. Configuración de seguridad de la aplicación (<code>/admin/settings</code>)</a></li>
+</ul>
+</li>
+<li><a href="#guia-de-solucion-de-problemas">Guía de solución de problemas</a></li>
+</ul>
+<h2 id="interfaz-publica">Interfaz pública</h2>
+<p>No se requiere una cuenta para <code>/</code>, <code>/rankings</code>, <code>/players</code>, <code>/player/view?id=&lt;player_id&gt;</code>, <code>/matches</code>, <code>/tournaments</code>, <code>/tournaments/&lt;tournament_id&gt;</code>, <code>/reports</code>, <code>/category</code> y <code>/sgf-library</code>. Estas páginas ofrecen posiciones, perfiles, historial de partidas, torneos públicos, clasificaciones, información de ratings, reportes y visualización o descarga de SGF.</p>
+<p><a href="/help-assets/screenshots/public-home.png"><img src="/help-assets/screenshots/public-home.png" alt="Página pública de inicio" width="560" /></a></p>
+<p><em>La página pública ofrece navegación, controles de idioma y tema, posiciones, estadísticas y enlaces al contenido público.</em></p>
+<p><a href="/help-assets/screenshots/public-players.png"><img src="/help-assets/screenshots/public-players.png" alt="Directorio de jugadores" width="560" /></a></p>
+<p><em>El directorio permite explorar perfiles y filtrar la lista pública de jugadores.</em></p>
+<p>Las páginas aceptan <code>?lang=es</code>, <code>?lang=en</code> o <code>?lang=pt</code>; usa <code>AAAA-MM-DD</code> en los filtros y campos de fecha.</p>
+<h3 id="posiciones-y-directorio-de-jugadores">Posiciones y directorio de jugadores</h3>
+<ul>
+<li><strong>Posiciones (<code>/rankings</code>)</strong>: muestra la tabla de clasificación oficial con rating Glicko-2, desviación de rating (RD), categoría Dan/Kyu calculada, partidas jugadas, porcentaje de victorias, racha reciente y fecha de última actividad. Solo aparecen jugadores activos.</li>
+<li><strong>Directorio de jugadores (<code>/players</code>)</strong>: permite buscar por nombre o apellido, filtrar por rango de rating mínimo y máximo, filtrar por fecha de última actividad y ordenar por cualquier columna con paginación configurable.</li>
+<li><strong>Perfil del jugador (<code>/player/view?id=&lt;id&gt;</code>)</strong>:</li>
+<li>Resumen de rating actual, RD, volatilidad y categoría.</li>
+<li>Hitos de carrera: mejor rating histórico, racha más larga, victorias con blancas y con negras.</li>
+<li>Historial de partidas completo con fecha, color, oponente, resultado, evento y enlace al visor SGF si está disponible.</li>
+<li>Gráfico interactivo de evolución de rating en el tiempo.</li>
+<li>Historial de torneos jugados con posición inicial y final.</li>
+<li>Tabla de enfrentamientos directos (Head-to-Head) contra cada oponente.</li>
+</ul>
+<p><a href="/help-assets/screenshots/public-rankings.png"><img src="/help-assets/screenshots/public-rankings.png" alt="Tabla de posiciones" width="560" /></a></p>
+<p><em>Tabla de posiciones ordenada por rating con indicadores de categoría y forma reciente.</em></p>
+<p><a href="/help-assets/screenshots/public-player-profile.png"><img src="/help-assets/screenshots/public-player-profile.png" alt="Perfil público de Acuña, Carlos" width="560" /></a></p>
+<p><em>Perfil público con rating actual, categoría y resumen de actividad del jugador seleccionado.</em></p>
+<h3 id="partidas-y-visor-sgf">Partidas y visor SGF</h3>
+<ul>
+<li><strong>Lista de partidas (<code>/matches</code>)</strong>: consulta el historial global de partidas registradas, con filtros por fecha inicial, fecha final y jugador, además de ordenación por fecha, jugador blanco, jugador negro, resultado o ronda.</li>
+<li><strong>Visor SGF (<code>/matches/&lt;id&gt;/record</code> y <code>/sgf-library/&lt;filename&gt;</code>)</strong>: visualiza interactivamente registros SGF mediante el visor BesoGo integrado. Permite reproducir jugadas paso a paso, alternar entre tema Claro (Simple) y Tema Oscuro, y descargar el archivo original mediante el enlace directo (<code>/matches/&lt;id&gt;/sgf</code> o <code>/sgf/&lt;filename&gt;</code>).</li>
+</ul>
+<p><a href="/help-assets/screenshots/public-matches.png"><img src="/help-assets/screenshots/public-matches.png" alt="Lista pública de partidas" width="560" /></a></p>
+<p><em>Lista global de partidas con filtros, enlace a la biblioteca SGF y acciones de visualización.</em></p>
+<p><a href="/help-assets/screenshots/public-match-record.png"><img src="/help-assets/screenshots/public-match-record.png" alt="Visor SGF de una partida" width="560" /></a></p>
+<p><em>Visor SGF de una partida vinculada, con controles de reproducción, cambio de tema y descarga.</em></p>
+<h3 id="torneos-publicos">Torneos públicos</h3>
+<ul>
+<li><strong>Lista de torneos (<code>/tournaments</code>)</strong>: muestra los torneos activos y finalizados con su fecha, lugar, sistema de juego, número de rondas y estado. Los torneos en estado borrador permanecen ocultos para el público general.</li>
+<li><strong>Detalle del torneo (<code>/tournaments/&lt;id&gt;</code>)</strong>: permite consultar los emparejamientos y resultados mesa por mesa de cada ronda disputada, así como la tabla de posiciones oficial actualizada con puntuación (Pts/MMS), SOS, SOSOS y SODOS.</li>
+</ul>
+<p><a href="/help-assets/screenshots/public-tournaments.png"><img src="/help-assets/screenshots/public-tournaments.png" alt="Torneos públicos" width="560" /></a></p>
+<p><em>Listado de torneos públicos con estado, sistema y rondas.</em></p>
+<p><a href="/help-assets/screenshots/public-tournament-detail.png"><img src="/help-assets/screenshots/public-tournament-detail.png" alt="Detalle público de un torneo" width="560" /></a></p>
+<p><em>Detalle de un torneo con selector de ronda, mesas emparejadas, resultados y clasificación.</em></p>
+<h3 id="reportes-periodicos-y-exportacion">Reportes periódicos y exportación</h3>
+<ul>
+<li><strong>Pantalla de reportes (<code>/reports</code>)</strong>: permite analizar el rendimiento de los jugadores en periodos específicos:</li>
+<li>Periodos predefinidos: <em>Todo el tiempo</em>, <em>Este año</em>, <em>Este trimestre</em>, o <em>Rango personalizado</em>.</li>
+<li>Filtro opcional por jugador específico para ver su balance contra rivales, clubes y países en el periodo seleccionado.</li>
+<li>Los rangos de fecha <code>start_date</code> y <code>end_date</code> son inclusivos y se evalúan en la zona horaria fija del servidor (UTC-5).</li>
+<li>Partidas con fechas o resultados no válidos se excluyen y se contabilizan en el resumen.</li>
+<li><strong>Exportación CSV (<code>/reports/export.csv</code>)</strong>: genera un archivo CSV con la tabla exacta calculada en pantalla, manteniendo los filtros aplicados.</li>
+<li><strong>Exportación PDF (<code>/reports/export.pdf</code>)</strong>: genera un informe PDF formateado con encabezados centrados, fecha del reporte, idioma actual y nombre del jugador y periodo en el archivo.</li>
+</ul>
+<p><a href="/help-assets/screenshots/public-reports.png"><img src="/help-assets/screenshots/public-reports.png" alt="Reportes y estadísticas" width="560" /></a></p>
+<p><em>Pantalla de reportes con filtros por fecha, jugador y opciones de exportación CSV/PDF.</em></p>
+<h3 id="conversor-de-categoria">Conversor de categoría</h3>
+<p>La página <code>/category</code> convierte un rating Glicko a categoría Dan/Kyu y muestra la fórmula, las constantes configuradas y la escala completa.</p>
+<p><a href="/help-assets/screenshots/public-category.png"><img src="/help-assets/screenshots/public-category.png" alt="Conversor público de categoría" width="560" /></a></p>
+<p><em>Conversor de rating a categoría con campo de entrada y botón de cálculo.</em></p>
+<h3 id="noticias-publicas">Noticias públicas</h3>
+<p>La página <code>/news/&lt;article_id&gt;</code> muestra el artículo publicado y transforma las etiquetas de jugadores, torneos y partidas en enlaces relacionados.</p>
+<p><a href="/help-assets/screenshots/public-news-article.png"><img src="/help-assets/screenshots/public-news-article.png" alt="Artículo de noticias público" width="560" /></a></p>
+<p><em>Artículo publicado con enlaces relacionados a jugadores, torneos y partidas.</em></p>
+<h3 id="biblioteca-sgf">Biblioteca SGF</h3>
+<p>La biblioteca pública (<code>/sgf-library</code>) contiene los registros de partidas cargados en la plataforma:
+- Valida automáticamente el tamaño del archivo, la codificación UTF-8 y la estructura sintáctica SGF.
+- Sincroniza metadatos del encabezado SGF (jugadores blanco y negro, rangos, evento, fecha y resultado) con la partida asociada en la base de datos.
+- Si un archivo físico desaparece de <code>uploads/sgf/</code>, el enlace se limpia de forma automática para evitar enlaces rotos.
+- Desvincular un archivo o borrar la partida conserva el registro en la biblioteca; solo los administradores pueden borrar el archivo físico definitivamente.</p>
+<p><a href="/help-assets/screenshots/public-sgf-library.png"><img src="/help-assets/screenshots/public-sgf-library.png" alt="Biblioteca pública de archivos SGF" width="560" /></a></p>
+<p><em>Biblioteca SGF con metadatos, partidas vinculadas y enlaces al visor.</em></p>
+<p><a href="/help-assets/screenshots/public-sgf-record.png"><img src="/help-assets/screenshots/public-sgf-record.png" alt="Registro SGF de la biblioteca" width="560" /></a></p>
+<p><em>Registro SGF abierto desde la biblioteca, con sus metadatos y controles del visor.</em></p>
+<h2 id="interfaz-de-miembros">Interfaz de miembros</h2>
+<p>Los jugadores de la comunidad pueden registrar una cuenta personal para gestionar sus preferencias y enviar resultados de torneos o partidas individuales.</p>
+<h3 id="registro-e-inicio-de-sesion">Registro e inicio de sesión</h3>
+<ol>
+<li>Abre <code>/admin/register</code> para crear una cuenta proporcionando nombre de usuario, correo electrónico y contraseña (mínimo 8 caracteres). El formulario incluye protección Google reCAPTCHA v3.</li>
+<li>Las cuentas nuevas reciben automáticamente el rol <code>member</code>.</li>
+<li>Solicita a un administrador u operador que vincule tu cuenta de usuario con tu ficha de jugador en <code>/admin/users</code>.</li>
+<li>Inicia sesión en <code>/admin/login</code>.</li>
+</ol>
+<p><a href="/help-assets/screenshots/admin-login.png"><img src="/help-assets/screenshots/admin-login.png" alt="Inicio de sesión administrativo" width="560" /></a></p>
+<p><em>Formulario de acceso administrativo con enlaces de registro y recuperación.</em></p>
+<p><a href="/help-assets/screenshots/admin-register.png"><img src="/help-assets/screenshots/admin-register.png" alt="Registro de cuenta de miembro" width="560" /></a></p>
+<p><em>Registro de una cuenta de miembro con correo y confirmación de contraseña.</em></p>
+<h3 id="gestion-de-perfil-y-preferencias">Gestión de perfil y preferencias</h3>
+<p>Desde <code>/admin/profile</code>, cada usuario autenticado puede:
+- Actualizar su dirección de correo electrónico para notificaciones y recuperación.
+- Cambiar el idioma preferido de la interfaz (<code>Español</code>, <code>English</code>, <code>Português</code>).
+- Alternar entre el tema claro y el tema oscuro.
+- Seleccionar su zona horaria IANA con ajuste UTC calculado (por ejemplo, <code>America/Bogota [UTC-05:00]</code>, <code>America/Sao_Paulo</code>, <code>Europe/Madrid</code>).
+- Cambiar su contraseña actual ingresando la contraseña anterior y la nueva confirmada.</p>
+<p><a href="/help-assets/screenshots/member-profile.png"><img src="/help-assets/screenshots/member-profile.png" alt="Perfil del miembro" width="560" /></a></p>
+<p><em>Pantalla de perfil de usuario para gestionar idioma, tema, zona horaria y contraseña.</em></p>
+<h3 id="recuperacion-de-contrasena">Recuperación de contraseña</h3>
+<ol>
+<li>Si olvidaste tu contraseña, haz clic en <em>¿Olvidaste tu contraseña?</em> en <code>/admin/login</code> o ingresa a <code>/admin/forgot-password</code>.</li>
+<li>Ingresa tu correo registrado. Si existe en el sistema, recibirás un enlace de un solo uso con token hash criptográfico.</li>
+<li>El enlace expira automáticamente según el tiempo configurado (<code>PASSWORD_RESET_TTL_SECONDS</code>, por defecto 3600 segundos).</li>
+<li>Abre el enlace <code>/admin/reset-password/&lt;token&gt;</code> e ingresa tu nueva contraseña. Por motivos de seguridad, la respuesta no revela si un correo está registrado o no.</li>
+</ol>
+<p><a href="/help-assets/screenshots/admin-forgot-password.png"><img src="/help-assets/screenshots/admin-forgot-password.png" alt="Recuperación de contraseña" width="560" /></a></p>
+<p><em>Solicitud de un enlace de recuperación mediante el correo registrado.</em></p>
+<p><a href="/help-assets/screenshots/admin-reset-password.png"><img src="/help-assets/screenshots/admin-reset-password.png" alt="Restablecimiento de contraseña" width="560" /></a></p>
+<p><em>Formulario para establecer una nueva contraseña a partir de un token.</em></p>
+<h3 id="reportar-resultados">Reportar resultados</h3>
+<p>Los miembros pueden reportar resultados de partidas en <code>/admin/report-results</code>:
+1. <strong>Requisito obligatorio</strong>: la cuenta debe estar vinculada a un jugador por un administrador. Si no está vinculada, la interfaz mostrará un aviso informativo.
+2. <strong>Formulario de envío</strong>:
+   - <strong>Oponente</strong>: selecciona el jugador rival de la lista de jugadores activos.
+   - <strong>Color</strong>: indica si jugaste con Blancas o Negras.
+   - <strong>Resultado</strong>: indica si ganaron Blancas (<code>1-0</code>), ganaron Negras (<code>0-1</code>) o Tablas (<code>1/2-1/2</code>).
+   - <strong>Fecha</strong>: fecha en que se jugó la partida (<code>AAAA-MM-DD</code>).
+   - <strong>Evento y Lugar</strong>: nombre del torneo o club y ciudad donde se disputó.
+   - <strong>Ronda</strong>: número de ronda si corresponde.
+   - <strong>Piedras de hándicap</strong>: cantidad de piedras (0 a 9) otorgadas a Negras.
+   - <strong>Archivo SGF (opcional)</strong>: carga el archivo <code>.sgf</code> con el registro de jugadas.
+3. <strong>Estado de envío</strong>: una vez enviada, la partida queda en estado <em>Pendiente</em> en la cola de moderación (<code>/admin/result-submissions</code>). No afecta rankings, ratings ni reportes públicos hasta que sea revisada y aprobada por el equipo administrativo.</p>
+<p><a href="/help-assets/screenshots/member-report-results.png"><img src="/help-assets/screenshots/member-report-results.png" alt="Envío de resultados de miembros" width="560" /></a></p>
+<p><em>La pantalla muestra el requisito de vincular un jugador y el área de envíos pendientes.</em></p>
+<h2 id="panel-de-administracion">Panel de administración</h2>
+<p>Inicia sesión en <code>/admin/login</code> con una cuenta con rol administrativo. El menú se adapta automáticamente según los permisos asignados:
+- <code>member</code>: acceso a perfil y reporte de resultados de su jugador vinculado.
+- <code>tournament_director</code>: gestión completa de torneos (participantes, emparejamientos, rondas, resultados y exportaciones).
+- <code>operator</code>: todas las funciones de torneos, más gestión de partidas, importación de datos, biblioteca SGF, noticias y moderación de resultados.
+- <code>administrator</code>: control total de la plataforma, incluyendo jugadores, configuración de ratings/categorías, copias de seguridad, gestión de usuarios, auditoría y parámetros del sistema.</p>
+<p><a href="/help-assets/screenshots/admin-dashboard.png"><img src="/help-assets/screenshots/admin-dashboard.png" alt="Panel de administración" width="560" /></a></p>
+<p><em>El panel agrupa los controles en operaciones de torneos, gestión de datos y administración y acceso. Selecciona </em><em>Abrir</em><em> en una tarjeta para entrar.</em></p>
+<h3 id="gestion-de-torneos">Gestión de torneos</h3>
+<h4 id="1-creacion-y-configuracion-de-torneos-admintournaments">1. Creación y configuración de torneos (<code>/admin/tournaments</code>)</h4>
+<ul>
+<li><strong>Nombre, lugar y fechas</strong>: ingresa el nombre oficial, ciudad/sede, fecha de inicio y fin.</li>
+<li><strong>Número de rondas</strong>: define la cantidad total de rondas planificadas.</li>
+<li><strong>Sistema de emparejamiento</strong>:</li>
+<li><strong>Suizo estándar (<code>swiss</code>)</strong>: empareja jugadores con puntuaciones similares evitando repeticiones de rivales y equilibrando colores.</li>
+<li><strong>Suizo por categoría (<code>swiss_cat</code>)</strong>: restringe los emparejamientos estrictamente dentro de la misma categoría en las rondas iniciales configuradas.</li>
+<li><strong>Suizo acelerado (<code>accelerated_swiss</code>)</strong>: divide el torneo en bandas de aceleración según el esquema seleccionado (3 bandas Go o límites de categoría personalizados) durante las rondas indicadas.</li>
+<li><strong>McMahon (<code>mcmahon</code>)</strong>: asigna puntos iniciales (MMS) según el rango de cada jugador a partir de la Barra McMahon (<code>mm_bar</code>), el Piso McMahon (<code>mm_floor</code>) y el Cero McMahon (<code>mm_zero</code>).</li>
+<li><strong>Puntuación de descansos y ausencias</strong>:</li>
+<li><em>Puntos por descanso (BYE)</em>: puntos otorgados al jugador libre cuando el número de participantes es impar (por defecto 1.0 punto).</li>
+<li><em>Puntos por ausencia</em>: puntos otorgados en partidas no jugadas por ausencia (por defecto 0.0 puntos).</li>
+<li><strong>Hándicap automático</strong>: habilita o deshabilita la sugerencia automática de piedras de hándicap calculadas por la diferencia de categoría.</li>
+</ul>
+<p><a href="/help-assets/screenshots/admin-tournaments.png"><img src="/help-assets/screenshots/admin-tournaments.png" alt="Administración de torneos" width="560" /></a></p>
+<p><em>La página de torneos ofrece controles para crear torneos, seleccionar el sistema de emparejamiento y abrir sus operaciones.</em></p>
+<p><a href="/help-assets/screenshots/admin-tournament-settings.png"><img src="/help-assets/screenshots/admin-tournament-settings.png" alt="Ajustes avanzados del torneo" width="560" /></a></p>
+<p><em>Ajustes del torneo con fechas, rondas, puntos de BYE/ausencia, hándicap y aceleración.</em></p>
+<h4 id="2-gestion-de-participantes">2. Gestión de participantes</h4>
+<ul>
+<li><strong>Inscripción de jugadores</strong>: agrega jugadores activos existentes mediante el selector o crea un jugador nuevo directamente desde el torneo.</li>
+<li><strong>Eliminación de participantes</strong>: retira participantes que no vayan a competir antes de iniciar la primera ronda.</li>
+<li><strong>Importación OpenGotha XML</strong>: al importar un archivo OpenGotha, los participantes se leen automáticamente junto con su rango, grado y rating inicial. Si algún nombre tiene similitud con un jugador existente en la base de datos, el asistente muestra una sugerencia interactiva para vincularlo inmediatamente, crear un jugador nuevo o descartarlo.</li>
+</ul>
+<p><a href="/help-assets/screenshots/admin-tournament-players.png"><img src="/help-assets/screenshots/admin-tournament-players.png" alt="Gestión de participantes del torneo" width="560" /></a></p>
+<p><em>Gestión de participantes con lista actual, selector de jugadores existentes y creación de jugadores pendientes.</em></p>
+<h4 id="3-emparejamientos-rondas-y-registro-de-resultados">3. Emparejamientos, rondas y registro de resultados</h4>
+<ul>
+<li><strong>Generar ronda</strong>: el algoritmo empareja automáticamente a los participantes respetando el sistema elegido, evitando enfrentamientos previos y alternando los colores blanco y negro.</li>
+<li><strong>Manejo de descansos (BYE)</strong>: si el número de jugadores es impar, se asigna un BYE automático. El sistema registra el historial para no repetir el descanso en un jugador mientras otros participantes no lo hayan recibido.</li>
+<li><strong>Emparejamiento manual y asistido</strong>:</li>
+<li><em>Emparejar seleccionados</em>: selecciona dos jugadores libres y pulsa <em>Emparejar seleccionados</em>.</li>
+<li><em>Desemparejar</em>: libera una mesa específica o usa <em>Desemparejar todo</em> para rehacer la ronda.</li>
+<li><strong>Ajuste de hándicap por mesa</strong>: cada mesa muestra la sugerencia de piedras de hándicap calculada automáticamente; el director puede modificar las piedras antes de ingresar el resultado.</li>
+<li><strong>Registro de resultados (ciclo de 7 estados)</strong>: haz clic en el nombre del ganador o sobre el texto del resultado. El estado avanza en el siguiente orden:
+  1. <code>-</code> : Sin resultado (pendiente de juego).
+  2. <code>1-0</code> : Victoria de Blancas.
+  3. <code>1/2-1/2</code> : Tablas / Empate.
+  4. <code>0-1</code> : Victoria de Negras.
+  5. <code>1-!0</code> : Victoria de Blancas por inasistencia de Negras.
+  6. <code>!0-1</code> : Victoria de Negras por inasistencia de Blancas.
+  7. <code>!0-0</code> : Inasistencia de ambos jugadores (doble derrota).
+  <em>Hacer clic nuevamente sobre el ganador seleccionado borra el resultado y lo regresa a pendiente (<code>-</code>).</em></li>
+</ul>
+<p><a href="/help-assets/screenshots/admin-tournament-detail.png"><img src="/help-assets/screenshots/admin-tournament-detail.png" alt="Detalle del torneo y rondas" width="560" /></a></p>
+<p><em>Panel de control de ronda de torneo: emparejamientos, mesas, selector de resultados y clasificación.</em></p>
+<h4 id="4-procesamiento-de-rondas-y-calculo-de-rating">4. Procesamiento de rondas y cálculo de rating</h4>
+<ul>
+<li><strong>Procesar ronda (<code>Procesar ronda</code>)</strong>:</li>
+<li>Materializa automáticamente los resultados jugados (<code>1-0</code>, <code>1/2-1/2</code>, <code>0-1</code>) en la tabla oficial de partidas del sistema.</li>
+<li>Las ausencias (<code>1-!0</code>, <code>!0-1</code>, <code>!0-0</code>) se conservan exclusivamente para la clasificación del torneo y <strong>nunca</strong> afectan los ratings oficiales ni los perfiles de los jugadores.</li>
+<li>Aplica el ajuste logarítmico de hándicap por cada piedra si la partida fue con hándicap, modificando el rating efectivo únicamente para ese cálculo.</li>
+<li>Dispara el recálculo incremental de ratings respetando la fecha y el número de ronda en orden cronológico.</li>
+<li><strong>Clasificación y desempates</strong>: las posiciones son estrictamente secuenciales y únicas. Los empates en puntos o MMS se resuelven de forma determinista mediante SOS, SOSOS, SODOS, rating base y orden alfabético.</li>
+<li><strong>Orden y migraciones</strong>: dentro de un mismo día, los ratings respetan la ronda y luego el orden de inserción. Las notas de ronda se guardan como enteros cuando es posible; las rondas desconocidas usan la ronda 1. Las tablas de torneos se migran automáticamente al iniciar.</li>
+<li><strong>Ciclo de vida del torneo</strong>:</li>
+<li><em>Borrador (<code>draft</code>)</em>: oculto del portal público para preparación previa.</li>
+<li><em>Activo (<code>active</code>)</em>: visible en el portal público con emparejamientos y resultados en tiempo real.</li>
+<li><em>Completado (<code>completed</code>)</em>: torneo cerrado con posiciones finales oficiales.</li>
+<li><em>Cancelado (<code>canceled</code>)</em>: cancelado sin efecto en ratings.</li>
+<li><strong>Exportación</strong>: descarga los resultados del torneo en formatos compatibles para informes o software externo.</li>
+</ul>
+<h3 id="gestion-de-datos">Gestión de datos</h3>
+<h4 id="1-asistente-de-importacion-con-vista-previa-adminimport">1. Asistente de importación con vista previa (<code>/admin/import</code>)</h4>
+<p>Permite cargar datos históricos o torneos masivos:
+- <strong>Formatos aceptados</strong>:
+  - Libro Excel (<code>.xlsx</code> o <code>.xls</code>): importa el conjunto completo de jugadores y partidas reemplazando los datos actuales.
+  - XML de OpenGotha (<code>.xml</code>): importa metadatos del torneo, jugadores, partidas y piedras de hándicap.
+  - Archivo CSV (<code>.csv</code>): columnas <code>date</code>, <code>white</code>, <code>black</code>, <code>result</code> y opcional <code>handicap</code> (0 a 9).
+- Crea una copia de seguridad antes de importar un libro que reemplace los datos activos.
+- <strong>Reconciliación explícita de jugadores</strong>:
+  - La vista previa clasifica cada registro como <em>Coincidencia exacta</em>, <em>Sugerencia difusa</em>, <em>Jugador nuevo</em> o <em>Duplicado</em>.
+  - El operador puede decidir por cada jugador: vincular al existente, crear nuevo o rechazar la fila.
+  - Permite editar metadatos del torneo antes de confirmar la importación.
+  - Un error de validación en CSV cancela toda la operación sin dejar cambios parciales.</p>
+<p><a href="/help-assets/screenshots/admin-import.png"><img src="/help-assets/screenshots/admin-import.png" alt="Controles de importación" width="560" /></a></p>
+<p><em>La pantalla usa el selector de archivos para elegir un archivo Excel, CSV u OpenGotha y </em><em>Importar</em><em> para iniciar la vista previa y reconciliación.</em></p>
+<p><a href="/help-assets/screenshots/admin-import-preview.png"><img src="/help-assets/screenshots/admin-import-preview.png" alt="Vista previa y reconciliación de importación" width="560" /></a></p>
+<p><em>Vista previa de OpenGotha con metadatos editables, resumen de coincidencias y decisiones por jugador.</em></p>
+<h4 id="2-administracion-de-jugadores-adminplayers">2. Administración de jugadores (<code>/admin/players</code>)</h4>
+<ul>
+<li>Filtra por nombre, rango de rating y estado.</li>
+<li><strong>Edición (<code>/admin/players/edit?id=&lt;id&gt;</code>)</strong>: modifica nombre, apellido, nombre para mostrar, rating inicial, RD inicial y activa o desactiva al jugador. Los jugadores inactivos se excluyen automáticamente de clasificaciones y emparejamientos.</li>
+<li><strong>Eliminación</strong>: modal de confirmación seguro que advierte sobre la eliminación del historial y partidas vinculadas.</li>
+</ul>
+<p><a href="/help-assets/screenshots/admin-players.png"><img src="/help-assets/screenshots/admin-players.png" alt="Lista administrativa de jugadores" width="560" /></a></p>
+<p><em>Lista administrativa con filtros, rango Glicko, estado y accesos de edición.</em></p>
+<p><a href="/help-assets/screenshots/admin-edit-player.png"><img src="/help-assets/screenshots/admin-edit-player.png" alt="Edición de Acuña, Carlos" width="560" /></a></p>
+<p><em>Formulario de edición de un jugador con nombre, rating inicial, club, país y estado activo.</em></p>
+<h4 id="3-administracion-de-partidas-adminmatches">3. Administración de partidas (<code>/admin/matches</code>)</h4>
+<ul>
+<li>Visualiza todas las partidas con paginación, filtros de fecha y jugador, y ordenación configurable.</li>
+<li><strong>Añadir partida (<code>/admin/matches/add</code>)</strong>: formulario con validación estricta de fecha (<code>AAAA-MM-DD</code>), jugadores distintos existentes, resultado válido (<code>1-0</code>, <code>0-1</code>, <code>1/2-1/2</code>), piedras de hándicap (0-9) y carga opcional de SGF.</li>
+<li><strong>Editar partida (<code>/admin/matches/edit?id=&lt;id&gt;</code>)</strong>: permite corregir jugadores, fecha, resultado o notas de ronda.</li>
+<li>Al materializar resultados de torneo, <code>event</code> conserva el nombre del torneo y <code>notes</code> (visible como <code>Round</code>) guarda la ronda como entero. Los valores antiguos se convierten cuando contienen un número; los textos sin número se conservan y se tratan como ronda 0.</li>
+<li><strong>Vincular y desvincular SGF</strong>: vincula archivos SGF de la biblioteca o sube nuevos registros sincronizados.</li>
+</ul>
+<p><a href="/help-assets/screenshots/admin-match-form-add.png"><img src="/help-assets/screenshots/admin-match-form-add.png" alt="Formulario para añadir una partida" width="560" /></a></p>
+<p><em>Formulario de alta de partida con jugadores, resultado, fecha, ronda, hándicap y SGF opcional.</em></p>
+<p><a href="/help-assets/screenshots/admin-match-form-edit.png"><img src="/help-assets/screenshots/admin-match-form-edit.png" alt="Formulario para editar una partida" width="560" /></a></p>
+<p><em>Formulario de edición precargado para corregir una partida existente.</em></p>
+<p><a href="/help-assets/screenshots/admin-matches.png"><img src="/help-assets/screenshots/admin-matches.png" alt="Administración de partidas" width="560" /></a></p>
+<p><em>Tabla de partidas con filtros por fecha, jugador y opciones de edición, borrado y gestión SGF.</em></p>
+<h4 id="4-configuracion-de-ratings-y-categorias-adminratings-y-admincategories">4. Configuración de ratings y categorías (<code>/admin/ratings</code> y <code>/admin/categories</code>)</h4>
+<ul>
+<li><strong>Parámetros Glicko-2</strong>:</li>
+<li>Rating inicial por defecto (ej. 1500).</li>
+<li>Desviación de rating inicial (RD, ej. 350).</li>
+<li>Volatilidad inicial ($\sigma$, ej. 0.06).</li>
+<li>Constante de cambio en el tiempo ($\tau$, ej. 0.5).</li>
+<li><strong>Conversión de categorías Dan/Kyu</strong>:</li>
+<li>Constante de escala $k$ y desplazamiento $m$.</li>
+<li>Límites mínimos y umbrales por nivel Dan y Kyu.</li>
+<li><strong>Recálculo de ratings</strong>:</li>
+<li><em>Recálculo completo</em>: procesa todo el historial cronológicamente por fecha, ronda y mesa.</li>
+<li><em>Actualización incremental</em>: recalcula únicamente a partir de la fecha modificada (<em>dirty date</em>).</li>
+</ul>
+<p><a href="/help-assets/screenshots/admin-ratings.png"><img src="/help-assets/screenshots/admin-ratings.png" alt="Configuración administrativa de ratings" width="560" /></a></p>
+<p><em>Panel de ratings con parámetros Glicko-2, conteos del historial y acciones de recálculo.</em></p>
+<p><a href="/help-assets/screenshots/admin-categories.png"><img src="/help-assets/screenshots/admin-categories.png" alt="Configuración administrativa de categorías" width="560" /></a></p>
+<p><em>Configuración de la fórmula Dan/Kyu y vista previa de cambios de categoría.</em></p>
+<h4 id="5-moderacion-de-resultados-adminresult-submissions">5. Moderación de resultados (<code>/admin/result-submissions</code>)</h4>
+<ul>
+<li>Revisa las partidas enviadas por los miembros de la comunidad.</li>
+<li>Visualiza el detalle completo: jugador que envía, oponente, colores, resultado, fecha, hándicap y visor del SGF adjunto.</li>
+<li><strong>Aprobar</strong>: materializa la partida en la base de datos oficial y actualiza los ratings automáticamente.</li>
+<li><strong>Rechazar</strong>: descarta el envío permitiendo registrar una nota de revisión visible para auditoría.</li>
+</ul>
+<p><a href="/help-assets/screenshots/admin-result-submissions.png"><img src="/help-assets/screenshots/admin-result-submissions.png" alt="Cola administrativa de resultados" width="560" /></a></p>
+<p><em>Cola de moderación con filtro de estado, detalle de partidas y acciones de aprobar o rechazar.</em></p>
+<h3 id="tareas-administrativas-y-de-seguridad">Tareas administrativas y de seguridad</h3>
+<h4 id="1-copias-de-seguridad-y-restauracion-adminbackups">1. Copias de seguridad y restauración (<code>/admin/backups</code>)</h4>
+<ul>
+<li><strong>Crear copia</strong>: genera una copia de seguridad SQLite con nombre seguro y fecha en <code>backups/</code>, incluyendo la carpeta auxiliar de archivos SGF.</li>
+<li><strong>Restaurar copia</strong>:</li>
+<li>Restaura la base de datos seleccionada aplicando automáticamente las migraciones pendientes de esquema.</li>
+<li>Reconstruye los artefactos y el índice de búsqueda de texto completo FTS5 (<code>players_fts</code>).</li>
+<li>Restaura la biblioteca SGF preservando los enlaces existentes.</li>
+<li>Bloquea el uso de archivos temporales de <code>data/</code> como origen de restauración.</li>
+<li><strong>Eliminar copias</strong>: elimina copias de seguridad obsoletas para liberar almacenamiento.</li>
+<li>Ejecuta <code>python scripts/check_legacy_players_state.py</code> para auditar la base activa y las copias administradas.</li>
+</ul>
+<p><a href="/help-assets/screenshots/admin-backups.png"><img src="/help-assets/screenshots/admin-backups.png" alt="Gestión de copias de seguridad" width="560" /></a></p>
+<p><em>Lista de copias con acciones de crear, restaurar y eliminar.</em></p>
+<h4 id="2-gestion-de-usuarios-adminusers">2. Gestión de usuarios (<code>/admin/users</code>)</h4>
+<ul>
+<li>Crea y edita cuentas de usuario con roles (<code>administrator</code>, <code>operator</code>, <code>tournament_director</code>, <code>member</code>).</li>
+<li>Vincula cuentas a jugadores de la base de datos para habilitar el reporte de resultados.</li>
+<li>Asigna zonas horarias individuales a cada cuenta.</li>
+<li>Activa o desactiva cuentas de usuario.</li>
+</ul>
+<p><a href="/help-assets/screenshots/admin-users.png"><img src="/help-assets/screenshots/admin-users.png" alt="Lista de cuentas de usuario" width="560" /></a></p>
+<p><em>Lista de cuentas con rol, jugador vinculado, zona horaria, estado y acciones.</em></p>
+<p><a href="/help-assets/screenshots/admin-create-user.png"><img src="/help-assets/screenshots/admin-create-user.png" alt="Creación de una cuenta de usuario" width="560" /></a></p>
+<p><em>Formulario para crear una cuenta y asignar rol, jugador vinculado y zona horaria.</em></p>
+<p><a href="/help-assets/screenshots/admin-edit-user.png"><img src="/help-assets/screenshots/admin-edit-user.png" alt="Edición de docs_admin vinculado a Acuña, Carlos" width="560" /></a></p>
+<p><em>Edición de <code>docs_admin</code>, mostrando el vínculo con el jugador Acuña, Carlos y los permisos de la cuenta.</em></p>
+<h4 id="3-publicacion-de-noticias-adminnews">3. Publicación de noticias (<code>/admin/news</code>)</h4>
+<ul>
+<li>Redacta noticias con título, cuerpo de texto y estado de publicación (Borrador o Publicada).</li>
+<li>Inserta etiquetas inteligentes en el texto: <code>[player:12]</code>, <code>[tournament:5]</code>, <code>[match:104]</code>, que la vista pública transforma automáticamente en enlaces y accesos directos al visor SGF.</li>
+</ul>
+<p><a href="/help-assets/screenshots/admin-news.png"><img src="/help-assets/screenshots/admin-news.png" alt="Lista administrativa de noticias" width="560" /></a></p>
+<p><em>Lista de noticias con estado de publicación, fecha de actualización y acciones.</em></p>
+<p><a href="/help-assets/screenshots/admin-news-form.png"><img src="/help-assets/screenshots/admin-news-form.png" alt="Nueva noticia" width="560" /></a></p>
+<p><em>Formulario de nueva noticia con publicación inmediata y enlaces inteligentes.</em></p>
+<p><a href="/help-assets/screenshots/admin-news-edit.png"><img src="/help-assets/screenshots/admin-news-edit.png" alt="Edición de una noticia" width="560" /></a></p>
+<p><em>Formulario precargado para editar el cuerpo, estado y enlaces relacionados de una noticia.</em></p>
+<h4 id="4-registro-y-revision-de-auditoria-adminaudit">4. Registro y revisión de auditoría (<code>/admin/audit</code>)</h4>
+<ul>
+<li>Registra todas las acciones administrativas que modifican el estado del sistema: importaciones, creación/edición de torneos, resultados, altas/bajas de jugadores, partidas, cambios de rating/categorías, gestión de usuarios y copias de seguridad.</li>
+<li>Filtra por usuario actor, tipo de acción, búsqueda libre de texto y rango de fechas.</li>
+<li>Cada evento almacena un resumen JSON compacto limitado a 2 KiB.</li>
+<li>Los eventos con más de 730 días se depuran automáticamente según el parámetro <code>AUDIT_RETENTION_DAYS</code>.</li>
+</ul>
+<p><a href="/help-assets/screenshots/admin-audit.png"><img src="/help-assets/screenshots/admin-audit.png" alt="Revisión de auditoría" width="560" /></a></p>
+<p><em>Registro de auditoría administrativa con filtros por usuario, categoría de acción y fechas.</em></p>
+<h4 id="5-configuracion-de-seguridad-de-la-aplicacion-adminsettings">5. Configuración de seguridad de la aplicación (<code>/admin/settings</code>)</h4>
+<ul>
+<li>Ajusta el número máximo de intentos fallidos de inicio de sesión antes de bloquear la IP.</li>
+<li>Define la ventana de tiempo para la limitación de tasa (en segundos).</li>
+<li>Configura el tiempo de vida (TTL) de los enlaces de recuperación de contraseña.</li>
+<li>Botón de restauración para restablecer los valores por defecto definidos en <code>config.py</code>.</li>
+</ul>
+<p><a href="/help-assets/screenshots/admin-settings.png"><img src="/help-assets/screenshots/admin-settings.png" alt="Configuración de seguridad" width="560" /></a></p>
+<p><em>Parámetros administrativos de intentos de acceso, ventana de limitación y TTL de recuperación.</em></p>
+<h3 id="guia-de-solucion-de-problemas">Guía de solución de problemas</h3>
+<ol>
+<li><strong>Acceso denegado (403)</strong>: verifica que tu cuenta tenga asignado el rol requerido (<code>tournament_director</code>, <code>operator</code> o <code>administrator</code>) para la sección que intentas abrir.</li>
+<li><strong>No puedo enviar resultados como miembro</strong>: confirma en <code>/admin/users</code> que tu cuenta esté vinculada a una ficha de jugador activa.</li>
+<li><strong>Errores al importar archivos</strong>:
+   - Verifica que el CSV use codificación UTF-8 y contenga las columnas obligatorias <code>date</code>, <code>white</code>, <code>black</code>, <code>result</code>.
+   - Asegúrate de que las fechas tengan el formato <code>AAAA-MM-DD</code> y los resultados sean exclusivamente <code>1-0</code>, <code>0-1</code> o <code>1/2-1/2</code>.
+   - Comprueba que el hándicap esté en el rango de 0 a 9 piedras.</li>
+<li><strong>Archivos SGF no encontrados</strong>: si un archivo SGF desaparece físicamente, la aplicación limpia automáticamente el enlace para no interrumpir la navegación. Vuelve a subir el archivo desde <code>/admin/matches</code> o la biblioteca SGF.</li>
+<li><strong>Restauración de base de datos</strong>: tras restaurar una copia, el sistema ejecuta las migraciones pendientes y reconstruye el índice FTS5 antes de aceptar peticiones.</li>
+<li><strong>Seguridad en producción</strong>: mantén siempre variables secretas (<code>APP_SECRET_KEY</code>, <code>ADMIN_PASSWORD</code>, credenciales SMTP y claves reCAPTCHA) configuradas en el entorno del servidor y nunca en el repositorio de código.</li>
+</ol>
+  </main>
+<script>
+  const root = document.documentElement;
+  const themeButton = document.getElementById("theme-toggle");
+
+  function updateThemeButton() {
+    const dark = root.getAttribute("data-theme") === "dark";
+    const label = dark
+      ? "Activar tema claro"
+      : "Activar tema oscuro";
+    themeButton.textContent = dark ? "⚪" : "⚫";
+    themeButton.setAttribute("aria-label", label);
+    themeButton.title = label;
+    themeButton.setAttribute("aria-pressed", String(dark));
+  }
+
+  function saveTheme(theme) {
+    try {
+      localStorage.setItem("theme", theme);
+      document.cookie = "user_theme=" + theme
+        + "; Max-Age=31536000; Path=/; SameSite=Lax";
+    } catch (_error) {}
+  }
+
+  updateThemeButton();
+  themeButton.addEventListener("click", () => {
+    const dark = root.getAttribute("data-theme") === "dark";
+    const nextTheme = dark ? "light" : "dark";
+
+    if (nextTheme === "dark") {
+      root.setAttribute("data-theme", "dark");
+    } else {
+      root.removeAttribute("data-theme");
+    }
+
+    saveTheme(nextTheme);
+    updateThemeButton();
+  });
+</script>
+</body>
+</html>

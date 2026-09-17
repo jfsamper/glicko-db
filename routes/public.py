@@ -2,11 +2,13 @@
 
 from datetime import datetime
 import math
+import os
 import re
 
-from flask import Blueprint, Response, abort, jsonify, render_template, request, flash, redirect, send_file, session, url_for
+from flask import Blueprint, Response, abort, jsonify, render_template, request, flash, redirect, send_file, send_from_directory, session, url_for
 from markupsafe import Markup, escape
 
+from config import BASE_DIR
 from routes.sort_helpers import (
     MATCH_SORT_FIELDS,
     TOURNAMENT_SORT_FIELDS,
@@ -52,6 +54,17 @@ from services.tournament_standings import get_tournament_standings
 public_bp = Blueprint("public", __name__)
 HOME_STATS_PERIODS = ("all_time", "year", "quarter")
 NEWS_TAG_TOKEN_RE = re.compile(r"\[(player|tournament|match):(\d+)\]")
+HELP_HTML_FILES = {
+    "es": "docs/generated/user_interface.html",
+    "en": "docs/generated/user_interface.en.html",
+    "pt": "docs/generated/user_interface.pt.html",
+}
+HELP_API_HTML_FILES = {
+    "es": "docs/generated/api_endpoints.html",
+    "en": "docs/generated/api_endpoints.en.html",
+    "pt": "docs/generated/api_endpoints.pt.html",
+}
+HELP_SCREENSHOTS_DIR = os.path.join(BASE_DIR, "docs", "screenshots")
 
 
 def render_news_body(body, tags, lang):
@@ -199,6 +212,29 @@ def get_public_tournament_status(tournament):
 
 def show_drafts_requested():
     return str(request.args.get("show_drafts", "")).strip().lower() in {"1", "true", "yes", "on"}
+
+
+@public_bp.route("/help")
+def help_file():
+    lang = get_language(request.args.get("lang"))
+    return send_file(
+        os.path.join(BASE_DIR, HELP_HTML_FILES[lang]),
+        mimetype="text/html",
+    )
+
+
+@public_bp.route("/help/api")
+def help_api_file():
+    lang = get_language(request.args.get("lang"))
+    return send_file(
+        os.path.join(BASE_DIR, HELP_API_HTML_FILES[lang]),
+        mimetype="text/html",
+    )
+
+
+@public_bp.route("/help-assets/screenshots/<path:filename>")
+def help_screenshot(filename):
+    return send_from_directory(HELP_SCREENSHOTS_DIR, filename)
 
 
 @public_bp.route("/")

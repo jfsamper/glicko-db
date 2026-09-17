@@ -1,0 +1,642 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>User Interface Help | Glicko DB</title>
+  <script>
+    try {
+      const cookieTheme = document.cookie
+        .split("; ")
+        .find((part) => part.startsWith("user_theme="));
+      const storedTheme = (cookieTheme && cookieTheme.slice("user_theme=".length))
+        || localStorage.getItem("theme");
+      if (storedTheme === "dark") {
+        document.documentElement.setAttribute("data-theme", "dark");
+      }
+    } catch (_error) {}
+  </script>
+  <style>
+:root {
+  color-scheme: light;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --help-background: #f4f7f9;
+  --help-panel: #fff;
+  --help-text: #1f2933;
+  --help-heading: #17324d;
+  --help-header: #17324d;
+  --help-link: #075985;
+  --help-border: #d9e1e7;
+  --help-border-soft: #e5eaee;
+  --help-code: #eef3f6;
+  --help-table-border: #cbd5dc;
+  --help-shadow: rgba(23, 50, 77, 0.08);
+  color: var(--help-text);
+  background: var(--help-background);
+}
+[data-theme="dark"] {
+  color-scheme: dark;
+  --help-background: #111827;
+  --help-panel: #1f2937;
+  --help-text: #f3f4f6;
+  --help-heading: #bfdbfe;
+  --help-header: #0b1220;
+  --help-link: #7dd3fc;
+  --help-border: #374151;
+  --help-border-soft: #4b5563;
+  --help-code: #273548;
+  --help-table-border: #4b5563;
+  --help-shadow: rgba(0, 0, 0, 0.35);
+}
+body {
+  margin: 0;
+  line-height: 1.6;
+  color: var(--help-text);
+  background: var(--help-background);
+}
+.help-header {
+  padding: 1.5rem max(1rem, calc((100vw - 1100px) / 2));
+  color: #fff;
+  background: var(--help-header);
+}
+.help-header-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+.help-header-controls {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-left: auto;
+}
+.help-brand,
+.help-language a,
+.help-document-links a {
+  color: inherit;
+}
+.help-brand {
+  font-size: 1.2rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+.help-language {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+  margin: 0;
+  font-size: 0.95rem;
+}
+.help-document-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+  margin-left: 0;
+  font-size: 0.95rem;
+}
+.help-language a[aria-current="page"] {
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+.help-theme-toggle {
+  min-width: 2.4rem;
+  min-height: 2.4rem;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.1);
+  font: inherit;
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+}
+.help-theme-toggle:hover,
+.help-theme-toggle:focus-visible {
+  background: var(--help-link);
+}
+.help-theme-toggle:focus-visible {
+  outline: 3px solid #facc15;
+  outline-offset: 2px;
+}
+.help-document {
+  box-sizing: border-box;
+  max-width: 1100px;
+  margin: 2rem auto;
+  padding: 2rem clamp(1rem, 4vw, 3rem);
+  color: var(--help-text);
+  background: var(--help-panel);
+  border: 1px solid var(--help-border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px var(--help-shadow);
+}
+.help-document h1,
+.help-document h2,
+.help-document h3,
+.help-document h4 {
+  color: var(--help-heading);
+  line-height: 1.25;
+  scroll-margin-top: 1rem;
+}
+.help-document h1 {
+  margin-top: 0;
+  font-size: clamp(1.8rem, 4vw, 2.6rem);
+}
+.help-document h2 {
+  margin-top: 2.2rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--help-border-soft);
+}
+.help-document h3,
+.help-document h4 {
+  margin-top: 1.7rem;
+}
+.help-document a {
+  color: var(--help-link);
+}
+.help-document img {
+  display: block;
+  width: min(100%, 560px);
+  height: auto;
+  margin: 1rem 0;
+  border: 1px solid var(--help-border);
+  border-radius: 4px;
+}
+.help-document pre {
+  overflow-x: auto;
+  padding: 1rem;
+  background: var(--help-code);
+  border-radius: 4px;
+}
+.help-document code {
+  padding: 0.08em 0.25em;
+  background: var(--help-code);
+  border-radius: 3px;
+}
+.help-document pre code {
+  padding: 0;
+  background: transparent;
+}
+.help-document table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+  border-collapse: collapse;
+}
+.help-document th,
+.help-document td {
+  padding: 0.45rem 0.65rem;
+  border: 1px solid var(--help-table-border);
+  text-align: left;
+}
+@media (max-width: 640px) {
+  .help-header-inner {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .help-header-controls {
+    justify-content: flex-start;
+    margin-left: 0;
+  }
+  .help-document {
+    margin: 1rem 0;
+    border-right: 0;
+    border-left: 0;
+    border-radius: 0;
+  }
+}
+</style>
+</head>
+<body>
+  <header class="help-header">
+    <div class="help-header-inner">
+      <a class="help-brand" href="/?lang=en">Glicko DB</a>
+      <div class="help-header-controls">
+        <nav class="help-document-links" aria-label="Documentation">
+          <a href="/help?lang=en">Interface help</a>
+          <a href="/help/api?lang=en">Routes</a>
+        </nav>
+        <nav class="help-language" aria-label="Language"><a href="/help?lang=es">Español</a> <a href="/help?lang=en" aria-current="page">English</a> <a href="/help?lang=pt">Português</a></nav>
+        <button id="theme-toggle" class="help-theme-toggle" type="button"
+          aria-label="Enable dark theme"
+          title="Enable dark theme" aria-pressed="false">⚫</button>
+      </div>
+    </div>
+  </header>
+  <main class="help-document">
+<h1 id="user-interface-help">User Interface Help</h1>
+<p>See the <a href="/help/api?lang=en">route and integration notes</a> and the <a href="/?lang=en">English README</a>.
+You can also open this guide from the <code>?</code> button in the top navigation or at <code>/help?lang=en</code>.</p>
+<h2 id="table-of-contents">Table of contents</h2>
+<ul>
+<li><a href="#public-interface">Public interface</a></li>
+<li><a href="#rankings-and-player-directory">Rankings and player directory</a></li>
+<li><a href="#matches-and-sgf-viewer">Matches and SGF viewer</a></li>
+<li><a href="#public-tournaments">Public tournaments</a></li>
+<li><a href="#period-reports-and-export">Period reports and export</a></li>
+<li><a href="#category-converter">Category converter</a></li>
+<li><a href="#public-news">Public news</a></li>
+<li><a href="#sgf-library">SGF library</a></li>
+<li><a href="#member-interface">Member interface</a></li>
+<li><a href="#account-registration-and-login">Account registration and login</a></li>
+<li><a href="#profile-management">Profile management</a></li>
+<li><a href="#password-recovery">Password recovery</a></li>
+<li><a href="#reporting-results">Reporting results</a></li>
+<li><a href="#administrator-panel">Administrator panel</a></li>
+<li><a href="#tournament-management">Tournament management</a><ul>
+<li><a href="#1-creating-and-configuring-tournaments-admintournaments">1. Creating and configuring tournaments (<code>/admin/tournaments</code>)</a></li>
+<li><a href="#2-managing-participants">2. Managing participants</a></li>
+<li><a href="#3-pairings-rounds-and-entering-results">3. Pairings, rounds, and entering results</a></li>
+<li><a href="#4-round-processing-and-rating-updates">4. Round processing and rating updates</a></li>
+</ul>
+</li>
+<li><a href="#data-management">Data management</a><ul>
+<li><a href="#1-import-assistant-with-preview-adminimport">1. Import assistant with preview (<code>/admin/import</code>)</a></li>
+<li><a href="#2-player-administration-adminplayers">2. Player administration (<code>/admin/players</code>)</a></li>
+<li><a href="#3-match-administration-adminmatches">3. Match administration (<code>/admin/matches</code>)</a></li>
+<li><a href="#4-rating-and-category-configuration-adminratings-and-admincategories">4. Rating and category configuration (<code>/admin/ratings</code> and <code>/admin/categories</code>)</a></li>
+<li><a href="#5-result-moderation-queue-adminresult-submissions">5. Result moderation queue (<code>/admin/result-submissions</code>)</a></li>
+</ul>
+</li>
+<li><a href="#operational-and-security-tasks">Operational and security tasks</a><ul>
+<li><a href="#1-backups-and-restore-adminbackups">1. Backups and restore (<code>/admin/backups</code>)</a></li>
+<li><a href="#2-user-account-management-adminusers">2. User account management (<code>/admin/users</code>)</a></li>
+<li><a href="#3-news-publishing-adminnews">3. News publishing (<code>/admin/news</code>)</a></li>
+<li><a href="#4-audit-review-adminaudit">4. Audit review (<code>/admin/audit</code>)</a></li>
+<li><a href="#5-application-security-settings-adminsettings">5. Application security settings (<code>/admin/settings</code>)</a></li>
+</ul>
+</li>
+<li><a href="#troubleshooting-guide">Troubleshooting guide</a></li>
+</ul>
+<h2 id="public-interface">Public interface</h2>
+<p>No account is required for <code>/</code>, <code>/rankings</code>, <code>/players</code>, <code>/player/view?id=&lt;player_id&gt;</code>, <code>/matches</code>, <code>/tournaments</code>, <code>/tournaments/&lt;tournament_id&gt;</code>, <code>/reports</code>, <code>/category</code>, and <code>/sgf-library</code>. These pages provide rankings, player profiles, match history, public tournaments, standings, rating information, reports, and SGF viewing or downloads.</p>
+<p><a href="/help-assets/screenshots/public-home.png"><img src="/help-assets/screenshots/public-home.png" alt="Public home page" width="560" /></a></p>
+<p><em>The public home page provides navigation, language and theme controls, rankings, statistics, and links to public content.</em></p>
+<p><a href="/help-assets/screenshots/public-players.png"><img src="/help-assets/screenshots/public-players.png" alt="Player directory" width="560" /></a></p>
+<p><em>The player directory is used to browse profiles and filter the public player list.</em></p>
+<p>Pages accept <code>?lang=es</code>, <code>?lang=en</code>, or <code>?lang=pt</code>; use <code>YYYY-MM-DD</code> in date filters and fields.</p>
+<h3 id="rankings-and-player-directory">Rankings and player directory</h3>
+<ul>
+<li><strong>Rankings (<code>/rankings</code>)</strong>: displays the official leaderboard with Glicko-2 rating, rating deviation (RD), calculated Dan/Kyu category, games played, win percentage, recent streak, and last activity date. Only active players appear.</li>
+<li><strong>Player directory (<code>/players</code>)</strong>: search by first or last name, filter by minimum and maximum rating range, filter by last active date, and sort by any column with configurable pagination.</li>
+<li><strong>Player profile (<code>/player/view?id=&lt;id&gt;</code>)</strong>:</li>
+<li>Summary of current rating, RD, volatility, and category.</li>
+<li>Career milestones: peak historical rating, longest winning streak, wins as White, and wins as Black.</li>
+<li>Complete match history with date, color, opponent, result, event, and link to the SGF viewer if available.</li>
+<li>Interactive rating evolution chart over time.</li>
+<li>Tournament history with initial seed rank and final standing position.</li>
+<li>Head-to-head opponent records table.</li>
+</ul>
+<p><a href="/help-assets/screenshots/public-rankings.png"><img src="/help-assets/screenshots/public-rankings.png" alt="Public rankings table" width="560" /></a></p>
+<p><em>Official rankings sorted by Glicko-2 rating with category indicators and recent form.</em></p>
+<p><a href="/help-assets/screenshots/public-player-profile.png"><img src="/help-assets/screenshots/public-player-profile.png" alt="Public profile for Acuña, Carlos" width="560" /></a></p>
+<p><em>Public profile with current rating, category, and activity summary for the selected player.</em></p>
+<h3 id="matches-and-sgf-viewer">Matches and SGF viewer</h3>
+<ul>
+<li><strong>Match list (<code>/matches</code>)</strong>: browse the entire match history with filters for date range and player, plus sorting by date, White player, Black player, result, or round.</li>
+<li><strong>SGF viewer (<code>/matches/&lt;id&gt;/record</code> and <code>/sgf-library/&lt;filename&gt;</code>)</strong>: interactive SGF game viewer powered by BesoGo. Step through moves move-by-move, switch between Simple and Dark themes, and download the raw SGF file via direct link (<code>/matches/&lt;id&gt;/sgf</code> or <code>/sgf/&lt;filename&gt;</code>).</li>
+</ul>
+<p><a href="/help-assets/screenshots/public-matches.png"><img src="/help-assets/screenshots/public-matches.png" alt="Public match list" width="560" /></a></p>
+<p><em>Global match list with filters, SGF library link, and viewing actions.</em></p>
+<p><a href="/help-assets/screenshots/public-match-record.png"><img src="/help-assets/screenshots/public-match-record.png" alt="SGF viewer for a match" width="560" /></a></p>
+<p><em>Linked match SGF viewer with playback controls, theme switch, and download action.</em></p>
+<h3 id="public-tournaments">Public tournaments</h3>
+<ul>
+<li><strong>Tournament list (<code>/tournaments</code>)</strong>: displays active and completed tournaments with date, location, pairing system, round count, and status. Draft tournaments remain hidden from the public.</li>
+<li><strong>Tournament details (<code>/tournaments/&lt;id&gt;</code>)</strong>: view round-by-round pairings, table assignments, match results, and live standings with points (Pts/MMS), SOS, SOSOS, and SODOS tiebreaks.</li>
+</ul>
+<p><a href="/help-assets/screenshots/public-tournaments.png"><img src="/help-assets/screenshots/public-tournaments.png" alt="Public tournaments" width="560" /></a></p>
+<p><em>List of public tournaments showing status, system, and round count.</em></p>
+<p><a href="/help-assets/screenshots/public-tournament-detail.png"><img src="/help-assets/screenshots/public-tournament-detail.png" alt="Public tournament details" width="560" /></a></p>
+<p><em>Tournament details with round selector, board pairings, results, and standings.</em></p>
+<h3 id="period-reports-and-export">Period reports and export</h3>
+<ul>
+<li><strong>Reports screen (<code>/reports</code>)</strong>: analyze player performances over custom and standard time periods:</li>
+<li>Predefined periods: <em>All time</em>, <em>This year</em>, <em>This quarter</em>, or <em>Custom date range</em>.</li>
+<li>Optional player filter to inspect records against individual opponents, clubs, and countries during the period.</li>
+<li>Date ranges <code>start_date</code> and <code>end_date</code> are inclusive and evaluated in the server's fixed timezone (UTC-5).</li>
+<li>Matches with invalid dates or results are excluded and tallied in the report summary.</li>
+<li><strong>CSV export (<code>/reports/export.csv</code>)</strong>: downloads a CSV spreadsheet reflecting the exact calculated report table and active filters.</li>
+<li><strong>PDF export (<code>/reports/export.pdf</code>)</strong>: generates a formatted PDF document with centered headers, generation date, current language, and the selected player and period in the filename.</li>
+</ul>
+<p><a href="/help-assets/screenshots/public-reports.png"><img src="/help-assets/screenshots/public-reports.png" alt="Reports and statistics" width="560" /></a></p>
+<p><em>Period reports with date and player filters plus CSV and PDF download options.</em></p>
+<h3 id="category-converter">Category converter</h3>
+<p>The <code>/category</code> page converts a Glicko rating to a Dan/Kyu category and displays the formula, configured constants, and complete scale.</p>
+<p><a href="/help-assets/screenshots/public-category.png"><img src="/help-assets/screenshots/public-category.png" alt="Public category converter" width="560" /></a></p>
+<p><em>Rating-to-category converter with input field and calculation button.</em></p>
+<h3 id="public-news">Public news</h3>
+<p>The <code>/news/&lt;article_id&gt;</code> page displays a published article and turns player, tournament, and match tags into related links.</p>
+<p><a href="/help-assets/screenshots/public-news-article.png"><img src="/help-assets/screenshots/public-news-article.png" alt="Public news article" width="560" /></a></p>
+<p><em>Published article with related links to players, tournaments, and matches.</em></p>
+<h3 id="sgf-library">SGF library</h3>
+<p>The public library (<code>/sgf-library</code>) indexes all SGF game records uploaded to the platform:
+- Validates file size, UTF-8 character encoding, and syntactic SGF structure.
+- Automatically synchronizes root SGF properties (White/Black players, ranks, event, date, and result) with the linked database match.
+- If an SGF file is deleted from the server filesystem, stale database links are cleaned automatically to prevent broken URLs.
+- Unlinking a record or deleting its match retains the file in the library; only administrators can permanently delete physical files.</p>
+<p><a href="/help-assets/screenshots/public-sgf-library.png"><img src="/help-assets/screenshots/public-sgf-library.png" alt="Public SGF library" width="560" /></a></p>
+<p><em>SGF library with metadata, linked matches, and viewer links.</em></p>
+<p><a href="/help-assets/screenshots/public-sgf-record.png"><img src="/help-assets/screenshots/public-sgf-record.png" alt="SGF library record" width="560" /></a></p>
+<p><em>An SGF record opened from the library, with metadata and viewer controls.</em></p>
+<h2 id="member-interface">Member interface</h2>
+<p>Community players can register a personal account to manage preferences and submit results for organized tournaments and club games.</p>
+<h3 id="account-registration-and-login">Account registration and login</h3>
+<ol>
+<li>Open <code>/admin/register</code> to create an account with username, email, and password (minimum 8 characters). The form is protected by Google reCAPTCHA v3.</li>
+<li>New accounts are automatically assigned the <code>member</code> role.</li>
+<li>Ask an administrator or operator to link your user account to your player record at <code>/admin/users</code>.</li>
+<li>Sign in at <code>/admin/login</code>.</li>
+</ol>
+<p><a href="/help-assets/screenshots/admin-login.png"><img src="/help-assets/screenshots/admin-login.png" alt="Administrator login" width="560" /></a></p>
+<p><em>Administrator login form with registration and password-recovery links.</em></p>
+<p><a href="/help-assets/screenshots/admin-register.png"><img src="/help-assets/screenshots/admin-register.png" alt="Member account registration" width="560" /></a></p>
+<p><em>Member account registration form with email and password confirmation.</em></p>
+<h3 id="profile-management">Profile management</h3>
+<p>From <code>/admin/profile</code>, authenticated users can:
+- Update their notification and recovery email address.
+- Select their preferred UI language (<code>Español</code>, <code>English</code>, <code>Português</code>).
+- Toggle between Light and Dark application themes.
+- Choose their IANA timezone with current UTC offset (e.g., <code>America/Bogota [UTC-05:00]</code>, <code>America/New_York</code>, <code>Europe/London</code>).
+- Change password by providing their current password and confirming the new one.</p>
+<p><a href="/help-assets/screenshots/member-profile.png"><img src="/help-assets/screenshots/member-profile.png" alt="Member profile" width="560" /></a></p>
+<p><em>User profile settings for language, theme, timezone, and password management.</em></p>
+<h3 id="password-recovery">Password recovery</h3>
+<ol>
+<li>If you forget your password, click <em>Forgot password?</em> on <code>/admin/login</code> or navigate to <code>/admin/forgot-password</code>.</li>
+<li>Enter your registered email address. If found, the system dispatches a single-use cryptographically hashed reset link.</li>
+<li>Reset links expire according to <code>PASSWORD_RESET_TTL_SECONDS</code> (default: 3600 seconds / 1 hour).</li>
+<li>Open <code>/admin/reset-password/&lt;token&gt;</code> to choose a new password. For security, responses never reveal whether an email address exists.</li>
+</ol>
+<p><a href="/help-assets/screenshots/admin-forgot-password.png"><img src="/help-assets/screenshots/admin-forgot-password.png" alt="Password recovery request" width="560" /></a></p>
+<p><em>Request for a recovery link using the registered email address.</em></p>
+<p><a href="/help-assets/screenshots/admin-reset-password.png"><img src="/help-assets/screenshots/admin-reset-password.png" alt="Password reset form" width="560" /></a></p>
+<p><em>Form for setting a new password from a reset token.</em></p>
+<h3 id="reporting-results">Reporting results</h3>
+<p>Members can submit match results at <code>/admin/report-results</code>:
+1. <strong>Mandatory prerequisite</strong>: the user account must be linked to an active player record by an administrator.
+2. <strong>Submission form</strong>:
+   - <strong>Opponent</strong>: select the rival player from active players.
+   - <strong>Color</strong>: select whether you played as White or Black.
+   - <strong>Result</strong>: indicate White wins (<code>1-0</code>), Black wins (<code>0-1</code>), or Draw (<code>1/2-1/2</code>).
+   - <strong>Date</strong>: match date (<code>YYYY-MM-DD</code>).
+   - <strong>Event &amp; Location</strong>: tournament or club event name and venue.
+   - <strong>Round</strong>: round number if applicable.
+   - <strong>Handicap stones</strong>: handicap stones (0 to 9) given to Black.
+   - <strong>SGF file (optional)</strong>: upload the <code>.sgf</code> game record.
+3. <strong>Queue &amp; moderation</strong>: submitted matches enter the <em>Pending</em> moderation queue (<code>/admin/result-submissions</code>). They do not affect rankings, ratings, or reports until reviewed and approved by tournament staff.</p>
+<p><a href="/help-assets/screenshots/member-report-results.png"><img src="/help-assets/screenshots/member-report-results.png" alt="Member result submission" width="560" /></a></p>
+<p><em>The member result screen shows the linked-player requirement and pending-submission area.</em></p>
+<h2 id="administrator-panel">Administrator panel</h2>
+<p>Sign in at <code>/admin/login</code> with an administrative account. Available navigation adapts to the assigned account role:
+- <code>member</code>: profile settings and match reporting for linked player.
+- <code>tournament_director</code>: complete tournament management (participants, pairings, rounds, results, and exports).
+- <code>operator</code>: all tournament functions plus match management, data imports, SGF library, news, and result moderation.
+- <code>administrator</code>: full system control including players, rating/category configurations, database backups, user accounts, audit review, and settings.</p>
+<p><a href="/help-assets/screenshots/admin-dashboard.png"><img src="/help-assets/screenshots/admin-dashboard.png" alt="Administrator dashboard" width="560" /></a></p>
+<p><em>The dashboard groups controls into tournament operations, data management, and administration and access. Select </em><em>Abrir</em><em> on a card to open that area.</em></p>
+<h3 id="tournament-management">Tournament management</h3>
+<h4 id="1-creating-and-configuring-tournaments-admintournaments">1. Creating and configuring tournaments (<code>/admin/tournaments</code>)</h4>
+<ul>
+<li><strong>Name, venue, and dates</strong>: enter official tournament title, city/location, and start/end dates.</li>
+<li><strong>Round count</strong>: set total scheduled rounds.</li>
+<li><strong>Pairing system</strong>:</li>
+<li><strong>Standard Swiss (<code>swiss</code>)</strong>: pairs players with identical or close scores, avoiding rematches and alternating colors.</li>
+<li><strong>Category Swiss (<code>swiss_cat</code>)</strong>: restricts pairings strictly within rating categories for a specified initial number of rounds.</li>
+<li><strong>Accelerated Swiss (<code>accelerated_swiss</code>)</strong>: divides participants into acceleration bands (Go 3-band scheme or custom category limits) during initial rounds to speed up convergence.</li>
+<li><strong>McMahon (<code>mcmahon</code>)</strong>: assigns starting McMahon scores (MMS) based on rating using the McMahon Bar (<code>mm_bar</code>), Floor (<code>mm_floor</code>), and Zero (<code>mm_zero</code>).</li>
+<li><strong>BYE and absence points</strong>:</li>
+<li><em>BYE points</em>: points awarded to an odd unassigned player (default: 1.0 point).</li>
+<li><em>Absence points</em>: points awarded for unplayed absence games (default: 0.0 points).</li>
+<li><strong>Automatic handicap</strong>: enable or disable automatic handicap stone suggestions calculated from category differences.</li>
+</ul>
+<p><a href="/help-assets/screenshots/admin-tournaments.png"><img src="/help-assets/screenshots/admin-tournaments.png" alt="Tournament administration" width="560" /></a></p>
+<p><em>The tournament page provides controls for creating tournaments, selecting the pairing system, and opening tournament operations.</em></p>
+<p><a href="/help-assets/screenshots/admin-tournament-settings.png"><img src="/help-assets/screenshots/admin-tournament-settings.png" alt="Advanced tournament settings" width="560" /></a></p>
+<p><em>Tournament settings with dates, rounds, BYE/absence points, handicap, and acceleration options.</em></p>
+<h4 id="2-managing-participants">2. Managing participants</h4>
+<ul>
+<li><strong>Register players</strong>: add existing active players via selector or create new players directly in the tournament interface.</li>
+<li><strong>Withdraw participants</strong>: remove players before round 1 begins.</li>
+<li><strong>OpenGotha XML import</strong>: importing an OpenGotha file automatically loads players, seed ranks, grades, ratings, and past round history. If names match existing database players fuzzily, an interactive reconciliation tool lets the director link them, create new entries, or discard.</li>
+</ul>
+<p><a href="/help-assets/screenshots/admin-tournament-players.png"><img src="/help-assets/screenshots/admin-tournament-players.png" alt="Tournament participant management" width="560" /></a></p>
+<p><em>Participant management with the current list, existing-player selector, and pending-player creation.</em></p>
+<h4 id="3-pairings-rounds-and-entering-results">3. Pairings, rounds, and entering results</h4>
+<ul>
+<li><strong>Generate round</strong>: automatically pairs players using the chosen pairing system, preventing past rematches and balancing colors.</li>
+<li><strong>BYE handling</strong>: when participant count is odd, assigns a BYE automatically. The engine tracks BYE history so no player receives a second BYE while other participants have not received one.</li>
+<li><strong>Manual and assisted pairing</strong>:</li>
+<li><em>Pair selected</em>: choose two unpaired participants and click <em>Pair Selected</em>.</li>
+<li><em>Unpair / Unpair all</em>: dissolve a specific board pairing or reset the entire round.</li>
+<li><strong>Handicap adjustment per board</strong>: each board displays the suggested handicap stones; the director can adjust stones before saving results.</li>
+<li><strong>7-state result cycling</strong>: click the winner's name or result text to advance through:
+  1. <code>-</code> : Pending result.
+  2. <code>1-0</code> : White victory.
+  3. <code>1/2-1/2</code> : Draw.
+  4. <code>0-1</code> : Black victory.
+  5. <code>1-!0</code> : White wins by Black absence / forfeit.
+  6. <code>!0-1</code> : Black wins by White absence / forfeit.
+  7. <code>!0-0</code> : Both players absent (double forfeit).
+  <em>Clicking the winning player again clears the result back to pending (<code>-</code>).</em></li>
+</ul>
+<p><a href="/help-assets/screenshots/admin-tournament-detail.png"><img src="/help-assets/screenshots/admin-tournament-detail.png" alt="Tournament round and pairings" width="560" /></a></p>
+<p><em>Tournament round control panel: board pairings, result selector, handicap stones, and standings.</em></p>
+<h4 id="4-round-processing-and-rating-updates">4. Round processing and rating updates</h4>
+<ul>
+<li><strong>Process round (<code>Procesar ronda</code>)</strong>:</li>
+<li>Materializes played game results (<code>1-0</code>, <code>1/2-1/2</code>, <code>0-1</code>) into official database matches.</li>
+<li>Absence results (<code>1-!0</code>, <code>!0-1</code>, <code>!0-0</code>) count toward tournament standings and tiebreaks but are <strong>never</strong> converted into rating matches.</li>
+<li>Applies logarithmic rating adjustments for handicap stones if present.</li>
+<li>Triggers incremental rating recomputation ordered chronologically by date and round.</li>
+<li><strong>Standings and tiebreaks</strong>: standings positions are unique and sequential. Ties in points or MMS are resolved deterministically by SOS, SOSOS, SODOS, base rating, and alphabetical name.</li>
+<li><strong>Ordering and migrations</strong>: within a day, rating updates use round number and then insertion order. Round notes are stored as integers when possible; unknown rounds use round 1. Tournament tables migrate automatically at startup.</li>
+<li><strong>Tournament lifecycle</strong>:</li>
+<li><em>Draft (<code>draft</code>)</em>: hidden from public view during organization.</li>
+<li><em>Active (<code>active</code>)</em>: published and visible with live pairings and standings.</li>
+<li><em>Completed (<code>completed</code>)</em>: concluded tournament with locked standings.</li>
+<li><em>Canceled (<code>canceled</code>)</em>: cancelled without rating effects.</li>
+<li><strong>Result exports</strong>: export tournament standings and pairings in compatible formats for external software and archives.</li>
+</ul>
+<h3 id="data-management">Data management</h3>
+<h4 id="1-import-assistant-with-preview-adminimport">1. Import assistant with preview (<code>/admin/import</code>)</h4>
+<p>Import historical workbooks, match spreadsheets, or OpenGotha files:
+- <strong>Accepted formats</strong>:
+  - Excel workbook (<code>.xlsx</code> or <code>.xls</code>): replaces the active dataset with full players and matches.
+  - OpenGotha XML (<code>.xml</code>): imports tournament metadata, participants, pairings, and handicap stones.
+  - Match CSV (<code>.csv</code>): columns <code>date</code>, <code>white</code>, <code>black</code>, <code>result</code>, and optional <code>handicap</code> (0-9).
+- Create a backup before importing a workbook that replaces the active data.
+- <strong>Explicit player reconciliation</strong>:
+  - Previews classify rows as <em>Exact match</em>, <em>Fuzzy suggestion</em>, <em>New player</em>, or <em>Duplicate</em>.
+  - Operators choose to link to existing players, create new players, or reject rows.
+  - Metadata can be reviewed and edited before committing.
+  - CSV validation errors abort the import cleanly without partial database commits.</p>
+<p><a href="/help-assets/screenshots/admin-import.png"><img src="/help-assets/screenshots/admin-import.png" alt="Import controls" width="560" /></a></p>
+<p><em>The import screen uses the file picker to select an Excel, CSV, or OpenGotha file, then </em><em>Importar</em><em> to start preview and reconciliation.</em></p>
+<p><a href="/help-assets/screenshots/admin-import-preview.png"><img src="/help-assets/screenshots/admin-import-preview.png" alt="Import preview and reconciliation" width="560" /></a></p>
+<p><em>OpenGotha preview with editable metadata, match summary, and per-player decisions.</em></p>
+<h4 id="2-player-administration-adminplayers">2. Player administration (<code>/admin/players</code>)</h4>
+<ul>
+<li>Filter players by name, rating range, and active status.</li>
+<li><strong>Edit player (<code>/admin/players/edit?id=&lt;id&gt;</code>)</strong>: update first name, last name, display name, initial rating, initial RD, and active status. Inactive players are excluded from rankings and tournament selection.</li>
+<li><strong>Delete player</strong>: safe confirmation modal warning about cascade deletion of associated match history.</li>
+</ul>
+<p><a href="/help-assets/screenshots/admin-players.png"><img src="/help-assets/screenshots/admin-players.png" alt="Administrative player list" width="560" /></a></p>
+<p><em>Administrative player list with filters, Glicko range, status, and edit actions.</em></p>
+<p><a href="/help-assets/screenshots/admin-edit-player.png"><img src="/help-assets/screenshots/admin-edit-player.png" alt="Editing Acuña, Carlos" width="560" /></a></p>
+<p><em>Player editor with name, initial rating, club, country, and active-status fields.</em></p>
+<h4 id="3-match-administration-adminmatches">3. Match administration (<code>/admin/matches</code>)</h4>
+<ul>
+<li>Paginated list of all matches with date and player filters.</li>
+<li><strong>Add match (<code>/admin/matches/add</code>)</strong>: form with strict date validation (<code>YYYY-MM-DD</code>), distinct player validation, result validation (<code>1-0</code>, <code>0-1</code>, <code>1/2-1/2</code>), handicap stones (0-9), and optional SGF upload.</li>
+<li><strong>Edit match (<code>/admin/matches/edit?id=&lt;id&gt;</code>)</strong>: update players, dates, results, or round notes.</li>
+<li>When tournament results become official matches, <code>event</code> keeps the tournament name and <code>notes</code> (shown as <code>Round</code>) stores the round as an integer. Legacy values are converted when they contain a number; text without a number is kept and treated as round 0.</li>
+<li><strong>SGF attachment &amp; deletion</strong>: link existing SGF records from the library or upload new files.</li>
+</ul>
+<p><a href="/help-assets/screenshots/admin-match-form-add.png"><img src="/help-assets/screenshots/admin-match-form-add.png" alt="Add match form" width="560" /></a></p>
+<p><em>New-match form with players, result, date, round, handicap, and optional SGF upload.</em></p>
+<p><a href="/help-assets/screenshots/admin-match-form-edit.png"><img src="/help-assets/screenshots/admin-match-form-edit.png" alt="Edit match form" width="560" /></a></p>
+<p><em>Pre-filled edit form for correcting an existing match.</em></p>
+<p><a href="/help-assets/screenshots/admin-matches.png"><img src="/help-assets/screenshots/admin-matches.png" alt="Match administration" width="560" /></a></p>
+<p><em>Match administration table with date/player filters and edit, delete, and SGF management tools.</em></p>
+<h4 id="4-rating-and-category-configuration-adminratings-and-admincategories">4. Rating and category configuration (<code>/admin/ratings</code> and <code>/admin/categories</code>)</h4>
+<ul>
+<li><strong>Glicko-2 parameters</strong>:</li>
+<li>Default initial rating (e.g., 1500).</li>
+<li>Default initial rating deviation (RD, e.g., 350).</li>
+<li>Default initial volatility ($\sigma$, e.g., 0.06).</li>
+<li>System constant $\tau$ (e.g., 0.5).</li>
+<li><strong>Category parameters</strong>:</li>
+<li>Scale constant $k$ and offset $m$.</li>
+<li>Minimum category thresholds for Dan and Kyu levels.</li>
+<li><strong>Rating recalculation</strong>:</li>
+<li><em>Full recompute</em>: rebuilds entire rating history from scratch ordered by date and round.</li>
+<li><em>Incremental replay</em>: recalculates snapshots starting from the earliest modified date (<em>dirty date</em>).</li>
+</ul>
+<p><a href="/help-assets/screenshots/admin-ratings.png"><img src="/help-assets/screenshots/admin-ratings.png" alt="Administrative rating configuration" width="560" /></a></p>
+<p><em>Rating panel with Glicko-2 parameters, history counts, and recalculation actions.</em></p>
+<p><a href="/help-assets/screenshots/admin-categories.png"><img src="/help-assets/screenshots/admin-categories.png" alt="Administrative category configuration" width="560" /></a></p>
+<p><em>Dan/Kyu formula configuration with a preview of category changes.</em></p>
+<h4 id="5-result-moderation-queue-adminresult-submissions">5. Result moderation queue (<code>/admin/result-submissions</code>)</h4>
+<ul>
+<li>Review pending game submissions from community members.</li>
+<li>Inspect submitter, opponent, colors, result, date, handicap stones, and attached SGF record.</li>
+<li><strong>Approve</strong>: materializes the match in the official database and triggers rating recomputation.</li>
+<li><strong>Reject</strong>: rejects the submission and records a review note for audit tracking.</li>
+</ul>
+<p><a href="/help-assets/screenshots/admin-result-submissions.png"><img src="/help-assets/screenshots/admin-result-submissions.png" alt="Administrative result queue" width="560" /></a></p>
+<p><em>Moderation queue with status filter, match details, and approve/reject actions.</em></p>
+<h3 id="operational-and-security-tasks">Operational and security tasks</h3>
+<h4 id="1-backups-and-restore-adminbackups">1. Backups and restore (<code>/admin/backups</code>)</h4>
+<ul>
+<li><strong>Create backup</strong>: generates timestamped SQLite backup in <code>backups/</code>, including the SGF sidecar folder.</li>
+<li><strong>Restore backup</strong>:</li>
+<li>Restores the selected database and runs pending database migrations.</li>
+<li>Rebuilds full-text search artifacts and the FTS5 search index (<code>players_fts</code>).</li>
+<li>Restores the SGF library sidecar without breaking links.</li>
+<li>Restricts candidate backups to managed files and designated <code>.bak</code> fallbacks.</li>
+<li><strong>Delete backups</strong>: purge older backups to free storage space.</li>
+<li>Run <code>python scripts/check_legacy_players_state.py</code> to audit the active database and managed backups.</li>
+</ul>
+<p><a href="/help-assets/screenshots/admin-backups.png"><img src="/help-assets/screenshots/admin-backups.png" alt="Backup management" width="560" /></a></p>
+<p><em>Backup list with create, restore, and delete actions.</em></p>
+<h4 id="2-user-account-management-adminusers">2. User account management (<code>/admin/users</code>)</h4>
+<ul>
+<li>Create and edit user accounts with roles (<code>administrator</code>, <code>operator</code>, <code>tournament_director</code>, <code>member</code>).</li>
+<li>Link user accounts to player profiles to enable result reporting.</li>
+<li>Assign account-specific IANA timezones.</li>
+<li>Activate or deactivate user logins.</li>
+</ul>
+<p><a href="/help-assets/screenshots/admin-users.png"><img src="/help-assets/screenshots/admin-users.png" alt="User account list" width="560" /></a></p>
+<p><em>Account list showing role, linked player, timezone, status, and actions.</em></p>
+<p><a href="/help-assets/screenshots/admin-create-user.png"><img src="/help-assets/screenshots/admin-create-user.png" alt="Create user account" width="560" /></a></p>
+<p><em>Form for creating an account and assigning its role, linked player, and timezone.</em></p>
+<p><a href="/help-assets/screenshots/admin-edit-user.png"><img src="/help-assets/screenshots/admin-edit-user.png" alt="Editing docs_admin linked to Acuña, Carlos" width="560" /></a></p>
+<p><em>Editing <code>docs_admin</code>, showing the Acuña, Carlos player link and account permissions.</em></p>
+<h4 id="3-news-publishing-adminnews">3. News publishing (<code>/admin/news</code>)</h4>
+<ul>
+<li>Compose news articles with title, body, and status (Draft or Published).</li>
+<li>Insert smart tags: <code>[player:12]</code>, <code>[tournament:5]</code>, <code>[match:104]</code>, rendered publicly as interactive links and SGF badges.</li>
+</ul>
+<p><a href="/help-assets/screenshots/admin-news.png"><img src="/help-assets/screenshots/admin-news.png" alt="Administrative news list" width="560" /></a></p>
+<p><em>News list with publication status, update date, and actions.</em></p>
+<p><a href="/help-assets/screenshots/admin-news-form.png"><img src="/help-assets/screenshots/admin-news-form.png" alt="New news article" width="560" /></a></p>
+<p><em>New-article form with immediate publication and smart-link fields.</em></p>
+<p><a href="/help-assets/screenshots/admin-news-edit.png"><img src="/help-assets/screenshots/admin-news-edit.png" alt="Edit news article" width="560" /></a></p>
+<p><em>Pre-filled form for editing an article body, status, and related links.</em></p>
+<h4 id="4-audit-review-adminaudit">4. Audit review (<code>/admin/audit</code>)</h4>
+<ul>
+<li>Comprehensive audit trail of all state-changing operations: imports, tournament lifecycle, match edits, rating changes, user updates, and backups.</li>
+<li>Filter by acting user, action category, free-text query, and date range.</li>
+<li>Compact JSON payload capped at 2 KiB per event with automatic 730-day pruning (<code>AUDIT_RETENTION_DAYS</code>).</li>
+</ul>
+<p><a href="/help-assets/screenshots/admin-audit.png"><img src="/help-assets/screenshots/admin-audit.png" alt="Audit review" width="560" /></a></p>
+<p><em>Administrative audit log with filtering by user, action category, and date range.</em></p>
+<h4 id="5-application-security-settings-adminsettings">5. Application security settings (<code>/admin/settings</code>)</h4>
+<ul>
+<li>Configure maximum failed login attempts before temporary IP block.</li>
+<li>Adjust rate-limiting time window (in seconds).</li>
+<li>Configure password reset token lifetime (TTL).</li>
+<li>Reset button to restore defaults from <code>config.py</code>.</li>
+</ul>
+<p><a href="/help-assets/screenshots/admin-settings.png"><img src="/help-assets/screenshots/admin-settings.png" alt="Security settings" width="560" /></a></p>
+<p><em>Administrative parameters for login attempts, rate-limit window, and recovery-link TTL.</em></p>
+<h3 id="troubleshooting-guide">Troubleshooting guide</h3>
+<ol>
+<li><strong>Access Forbidden (403)</strong>: verify that your account has the required role (<code>tournament_director</code>, <code>operator</code>, or <code>administrator</code>) for the requested section.</li>
+<li><strong>Cannot submit results as member</strong>: confirm in <code>/admin/users</code> that your user account is linked to an active player record.</li>
+<li><strong>Import failures</strong>:
+   - Ensure CSV files use UTF-8 encoding and contain required headers <code>date</code>, <code>white</code>, <code>black</code>, <code>result</code>.
+   - Verify date format is <code>YYYY-MM-DD</code> and results are <code>1-0</code>, <code>0-1</code>, or <code>1/2-1/2</code>.
+   - Ensure handicap stones are within the valid 0-9 range.</li>
+<li><strong>Missing SGF records</strong>: if an SGF file is deleted from disk, the system clears the link automatically. Re-upload the file from <code>/admin/matches</code> or the SGF library.</li>
+<li><strong>Database restoration</strong>: after restoring a backup, allow schema migrations and FTS5 indexing to complete before serving requests.</li>
+<li><strong>Production security</strong>: store secrets (<code>APP_SECRET_KEY</code>, <code>ADMIN_PASSWORD</code>, SMTP credentials, reCAPTCHA keys) in server environment variables, never in source control.</li>
+</ol>
+  </main>
+<script>
+  const root = document.documentElement;
+  const themeButton = document.getElementById("theme-toggle");
+
+  function updateThemeButton() {
+    const dark = root.getAttribute("data-theme") === "dark";
+    const label = dark
+      ? "Enable light theme"
+      : "Enable dark theme";
+    themeButton.textContent = dark ? "⚪" : "⚫";
+    themeButton.setAttribute("aria-label", label);
+    themeButton.title = label;
+    themeButton.setAttribute("aria-pressed", String(dark));
+  }
+
+  function saveTheme(theme) {
+    try {
+      localStorage.setItem("theme", theme);
+      document.cookie = "user_theme=" + theme
+        + "; Max-Age=31536000; Path=/; SameSite=Lax";
+    } catch (_error) {}
+  }
+
+  updateThemeButton();
+  themeButton.addEventListener("click", () => {
+    const dark = root.getAttribute("data-theme") === "dark";
+    const nextTheme = dark ? "light" : "dark";
+
+    if (nextTheme === "dark") {
+      root.setAttribute("data-theme", "dark");
+    } else {
+      root.removeAttribute("data-theme");
+    }
+
+    saveTheme(nextTheme);
+    updateThemeButton();
+  });
+</script>
+</body>
+</html>

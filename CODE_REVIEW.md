@@ -2,6 +2,15 @@
 
 The original route and tournament-service decomposition has been verified for the nine targeted modules. The route migration and service ownership cleanup are complete. The other open items below are separate security and UX follow-ups.
 
+## Table of contents
+
+- [0. 2026-09-14 re-verification pass](#0-2026-09-14-re-verification-pass)
+- [1. Status check on previously-tracked issues](#1-status-check-on-previously-tracked-issues)
+- [2. Architecture & maintainability](#2-architecture--maintainability)
+- [3. Security](#3-security)
+- [4. Design / UX (live site)](#4-design--ux-live-site)
+- [Implementation plan for remaining issues](#implementation-plan-for-remaining-issues)
+
 ## 0. 2026-09-14 re-verification pass
 
 Every "resolved" item below was re-checked against the current codebase (not just re-read from this file). All hold up:

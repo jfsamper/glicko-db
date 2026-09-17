@@ -66,6 +66,9 @@
               href="{{ url_for('admin_login', lang=lang) }}" {% if current_endpoint=='admin_login' %}
               aria-current="page" {% endif %}>{{ translations.login_button }}</a></li>
           {% endif %}
+          <li><a class="top-nav-link top-nav-help-link{% if current_endpoint == 'help_file' %} is-active{% endif %}"
+              href="{{ url_for('help_file', lang=lang) }}" aria-label="{{ translations.help }}"
+              title="{{ translations.help }}" {% if current_endpoint=='help_file' %} aria-current="page" {% endif %}>?</a></li>
         </ul>
       </nav>
       <div id="floating-controls">

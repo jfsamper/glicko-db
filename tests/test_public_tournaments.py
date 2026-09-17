@@ -69,11 +69,61 @@ def test_public_navigation_keeps_reports_link_and_sidebar_login_link():
     body = app.test_client().get("/?lang=en").get_data(as_text=True)
 
     assert 'href="/reports?lang=en"' in body
+    assert 'href="/help?lang=en"' in body
+    assert 'aria-label="Help"' in body
     assert 'href="/admin/login?lang=en"' in body
+    assert body.index('href="/admin/login?lang=en"') < body.index('href="/help?lang=en"')
     assert "Report Results" in body
     assert 'class="top-nav"' in body
     assert 'class="top-nav-toggle"' in body
     assert 'class="sidebar-nav"' not in body
+
+
+def test_help_route_serves_the_localized_interface_guide():
+    app.testing = True
+    client = app.test_client()
+
+    expected_headings = {
+        "es": "Ayuda de la interfaz",
+        "en": "User Interface Help",
+        "pt": "Ajuda da interface",
+    }
+    for language, heading in expected_headings.items():
+        response = client.get(f"/help?lang={language}")
+        assert response.status_code == 200
+        assert response.mimetype == "text/html"
+        assert response.mimetype_params.get("charset") == "utf-8"
+        body = response.get_data(as_text=True)
+        assert body.startswith("<!doctype html>")
+        assert f">{heading}</h1>" in body
+        assert "/help-assets/screenshots/public-home.png" in body
+
+    fallback = client.get("/help?lang=fr")
+    assert fallback.status_code == 200
+    assert f">{expected_headings['es']}</h1>" in fallback.get_data(as_text=True)
+
+    default = client.get("/help")
+    assert default.status_code == 200
+    assert f">{expected_headings['es']}</h1>" in default.get_data(as_text=True)
+
+    screenshot = client.get("/help-assets/screenshots/public-home.png")
+    assert screenshot.status_code == 200
+    assert screenshot.mimetype == "image/png"
+
+    api = client.get("/help/api?lang=en")
+    assert api.status_code == 200
+    assert api.mimetype == "text/html"
+    api_body = api.get_data(as_text=True)
+    assert ">Routes and integration notes</h1>" in api_body
+    assert 'href="/help?lang=en"' in api_body
+
+
+def test_authenticated_help_link_follows_profile_link(admin_client):
+    body = admin_client.get("/?lang=en").get_data(as_text=True)
+
+    assert 'href="/admin/profile?lang=en"' in body
+    assert 'href="/help?lang=en"' in body
+    assert body.index('href="/admin/profile?lang=en"') < body.index('href="/help?lang=en"')
 
 
 def test_logged_in_sidebar_links_back_to_admin_menu(monkeypatch, tmp_path):
