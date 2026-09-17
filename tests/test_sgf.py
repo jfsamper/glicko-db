@@ -115,6 +115,7 @@ def test_admin_upload_and_public_besogo_viewer(admin_client, tmp_path, monkeypat
     body = viewer.get_data(as_text=True)
     assert "besogo-viewer" in body
     assert "board-dark.css" in body
+    assert 'data-besogo-theme="dark"' in body
     assert "besogo.js" in body
     assert "Download SGF" in body
     assert 'sgf="http://' in body

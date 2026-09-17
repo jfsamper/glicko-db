@@ -13,10 +13,8 @@ This document lists only unfinished product, operational, and maintainability wo
    - [Result moderation workflow](#result-moderation-workflow)
    - [Public SGF library and match linking](#public-sgf-library-and-match-linking)
 - [Remaining implementation backlog](#remaining-implementation-backlog)
-   - [P1 — Admin and platform](#p1--admin-and-platform)
-   - [P2 — Reporting and analytics](#p2--reporting-and-analytics)
    - [P3 — Operational enhancements](#p3--operational-enhancements)
-   - [P4 — Workflow enhancements](#p4--workflow-enhancements)
+   - [P4 — Workflow and analytics enhancements](#p4--workflow-and-analytics-enhancements)
 - [Technical implementation order](#technical-implementation-order)
 - [Documentation rules](#documentation-rules)
 
@@ -125,46 +123,41 @@ Confirmed in code:
 
 ## Remaining implementation backlog
 
-### P1 — Admin and platform
+### P1 — None
 
 No remaining P1 items.
 
-### P2 — Reporting and analytics
+### P2 — None
 
-3. Reporting follow-ups
-   - Add custom named seasons if the organization needs them beyond calendar periods
+No remaining P2 items.
 
 ### P3 — Operational enhancements
 
-4. Scheduled backups with retention policy
+1. Scheduled backups with retention policy
    - Disabled by default to avoid unnecessary server load
    - Only enable in production when there is a clear retention policy and maintenance schedule
    - Prefer inexpensive cron-style jobs with bounded execution windows and full validation
 
-5. Replay and audit observability
+2. Replay and audit observability
    - Add clear operator feedback when rating replay is deferred
    - Expand operational summaries only where they support troubleshooting
 
-6. Help files
-   - Create help files for the main public and administrative workflows
+### P4 — Workflow and analytics enhancements
 
-7. Embedded viewer polish
-   - Improve the Besogo dark theme for more consistent readability and contrast
-
-### P4 — Workflow enhancements
-
-8. Tournament preflight and dry-run approval workflow
+3. Tournament preflight and dry-run approval workflow
    - Improve tournament and submission workflow
    - Evaluate need for pairings and BYE previews
+
+4. Reporting follow-ups
+   - Add custom named seasons if the organization needs them beyond calendar periods
 
 ## Technical implementation order
 
 The login rate-limit settings, typed OpenGotha payload, explicit tournament-delete modal, per-account timezone preferences, account profile/recovery, date-bounded reporting, PDF reporting, and result moderation were completed and are no longer part of the remaining backlog. The next recommended sequence is:
 
-1. Add named seasons if the reporting workflow requires them.
-2. Create help files and improve the Besogo dark theme.
-3. Add scheduled backups with retention and restore verification.
-4. Consider replay observability and tournament preflight.
+1. Add scheduled backups with retention and restore verification.
+2. Consider replay observability and tournament preflight.
+3. Add named seasons if the reporting workflow requires them.
 
 ## Documentation rules
 

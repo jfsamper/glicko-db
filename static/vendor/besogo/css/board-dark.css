@@ -1,50 +1,182 @@
 /* Dark board theme */
 
+.besogo-container {
+    --besogo-bg: #0b1220;
+    --besogo-surface: #1f2937;
+    --besogo-surface-raised: #273548;
+    --besogo-surface-inset: #111827;
+    --besogo-border: #374151;
+    --besogo-border-strong: #4b5563;
+    --besogo-text: #f3f4f6;
+    --besogo-muted: #9ca3af;
+    --besogo-icon: #cbd5e1;
+    --besogo-accent: #34d399;
+    --besogo-focus: #60a5fa;
+    color-scheme: dark;
+    color: var(--besogo-text);
+    background: var(--besogo-bg);
+    border: 1px solid var(--besogo-border);
+    scrollbar-color: var(--besogo-border-strong) var(--besogo-bg);
+}
+
+.besogo-container button,
+.besogo-container input[type='button'] {
+    color: var(--besogo-text);
+    background: var(--besogo-surface-raised);
+    border: 1px solid var(--besogo-border-strong);
+    border-radius: 4px;
+    box-shadow: none;
+    cursor: pointer;
+}
+
+.besogo-container button:hover,
+.besogo-container input[type='button']:hover {
+    background: #334155;
+    border-color: #64748b;
+}
+
+.besogo-container button:active,
+.besogo-container input[type='button']:active {
+    background: var(--besogo-surface-inset);
+}
+
+.besogo-container button:focus-visible,
+.besogo-container input:focus-visible,
+.besogo-container textarea:focus-visible {
+    outline: 2px solid var(--besogo-accent);
+    outline-offset: 2px;
+}
+
+.besogo-container input[type='text'],
+.besogo-container textarea {
+    color: var(--besogo-text);
+    background: var(--besogo-surface-inset);
+    border: 1px solid var(--besogo-border-strong);
+    border-radius: 4px;
+    caret-color: var(--besogo-accent);
+}
+
+.besogo-container input[type='text']:hover,
+.besogo-container textarea:hover {
+    border-color: #64748b;
+}
+
+.besogo-panels {
+    padding: 8px;
+    background: var(--besogo-surface);
+}
+
+.besogo-panels > * {
+    margin: 4px 0;
+}
+
+.besogo-playerInfo {
+    color: var(--besogo-text);
+}
+
 .besogo-svg-board {
-    fill: #3c4142;
+    fill: #46535c;
 }
 
 .besogo-svg-lines {
-    stroke: black;
-    stroke-width: 3.5;
+    stroke: #cbd5e1;
+    stroke-width: 3;
+    opacity: 0.72;
     fill: none;
 }
 
 .besogo-svg-hoshi {
-    stroke: black;
-    stroke-width: 14;
+    stroke: #e2e8f0;
+    stroke-width: 11;
+    opacity: 0.9;
 }
 
 .besogo-svg-blackStone {
-    fill: black;
-    stroke: black;
-    stroke-width: 4;
+    fill: #080c14;
+    stroke: #020617;
+    stroke-width: 5;
 }
 
 .besogo-svg-whiteStone {
-    fill: #929591;
-    stroke: #929591;
+    fill: #e5e7eb;
+    stroke: #cbd5e1;
     stroke-width: 4;
 }
 
 .besogo-svg-greyStone {
-    fill: #536267;
-    stroke: #536267;
+    fill: #64748b;
+    stroke: #64748b;
     stroke-width: 4;
 }
 
-/* Overriding standard GUI theme */
-.besogo-container {
-    color: #929591;
-    background: #1b2431;
+.besogo-board svg text {
+    fill: #cbd5e1;
 }
 
 .besogo-blackInfo {
-    color: #929591;
-    background: black;
+    color: #f8fafc;
+    background: var(--besogo-bg);
+    border: 1px solid var(--besogo-border);
 }
 
 .besogo-whiteInfo {
-    color: black;
-    background: #929591;
+    color: #111827;
+    background: #e5e7eb;
+    border: 1px solid var(--besogo-border-strong);
+}
+
+.besogo-comment {
+    color: var(--besogo-text);
+    background: var(--besogo-surface);
+    border: 1px solid var(--besogo-border);
+    border-radius: 4px;
+    padding: 6px;
+}
+
+.besogo-gameInfo {
+    color: var(--besogo-text);
+    background: var(--besogo-surface-raised);
+    border: 1px solid var(--besogo-border);
+}
+
+.besogo-gameInfo td,
+.besogo-gameInfo tr {
+    border-color: var(--besogo-border-strong);
+}
+
+.besogo-tree {
+    background: var(--besogo-surface-inset);
+    border: 1px solid var(--besogo-border);
+    border-radius: 4px;
+    scrollbar-color: var(--besogo-border-strong) var(--besogo-surface-inset);
+}
+
+.besogo-tree .besogo-svg-backer {
+    fill: var(--besogo-surface-inset);
+}
+
+.besogo-tree path[stroke='black'] {
+    stroke: #64748b;
+}
+
+.besogo-control [fill='black'],
+.besogo-control [stroke='black'] {
+    fill: var(--besogo-icon);
+    stroke: var(--besogo-icon);
+}
+
+.besogo-control [fill='white'] {
+    fill: #f8fafc;
+}
+
+.besogo-control [stroke='#dbb40c'] {
+    stroke: #fbbf24;
+}
+
+.besogo-board [stroke='#0165fc'] {
+    stroke: var(--besogo-focus);
+}
+
+.besogo-board [stroke='#be0119'] {
+    stroke: #fb7185;
 }

@@ -97,6 +97,11 @@
   background: var(--card);
 }
 
+.sgf-viewer-shell[data-besogo-theme="dark"] {
+  background: #0b1220;
+  border-color: #374151;
+}
+
 .sgf-viewer-shell .besogo-viewer {
   width: 100%;
   max-width: 1100px;
