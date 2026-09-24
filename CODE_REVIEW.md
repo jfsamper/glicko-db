@@ -36,6 +36,8 @@ Every "resolved" item below was re-checked against the current codebase (not jus
 
 No new correctness or security bugs were found during this pass. No tracked review items remain open. Future product work is tracked in [FUTURE_FEATURES.md](FUTURE_FEATURES.md), including help files and improvements to the Besogo dark theme.
 
+The SGF library now also accepts uploads from authenticated accounts without requiring a match link. The upload is protected by the logged-in-user permission, while later operator linking continues to perform match metadata cleanup.
+
 ## 1. Status check on previously-tracked issues
 - import_gotha_xml() in import_service.py — resolved. The unused helper, its admin import, and its two obsolete tests were removed. The active XML flow remains build_import_preview() → create_tournament_from_gotha().
 
@@ -66,6 +68,8 @@ Minor fixes:
 - handicap_stones validation consistency — resolved. CSV imports now use `parse_handicap_stones`, so invalid values fail with the same 0–9 validation as match and tournament forms instead of being silently clamped.
 
 ## 4. Design / UX (live site)
+
+- SGF library upload — implemented. The public library remains readable anonymously, while its multipart upload control is rendered only for authenticated users and stores new records without linking them to matches.
 
 - Homepage density — resolved. The statistics section renders all three already-computed periods in one response, shows All time by default, and switches All time, Year, and Quarter panels client-side through accessible tabs without another request or page reload.
 

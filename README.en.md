@@ -23,7 +23,7 @@ Glicko DB is a Flask and SQLite application for managing a Go community's player
 - Glicko-2 rating calculation with configurable rating and category parameters
 - Public interface in Spanish, English, and Portuguese
 - Player and match administration with pagination, filters, and consistent ordering
-- Public SGF record library, with match linking and unlinking for tournament directors, operators, and administrators
+- Public SGF record library; logged-in accounts can upload unlinked files, while tournament directors, operators, and administrators can link or unlink them
 - Import of Excel workbooks (XLSX), OpenGotha XML, and match CSV files
 - Tournament creation and editing, OpenGotha import, pairings, result entry, standings, and export
 - Member account registration and individual result submission for administrative approval
@@ -100,7 +100,7 @@ The default values are in `config.py`.
 - `/reports` uses inclusive `start_date` and `end_date` ranges in the fixed server timezone. The page and CSV/PDF exports reuse the same filters and totals.
 - Accounts use the roles `administrator`, `tournament_director`, `operator`, and `member`. Members submit results only for their linked player; the other roles review the approval queue.
 - `/admin/settings` controls login limits and recovery expiry. In production, use HTTPS, unique passwords, and keep secrets in environment variables.
-- SGF permissions allow administrators, directors, and operators to link or unlink records; only administrators can delete files.
+- Logged-in accounts can upload SGF files without linking them. Administrators, directors, and operators can link or unlink records; only administrators can delete files.
 
 ## Project roadmap
 

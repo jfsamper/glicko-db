@@ -21,6 +21,15 @@
       <h2>{{ translations.sgf_library_title }}</h2>
       <p>{{ translations.sgf_library_desc }}</p>
     </div>
+    {% if can_upload_sgf %}
+    <form class="sgf-library-upload-form" action="{{ url_for('admin_upload_sgf', lang=lang) }}" method="post"
+      enctype="multipart/form-data">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <label for="sgf-library-file">{{ translations.upload_sgf }}</label>
+      <input id="sgf-library-file" type="file" name="sgf_file" accept=".sgf,application/x-go-sgf" required>
+      <button type="submit" class="button">{{ translations.sgf_upload_button }}</button>
+    </form>
+    {% endif %}
   </div>
 
   {% if files %}

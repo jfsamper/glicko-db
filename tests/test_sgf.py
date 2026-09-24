@@ -175,6 +175,57 @@ def test_sgf_library_is_public_and_admin_can_link_or_unlink(client, admin_client
     assert (upload_dir / stored_name).is_file()
 
 
+def test_sgf_library_upload_requires_login_and_keeps_file_unlinked(
+    client, tmp_path, monkeypatch
+):
+    upload_dir = tmp_path / "sgf"
+    monkeypatch.setattr(sgf_service, "SGF_UPLOAD_DIR", upload_dir)
+
+    public_library = client.get("/sgf-library?lang=en")
+    assert public_library.status_code == 200
+    assert 'name="sgf_file"' not in public_library.get_data(as_text=True)
+
+    anonymous_response = client.post(
+        "/admin/sgf/upload?lang=en",
+        data={
+            "sgf_file": (BytesIO(SGF_TEXT.encode("utf-8")), "anonymous.sgf"),
+        },
+        content_type="multipart/form-data",
+    )
+    assert anonymous_response.status_code == 302
+    assert "/admin/login" in anonymous_response.headers["Location"]
+    assert not upload_dir.exists()
+
+    user_id = common.create_user_account(
+        "sgf-uploader", "sgf-test-password", role_name="member"
+    )
+    with client.session_transaction() as session:
+        session.clear()
+        session["user_id"] = user_id
+
+    logged_in_library = client.get("/sgf-library?lang=en")
+    assert logged_in_library.status_code == 200
+    assert 'name="sgf_file"' in logged_in_library.get_data(as_text=True)
+
+    response = client.post(
+        "/admin/sgf/upload?lang=en",
+        data={
+            "sgf_file": (BytesIO(SGF_TEXT.encode("utf-8")), "unlinked.sgf"),
+        },
+        content_type="multipart/form-data",
+    )
+    assert response.status_code == 302
+
+    files = sgf_service.list_sgf_files()
+    assert len(files) == 1
+    stored_name = files[0]["filename"]
+    assert (upload_dir / stored_name).read_text(encoding="utf-8") == SGF_TEXT
+    with common.get_db() as conn:
+        assert conn.execute(
+            "SELECT COUNT(*) FROM matches WHERE sgf_filename IS NOT NULL"
+        ).fetchone()[0] == 0
+
+
 def test_sgf_links_are_one_to_one_in_both_directions(admin_client, tmp_path, monkeypatch):
     upload_dir = tmp_path / "sgf"
     monkeypatch.setattr(sgf_service, "SGF_UPLOAD_DIR", upload_dir)

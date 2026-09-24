@@ -186,6 +186,7 @@ from routes.admin_matches import (
 )
 from routes.admin_sgf import (
     admin_link_sgf,
+    admin_upload_sgf,
     admin_unlink_sgf,
     register_sgf_routes,
 )
@@ -513,6 +514,7 @@ ADMIN_ROUTE_PERMISSIONS = {
     "admin.admin_settings": "admin",
     "admin.admin_users": "admin",
     "admin.admin_result_submissions": "operator",
+    "admin.admin_upload_sgf": "results_submitter",
     "admin.admin_link_sgf": "operator",
     "admin.admin_link_sgf_alias": "operator",
     "admin.admin_unlink_sgf": "operator",

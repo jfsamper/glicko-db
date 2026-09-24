@@ -23,7 +23,7 @@ Glicko DB é uma aplicação Flask e SQLite para gerenciar jogadores, ratings, p
 - Cálculo Glicko-2 com parâmetros configuráveis de rating e categoria
 - Interface pública em espanhol, inglês e português
 - Administração de jogadores e partidas com paginação, filtros e ordenação consistente
-- Biblioteca pública de registros SGF, com vinculação e desvinculação de partidas para diretores de torneio, operadores e administradores
+- Biblioteca pública de registros SGF; contas autenticadas podem enviar arquivos sem vinculá-los, enquanto diretores de torneio, operadores e administradores podem vinculá-los ou desvinculá-los
 - Importação de livros Excel (XLSX), OpenGotha XML e arquivos de partidas em CSV
 - Criação e edição de torneios, importação de OpenGotha, emparelhamentos, registro de resultados, classificação e exportação
 - Registro de contas de membros e envio de resultados individuais para aprovação administrativa
@@ -100,7 +100,7 @@ Os valores padrão estão em `config.py`.
 - `/reports` usa intervalos inclusivos `start_date` e `end_date` no fuso fixo do servidor. A tela e as exportações CSV/PDF usam os mesmos filtros e totais.
 - As contas têm as funções `administrator`, `tournament_director`, `operator` e `member`. Membros enviam apenas resultados do jogador vinculado; as outras funções revisam a fila de aprovação.
 - `/admin/settings` permite ajustar limites de login e expiração da recuperação. Em produção, use HTTPS, senhas exclusivas e segredos apenas em variáveis de ambiente.
-- As permissões de SGF permitem vincular e desvincular a administradores, diretores e operadores; apenas administradores podem excluir arquivos.
+- Contas autenticadas podem enviar arquivos SGF sem vinculá-los. Administradores, diretores e operadores podem vinculá-los ou desvinculá-los; apenas administradores podem excluir arquivos.
 
 ## Plano do projeto
 

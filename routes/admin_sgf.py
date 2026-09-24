@@ -12,6 +12,7 @@ def _admin_routes():
 
 def register_sgf_routes(admin_bp):
     for route, endpoint, view_func in (
+        ("/admin/sgf/upload", "admin_upload_sgf", admin_upload_sgf),
         ("/admin/sgf/link", "admin_link_sgf", admin_link_sgf),
         ("/admin/sgf-library/link", "admin_link_sgf_alias", admin_link_sgf),
         ("/admin/sgf/unlink", "admin_unlink_sgf", admin_unlink_sgf),
@@ -24,6 +25,39 @@ def register_sgf_routes(admin_bp):
 
 def _library_redirect(lang):
     return redirect(url_for("sgf_library", lang=lang))
+
+
+def admin_upload_sgf():
+    admin = _admin_routes()
+    permission_error = admin.require_permission("results_submitter")
+    if permission_error is not None:
+        return permission_error
+
+    lang = admin.get_language(request.args.get("lang"))
+    sgf_file = request.files.get("sgf_file")
+    if sgf_file is None or not sgf_file.filename:
+        flash(admin.TRANSLATIONS[lang].get(
+            "sgf_file_required", admin.TRANSLATIONS[lang]["error"])
+        )
+        return _library_redirect(lang)
+
+    try:
+        filename = admin.save_sgf_upload(sgf_file)
+    except ValueError:
+        flash(admin.TRANSLATIONS[lang].get(
+            "invalid_sgf", admin.TRANSLATIONS[lang]["error"])
+        )
+        return _library_redirect(lang)
+
+    admin.log_admin_action(
+        "sgf_uploaded",
+        "sgf",
+        {"filename": filename},
+        user_id=admin.session.get("user_id"),
+    )
+    flash(admin.TRANSLATIONS[lang].get(
+        "sgf_uploaded_success", admin.TRANSLATIONS[lang]["success"]))
+    return _library_redirect(lang)
 
 
 def admin_link_sgf():

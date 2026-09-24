@@ -752,6 +752,7 @@ def sgf_library():
         translations=TRANSLATIONS[lang],
         files=files,
         match_options=match_options,
+        can_upload_sgf=user_has_permission("results_submitter"),
         can_manage_sgf=user_has_permission("operator"),
         can_delete_sgf=user_has_permission("admin"),
     )

@@ -118,8 +118,9 @@ Confirmed in code:
 - [services/sgf_service.py](services/sgf_service.py): validates SGF size, UTF-8 content, and structure for both uploads and library links; rewrites root metadata from the linked match; clears links when files are missing; and preserves the library through backup sidecars.
 - [routes/public.py](routes/public.py): exposes the public `/sgf-library`, SGF viewer, and download routes, and self-heals stale match links during public access.
 - [routes/admin_sgf.py](routes/admin_sgf.py): allows `administrator`, `tournament_director`, and `operator` to link or unlink SGFs, while restricting deletion to `administrator` and clearing database links before removal.
-- [templates/sgf_library.html](templates/sgf_library.html) and [templates/sgf_record.html](templates/sgf_record.html): provide library metadata, public viewing, downloads, and role-specific management controls.
-- [tests/test_sgf.py](tests/test_sgf.py): covers public access, metadata synchronization, malformed-file rejection, stale-link repair, role permissions, deletion behavior, and backup restoration.
+- [routes/admin_sgf.py](routes/admin_sgf.py): allows authenticated accounts to upload unlinked SGFs; `administrator`, `tournament_director`, and `operator` can link or unlink them, while deletion remains restricted to `administrator` and clears database links before removal.
+- [templates/sgf_library.html](templates/sgf_library.html) and [templates/sgf_record.html](templates/sgf_record.html): provide library metadata, authenticated upload, public viewing, downloads, and role-specific management controls.
+- [tests/test_sgf.py](tests/test_sgf.py): covers public access, authenticated unlinked upload, metadata synchronization, malformed-file rejection, stale-link repair, role permissions, deletion behavior, and backup restoration.
 
 ## Remaining implementation backlog
 

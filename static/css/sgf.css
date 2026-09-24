@@ -48,6 +48,24 @@
   white-space: normal;
 }
 
+.sgf-library-upload-form {
+  display: flex;
+  align-items: end;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+}
+
+.sgf-library-upload-form label {
+  flex-basis: 100%;
+}
+
+.sgf-library-upload-form input[type="file"] {
+  min-width: 13rem;
+}
+
 .sgf-library-action-form {
   display: flex;
   align-items: center;
