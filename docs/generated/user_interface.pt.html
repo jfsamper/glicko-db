@@ -54,6 +54,9 @@ body {
   color: var(--help-text);
   background: var(--help-background);
 }
+html {
+  scroll-behavior: smooth;
+}
 .help-header {
   padding: 1.5rem max(1rem, calc((100vw - 1100px) / 2));
   color: #fff;
@@ -76,7 +79,6 @@ body {
   margin-left: auto;
 }
 .help-brand,
-.help-language a,
 .help-document-links a {
   color: inherit;
 }
@@ -85,45 +87,12 @@ body {
   font-weight: 700;
   text-decoration: none;
 }
-.help-language {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.7rem;
-  margin: 0;
-  font-size: 0.95rem;
-}
 .help-document-links {
   display: flex;
   flex-wrap: wrap;
   gap: 0.7rem;
   margin-left: 0;
   font-size: 0.95rem;
-}
-.help-language a[aria-current="page"] {
-  font-weight: 700;
-  text-decoration: underline;
-  text-underline-offset: 0.2em;
-}
-.help-theme-toggle {
-  min-width: 2.4rem;
-  min-height: 2.4rem;
-  padding: 0.35rem 0.5rem;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  border-radius: 8px;
-  color: #fff;
-  background: rgba(255, 255, 255, 0.1);
-  font: inherit;
-  font-size: 1rem;
-  line-height: 1;
-  cursor: pointer;
-}
-.help-theme-toggle:hover,
-.help-theme-toggle:focus-visible {
-  background: var(--help-link);
-}
-.help-theme-toggle:focus-visible {
-  outline: 3px solid #facc15;
-  outline-offset: 2px;
 }
 .help-document {
   box-sizing: border-box;
@@ -195,6 +164,100 @@ body {
   border: 1px solid var(--help-table-border);
   text-align: left;
 }
+.help-floating-controls {
+  position: fixed;
+  right: 22px;
+  bottom: 22px;
+
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  z-index: 9999;
+}
+.help-floating-controls button,
+.help-back-to-top {
+  width: 54px;
+  height: 54px;
+
+  align-items: center;
+  justify-content: center;
+
+  border: 1px solid var(--help-border);
+  border-radius: 50%;
+  color: var(--help-text);
+  background: var(--help-panel);
+  box-shadow: 0 4px 14px var(--help-shadow);
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+}
+.help-floating-controls button {
+  display: flex;
+  padding: 0;
+}
+.help-floating-controls .language-control {
+  display: flex;
+  align-items: center;
+}
+.help-floating-controls .language-select {
+  width: 7.5rem;
+  height: 54px;
+  padding: 0 0.7rem;
+  border: 1px solid var(--help-border);
+  border-radius: 10px;
+  color: var(--help-text);
+  background: var(--help-panel);
+  font: inherit;
+  font-weight: 700;
+  box-shadow: 0 4px 14px var(--help-shadow);
+  cursor: pointer;
+}
+.help-floating-controls button:hover,
+.help-back-to-top:hover {
+  transform: translateY(-2px);
+}
+.help-floating-controls button:hover,
+.help-floating-controls button:focus-visible,
+.help-back-to-top:hover,
+.help-back-to-top:focus-visible {
+  color: var(--help-panel);
+  background: var(--help-link);
+}
+.help-floating-controls button:focus-visible,
+.help-floating-controls .language-select:focus-visible,
+.help-back-to-top:focus-visible {
+  outline: 3px solid #facc15;
+  outline-offset: 2px;
+}
+.help-back-to-top {
+  display: flex;
+  font-size: 1.5rem;
+}
+.help-floating-controls button:active,
+.help-back-to-top:active {
+  transform: translateY(0);
+}
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
 @media (max-width: 640px) {
   .help-header-inner {
     align-items: flex-start;
@@ -213,7 +276,7 @@ body {
 }
 </style>
 </head>
-<body>
+<body id="top">
   <header class="help-header">
     <div class="help-header-inner">
       <a class="help-brand" href="/?lang=pt">Glicko DB</a>
@@ -222,16 +285,12 @@ body {
           <a href="/help?lang=pt">Ajuda da interface</a>
           <a href="/help/api?lang=pt">Rotas</a>
         </nav>
-        <nav class="help-language" aria-label="Language"><a href="/help?lang=es">Español</a> <a href="/help?lang=en">English</a> <a href="/help?lang=pt" aria-current="page">Português</a></nav>
-        <button id="theme-toggle" class="help-theme-toggle" type="button"
-          aria-label="Ativar tema escuro"
-          title="Ativar tema escuro" aria-pressed="false">⚫</button>
       </div>
     </div>
   </header>
   <main class="help-document">
 <h1 id="ajuda-da-interface">Ajuda da interface</h1>
-<p>Consulte as <a href="/help/api?lang=pt">rotas e notas de integração</a> e o <a href="/?lang=pt">README em português</a>.
+<p>Consulte as <a href="/help/api?lang=pt">rotas e notas de integração</a> e o <a href="/help/readme?lang=pt">README em português</a>.
 Você também pode abrir este guia pelo botão <code>?</code> na barra superior ou em <code>/help?lang=pt</code>.</p>
 <h2 id="indice">Índice</h2>
 <ul>
@@ -379,18 +438,22 @@ Você também pode abrir este guia pelo botão <code>?</code> na barra superior 
 <p><a href="/help-assets/screenshots/admin-reset-password.png"><img src="/help-assets/screenshots/admin-reset-password.png" alt="Formulário de redefinição de senha" width="560" /></a></p>
 <p><em>Formulário para definir uma nova senha a partir de um token.</em></p>
 <h3 id="enviar-resultados">Enviar resultados</h3>
-<p>Membros podem reportar resultados de partidas em <code>/admin/report-results</code>:
-1. <strong>Requisito obrigatório</strong>: a conta de usuário deve estar vinculada a um jogador ativo por um administrador.
-2. <strong>Formulário de envio</strong>:
-   - <strong>Oponente</strong>: selecione o jogador adversário na lista de jogadores ativos.
-   - <strong>Cor</strong>: indique se jogou de Brancas ou Pretas.
-   - <strong>Resultado</strong>: vitória de Brancas (<code>1-0</code>), vitória de Pretas (<code>0-1</code>) ou Empate (<code>1/2-1/2</code>).
-   - <strong>Data</strong>: data em que a partida foi disputada (<code>AAAA-MM-DD</code>).
-   - <strong>Evento e Local</strong>: nome do torneio ou clube e cidade da partida.
-   - <strong>Rodada</strong>: número da rodada, se aplicável.
-   - <strong>Pedras de handicap</strong>: quantidade de pedras (0 a 9) concedidas às Pretas.
-   - <strong>Arquivo SGF (opcional)</strong>: envie o arquivo <code>.sgf</code> com o registro das jogadas.
-3. <strong>Fila de moderação</strong>: as partidas enviadas entram no estado <em>Pendente</em> na fila de moderação (<code>/admin/result-submissions</code>). Elas não afetam rankings, ratings ou relatórios públicos até serem revisadas e aprovadas pela equipe administrativa.</p>
+<p>Membros podem reportar resultados de partidas em <code>/admin/report-results</code>:</p>
+<ol>
+<li><strong>Requisito obrigatório</strong>: a conta de usuário deve estar vinculada a um jogador ativo por um administrador.</li>
+<li><strong>Formulário de envio</strong>:<ul>
+<li><strong>Oponente</strong>: selecione o jogador adversário na lista de jogadores ativos.</li>
+<li><strong>Cor</strong>: indique se jogou de Brancas ou Pretas.</li>
+<li><strong>Resultado</strong>: vitória de Brancas (<code>1-0</code>), vitória de Pretas (<code>0-1</code>) ou Empate (<code>1/2-1/2</code>).</li>
+<li><strong>Data</strong>: data em que a partida foi disputada (<code>AAAA-MM-DD</code>).</li>
+<li><strong>Evento e Local</strong>: nome do torneio ou clube e cidade da partida.</li>
+<li><strong>Rodada</strong>: número da rodada, se aplicável.</li>
+<li><strong>Pedras de handicap</strong>: quantidade de pedras (0 a 9) concedidas às Pretas.</li>
+<li><strong>Arquivo SGF (opcional)</strong>: envie o arquivo <code>.sgf</code> com o registro das jogadas.</li>
+</ul>
+</li>
+<li><strong>Fila de moderação</strong>: as partidas enviadas entram no estado <em>Pendente</em> na fila de moderação (<code>/admin/result-submissions</code>). Elas não afetam rankings, ratings ou relatórios públicos até serem revisadas e aprovadas pela equipe administrativa.</li>
+</ol>
 <p><a href="/help-assets/screenshots/member-report-results.png"><img src="/help-assets/screenshots/member-report-results.png" alt="Envio de resultados de membros" width="560" /></a></p>
 <p><em>A tela mostra a exigência de vincular um jogador e a área de envios pendentes.</em></p>
 <h2 id="painel-administrativo">Painel administrativo</h2>
@@ -600,9 +663,23 @@ Você também pode abrir este guia pelo botão <code>?</code> na barra superior 
 <li><strong>Segurança em produção</strong>: mantenha segredos (<code>APP_SECRET_KEY</code>, <code>ADMIN_PASSWORD</code>, credenciais SMTP e chaves reCAPTCHA) em variáveis de ambiente do servidor, nunca no controle de versão.</li>
 </ol>
   </main>
+  <div class="help-floating-controls">
+    <label class="language-control" for="language-select">
+      <span class="visually-hidden">Idioma</span>
+      <select id="language-select" class="language-select" aria-label="Idioma">
+        <option value="es">Español</option><option value="en">English</option><option value="pt" selected>Português</option>
+      </select>
+    </label>
+    <button id="theme-toggle" type="button"
+      aria-label="Ativar tema escuro"
+      title="Ativar tema escuro" aria-pressed="false">⚫</button>
+    <a class="help-back-to-top" href="#top" aria-label="Voltar ao topo"
+      title="Voltar ao topo">^</a>
+  </div>
 <script>
   const root = document.documentElement;
   const themeButton = document.getElementById("theme-toggle");
+  const languageSelect = document.getElementById("language-select");
 
   function updateThemeButton() {
     const dark = root.getAttribute("data-theme") === "dark";
@@ -636,6 +713,12 @@ Você também pode abrir este guia pelo botão <code>?</code> na barra superior 
 
     saveTheme(nextTheme);
     updateThemeButton();
+  });
+
+  languageSelect.addEventListener("change", () => {
+    const url = new URL(window.location.href);
+    url.searchParams.set("lang", languageSelect.value);
+    window.location.href = url.toString();
   });
 </script>
 </body>

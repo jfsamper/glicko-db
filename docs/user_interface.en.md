@@ -194,16 +194,17 @@ From `/admin/profile`, authenticated users can:
 ### Reporting results
 
 Members can submit match results at `/admin/report-results`:
+
 1. **Mandatory prerequisite**: the user account must be linked to an active player record by an administrator.
 2. **Submission form**:
-   - **Opponent**: select the rival player from active players.
-   - **Color**: select whether you played as White or Black.
-   - **Result**: indicate White wins (`1-0`), Black wins (`0-1`), or Draw (`1/2-1/2`).
-   - **Date**: match date (`YYYY-MM-DD`).
-   - **Event & Location**: tournament or club event name and venue.
-   - **Round**: round number if applicable.
-   - **Handicap stones**: handicap stones (0 to 9) given to Black.
-   - **SGF file (optional)**: upload the `.sgf` game record.
+    - **Opponent**: select the rival player from active players.
+    - **Color**: select whether you played as White or Black.
+    - **Result**: indicate White wins (`1-0`), Black wins (`0-1`), or Draw (`1/2-1/2`).
+    - **Date**: match date (`YYYY-MM-DD`).
+    - **Event & Location**: tournament or club event name and venue.
+    - **Round**: round number if applicable.
+    - **Handicap stones**: handicap stones (0 to 9) given to Black.
+    - **SGF file (optional)**: upload the `.sgf` game record.
 3. **Queue & moderation**: submitted matches enter the *Pending* moderation queue (`/admin/result-submissions`). They do not affect rankings, ratings, or reports until reviewed and approved by tournament staff.
 
 <a href="screenshots/member-report-results.png"><img src="screenshots/member-report-results.png" alt="Member result submission" width="560" /></a>

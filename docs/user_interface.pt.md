@@ -194,16 +194,17 @@ Em `/admin/profile`, o usuário autenticado pode:
 ### Enviar resultados
 
 Membros podem reportar resultados de partidas em `/admin/report-results`:
+
 1. **Requisito obrigatório**: a conta de usuário deve estar vinculada a um jogador ativo por um administrador.
 2. **Formulário de envio**:
-   - **Oponente**: selecione o jogador adversário na lista de jogadores ativos.
-   - **Cor**: indique se jogou de Brancas ou Pretas.
-   - **Resultado**: vitória de Brancas (`1-0`), vitória de Pretas (`0-1`) ou Empate (`1/2-1/2`).
-   - **Data**: data em que a partida foi disputada (`AAAA-MM-DD`).
-   - **Evento e Local**: nome do torneio ou clube e cidade da partida.
-   - **Rodada**: número da rodada, se aplicável.
-   - **Pedras de handicap**: quantidade de pedras (0 a 9) concedidas às Pretas.
-   - **Arquivo SGF (opcional)**: envie o arquivo `.sgf` com o registro das jogadas.
+    - **Oponente**: selecione o jogador adversário na lista de jogadores ativos.
+    - **Cor**: indique se jogou de Brancas ou Pretas.
+    - **Resultado**: vitória de Brancas (`1-0`), vitória de Pretas (`0-1`) ou Empate (`1/2-1/2`).
+    - **Data**: data em que a partida foi disputada (`AAAA-MM-DD`).
+    - **Evento e Local**: nome do torneio ou clube e cidade da partida.
+    - **Rodada**: número da rodada, se aplicável.
+    - **Pedras de handicap**: quantidade de pedras (0 a 9) concedidas às Pretas.
+    - **Arquivo SGF (opcional)**: envie o arquivo `.sgf` com o registro das jogadas.
 3. **Fila de moderação**: as partidas enviadas entram no estado *Pendente* na fila de moderação (`/admin/result-submissions`). Elas não afetam rankings, ratings ou relatórios públicos até serem revisadas e aprovadas pela equipe administrativa.
 
 <a href="screenshots/member-report-results.png"><img src="screenshots/member-report-results.png" alt="Envio de resultados de membros" width="560" /></a>

@@ -54,6 +54,9 @@ body {
   color: var(--help-text);
   background: var(--help-background);
 }
+html {
+  scroll-behavior: smooth;
+}
 .help-header {
   padding: 1.5rem max(1rem, calc((100vw - 1100px) / 2));
   color: #fff;
@@ -76,7 +79,6 @@ body {
   margin-left: auto;
 }
 .help-brand,
-.help-language a,
 .help-document-links a {
   color: inherit;
 }
@@ -85,45 +87,12 @@ body {
   font-weight: 700;
   text-decoration: none;
 }
-.help-language {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.7rem;
-  margin: 0;
-  font-size: 0.95rem;
-}
 .help-document-links {
   display: flex;
   flex-wrap: wrap;
   gap: 0.7rem;
   margin-left: 0;
   font-size: 0.95rem;
-}
-.help-language a[aria-current="page"] {
-  font-weight: 700;
-  text-decoration: underline;
-  text-underline-offset: 0.2em;
-}
-.help-theme-toggle {
-  min-width: 2.4rem;
-  min-height: 2.4rem;
-  padding: 0.35rem 0.5rem;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  border-radius: 8px;
-  color: #fff;
-  background: rgba(255, 255, 255, 0.1);
-  font: inherit;
-  font-size: 1rem;
-  line-height: 1;
-  cursor: pointer;
-}
-.help-theme-toggle:hover,
-.help-theme-toggle:focus-visible {
-  background: var(--help-link);
-}
-.help-theme-toggle:focus-visible {
-  outline: 3px solid #facc15;
-  outline-offset: 2px;
 }
 .help-document {
   box-sizing: border-box;
@@ -195,6 +164,100 @@ body {
   border: 1px solid var(--help-table-border);
   text-align: left;
 }
+.help-floating-controls {
+  position: fixed;
+  right: 22px;
+  bottom: 22px;
+
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  z-index: 9999;
+}
+.help-floating-controls button,
+.help-back-to-top {
+  width: 54px;
+  height: 54px;
+
+  align-items: center;
+  justify-content: center;
+
+  border: 1px solid var(--help-border);
+  border-radius: 50%;
+  color: var(--help-text);
+  background: var(--help-panel);
+  box-shadow: 0 4px 14px var(--help-shadow);
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+}
+.help-floating-controls button {
+  display: flex;
+  padding: 0;
+}
+.help-floating-controls .language-control {
+  display: flex;
+  align-items: center;
+}
+.help-floating-controls .language-select {
+  width: 7.5rem;
+  height: 54px;
+  padding: 0 0.7rem;
+  border: 1px solid var(--help-border);
+  border-radius: 10px;
+  color: var(--help-text);
+  background: var(--help-panel);
+  font: inherit;
+  font-weight: 700;
+  box-shadow: 0 4px 14px var(--help-shadow);
+  cursor: pointer;
+}
+.help-floating-controls button:hover,
+.help-back-to-top:hover {
+  transform: translateY(-2px);
+}
+.help-floating-controls button:hover,
+.help-floating-controls button:focus-visible,
+.help-back-to-top:hover,
+.help-back-to-top:focus-visible {
+  color: var(--help-panel);
+  background: var(--help-link);
+}
+.help-floating-controls button:focus-visible,
+.help-floating-controls .language-select:focus-visible,
+.help-back-to-top:focus-visible {
+  outline: 3px solid #facc15;
+  outline-offset: 2px;
+}
+.help-back-to-top {
+  display: flex;
+  font-size: 1.5rem;
+}
+.help-floating-controls button:active,
+.help-back-to-top:active {
+  transform: translateY(0);
+}
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
 @media (max-width: 640px) {
   .help-header-inner {
     align-items: flex-start;
@@ -213,7 +276,7 @@ body {
 }
 </style>
 </head>
-<body>
+<body id="top">
   <header class="help-header">
     <div class="help-header-inner">
       <a class="help-brand" href="/?lang=en">Glicko DB</a>
@@ -222,16 +285,12 @@ body {
           <a href="/help?lang=en">Interface help</a>
           <a href="/help/api?lang=en">Routes</a>
         </nav>
-        <nav class="help-language" aria-label="Language"><a href="/help/api?lang=es">Español</a> <a href="/help/api?lang=en" aria-current="page">English</a> <a href="/help/api?lang=pt">Português</a></nav>
-        <button id="theme-toggle" class="help-theme-toggle" type="button"
-          aria-label="Enable dark theme"
-          title="Enable dark theme" aria-pressed="false">⚫</button>
       </div>
     </div>
   </header>
   <main class="help-document">
 <h1 id="routes-and-integration-notes">Routes and integration notes</h1>
-<p>See the <a href="/help?lang=en">User Interface Help</a> for task-oriented instructions and the <a href="/?lang=en">English README</a> for installation and configuration.</p>
+<p>See the <a href="/help?lang=en">User Interface Help</a> for task-oriented instructions and the <a href="/help/readme?lang=en">English README</a> for installation and configuration.</p>
 <h2 id="table-of-contents">Table of contents</h2>
 <ul>
 <li><a href="#api-status">API status</a></li>
@@ -390,9 +449,23 @@ body {
 <h2 id="integration-guidance">Integration guidance</h2>
 <p>For an external integration, use the documented CSV/PDF report exports or the database only through an approved operational process. Do not scrape admin forms or depend on undocumented JSON responses. A future REST API should define authentication, request schemas, response schemas, error codes, pagination, and versioning before clients are built.</p>
   </main>
+  <div class="help-floating-controls">
+    <label class="language-control" for="language-select">
+      <span class="visually-hidden">Language</span>
+      <select id="language-select" class="language-select" aria-label="Language">
+        <option value="es">Español</option><option value="en" selected>English</option><option value="pt">Português</option>
+      </select>
+    </label>
+    <button id="theme-toggle" type="button"
+      aria-label="Enable dark theme"
+      title="Enable dark theme" aria-pressed="false">⚫</button>
+    <a class="help-back-to-top" href="#top" aria-label="Back to top"
+      title="Back to top">^</a>
+  </div>
 <script>
   const root = document.documentElement;
   const themeButton = document.getElementById("theme-toggle");
+  const languageSelect = document.getElementById("language-select");
 
   function updateThemeButton() {
     const dark = root.getAttribute("data-theme") === "dark";
@@ -426,6 +499,12 @@ body {
 
     saveTheme(nextTheme);
     updateThemeButton();
+  });
+
+  languageSelect.addEventListener("change", () => {
+    const url = new URL(window.location.href);
+    url.searchParams.set("lang", languageSelect.value);
+    window.location.href = url.toString();
   });
 </script>
 </body>

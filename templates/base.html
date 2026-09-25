@@ -68,12 +68,11 @@
           {% endif %}
           <li><a class="top-nav-link top-nav-help-link{% if current_endpoint == 'help_file' %} is-active{% endif %}"
               href="{{ url_for('help_file', lang=lang) }}" aria-label="{{ translations.help }}"
-              title="{{ translations.help }}" {% if current_endpoint=='help_file' %} aria-current="page" {% endif %}>?</a></li>
+              title="{{ translations.help }}" {% if current_endpoint=='help_file' %} aria-current="page" {% endif %}><img class="top-nav-help-icon" src="{{ url_for('static', filename='help.svg') }}" alt="{{ translations.help }}"></a></li>
         </ul>
       </nav>
       <div id="floating-controls">
         <label class="language-control" for="language-select">
-          <span class="visually-hidden">{{ translations.language }}</span>
           <select id="language-select" class="language-select" aria-label="{{ translations.language }}">
             <option value="es"{% if lang=='es' %} selected{% endif %}>{{ translations.spanish }}</option>
             <option value="en"{% if lang=='en' %} selected{% endif %}>{{ translations.english }}</option>

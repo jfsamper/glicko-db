@@ -54,6 +54,9 @@ body {
   color: var(--help-text);
   background: var(--help-background);
 }
+html {
+  scroll-behavior: smooth;
+}
 .help-header {
   padding: 1.5rem max(1rem, calc((100vw - 1100px) / 2));
   color: #fff;
@@ -76,7 +79,6 @@ body {
   margin-left: auto;
 }
 .help-brand,
-.help-language a,
 .help-document-links a {
   color: inherit;
 }
@@ -85,45 +87,12 @@ body {
   font-weight: 700;
   text-decoration: none;
 }
-.help-language {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.7rem;
-  margin: 0;
-  font-size: 0.95rem;
-}
 .help-document-links {
   display: flex;
   flex-wrap: wrap;
   gap: 0.7rem;
   margin-left: 0;
   font-size: 0.95rem;
-}
-.help-language a[aria-current="page"] {
-  font-weight: 700;
-  text-decoration: underline;
-  text-underline-offset: 0.2em;
-}
-.help-theme-toggle {
-  min-width: 2.4rem;
-  min-height: 2.4rem;
-  padding: 0.35rem 0.5rem;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  border-radius: 8px;
-  color: #fff;
-  background: rgba(255, 255, 255, 0.1);
-  font: inherit;
-  font-size: 1rem;
-  line-height: 1;
-  cursor: pointer;
-}
-.help-theme-toggle:hover,
-.help-theme-toggle:focus-visible {
-  background: var(--help-link);
-}
-.help-theme-toggle:focus-visible {
-  outline: 3px solid #facc15;
-  outline-offset: 2px;
 }
 .help-document {
   box-sizing: border-box;
@@ -195,6 +164,100 @@ body {
   border: 1px solid var(--help-table-border);
   text-align: left;
 }
+.help-floating-controls {
+  position: fixed;
+  right: 22px;
+  bottom: 22px;
+
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  z-index: 9999;
+}
+.help-floating-controls button,
+.help-back-to-top {
+  width: 54px;
+  height: 54px;
+
+  align-items: center;
+  justify-content: center;
+
+  border: 1px solid var(--help-border);
+  border-radius: 50%;
+  color: var(--help-text);
+  background: var(--help-panel);
+  box-shadow: 0 4px 14px var(--help-shadow);
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+}
+.help-floating-controls button {
+  display: flex;
+  padding: 0;
+}
+.help-floating-controls .language-control {
+  display: flex;
+  align-items: center;
+}
+.help-floating-controls .language-select {
+  width: 7.5rem;
+  height: 54px;
+  padding: 0 0.7rem;
+  border: 1px solid var(--help-border);
+  border-radius: 10px;
+  color: var(--help-text);
+  background: var(--help-panel);
+  font: inherit;
+  font-weight: 700;
+  box-shadow: 0 4px 14px var(--help-shadow);
+  cursor: pointer;
+}
+.help-floating-controls button:hover,
+.help-back-to-top:hover {
+  transform: translateY(-2px);
+}
+.help-floating-controls button:hover,
+.help-floating-controls button:focus-visible,
+.help-back-to-top:hover,
+.help-back-to-top:focus-visible {
+  color: var(--help-panel);
+  background: var(--help-link);
+}
+.help-floating-controls button:focus-visible,
+.help-floating-controls .language-select:focus-visible,
+.help-back-to-top:focus-visible {
+  outline: 3px solid #facc15;
+  outline-offset: 2px;
+}
+.help-back-to-top {
+  display: flex;
+  font-size: 1.5rem;
+}
+.help-floating-controls button:active,
+.help-back-to-top:active {
+  transform: translateY(0);
+}
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
 @media (max-width: 640px) {
   .help-header-inner {
     align-items: flex-start;
@@ -213,7 +276,7 @@ body {
 }
 </style>
 </head>
-<body>
+<body id="top">
   <header class="help-header">
     <div class="help-header-inner">
       <a class="help-brand" href="/?lang=en">Glicko DB</a>
@@ -222,16 +285,12 @@ body {
           <a href="/help?lang=en">Interface help</a>
           <a href="/help/api?lang=en">Routes</a>
         </nav>
-        <nav class="help-language" aria-label="Language"><a href="/help?lang=es">Español</a> <a href="/help?lang=en" aria-current="page">English</a> <a href="/help?lang=pt">Português</a></nav>
-        <button id="theme-toggle" class="help-theme-toggle" type="button"
-          aria-label="Enable dark theme"
-          title="Enable dark theme" aria-pressed="false">⚫</button>
       </div>
     </div>
   </header>
   <main class="help-document">
 <h1 id="user-interface-help">User Interface Help</h1>
-<p>See the <a href="/help/api?lang=en">route and integration notes</a> and the <a href="/?lang=en">English README</a>.
+<p>See the <a href="/help/api?lang=en">route and integration notes</a> and the <a href="/help/readme?lang=en">English README</a>.
 You can also open this guide from the <code>?</code> button in the top navigation or at <code>/help?lang=en</code>.</p>
 <h2 id="table-of-contents">Table of contents</h2>
 <ul>
@@ -379,18 +438,22 @@ You can also open this guide from the <code>?</code> button in the top navigatio
 <p><a href="/help-assets/screenshots/admin-reset-password.png"><img src="/help-assets/screenshots/admin-reset-password.png" alt="Password reset form" width="560" /></a></p>
 <p><em>Form for setting a new password from a reset token.</em></p>
 <h3 id="reporting-results">Reporting results</h3>
-<p>Members can submit match results at <code>/admin/report-results</code>:
-1. <strong>Mandatory prerequisite</strong>: the user account must be linked to an active player record by an administrator.
-2. <strong>Submission form</strong>:
-   - <strong>Opponent</strong>: select the rival player from active players.
-   - <strong>Color</strong>: select whether you played as White or Black.
-   - <strong>Result</strong>: indicate White wins (<code>1-0</code>), Black wins (<code>0-1</code>), or Draw (<code>1/2-1/2</code>).
-   - <strong>Date</strong>: match date (<code>YYYY-MM-DD</code>).
-   - <strong>Event &amp; Location</strong>: tournament or club event name and venue.
-   - <strong>Round</strong>: round number if applicable.
-   - <strong>Handicap stones</strong>: handicap stones (0 to 9) given to Black.
-   - <strong>SGF file (optional)</strong>: upload the <code>.sgf</code> game record.
-3. <strong>Queue &amp; moderation</strong>: submitted matches enter the <em>Pending</em> moderation queue (<code>/admin/result-submissions</code>). They do not affect rankings, ratings, or reports until reviewed and approved by tournament staff.</p>
+<p>Members can submit match results at <code>/admin/report-results</code>:</p>
+<ol>
+<li><strong>Mandatory prerequisite</strong>: the user account must be linked to an active player record by an administrator.</li>
+<li><strong>Submission form</strong>:<ul>
+<li><strong>Opponent</strong>: select the rival player from active players.</li>
+<li><strong>Color</strong>: select whether you played as White or Black.</li>
+<li><strong>Result</strong>: indicate White wins (<code>1-0</code>), Black wins (<code>0-1</code>), or Draw (<code>1/2-1/2</code>).</li>
+<li><strong>Date</strong>: match date (<code>YYYY-MM-DD</code>).</li>
+<li><strong>Event &amp; Location</strong>: tournament or club event name and venue.</li>
+<li><strong>Round</strong>: round number if applicable.</li>
+<li><strong>Handicap stones</strong>: handicap stones (0 to 9) given to Black.</li>
+<li><strong>SGF file (optional)</strong>: upload the <code>.sgf</code> game record.</li>
+</ul>
+</li>
+<li><strong>Queue &amp; moderation</strong>: submitted matches enter the <em>Pending</em> moderation queue (<code>/admin/result-submissions</code>). They do not affect rankings, ratings, or reports until reviewed and approved by tournament staff.</li>
+</ol>
 <p><a href="/help-assets/screenshots/member-report-results.png"><img src="/help-assets/screenshots/member-report-results.png" alt="Member result submission" width="560" /></a></p>
 <p><em>The member result screen shows the linked-player requirement and pending-submission area.</em></p>
 <h2 id="administrator-panel">Administrator panel</h2>
@@ -600,9 +663,23 @@ You can also open this guide from the <code>?</code> button in the top navigatio
 <li><strong>Production security</strong>: store secrets (<code>APP_SECRET_KEY</code>, <code>ADMIN_PASSWORD</code>, SMTP credentials, reCAPTCHA keys) in server environment variables, never in source control.</li>
 </ol>
   </main>
+  <div class="help-floating-controls">
+    <label class="language-control" for="language-select">
+      <span class="visually-hidden">Language</span>
+      <select id="language-select" class="language-select" aria-label="Language">
+        <option value="es">Español</option><option value="en" selected>English</option><option value="pt">Português</option>
+      </select>
+    </label>
+    <button id="theme-toggle" type="button"
+      aria-label="Enable dark theme"
+      title="Enable dark theme" aria-pressed="false">⚫</button>
+    <a class="help-back-to-top" href="#top" aria-label="Back to top"
+      title="Back to top">^</a>
+  </div>
 <script>
   const root = document.documentElement;
   const themeButton = document.getElementById("theme-toggle");
+  const languageSelect = document.getElementById("language-select");
 
   function updateThemeButton() {
     const dark = root.getAttribute("data-theme") === "dark";
@@ -636,6 +713,12 @@ You can also open this guide from the <code>?</code> button in the top navigatio
 
     saveTheme(nextTheme);
     updateThemeButton();
+  });
+
+  languageSelect.addEventListener("change", () => {
+    const url = new URL(window.location.href);
+    url.searchParams.set("lang", languageSelect.value);
+    window.location.href = url.toString();
   });
 </script>
 </body>

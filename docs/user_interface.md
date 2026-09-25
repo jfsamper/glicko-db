@@ -194,16 +194,17 @@ Desde `/admin/profile`, cada usuario autenticado puede:
 ### Reportar resultados
 
 Los miembros pueden reportar resultados de partidas en `/admin/report-results`:
+
 1. **Requisito obligatorio**: la cuenta debe estar vinculada a un jugador por un administrador. Si no está vinculada, la interfaz mostrará un aviso informativo.
 2. **Formulario de envío**:
-   - **Oponente**: selecciona el jugador rival de la lista de jugadores activos.
-   - **Color**: indica si jugaste con Blancas o Negras.
-   - **Resultado**: indica si ganaron Blancas (`1-0`), ganaron Negras (`0-1`) o Tablas (`1/2-1/2`).
-   - **Fecha**: fecha en que se jugó la partida (`AAAA-MM-DD`).
-   - **Evento y Lugar**: nombre del torneo o club y ciudad donde se disputó.
-   - **Ronda**: número de ronda si corresponde.
-   - **Piedras de hándicap**: cantidad de piedras (0 a 9) otorgadas a Negras.
-   - **Archivo SGF (opcional)**: carga el archivo `.sgf` con el registro de jugadas.
+    - **Oponente**: selecciona el jugador rival de la lista de jugadores activos.
+    - **Color**: indica si jugaste con Blancas o Negras.
+    - **Resultado**: indica si ganaron Blancas (`1-0`), ganaron Negras (`0-1`) o Tablas (`1/2-1/2`).
+    - **Fecha**: fecha en que se jugó la partida (`AAAA-MM-DD`).
+    - **Evento y Lugar**: nombre del torneo o club y ciudad donde se disputó.
+    - **Ronda**: número de ronda si corresponde.
+    - **Piedras de hándicap**: cantidad de piedras (0 a 9) otorgadas a Negras.
+    - **Archivo SGF (opcional)**: carga el archivo `.sgf` con el registro de jugadas.
 3. **Estado de envío**: una vez enviada, la partida queda en estado *Pendiente* en la cola de moderación (`/admin/result-submissions`). No afecta rankings, ratings ni reportes públicos hasta que sea revisada y aprobada por el equipo administrativo.
 
 <a href="screenshots/member-report-results.png"><img src="screenshots/member-report-results.png" alt="Envío de resultados de miembros" width="560" /></a>

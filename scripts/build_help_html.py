@@ -19,6 +19,11 @@ API_DOCS = {
   "en": (ROOT / "docs" / "api_endpoints.en.md", "Routes and integration notes"),
   "pt": (ROOT / "docs" / "api_endpoints.pt.md", "Rotas e notas de integração"),
 }
+READMES = {
+    "es": (ROOT / "README.md", "Glicko DB"),
+    "en": (ROOT / "README.en.md", "Glicko DB"),
+    "pt": (ROOT / "README.pt.md", "Glicko DB"),
+}
 OUTPUT_DIR = ROOT / "docs" / "generated"
 GUIDE_OUTPUT_NAMES = {
     "es": "user_interface.html",
@@ -30,12 +35,22 @@ API_OUTPUT_NAMES = {
   "en": "api_endpoints.en.html",
   "pt": "api_endpoints.pt.html",
 }
+README_OUTPUT_NAMES = {
+    "es": "README.html",
+    "en": "README.en.html",
+    "pt": "README.pt.html",
+}
 SCREENSHOT_URL_PREFIX = "/help-assets/screenshots/"
 
 LANGUAGE_LABELS = {
     "es": "Español",
     "en": "English",
     "pt": "Português",
+}
+LANGUAGE_CONTROL_LABELS = {
+  "es": "Idioma",
+  "en": "Language",
+  "pt": "Idioma",
 }
 DOCUMENT_LINK_LABELS = {
   "es": ("Ayuda de la interfaz", "Rutas"),
@@ -46,6 +61,11 @@ THEME_BUTTON_LABELS = {
     "es": ("Activar tema oscuro", "Activar tema claro"),
     "en": ("Enable dark theme", "Enable light theme"),
     "pt": ("Ativar tema escuro", "Ativar tema claro"),
+}
+BACK_TO_TOP_LABELS = {
+  "es": "Volver arriba",
+  "en": "Back to top",
+  "pt": "Voltar ao topo",
 }
 
 PAGE_STYLE = """
@@ -86,6 +106,9 @@ body {
   color: var(--help-text);
   background: var(--help-background);
 }
+html {
+  scroll-behavior: smooth;
+}
 .help-header {
   padding: 1.5rem max(1rem, calc((100vw - 1100px) / 2));
   color: #fff;
@@ -108,7 +131,6 @@ body {
   margin-left: auto;
 }
 .help-brand,
-.help-language a,
 .help-document-links a {
   color: inherit;
 }
@@ -117,45 +139,12 @@ body {
   font-weight: 700;
   text-decoration: none;
 }
-.help-language {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.7rem;
-  margin: 0;
-  font-size: 0.95rem;
-}
 .help-document-links {
   display: flex;
   flex-wrap: wrap;
   gap: 0.7rem;
   margin-left: 0;
   font-size: 0.95rem;
-}
-.help-language a[aria-current="page"] {
-  font-weight: 700;
-  text-decoration: underline;
-  text-underline-offset: 0.2em;
-}
-.help-theme-toggle {
-  min-width: 2.4rem;
-  min-height: 2.4rem;
-  padding: 0.35rem 0.5rem;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  border-radius: 8px;
-  color: #fff;
-  background: rgba(255, 255, 255, 0.1);
-  font: inherit;
-  font-size: 1rem;
-  line-height: 1;
-  cursor: pointer;
-}
-.help-theme-toggle:hover,
-.help-theme-toggle:focus-visible {
-  background: var(--help-link);
-}
-.help-theme-toggle:focus-visible {
-  outline: 3px solid #facc15;
-  outline-offset: 2px;
 }
 .help-document {
   box-sizing: border-box;
@@ -227,6 +216,100 @@ body {
   border: 1px solid var(--help-table-border);
   text-align: left;
 }
+.help-floating-controls {
+  position: fixed;
+  right: 22px;
+  bottom: 22px;
+
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  z-index: 9999;
+}
+.help-floating-controls button,
+.help-back-to-top {
+  width: 54px;
+  height: 54px;
+
+  align-items: center;
+  justify-content: center;
+
+  border: 1px solid var(--help-border);
+  border-radius: 50%;
+  color: var(--help-text);
+  background: var(--help-panel);
+  box-shadow: 0 4px 14px var(--help-shadow);
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+}
+.help-floating-controls button {
+  display: flex;
+  padding: 0;
+}
+.help-floating-controls .language-control {
+  display: flex;
+  align-items: center;
+}
+.help-floating-controls .language-select {
+  width: 7.5rem;
+  height: 54px;
+  padding: 0 0.7rem;
+  border: 1px solid var(--help-border);
+  border-radius: 10px;
+  color: var(--help-text);
+  background: var(--help-panel);
+  font: inherit;
+  font-weight: 700;
+  box-shadow: 0 4px 14px var(--help-shadow);
+  cursor: pointer;
+}
+.help-floating-controls button:hover,
+.help-back-to-top:hover {
+  transform: translateY(-2px);
+}
+.help-floating-controls button:hover,
+.help-floating-controls button:focus-visible,
+.help-back-to-top:hover,
+.help-back-to-top:focus-visible {
+  color: var(--help-panel);
+  background: var(--help-link);
+}
+.help-floating-controls button:focus-visible,
+.help-floating-controls .language-select:focus-visible,
+.help-back-to-top:focus-visible {
+  outline: 3px solid #facc15;
+  outline-offset: 2px;
+}
+.help-back-to-top {
+  display: flex;
+  font-size: 1.5rem;
+}
+.help-floating-controls button:active,
+.help-back-to-top:active {
+  transform: translateY(0);
+}
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
 @media (max-width: 640px) {
   .help-header-inner {
     align-items: flex-start;
@@ -262,25 +345,40 @@ def rewrite_document_links(rendered_html, language, document_type):
       "pt": "api_endpoints.pt.md",
     }[language]
     target = f"/help/api?lang={language}"
-  else:
+  elif document_type == "api":
     source_name = {
       "es": "user_interface.md",
       "en": "user_interface.en.md",
       "pt": "user_interface.pt.md",
     }[language]
     target = f"/help?lang={language}"
+  else:
+    for code, (source_path, _) in READMES.items():
+      rendered_html = rendered_html.replace(
+        f'href="{source_path.name}"', f'href="/help/readme?lang={code}"'
+      )
+    for code in READMES:
+      guide_name = GUIDE_OUTPUT_NAMES[code].replace(".html", ".md")
+      api_name = API_OUTPUT_NAMES[code].replace(".html", ".md")
+      rendered_html = rendered_html.replace(
+        f'href="docs/{guide_name}"', f'href="/help?lang={code}"'
+      )
+      rendered_html = rendered_html.replace(
+        f'href="docs/{api_name}"', f'href="/help/api?lang={code}"'
+      )
+    return rendered_html
   rendered_html = rendered_html.replace(
     f'href="{source_name}"', f'href="{target}"'
   )
   return re.sub(
     r'href="\.\./README(?:\.en|\.pt)?\.md"',
-    f'href="/?lang={language}"',
+    f'href="/help/readme?lang={language}"',
     rendered_html,
   )
 
 
 def render_document(language, source_path, title, document_type):
-    source = source_path.read_text(encoding="utf-8")
+    source = source_path.read_text(encoding="utf-8").removeprefix("\ufeff")
     rendered = markdown.markdown(
         source,
         extensions=["extra", "sane_lists", "toc"],
@@ -288,18 +386,16 @@ def render_document(language, source_path, title, document_type):
     )
     rendered = rewrite_screenshot_urls(rendered)
     rendered = rewrite_document_links(rendered, language, document_type)
-    if document_type == "guide":
-        current_route = "/help"
-    else:
-        current_route = "/help/api"
-    language_links = []
+    language_options = []
     for code, label in LANGUAGE_LABELS.items():
-        current = ' aria-current="page"' if code == language else ""
-        language_links.append(
-            f'<a href="{current_route}?lang={code}"{current}>{html.escape(label)}</a>'
+      selected = " selected" if code == language else ""
+      language_options.append(
+        f'<option value="{code}"{selected}>{html.escape(label)}</option>'
         )
     interface_label, routes_label = DOCUMENT_LINK_LABELS[language]
+    language_control_label = LANGUAGE_CONTROL_LABELS[language]
     dark_theme_label, light_theme_label = THEME_BUTTON_LABELS[language]
+    back_to_top_label = BACK_TO_TOP_LABELS[language]
     return f"""<!doctype html>
 <html lang="{language}">
 <head>
@@ -320,7 +416,7 @@ def render_document(language, source_path, title, document_type):
   </script>
   <style>{PAGE_STYLE}</style>
 </head>
-<body>
+<body id="top">
   <header class="help-header">
     <div class="help-header-inner">
       <a class="help-brand" href="/?lang={language}">Glicko DB</a>
@@ -329,19 +425,29 @@ def render_document(language, source_path, title, document_type):
           <a href="/help?lang={language}">{html.escape(interface_label)}</a>
           <a href="/help/api?lang={language}">{html.escape(routes_label)}</a>
         </nav>
-        <nav class="help-language" aria-label="Language">{' '.join(language_links)}</nav>
-        <button id="theme-toggle" class="help-theme-toggle" type="button"
-          aria-label="{html.escape(dark_theme_label)}"
-          title="{html.escape(dark_theme_label)}" aria-pressed="false">⚫</button>
       </div>
     </div>
   </header>
   <main class="help-document">
 {rendered}
   </main>
+  <div class="help-floating-controls">
+    <label class="language-control" for="language-select">
+      <span class="visually-hidden">{html.escape(language_control_label)}</span>
+      <select id="language-select" class="language-select" aria-label="{html.escape(language_control_label)}">
+        {''.join(language_options)}
+      </select>
+    </label>
+    <button id="theme-toggle" type="button"
+      aria-label="{html.escape(dark_theme_label)}"
+      title="{html.escape(dark_theme_label)}" aria-pressed="false">⚫</button>
+    <a class="help-back-to-top" href="#top" aria-label="{html.escape(back_to_top_label)}"
+      title="{html.escape(back_to_top_label)}">^</a>
+  </div>
 <script>
   const root = document.documentElement;
   const themeButton = document.getElementById("theme-toggle");
+  const languageSelect = document.getElementById("language-select");
 
   function updateThemeButton() {{
     const dark = root.getAttribute("data-theme") === "dark";
@@ -376,6 +482,12 @@ def render_document(language, source_path, title, document_type):
     saveTheme(nextTheme);
     updateThemeButton();
   }});
+
+  languageSelect.addEventListener("change", () => {{
+    const url = new URL(window.location.href);
+    url.searchParams.set("lang", languageSelect.value);
+    window.location.href = url.toString();
+  }});
 </script>
 </body>
 </html>
@@ -396,6 +508,14 @@ def build_guides(output_dir=OUTPUT_DIR):
         output_path = output_dir / API_OUTPUT_NAMES[language]
         output_path.write_text(
             render_document(language, source_path, title, "api"),
+            encoding="utf-8",
+            newline="\n",
+        )
+        print(f"Built {output_path.relative_to(ROOT)}")
+    for language, (source_path, title) in READMES.items():
+        output_path = output_dir / README_OUTPUT_NAMES[language]
+        output_path.write_text(
+            render_document(language, source_path, title, "readme"),
             encoding="utf-8",
             newline="\n",
         )

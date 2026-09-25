@@ -97,6 +97,7 @@ def test_help_route_serves_the_localized_interface_guide():
         assert body.startswith("<!doctype html>")
         assert f">{heading}</h1>" in body
         assert "/help-assets/screenshots/public-home.png" in body
+        assert f'href="/help/readme?lang={language}"' in body
 
     fallback = client.get("/help?lang=fr")
     assert fallback.status_code == 200
@@ -116,6 +117,15 @@ def test_help_route_serves_the_localized_interface_guide():
     api_body = api.get_data(as_text=True)
     assert ">Routes and integration notes</h1>" in api_body
     assert 'href="/help?lang=en"' in api_body
+
+    for language in ("es", "en", "pt"):
+        readme = client.get(f"/help/readme?lang={language}")
+        assert readme.status_code == 200
+        assert readme.mimetype == "text/html"
+        readme_body = readme.get_data(as_text=True)
+        assert f'<html lang="{language}">' in readme_body
+        assert ">Glicko DB</h1>" in readme_body
+        assert f'href="/help?lang={language}"' in readme_body
 
 
 def test_authenticated_help_link_follows_profile_link(admin_client):

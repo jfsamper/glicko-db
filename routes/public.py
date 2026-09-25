@@ -64,6 +64,11 @@ HELP_API_HTML_FILES = {
     "en": "docs/generated/api_endpoints.en.html",
     "pt": "docs/generated/api_endpoints.pt.html",
 }
+HELP_README_HTML_FILES = {
+    "es": "docs/generated/README.html",
+    "en": "docs/generated/README.en.html",
+    "pt": "docs/generated/README.pt.html",
+}
 HELP_SCREENSHOTS_DIR = os.path.join(BASE_DIR, "docs", "screenshots")
 
 
@@ -228,6 +233,15 @@ def help_api_file():
     lang = get_language(request.args.get("lang"))
     return send_file(
         os.path.join(BASE_DIR, HELP_API_HTML_FILES[lang]),
+        mimetype="text/html",
+    )
+
+
+@public_bp.route("/help/readme")
+def help_readme_file():
+    lang = get_language(request.args.get("lang"))
+    return send_file(
+        os.path.join(BASE_DIR, HELP_README_HTML_FILES[lang]),
         mimetype="text/html",
     )
 
