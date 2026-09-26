@@ -449,6 +449,67 @@ nav a:hover,
   transform: translateY(0);
 }
 
+.install-app-prompt {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: 0.75rem 1rem 0;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--accent);
+  border-radius: 8px;
+  background: var(--panel);
+  color: var(--text);
+  box-shadow: var(--shadow);
+}
+
+.install-app-prompt-copy {
+  min-width: 0;
+}
+
+.install-app-prompt-copy p {
+  margin: 0.15rem 0 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.install-app-prompt-actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.install-app-prompt-actions button {
+  min-height: 2.5rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.install-app-action {
+  padding: 0.45rem 0.8rem;
+  background: var(--accent);
+  color: #fff;
+}
+
+.install-app-dismiss {
+  width: 2.5rem;
+  padding: 0;
+  background: var(--panel);
+  color: var(--text);
+  font-size: 1.4rem;
+  line-height: 1;
+}
+
+.install-app-prompt-actions button:focus-visible {
+  outline: 3px solid var(--accent-secondary);
+  outline-offset: 2px;
+}
+
 @media (max-width: 900px) {
   .page-shell {
     grid-template-columns: 1fr;
@@ -460,6 +521,35 @@ nav a:hover,
 
   .card-grid.two-up {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 520px) {
+  .install-app-prompt {
+    align-items: flex-start;
+    gap: 0.65rem;
+    margin: 0.65rem;
+    padding: 0.7rem;
+  }
+
+  .install-app-prompt-copy p {
+    font-size: 0.82rem;
+  }
+
+  .install-app-prompt-actions {
+    gap: 0.35rem;
+  }
+
+  .install-app-prompt-actions button {
+    min-height: 2.25rem;
+  }
+
+  .install-app-action {
+    padding: 0.4rem 0.6rem;
+  }
+
+  .install-app-dismiss {
+    width: 2.25rem;
   }
 }
 

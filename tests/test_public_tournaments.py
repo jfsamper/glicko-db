@@ -1,3 +1,4 @@
+import json
 import sqlite3
 
 import conftest
@@ -39,6 +40,44 @@ def test_language_selector_renders_all_choices_and_marks_current_language():
     assert '<option value="en" selected>English</option>' in body
     assert '<option value="pt">Português</option>' in body
     assert 'id="lang-toggle"' not in body
+
+
+def test_mobile_install_prompt_manifest_and_script_are_available():
+    app.testing = True
+    client = app.test_client()
+
+    for language, add_as_app in (
+        ("es", "Agregar como aplicación"),
+        ("en", "Add as App"),
+        ("pt", "Adicionar como aplicativo"),
+    ):
+        body = client.get(f"/?lang={language}").get_data(as_text=True)
+        assert f'<meta name="language" content="{language}" />' in body
+        assert '<meta name="theme-color" content="#16324f" />' in body
+        assert 'rel="manifest" href="/static/manifest.json"' in body
+        assert 'aria-live="polite" hidden>' in body
+        assert add_as_app in body
+        assert 'id="dismiss-install-app"' in body
+
+    manifest_response = client.get("/static/manifest.json")
+    assert manifest_response.status_code == 200
+    manifest = json.loads(manifest_response.get_data(as_text=True))
+    assert manifest["display"] == "standalone"
+    assert manifest["start_url"] == "../"
+    assert manifest["scope"] == "../"
+    png_icons = [icon for icon in manifest["icons"] if icon["type"] == "image/png"]
+    assert {icon["sizes"] for icon in png_icons} == {"192x192", "512x512"}
+    assert any(icon["src"] == "favicon.svg" for icon in manifest["icons"])
+    for icon in png_icons:
+        icon_response = client.get(f"/static/{icon['src']}")
+        assert icon_response.status_code == 200
+        assert icon_response.mimetype == "image/png"
+
+    script_response = client.get("/static/js/install-app.js")
+    assert script_response.status_code == 200
+    script = script_response.get_data(as_text=True)
+    assert "beforeinstallprompt" in script
+    assert "isSafari" in script
 
 
 def test_homepage_stats_render_all_periods_with_accessible_tabs():

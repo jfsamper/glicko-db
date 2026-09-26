@@ -47,6 +47,7 @@ This document lists only unfinished product, operational, and maintainability wo
 - Admin tournament actions support asynchronous panel refresh with redirect fallback for non-AJAX clients.
 - Result moderation is available: members submit only for their linked player, and staff approve or reject before publication; hashed expiring approval-code helpers scaffold the future email flow.
 - Admin news publication is available at `/admin/news`, with unlimited validated links per article to players, tournaments, matches, and SGF viewers.
+- Supported mobile browsers can install the app from a localized, dismissible prompt; Safari is excluded.
 
 ## Verified implementation status
 

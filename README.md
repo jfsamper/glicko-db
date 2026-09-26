@@ -33,10 +33,12 @@ Glicko DB es una aplicación Flask y SQLite para administrar jugadores, ratings,
 - Manejo de descansos y ausencias, copias de seguridad, protecciones de restauración y migraciones SQLite
 - Torneos en estado borrador ocultos de los listados públicos, con opción administrativa para mostrar borradores
 - Partidas con hándicap en piedras (estilo Go), con sugerencia automática por diferencia de categoría y ajuste de rating estilo OGS
+- Instalación como aplicación desde navegadores móviles compatibles, excepto Safari
 
 ## Ayuda para usuarios
 
 La guía de la interfaz es la referencia para las tareas diarias. También está disponible desde el botón `?` de la barra superior o en `/help?lang=es`.
+En navegadores móviles compatibles, puedes agregar Glicko DB a la pantalla de inicio como aplicación.
 
 - [Ayuda de la interfaz](docs/user_interface.md)
 - [Rutas y notas de integración](docs/api_endpoints.md)

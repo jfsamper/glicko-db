@@ -80,6 +80,7 @@ Minor fixes:
 - Static inline layout styles — resolved for the reviewed profile/category surfaces. `player.html` and `category.html` now use reusable classes in `static/css/tournament.css`, and player table alignment is owned by `static/css/tables.css`; the category-bar percentage remains data-driven. Unrelated admin-template inline styles remain outside this focused cleanup.
 
 - Client-side pagination — resolved where data is already preloaded. Player profile match/tournament history and report player-performance pagination now switch locally without requests or reloads. Rankings, players, matches, and tournament list pagination remain server-side because their filtered/sorted queries use `LIMIT/OFFSET` and should not preload the full result set.
+- Mobile app installation — implemented with a localized, dismissible prompt for supported mobile browsers that fire `beforeinstallprompt`; Safari is excluded. Manifest URLs are relative so root and `/glicko` deployments resolve the app start path, scope, and icon correctly.
 
 ## Implementation plan for remaining issues
 

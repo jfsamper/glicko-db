@@ -33,10 +33,12 @@ Glicko DB is a Flask and SQLite application for managing a Go community's player
 - BYE and absence handling, backups, restore safeguards, and SQLite migrations
 - Draft tournaments hidden from public listings, with an administrative option to show drafts
 - Handicap games in stones (Go style), with automatic suggestion by category gap and OGS-style rating adjustment
+- Add-to-app installation from supported mobile browsers, except Safari
 
 ## User help
 
 The interface guide is the reference for daily tasks. It is also available from the `?` button in the top navigation or at `/help?lang=en`.
+On supported mobile browsers, you can add Glicko DB to your home screen as an app.
 
 - [User interface help](docs/user_interface.en.md)
 - [Routes and integration notes](docs/api_endpoints.en.md)

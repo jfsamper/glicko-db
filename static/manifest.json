@@ -1,0 +1,30 @@
+{
+  "id": "../",
+  "name": "Glicko DB - Asociacion Colombiana de Go",
+  "short_name": "bdACG",
+  "description": "Rankings, jugadores, partidas y torneos de Go.",
+  "lang": "es",
+  "start_url": "../",
+  "scope": "../",
+  "display": "standalone",
+  "background_color": "#f3f6fb",
+  "theme_color": "#16324f",
+  "icons": [
+    {
+      "src": "pwa-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "pwa-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
