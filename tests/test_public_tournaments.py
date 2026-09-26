@@ -128,6 +128,26 @@ def test_help_route_serves_the_localized_interface_guide():
         assert f'href="/help?lang={language}"' in readme_body
 
 
+def test_help_document_links_support_deployment_url_prefix():
+    from scripts import build_help_html
+
+    guide_html = build_help_html.render_document(
+        "en", build_help_html.GUIDES["en"][0], "User Interface Help", "guide",
+        url_prefix="/glicko/",
+    )
+    api_html = build_help_html.render_document(
+        "en", build_help_html.API_DOCS["en"][0], "Routes and integration notes",
+        "api", url_prefix="/glicko/",
+    )
+
+    assert "/glicko/help-assets/screenshots/public-home.png" in guide_html
+    assert 'href="/glicko/help/api?lang=en"' in guide_html
+    assert 'href="/glicko/help/readme?lang=en"' in guide_html
+    assert 'href="/glicko/?lang=en"' in guide_html
+    assert 'href="/glicko/help?lang=en"' in api_html
+    assert 'href="/glicko/help/readme?lang=en"' in api_html
+
+
 def test_authenticated_help_link_follows_profile_link(admin_client):
     body = admin_client.get("/?lang=en").get_data(as_text=True)
 

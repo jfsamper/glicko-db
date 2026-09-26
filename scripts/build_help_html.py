@@ -40,8 +40,6 @@ README_OUTPUT_NAMES = {
     "en": "README.en.html",
     "pt": "README.pt.html",
 }
-SCREENSHOT_URL_PREFIX = "/help-assets/screenshots/"
-
 LANGUAGE_LABELS = {
     "es": "Español",
     "en": "English",
@@ -329,42 +327,53 @@ html {
 """
 
 
-def rewrite_screenshot_urls(rendered_html):
+def normalize_url_prefix(url_prefix):
+  return f"/{url_prefix.strip('/')}" if url_prefix.strip("/") else ""
+
+
+def site_path(url_prefix, path):
+  return f"{url_prefix}{path}"
+
+
+def rewrite_screenshot_urls(rendered_html, url_prefix=""):
     return re.sub(
         r'((?:href|src)=["\'])screenshots/',
-        rf"\1{SCREENSHOT_URL_PREFIX}",
+    rf"\1{site_path(url_prefix, '/help-assets/screenshots/')}",
         rendered_html,
     )
 
 
-def rewrite_document_links(rendered_html, language, document_type):
+def rewrite_document_links(rendered_html, language, document_type, url_prefix=""):
   if document_type == "guide":
     source_name = {
       "es": "api_endpoints.md",
       "en": "api_endpoints.en.md",
       "pt": "api_endpoints.pt.md",
     }[language]
-    target = f"/help/api?lang={language}"
+    target = f"{site_path(url_prefix, '/help/api')}?lang={language}"
   elif document_type == "api":
     source_name = {
       "es": "user_interface.md",
       "en": "user_interface.en.md",
       "pt": "user_interface.pt.md",
     }[language]
-    target = f"/help?lang={language}"
+    target = f"{site_path(url_prefix, '/help')}?lang={language}"
   else:
     for code, (source_path, _) in READMES.items():
       rendered_html = rendered_html.replace(
-        f'href="{source_path.name}"', f'href="/help/readme?lang={code}"'
+        f'href="{source_path.name}"',
+        f'href="{site_path(url_prefix, "/help/readme")}?lang={code}"',
       )
     for code in READMES:
       guide_name = GUIDE_OUTPUT_NAMES[code].replace(".html", ".md")
       api_name = API_OUTPUT_NAMES[code].replace(".html", ".md")
       rendered_html = rendered_html.replace(
-        f'href="docs/{guide_name}"', f'href="/help?lang={code}"'
+        f'href="docs/{guide_name}"',
+        f'href="{site_path(url_prefix, "/help")}?lang={code}"',
       )
       rendered_html = rendered_html.replace(
-        f'href="docs/{api_name}"', f'href="/help/api?lang={code}"'
+        f'href="docs/{api_name}"',
+        f'href="{site_path(url_prefix, "/help/api")}?lang={code}"',
       )
     return rendered_html
   rendered_html = rendered_html.replace(
@@ -372,20 +381,23 @@ def rewrite_document_links(rendered_html, language, document_type):
   )
   return re.sub(
     r'href="\.\./README(?:\.en|\.pt)?\.md"',
-    f'href="/help/readme?lang={language}"',
+    f'href="{site_path(url_prefix, "/help/readme")}?lang={language}"',
     rendered_html,
   )
 
 
-def render_document(language, source_path, title, document_type):
+def render_document(language, source_path, title, document_type, url_prefix=""):
+    url_prefix = normalize_url_prefix(url_prefix)
     source = source_path.read_text(encoding="utf-8").removeprefix("\ufeff")
     rendered = markdown.markdown(
         source,
         extensions=["extra", "sane_lists", "toc"],
         output_format="html5",
     )
-    rendered = rewrite_screenshot_urls(rendered)
-    rendered = rewrite_document_links(rendered, language, document_type)
+    rendered = rewrite_screenshot_urls(rendered, url_prefix)
+    rendered = rewrite_document_links(
+      rendered, language, document_type, url_prefix
+    )
     language_options = []
     for code, label in LANGUAGE_LABELS.items():
       selected = " selected" if code == language else ""
@@ -419,11 +431,11 @@ def render_document(language, source_path, title, document_type):
 <body id="top">
   <header class="help-header">
     <div class="help-header-inner">
-      <a class="help-brand" href="/?lang={language}">Glicko DB</a>
+      <a class="help-brand" href="{site_path(url_prefix, "/")}?lang={language}">Glicko DB</a>
       <div class="help-header-controls">
         <nav class="help-document-links" aria-label="Documentation">
-          <a href="/help?lang={language}">{html.escape(interface_label)}</a>
-          <a href="/help/api?lang={language}">{html.escape(routes_label)}</a>
+          <a href="{site_path(url_prefix, "/help")}?lang={language}">{html.escape(interface_label)}</a>
+          <a href="{site_path(url_prefix, "/help/api")}?lang={language}">{html.escape(routes_label)}</a>
         </nav>
       </div>
     </div>
@@ -494,12 +506,13 @@ def render_document(language, source_path, title, document_type):
 """
 
 
-def build_guides(output_dir=OUTPUT_DIR):
+def build_guides(output_dir=OUTPUT_DIR, url_prefix=""):
+    url_prefix = normalize_url_prefix(url_prefix)
     output_dir.mkdir(parents=True, exist_ok=True)
     for language, (source_path, title) in GUIDES.items():
         output_path = output_dir / GUIDE_OUTPUT_NAMES[language]
         output_path.write_text(
-            render_document(language, source_path, title, "guide"),
+            render_document(language, source_path, title, "guide", url_prefix),
             encoding="utf-8",
             newline="\n",
         )
@@ -507,7 +520,7 @@ def build_guides(output_dir=OUTPUT_DIR):
     for language, (source_path, title) in API_DOCS.items():
         output_path = output_dir / API_OUTPUT_NAMES[language]
         output_path.write_text(
-            render_document(language, source_path, title, "api"),
+            render_document(language, source_path, title, "api", url_prefix),
             encoding="utf-8",
             newline="\n",
         )
@@ -515,7 +528,7 @@ def build_guides(output_dir=OUTPUT_DIR):
     for language, (source_path, title) in READMES.items():
         output_path = output_dir / README_OUTPUT_NAMES[language]
         output_path.write_text(
-            render_document(language, source_path, title, "readme"),
+            render_document(language, source_path, title, "readme", url_prefix),
             encoding="utf-8",
             newline="\n",
         )
@@ -530,11 +543,16 @@ def main():
         default=OUTPUT_DIR,
         help="Directory for generated HTML files (default: docs/generated).",
     )
+    parser.add_argument(
+        "--url-prefix",
+        default="",
+        help="URL path prefix for deployments mounted under a subpath, e.g. /glicko.",
+    )
     args = parser.parse_args()
     output_dir = args.output_dir
     if not output_dir.is_absolute():
         output_dir = ROOT / output_dir
-    build_guides(output_dir)
+    build_guides(output_dir, args.url_prefix)
 
 
 if __name__ == "__main__":
