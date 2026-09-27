@@ -20,9 +20,9 @@ API_DOCS = {
   "pt": (ROOT / "docs" / "api_endpoints.pt.md", "Rotas e notas de integração"),
 }
 READMES = {
-    "es": (ROOT / "README.md", "Glicko DB"),
-    "en": (ROOT / "README.en.md", "Glicko DB"),
-    "pt": (ROOT / "README.pt.md", "Glicko DB"),
+    "es": (ROOT / "README.md", "Glicko BD"), #Base de Datos
+    "en": (ROOT / "README.en.md", "Glicko DB"), #DataBase
+    "pt": (ROOT / "README.pt.md", "Glicko BD"), #Base de Dados
 }
 OUTPUT_DIR = ROOT / "docs" / "generated"
 GUIDE_OUTPUT_NAMES = {

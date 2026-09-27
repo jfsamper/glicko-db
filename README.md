@@ -1,8 +1,8 @@
-# Glicko DB
+# Glicko BD
 
 Documentación: Español | [English](README.en.md) | [Português](README.pt.md)
 
-Glicko DB es una aplicación Flask y SQLite para administrar jugadores, ratings, partidas y torneos de una communidad de Go. Ofrece posiciones y estadísticas públicas, junto con pantallas de administración protegidas para importaciones, configuración del rating, copias de seguridad y operaciones de torneos.
+Glicko BD es una aplicación Flask y SQLite para administrar jugadores, ratings, partidas y torneos de una communidad de Go. Ofrece posiciones y estadísticas públicas, junto con pantallas de administración protegidas para importaciones, configuración del rating, copias de seguridad y operaciones de torneos.
 
 ## Tabla de contenidos
 
@@ -38,7 +38,7 @@ Glicko DB es una aplicación Flask y SQLite para administrar jugadores, ratings,
 ## Ayuda para usuarios
 
 La guía de la interfaz es la referencia para las tareas diarias. También está disponible desde el botón `?` de la barra superior o en `/help?lang=es`.
-En navegadores móviles compatibles, puedes agregar Glicko DB a la pantalla de inicio como aplicación.
+En navegadores móviles compatibles, puedes agregar Glicko BD a la pantalla de inicio como aplicación.
 
 - [Ayuda de la interfaz](docs/user_interface.md)
 - [Rutas y notas de integración](docs/api_endpoints.md)
@@ -150,4 +150,4 @@ La funcionalidad de ordenación, filtros y búsqueda consistente ya está entreg
 ## Licencia y atribución
 Glicko-db fue originalmente desarrollado para la comunidad de Go en Colombia por Juan Felipe Samper en 2026. 
 
-El sistema [Glicko-2](https://www.glicko.net/glicko/glicko2.pdf) fue publicado por Mark E. Glickman en 2022 al dominio público. La implementación en python es ©2009 Ryan Kirkman y BesoGo es ©2015-2018 Ye Wang. Ambas se distribuyen bajo la [licencia MIT](static/vendor/besogo/LICENSE).
+El sistema [Glicko-2](https://www.glicko.net/glicko/glicko2.pdf) fue publicado por Mark E. Glickman en 2022 al dominio público. La implementación en Python es ©2009 Ryan Kirkman y BesoGo es ©2015-2018 Ye Wang. Ambas se distribuyen bajo la [licencia MIT](static/vendor/besogo/LICENSE).

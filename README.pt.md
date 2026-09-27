@@ -1,8 +1,8 @@
-﻿# Glicko DB
+﻿# Glicko BD
 
 Documentação: [Español](README.md) | [English](README.en.md) | Português
 
-Glicko DB é uma aplicação Flask e SQLite para gerenciar jogadores, ratings, partidas e torneios de uma comunidade de Go. Ela oferece classificações e estatísticas públicas, além de telas administrativas protegidas para importações, configuração do rating, cópias de segurança e operações de torneios.
+Glicko BD é uma aplicação Flask e SQLite para gerenciar jogadores, ratings, partidas e torneios de uma comunidade de Go. Ela oferece classificações e estatísticas públicas, além de telas administrativas protegidas para importações, configuração do rating, cópias de segurança e operações de torneios.
 
 ## Índice
 
@@ -38,7 +38,7 @@ Glicko DB é uma aplicação Flask e SQLite para gerenciar jogadores, ratings, p
 ## Ajuda do usuário
 
 O guia da interface é a referência para as tarefas diárias. Ele também está disponível pelo botão `?` na barra superior ou em `/help?lang=pt`.
-Em navegadores móveis compatíveis, você pode adicionar o Glicko DB à tela inicial como aplicativo.
+Em navegadores móveis compatíveis, você pode adicionar o Glicko BD à tela inicial como aplicativo.
 
 - [Ajuda da interface](docs/user_interface.pt.md)
 - [Rotas e notas de integração](docs/api_endpoints.pt.md)
@@ -149,6 +149,6 @@ A ordenação, os filtros e a busca consistentes já estão entregues e validado
 
 ## Licença e atribuição
 
-Glicko DB foi originalmente desenvolvido para a comunidade de Go na Colômbia por Juan Felipe Samper em 2026.
+Glicko BD foi originalmente desenvolvido para a comunidade de Go na Colômbia por Juan Felipe Samper em 2026.
 
 O sistema [Glicko-2](https://www.glicko.net/glicko/glicko2.pdf) foi publicado por Mark Glickman em 2022 no domínio público. A implementação em Python é ©2009 Ryan Kirkman e o BesoGo é ©2015-2018 Ye Wang. Ambos são distribuídos sob a [licença MIT](static/vendor/besogo/LICENSE).

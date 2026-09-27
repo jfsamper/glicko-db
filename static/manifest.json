@@ -1,6 +1,6 @@
 {
   "id": "../",
-  "name": "Glicko DB - Asociacion Colombiana de Go",
+  "name": "Glicko BD - Asociacion Colombiana de Go",
   "short_name": "bdACG",
   "description": "Rankings, jugadores, partidas y torneos de Go.",
   "lang": "es",
