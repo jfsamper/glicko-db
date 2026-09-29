@@ -102,6 +102,8 @@ The default values are in `config.py`.
 - The default timezone is UTC-5. Each account can choose an IANA timezone; matches on the same day are processed by round number and then insertion order.
 - `/reports` uses inclusive `start_date` and `end_date` ranges in the fixed server timezone. The page and CSV/PDF exports reuse the same filters and totals.
 - Accounts use the roles `administrator`, `tournament_director`, `operator`, and `member`. Members submit results only for their linked player; the other roles review the approval queue.
+- Login limits attempts by IP and username before checking the password; configure the limits in `/admin/settings`.
+- Pending-player suggestions link existing players only when explicitly selected. "Create new" creates another player or rejects an existing name; tournaments with handicaps disabled generate pairings with zero stones.
 - Only administrators can create, restore, or delete backups. The last active administrator cannot be deleted, deactivated, or demoted.
 - Full XLSX replacement requires `Player List` and `Matches` sheets with at least one importable player and match. A failed import preserves the previous data; take a verified backup before replacing it.
 - `/admin/settings` controls login limits and recovery expiry. In production, use HTTPS, unique passwords, and keep secrets in environment variables.

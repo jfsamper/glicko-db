@@ -6,7 +6,10 @@
 - **V4-02 fixed:** recovery links use validated HTTPS `APP_PUBLIC_ORIGIN`, never request Host/forwarded headers. Unconfigured deployments do not issue recovery emails/tokens; root and prefixed links have tests.
 - **V4-03 core failure fixed:** full XLSX replacement rejects missing/empty sheets and zero imported players or matches, runs as one rollback-capable transaction, and closes workbook handles. Preview, explicit confirmation, and verified backup remain follow-up work.
 - **V4-04 fixed:** serialized user edit/delete checks preserve at least one active administrator; tests cover demotion, deactivation, deletion, inactive peers, and legitimate changes when a second active admin exists.
-- Post-change suite: **393 passed, 1 known failure** in the unrelated generated help-link test (V4-11). All findings below describe the **pre-fix review snapshot**; V4-05 onward remain open.
+- **V4-05 fixed:** only an explicitly chosen player ID links a pending participant; unconfirmed suggestions create a new player, and an exact-name collision stays pending with an error.
+- **V4-06 fixed:** automatic round generation applies handicap stones only when the tournament setting is enabled; tests cover both states.
+- **V4-07 fixed:** login attempts are reserved before password verification with atomic per-IP and normalized-username limits; expiry, success cleanup, legacy-schema migration, and password recovery are covered.
+- Post-change suite: **401 passed, 1 known failure** in the unrelated generated help-link test (V4-11). All findings below describe the **pre-fix review snapshot**; V4-03's preflight and V4-08 onward remain open.
 
 ## Findings
 

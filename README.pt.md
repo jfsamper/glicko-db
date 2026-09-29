@@ -102,6 +102,8 @@ Os valores padrão estão em `config.py`.
 - O fuso padrão é UTC-5. Cada conta pode escolher um fuso IANA; partidas do mesmo dia são processadas por rodada e depois pela ordem de inserção.
 - `/reports` usa intervalos inclusivos `start_date` e `end_date` no fuso fixo do servidor. A tela e as exportações CSV/PDF usam os mesmos filtros e totais.
 - As contas têm as funções `administrator`, `tournament_director`, `operator` e `member`. Membros enviam apenas resultados do jogador vinculado; as outras funções revisam a fila de aprovação.
+- O login limita tentativas por IP e nome de usuário antes de verificar a senha; configure os limites em `/admin/settings`.
+- Sugestões de jogadores pendentes só vinculam um jogador existente após seleção explícita. "Criar novo" cria outro jogador ou rejeita um nome já existente; torneios com hándicap desativado geram emparelhamentos sem pedras.
 - Apenas administradores podem criar, restaurar ou excluir cópias de segurança. O último administrador ativo não pode ser excluído, desativado nem rebaixado.
 - A substituição completa de dados por XLSX exige as planilhas `Player List` e `Matches` com ao menos um jogador e uma partida importáveis. Falhas preservam os dados anteriores; faça uma cópia verificada antes da substituição.
 - `/admin/settings` permite ajustar limites de login e expiração da recuperação. Em produção, use HTTPS, senhas exclusivas e segredos apenas em variáveis de ambiente.

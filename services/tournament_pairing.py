@@ -241,8 +241,9 @@ def generate_next_round(conn, tournament_id):
     conn.execute("INSERT INTO tournament_rounds (tournament_id, round_number, status) VALUES (?, ?, 'scheduled')",
                  (tournament_id, round_number))
     round_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
+    handicap_enabled = tournament_handicap_enabled(conn, tournament_id)
     for board_number, pairing in enumerate(pairings, 1):
-        handicap = 0 if pairing["is_bye"] else auto_handicap_stones(
+        handicap = 0 if pairing["is_bye"] or not handicap_enabled else auto_handicap_stones(
             conn, pairing["white_player_id"], pairing["black_player_id"])
         conn.execute("INSERT INTO tournament_pairings (round_id, board_number, white_player_id, black_player_id, is_bye, handicap_stones) VALUES (?, ?, ?, ?, ?, ?)",
                      (round_id, board_number, pairing["white_player_id"], pairing["black_player_id"], int(pairing["is_bye"]), handicap))

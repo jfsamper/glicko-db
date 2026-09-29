@@ -3,6 +3,8 @@ import sqlite3
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
+import pytest
+
 from config import GLICKO_M
 from scripts.dev_only.create_pairing_test_tournaments import (
     PLAYER_COUNTS,
@@ -711,6 +713,36 @@ def test_next_round_persists_pairings_and_avoids_repeats():
     assert conn.execute("SELECT COUNT(*) FROM tournament_rounds").fetchone()[0] == 2
 
 
+@pytest.mark.parametrize("handicap_enabled, expected_stones", [(0, 0), (1, 9)])
+def test_generated_round_respects_tournament_handicap_setting(
+    monkeypatch, handicap_enabled, expected_stones
+):
+    conn = create_db()
+    conn.execute("ALTER TABLE tournaments ADD COLUMN handicap_enabled INTEGER NOT NULL DEFAULT 0")
+    tournament_id = create_manual_tournament(conn)
+    conn.execute(
+        "UPDATE tournaments SET handicap_enabled = ? WHERE id = ?",
+        (handicap_enabled, tournament_id),
+    )
+    for player_id, rating in ((1, 2500), (2, 900)):
+        conn.execute(
+            "INSERT INTO players (id, first_name, last_name, display_name, rating) VALUES (?, ?, ?, ?, ?)",
+            (player_id, "Player", str(player_id), f"Player {player_id}", rating),
+        )
+        add_participant(conn, tournament_id, player_id)
+
+    monkeypatch.setattr(
+        "services.tournament_pairing.pair_players",
+        lambda *args, **kwargs: [{"white_player_id": 1, "black_player_id": 2, "is_bye": False}],
+    )
+    round_id, _ = generate_next_round(conn, tournament_id)
+
+    assert conn.execute(
+        "SELECT handicap_stones FROM tournament_pairings WHERE round_id = ?", (round_id,)
+    ).fetchone()[0] == expected_stones
+    conn.close()
+
+
 def test_next_round_assigns_boards_by_pairing_leader_score_then_rating():
     conn = create_db()
     tournament_id = create_manual_tournament(conn, rounds=2, pairing_system="swiss")
@@ -936,7 +968,7 @@ def test_materialize_pending_players_uses_resolved_player_id_when_set():
     assert conn.execute("SELECT COUNT(*) FROM tournament_pending_players WHERE tournament_id = ?", (tournament_id,)).fetchone()[0] == 0
 
 
-def test_pending_resolution_updates_canonical_display_name_before_materialization():
+def test_unconfirmed_pending_suggestion_creates_a_separate_player():
     conn = create_db()
     conn.execute(
         "INSERT INTO players (id, first_name, last_name, display_name, rating, active) VALUES (?, ?, ?, ?, ?, ?)",
@@ -965,7 +997,30 @@ def test_pending_resolution_updates_canonical_display_name_before_materializatio
         "SELECT p.display_name FROM tournament_participants tp JOIN players p ON p.id = tp.player_id WHERE tp.tournament_id = ?",
         (tournament_id,),
     ).fetchone()[0]
-    assert participant_display_name == "Juan Felipe Burgos"
+    assert participant_display_name == "Burgos Juan"
+    assert conn.execute("SELECT COUNT(*) FROM players").fetchone()[0] == 2
+
+
+def test_pending_create_new_rejects_exact_existing_player_name():
+    conn = create_db()
+    conn.execute(
+        "INSERT INTO players (id, first_name, last_name, display_name, rating) VALUES (?, ?, ?, ?, ?)",
+        (1, "Burgos", "Juan", "Burgos Juan", 1500),
+    )
+    tournament_id = create_manual_tournament(conn)
+    pending_id = conn.execute(
+        "INSERT INTO tournament_pending_players (tournament_id, display_name, rating, rank) "
+        "VALUES (?, 'Burgos Juan', 1500, 1)",
+        (tournament_id,),
+    ).lastrowid
+    conn.commit()
+
+    with pytest.raises(ValueError, match="already exists"):
+        _materialize_pending_players(conn, tournament_id, pending_id=pending_id)
+
+    assert conn.execute("SELECT COUNT(*) FROM tournament_pending_players").fetchone()[0] == 1
+    assert conn.execute("SELECT COUNT(*) FROM tournament_participants").fetchone()[0] == 0
+    conn.close()
 
 
 def test_export_tournament_results_returns_opengotha_xml():

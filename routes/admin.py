@@ -1,5 +1,6 @@
 # routes/admin.py
 import csv
+import hashlib
 import json
 import logging
 import math
@@ -296,61 +297,118 @@ def run_admin_db_action(action, lang, success_message=None):
     return result
 
 
+def _ensure_login_attempts_table(conn):
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS login_attempts (
+            ip_address TEXT NOT NULL,
+            attempted_at REAL NOT NULL,
+            username_hash TEXT
+        )
+        """
+    )
+    if "username_hash" not in {row[1] for row in conn.execute("PRAGMA table_info(login_attempts)")}:
+        conn.execute("ALTER TABLE login_attempts ADD COLUMN username_hash TEXT")
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_login_attempts_username_time "
+        "ON login_attempts (username_hash, attempted_at)"
+    )
+
+
+def _login_attempt_settings(conn):
+    return get_application_settings(
+        conn=conn,
+        fallback_settings={
+            "max_login_attempts": MAX_LOGIN_ATTEMPTS,
+            "login_window_seconds": LOGIN_WINDOW_SECONDS,
+        },
+    )
+
+
+def _username_attempt_hash(username):
+    return hashlib.sha256(username.strip().casefold().encode("utf-8")).hexdigest() if username else None
+
+
+def reserve_login_attempt(ip_address, username):
+    conn = get_db()
+    try:
+        settings = _login_attempt_settings(conn)
+        conn.execute("BEGIN IMMEDIATE")
+        _ensure_login_attempts_table(conn)
+        now = time.time()
+        conn.execute("DELETE FROM login_attempts WHERE attempted_at < ?", (
+            now - settings["login_window_seconds"],))
+        username_hash = _username_attempt_hash(username)
+        ip_count = conn.execute(
+            "SELECT COUNT(*) FROM login_attempts WHERE ip_address = ?", (ip_address,)
+        ).fetchone()[0]
+        username_count = conn.execute(
+            "SELECT COUNT(*) FROM login_attempts WHERE username_hash = ?", (username_hash,)
+        ).fetchone()[0] if username_hash else 0
+        allowed = max(ip_count, username_count) < settings["max_login_attempts"]
+        if allowed:
+            conn.execute(
+                "INSERT INTO login_attempts (ip_address, attempted_at, username_hash) VALUES (?, ?, ?)",
+                (ip_address, now, username_hash),
+            )
+        conn.commit()
+        return allowed
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
+
+
 def record_failed_login_attempt(ip_address):
     if not ip_address:
         return False
 
     conn = get_db()
-    conn.execute(
-        """
-        CREATE TABLE IF NOT EXISTS login_attempts (
-            ip_address TEXT NOT NULL,
-            attempted_at REAL NOT NULL
+    try:
+        runtime_settings = _login_attempt_settings(conn)
+        conn.execute("BEGIN IMMEDIATE")
+        _ensure_login_attempts_table(conn)
+        now = time.time()
+        conn.execute("DELETE FROM login_attempts WHERE attempted_at < ?", (
+            now - runtime_settings["login_window_seconds"],))
+        conn.execute(
+            "INSERT INTO login_attempts (ip_address, attempted_at) VALUES (?, ?)",
+            (ip_address, now),
         )
-        """
-    )
+        count = conn.execute(
+            "SELECT COUNT(*) FROM login_attempts WHERE ip_address = ?",
+            (ip_address,),
+        ).fetchone()[0]
+        conn.commit()
+        return count >= runtime_settings["max_login_attempts"]
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
 
-    runtime_settings = get_application_settings(
-        conn=conn,
-        fallback_settings={
-            "max_login_attempts": MAX_LOGIN_ATTEMPTS,
-            "login_window_seconds": LOGIN_WINDOW_SECONDS,
-        }
-    )
-    now = time.time()
-    cutoff = now - runtime_settings["login_window_seconds"]
-    conn.execute(
-        "DELETE FROM login_attempts WHERE attempted_at < ?",
-        (cutoff,),
-    )
-    conn.execute(
-        "INSERT INTO login_attempts (ip_address, attempted_at) VALUES (?, ?)",
-        (ip_address, now),
-    )
-    count = conn.execute(
-        "SELECT COUNT(*) FROM login_attempts WHERE ip_address = ?",
-        (ip_address,),
-    ).fetchone()[0]
-    conn.commit()
-    conn.close()
-    return count >= runtime_settings["max_login_attempts"]
-
-
-def clear_login_attempts(ip_address):
+def clear_login_attempts(ip_address, username=None):
     if not ip_address:
         return
 
     conn = get_db()
-    conn.execute(
-        "CREATE TABLE IF NOT EXISTS login_attempts ("
-        "ip_address TEXT NOT NULL, attempted_at REAL NOT NULL)"
-    )
-    conn.execute(
-        "DELETE FROM login_attempts WHERE ip_address = ?",
-        (ip_address,),
-    )
-    conn.commit()
-    conn.close()
+    try:
+        conn.execute("BEGIN IMMEDIATE")
+        _ensure_login_attempts_table(conn)
+        if username:
+            conn.execute(
+                "DELETE FROM login_attempts WHERE ip_address = ? OR username_hash = ?",
+                (ip_address, _username_attempt_hash(username)),
+            )
+        else:
+            conn.execute("DELETE FROM login_attempts WHERE ip_address = ?", (ip_address,))
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
 
 
 def validate_match_form_data(conn, match_date, white_player_id, black_player_id, result, lang):

@@ -102,6 +102,8 @@ Los valores predeterminados están en `config.py`.
 - La hora predeterminada es UTC-5. Cada cuenta puede elegir una zona IANA; las partidas del mismo día se procesan por ronda y luego por orden de inserción.
 - `/reports` usa rangos inclusivos `start_date` y `end_date` en la zona fija del servidor. Los totales de pantalla y de las exportaciones CSV/PDF se calculan con los mismos filtros.
 - Las cuentas tienen roles `administrator`, `tournament_director`, `operator` y `member`. Los miembros solo envían resultados de su jugador vinculado; los demás roles revisan la cola de aprobación.
+- El inicio de sesión limita los intentos por IP y nombre de usuario antes de comprobar la contraseña; los límites se configuran en `/admin/settings`.
+- Las sugerencias para jugadores pendientes solo vinculan una cuenta existente al seleccionarla explícitamente. "Crear nuevo" crea otro jugador o rechaza un nombre ya existente; los torneos con hándicap desactivado generan emparejamientos sin piedras.
 - Solo los administradores pueden crear, restaurar o eliminar copias de seguridad. No se puede eliminar, desactivar ni degradar al último administrador activo.
 - La sustitución completa de datos por XLSX requiere las hojas `Player List` y `Matches` con al menos un jugador y una partida importables. Si la importación falla, los datos anteriores se conservan; realiza una copia verificada antes de reemplazarlos.
 - `/admin/settings` permite ajustar los límites de inicio de sesión y la caducidad de recuperación. En producción usa HTTPS, contraseñas únicas y secretos solo en variables de entorno.

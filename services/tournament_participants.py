@@ -5,7 +5,7 @@ from config import GLICKO_K, GLICKO_M
 from services.category_service import glicko_to_category
 from services.helpers import normalize_key, normalize_text
 from services.pairing_service import mcmahon_score_from_rank
-from services.player_service import ensure_player
+from services.player_service import build_player_lookup, ensure_player
 from services.tournament_pairing import table_columns
 
 
@@ -219,12 +219,11 @@ def materialize_pending_players(conn, tournament_id, pending_id=None):
             conn.execute("UPDATE tournament_pending_players SET display_name = ? WHERE tournament_id = ? AND id = ?",
                          (display_name, tournament_id, row["id"]))
         else:
-            suggested = conn.execute("SELECT id, display_name FROM players WHERE active = 1 AND display_name = ?", (
-                row["suggested_name"],)).fetchone() if row["suggested_name"] else None
-            player_id = suggested["id"] if suggested else ensure_player(
-                conn, display_name, rating=rating, initial_rating=rating, active=1)
-            if suggested:
-                display_name = suggested["display_name"]
+            lookup = build_player_lookup(conn)
+            if normalize_key(display_name) in lookup:
+                raise ValueError("Player already exists; select an existing player")
+            player_id = ensure_player(
+                conn, display_name, rating=rating, initial_rating=rating, active=1, player_lookup=lookup)
         conn.execute("UPDATE tournament_pairings SET white_player_id = ?, white_player_name = NULL WHERE round_id IN (SELECT id FROM tournament_rounds WHERE tournament_id = ?) AND white_player_id IS NULL AND white_player_name = ?", (player_id, tournament_id, display_name))
         conn.execute("UPDATE tournament_pairings SET black_player_id = ?, black_player_name = NULL WHERE round_id IN (SELECT id FROM tournament_rounds WHERE tournament_id = ?) AND black_player_id IS NULL AND black_player_name = ?", (player_id, tournament_id, display_name))
         initial_score = mcmahon_score_from_rank(max(1, int(row["rank"] or 1)), bar=tournament["mm_bar"] if "mm_bar" in tournament.keys() and tournament["mm_bar"] is not None else 8, floor=tournament["mm_floor"] if "mm_floor" in tournament.keys(

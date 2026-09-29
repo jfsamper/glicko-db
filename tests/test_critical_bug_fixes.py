@@ -1,5 +1,6 @@
 """Tests for critical bug fixes related to match management and validation."""
 
+from concurrent.futures import ThreadPoolExecutor
 import sqlite3
 import conftest
 from datetime import datetime, time
@@ -472,6 +473,29 @@ def test_login_failures_are_persisted_in_shared_sqlite_backend(tmp_path, monkeyp
         ("127.0.0.1",),
     ).fetchone()[0]
     assert persisted >= 3
+
+
+def test_login_attempt_reservations_are_atomic(tmp_path, monkeypatch):
+    db_path = tmp_path / "concurrent_login_attempts.db"
+    monkeypatch.setattr(admin_routes, "get_db", lambda: sqlite3.connect(db_path))
+    monkeypatch.setattr(admin_routes, "MAX_LOGIN_ATTEMPTS", 2)
+    monkeypatch.setattr(admin_routes, "LOGIN_WINDOW_SECONDS", 60)
+
+    conn = sqlite3.connect(db_path)
+    admin_routes.get_application_settings(
+        conn=conn, fallback_settings={"max_login_attempts": 2, "login_window_seconds": 60},
+    )
+    conn.close()
+
+    with ThreadPoolExecutor(max_workers=4) as executor:
+        accepted = list(executor.map(
+            lambda _: admin_routes.reserve_login_attempt("198.51.100.1", "admin"),
+            range(6),
+        ))
+
+    assert accepted.count(True) == 2
+    with sqlite3.connect(db_path) as conn:
+        assert conn.execute("SELECT COUNT(*) FROM login_attempts").fetchone()[0] == 2
 
 
 def test_login_success_creates_attempts_table_if_missing(tmp_path, monkeypatch):
@@ -1254,6 +1278,34 @@ def test_admin_tournament_renders_clickable_suggested_player_link(monkeypatch, t
         "SELECT COUNT(*) FROM tournament_participants WHERE tournament_id = 3 AND player_id = ?",
         (new_player["id"],),
     ).fetchone()[0] == 1
+
+    conn.execute(
+        """
+        INSERT INTO tournament_pending_players
+            (id, tournament_id, display_name, suggested_name, resolved_player_id, rating, rank, category, source_key)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (14, 3, "Burgos Juan", "Juan Felipe Burgos", None, 1500, 4, "", "burgosjuan-new"),
+    )
+    conn.commit()
+    conn.close()
+
+    create_with_suggestion = client.post(
+        "/admin/tournaments/3/pending-player-resolve?lang=en",
+        data={"pending_id": "14", "resolved_player_id": ""},
+    )
+    assert create_with_suggestion.status_code == 302
+
+    conn = get_test_db()
+    separate_player = conn.execute(
+        "SELECT id FROM players WHERE display_name = ?", ("Burgos Juan",)
+    ).fetchone()
+    assert separate_player is not None and separate_player["id"] != 7
+    assert conn.execute(
+        "SELECT 1 FROM tournament_participants WHERE tournament_id = 3 AND player_id = ?",
+        (separate_player["id"],),
+    ).fetchone() is not None
+    assert conn.execute("SELECT 1 FROM tournament_pending_players WHERE id = 14").fetchone() is None
 
     conn.execute(
         """

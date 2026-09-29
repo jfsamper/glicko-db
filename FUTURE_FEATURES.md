@@ -8,7 +8,10 @@ This document lists only unfinished product, operational, and maintainability wo
 - V4-02: recovery links use validated `APP_PUBLIC_ORIGIN`; email/token issuance is disabled until a public HTTPS origin is configured.
 - V4-03: XLSX replacement rejects empty/incomplete data, rolls back failures, and closes workbook handles. A preflight, explicit confirmation, and verified backup are still open.
 - V4-04: user edits/deletions cannot remove the last active administrator, including when another administrator is inactive.
-- V4-05 through V4-14 remain under review in [CODE_REVIEW.v4.md](CODE_REVIEW.v4.md); the next P1 issues concern pending-player reconciliation, disabled tournament handicaps, and login-attempt enforcement.
+- V4-05: an unconfirmed pending-player suggestion no longer links automatically; create-new rejects exact-name collisions instead of silently reusing an ID.
+- V4-06: generated round handicaps now respect the tournament's enabled setting.
+- V4-07: login attempts are checked before authentication using atomic per-IP and per-username windows; password recovery keeps its existing rate limit.
+- V4-08 through V4-14 remain under review in [CODE_REVIEW.v4.md](CODE_REVIEW.v4.md).
 
 ## Table of contents
 
@@ -22,7 +25,7 @@ This document lists only unfinished product, operational, and maintainability wo
    - [Result moderation workflow](#result-moderation-workflow)
    - [Public SGF library and match linking](#public-sgf-library-and-match-linking)
 - [Remaining implementation backlog](#remaining-implementation-backlog)
-   - [P1 — V4 correctness and security](#p1--v4-correctness-and-security)
+   - [P1 — None](#p1--none)
    - [P2 — Workflow and recovery](#p2--workflow-and-recovery)
    - [P3 — Operational enhancements](#p3--operational-enhancements)
    - [P4 — Workflow and analytics enhancements](#p4--workflow-and-analytics-enhancements)
@@ -51,7 +54,7 @@ This document lists only unfinished product, operational, and maintainability wo
 - Administrators can activate or deactivate players; inactive players are excluded from rankings and tournament participant selection.
 - Application-generated dates and times use UTC-5 by default; administrators can assign valid IANA timezones to individual accounts, and unset or invalid preferences fall back safely to UTC-5. Account selectors show one common representative per current UTC offset in ascending order, with Mexico, Colombia, Venezuela, Brazil, China, and South Korea preferred; South Korea represents the shared UTC+9 offset with Japan, and labels include the current adjustment while stored values remain IANA identifiers.
 - Full rating recomputation and incremental replay process same-day matches by round, treating unknown rounds as round 1.
-- Login rate-limit thresholds are environment-configurable through `config.py`, with defaults of five attempts in sixty seconds.
+- Login rate-limit thresholds are environment-configurable through `config.py`, with defaults of five attempts in sixty seconds; login enforces IP and normalized-username windows before checking passwords.
 - Account profile and password recovery are available: users can save email, language, theme, timezone, and password at `/admin/profile`; recovery uses configurable SMTP, hashed expiring tokens, single-use consumption, and generic responses.
 - Public reporting is available at `/reports` with inclusive calendar periods, All time defaults, player filtering, games-based selector ordering, opponent/country/club aggregates, and shared server-side totals.
 - Reports can be exported as CSV or localized PDF; PDF exports include centered headings, the selected player and period in the filename, and preserve the active filters.
@@ -136,11 +139,9 @@ Confirmed in code:
 
 ## Remaining implementation backlog
 
-### P1 — V4 correctness and security
+### P1 — None
 
-1. V4-05: honor an explicit create-new pending-player decision instead of linking a suggestion.
-2. V4-06: respect the tournament handicap switch during automatic pairing.
-3. V4-07: enforce login-attempt limits before checking the next password.
+No remaining P1 implementation failures from the V4 review; complete the V4-03 workflow safeguards below.
 
 ### P2 — Workflow and recovery
 
@@ -169,9 +170,9 @@ Confirmed in code:
 
 ## Technical implementation order
 
-The login rate-limit settings, typed OpenGotha payload, explicit tournament-delete modal, per-account timezone preferences, account profile/recovery, date-bounded reporting, PDF reporting, and result moderation were completed. V4-07 concerns enforcing the already configurable login limit. The next recommended sequence is:
+Login rate-limit enforcement, typed OpenGotha payloads, explicit tournament deletion, per-account timezone preferences, account profile/recovery, date-bounded reporting, PDF reporting, and result moderation are implemented. The next recommended sequence is:
 
-1. Fix V4-05 through V4-07; then complete the workbook replacement preflight.
+1. Complete the V4-03 workbook replacement preflight, confirmation, and verified backup.
 2. Fix restore migrations and non-idempotent tournament POST recovery, followed by other V4 P2 findings.
 3. Add scheduled backups with retention and restore verification.
 4. Consider replay observability, tournament preflight, and named seasons as needed.

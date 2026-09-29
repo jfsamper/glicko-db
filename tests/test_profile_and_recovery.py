@@ -58,6 +58,71 @@ def authenticate_client(client, user_id, role_name="operator"):
         session["user_role"] = role_name
 
 
+@pytest.mark.parametrize("vary_ip", [False, True])
+def test_login_blocks_correct_guess_after_failure_limit(tmp_path, monkeypatch, vary_ip):
+    app, _db_path, _user_id = make_account_app(tmp_path, monkeypatch)
+    monkeypatch.setattr(admin_routes, "MAX_LOGIN_ATTEMPTS", 2)
+    client = app.test_client()
+
+    for attempt in range(2):
+        response = client.post(
+            "/admin/login?lang=en",
+            data={"username": "PROFILE-USER" if vary_ip and attempt else "profile-user", "password": "wrong-password"},
+            environ_overrides={"REMOTE_ADDR": f"198.51.100.{attempt + 1}" if vary_ip else "198.51.100.1"},
+        )
+        assert response.status_code == 200
+
+    response = client.post(
+        "/admin/login?lang=en",
+        data={"username": "profile-user", "password": "old-password"},
+        environ_overrides={"REMOTE_ADDR": "198.51.100.3" if vary_ip else "198.51.100.1"},
+    )
+
+    assert response.status_code == 200
+    with client.session_transaction() as session:
+        assert session.get("user_id") is None
+
+
+def test_successful_login_clears_ip_and_account_attempts(tmp_path, monkeypatch):
+    app, db_path, user_id = make_account_app(tmp_path, monkeypatch)
+    client = app.test_client()
+    client.post(
+        "/admin/login?lang=en",
+        data={"username": "profile-user", "password": "wrong-password"},
+    )
+
+    response = client.post(
+        "/admin/login?lang=en",
+        data={"username": "profile-user", "password": "old-password"},
+    )
+
+    assert response.status_code == 302
+    with client.session_transaction() as session:
+        assert session["user_id"] == user_id
+    with sqlite3.connect(db_path) as conn:
+        assert conn.execute("SELECT COUNT(*) FROM login_attempts").fetchone()[0] == 0
+
+
+def test_expired_login_attempts_do_not_block_login(tmp_path, monkeypatch):
+    app, db_path, _user_id = make_account_app(tmp_path, monkeypatch)
+    monkeypatch.setattr(admin_routes, "MAX_LOGIN_ATTEMPTS", 2)
+    client = app.test_client()
+    for _ in range(2):
+        client.post(
+            "/admin/login?lang=en",
+            data={"username": "profile-user", "password": "wrong-password"},
+        )
+    with sqlite3.connect(db_path) as conn:
+        conn.execute("UPDATE login_attempts SET attempted_at = 0")
+
+    response = client.post(
+        "/admin/login?lang=en",
+        data={"username": "profile-user", "password": "old-password"},
+    )
+
+    assert response.status_code == 302
+
+
 def test_profile_persists_preferences_and_changes_password(tmp_path, monkeypatch):
     app, db_path, user_id = make_account_app(tmp_path, monkeypatch)
     client = app.test_client()

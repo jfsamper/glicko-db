@@ -76,6 +76,12 @@ def admin_login():
         password = request.form.get("password")
         client_ip = request.remote_addr or "unknown"
 
+        if not admin.reserve_login_attempt(client_ip, username):
+            flash(admin.TRANSLATIONS[lang]["invalid_password"])
+            return render_template(
+                "admin/login.html", lang=lang, translations=admin.TRANSLATIONS[lang],
+            )
+
         conn = admin.get_db()
         try:
             user = admin.authenticate_user(username, password, conn=conn)
@@ -87,7 +93,7 @@ def admin_login():
                     session["user_language"] = user["language"]
                 if user.get("theme"):
                     session["user_theme"] = user["theme"]
-                admin.clear_login_attempts(client_ip)
+                admin.clear_login_attempts(client_ip, username)
                 admin.log_admin_action(
                     "login",
                     "auth",
@@ -99,14 +105,6 @@ def admin_login():
                 return redirect(url_for("admin", lang=lang))
         finally:
             conn.close()
-
-        if admin.record_failed_login_attempt(client_ip):
-            flash(admin.TRANSLATIONS[lang]["invalid_password"])
-            return render_template(
-                "admin/login.html",
-                lang=lang,
-                translations=admin.TRANSLATIONS[lang],
-            )
 
         flash(admin.TRANSLATIONS[lang]["invalid_password"])
 
