@@ -153,13 +153,14 @@ def reset_import_tables(conn):
     conn.execute("DELETE FROM rating_snapshots")
     conn.execute("DELETE FROM matches")
     conn.execute("DELETE FROM players")
-    conn.commit()
 
 
 def import_workbook_data(file_path, reset=False):
     path = Path(file_path)
 
     if not path.exists():
+        if reset:
+            raise ValueError("Workbook file not found")
         return {"players": 0, "matches": 0}
 
     workbook = openpyxl.load_workbook(
@@ -168,7 +169,23 @@ def import_workbook_data(file_path, reset=False):
         read_only=True,
     )
 
-    conn = get_db()
+    conn = None
+    try:
+        conn = get_db()
+        return _import_workbook_data(conn, workbook, reset)
+    except Exception:
+        if conn is not None:
+            conn.rollback()
+        raise
+    finally:
+        if conn is not None:
+            conn.close()
+        workbook.close()
+
+
+def _import_workbook_data(conn, workbook, reset):
+    if reset and not {"Player List", "Matches"}.issubset(workbook.sheetnames):
+        raise ValueError("Workbook has no importable players or matches")
 
     if reset:
         reset_import_tables(conn)
@@ -212,6 +229,8 @@ def import_workbook_data(file_path, reset=False):
                         current_ratings[str(player_name).strip()] = float(
                             row[ratings_rating_idx])
                 except Exception:
+                    if reset:
+                        raise
                     logger.warning(
                         "Skipping invalid rating row: %r", row, exc_info=True)
                     continue
@@ -258,6 +277,8 @@ def import_workbook_data(file_path, reset=False):
                                   initial_rating=initial_rating, player_lookup=player_lookup)
                     players_imported += 1
                 except Exception:
+                    if reset:
+                        raise
                     logger.warning(
                         "Skipping player import row: %r", row, exc_info=True)
                     continue
@@ -363,6 +384,8 @@ def import_workbook_data(file_path, reset=False):
                         if earliest_match_date is None or match_date < earliest_match_date:
                             earliest_match_date = match_date
                 except Exception:
+                    if reset:
+                        raise
                     logger.warning(
                         "Skipping match import row: %r", row, exc_info=True)
                     continue
@@ -443,10 +466,13 @@ def import_workbook_data(file_path, reset=False):
                 (player_id, snapshot_date, rating, DEFAULT_RD, DEFAULT_VOLATILITY),
             )
 
-    conn.commit()
-    conn.close()
+    if reset and (players_imported == 0 or matches_imported == 0):
+        raise ValueError("Workbook has no importable players or matches")
 
-    if earliest_match_date:
+    if earliest_match_date and reset:
+        mark_dirty(earliest_match_date, conn=conn)
+    conn.commit()
+    if earliest_match_date and not reset:
         mark_dirty(earliest_match_date)
 
     return {

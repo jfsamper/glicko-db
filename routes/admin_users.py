@@ -2,8 +2,10 @@
 import sqlite3
 from datetime import datetime
 
-from flask import abort, flash, redirect, render_template, request, send_file, session, url_for
+from flask import abort, current_app, flash, redirect, render_template, request, send_file, session, url_for
 from werkzeug.security import check_password_hash, generate_password_hash
+
+from services.auth_service import ensure_active_administrator_remains
 
 
 def _admin_routes():
@@ -652,21 +654,21 @@ def admin_forgot_password():
                 "SELECT id, email FROM users WHERE lower(email) = ? AND is_active = 1",
                 (email,),
             ).fetchone() if email else None
-            if user is not None and user["email"]:
+            public_origin = current_app.config["APP_PUBLIC_ORIGIN"]
+            if user is not None and user["email"] and public_origin:
                 token = admin.create_password_reset_token(
                     user["id"], conn=conn)
                 conn.commit()
-                reset_url = url_for(
-                    "admin.admin_reset_password",
-                    token=token,
-                    lang=lang,
-                    _external=True,
+                reset_url = public_origin + url_for(
+                    "admin.admin_reset_password", token=token, lang=lang,
                 )
                 try:
                     admin.send_password_reset_email(user["email"], reset_url)
                 except Exception:
                     admin.logger.exception(
                         "Password reset email delivery failed")
+            elif user is not None and user["email"]:
+                admin.logger.warning("Password reset email disabled: APP_PUBLIC_ORIGIN is not configured")
         finally:
             conn.close()
         flash(admin.TRANSLATIONS[lang]["password_reset_requested"])
@@ -971,6 +973,9 @@ def admin_edit_user(user_id):
         if not username:
             flash(admin.TRANSLATIONS[lang]["user_username_required"])
             return redirect(url_for("admin_edit_user", user_id=user_id, lang=lang))
+        if role_name not in admin.ALLOWED_ROLES:
+            flash(admin.TRANSLATIONS[lang]["error"])
+            return redirect(url_for("admin_edit_user", user_id=user_id, lang=lang))
         try:
             timezone_name = admin.validate_timezone(timezone_name)
             email = admin.validate_email_address(email) if email else None
@@ -1000,6 +1005,8 @@ def admin_edit_user(user_id):
             if player_id is not None and conn.execute("SELECT 1 FROM players WHERE id = ?", (player_id,)).fetchone() is None:
                 flash(admin.TRANSLATIONS[lang]["error"])
                 return redirect(url_for("admin_edit_user", user_id=user_id, lang=lang))
+            conn.execute("BEGIN IMMEDIATE")
+            ensure_active_administrator_remains(conn, user_id, role_name, is_active)
             conn.execute(
                 "UPDATE users SET username = ?, is_active = ?, timezone = ?, email = ?, player_id = ? WHERE id = ?",
                 (username, is_active, timezone_name, email, player_id, user_id),
@@ -1033,6 +1040,9 @@ def admin_edit_user(user_id):
                 user_id=session.get("user_id"),
             )
             flash(admin.TRANSLATIONS[lang]["user_updated_success"])
+        except ValueError:
+            conn.rollback()
+            flash(admin.TRANSLATIONS[lang]["last_administrator_required"])
         finally:
             conn.close()
         return redirect(url_for("admin_users", lang=lang))
@@ -1061,6 +1071,11 @@ def admin_delete_user(user_id):
     lang = admin.get_language(request.args.get("lang"))
 
     def action(conn):
+        conn.execute("BEGIN IMMEDIATE")
+        try:
+            ensure_active_administrator_remains(conn, user_id)
+        except ValueError as exc:
+            raise ValueError(admin.TRANSLATIONS[lang]["last_administrator_required"]) from exc
         conn.execute("DELETE FROM user_roles WHERE user_id = ?", (user_id,))
         conn.execute("DELETE FROM users WHERE id = ?", (user_id,))
         conn.commit()

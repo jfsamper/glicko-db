@@ -507,6 +507,8 @@ register_tournament_detail_routes(admin_bp)
 ADMIN_ROUTE_PERMISSIONS = {
     "admin.admin_backups": "admin",
     "admin.admin_create_backup": "admin",
+    "admin.admin_restore_backup": "admin",
+    "admin.admin_delete_backup": "admin",
     "admin.admin_create_user": "admin",
     "admin.admin_edit_user": "admin",
     "admin.admin_delete_user": "admin",

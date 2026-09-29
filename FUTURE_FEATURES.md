@@ -2,8 +2,17 @@
 
 This document lists only unfinished product, operational, and maintainability work. Completed import, audit, search, pagination, account profile/recovery, timezone-default, rating-order, and reporting work is summarized below rather than repeated in the backlog.
 
+## V4 review follow-up (2026-09-29)
+
+- V4-01: backup create/restore/delete now require administrator permission in the route map and handlers.
+- V4-02: recovery links use validated `APP_PUBLIC_ORIGIN`; email/token issuance is disabled until a public HTTPS origin is configured.
+- V4-03: XLSX replacement rejects empty/incomplete data, rolls back failures, and closes workbook handles. A preflight, explicit confirmation, and verified backup are still open.
+- V4-04: user edits/deletions cannot remove the last active administrator, including when another administrator is inactive.
+- V4-05 through V4-14 remain under review in [CODE_REVIEW.v4.md](CODE_REVIEW.v4.md); the next P1 issues concern pending-player reconciliation, disabled tournament handicaps, and login-attempt enforcement.
+
 ## Table of contents
 
+- [V4 review follow-up](#v4-review-follow-up-2026-09-29)
 - [Current status](#current-status)
 - [Verified implementation status](#verified-implementation-status)
    - [Import preview and reconciliation report](#import-preview-and-reconciliation-report)
@@ -13,6 +22,8 @@ This document lists only unfinished product, operational, and maintainability wo
    - [Result moderation workflow](#result-moderation-workflow)
    - [Public SGF library and match linking](#public-sgf-library-and-match-linking)
 - [Remaining implementation backlog](#remaining-implementation-backlog)
+   - [P1 — V4 correctness and security](#p1--v4-correctness-and-security)
+   - [P2 — Workflow and recovery](#p2--workflow-and-recovery)
    - [P3 — Operational enhancements](#p3--operational-enhancements)
    - [P4 — Workflow and analytics enhancements](#p4--workflow-and-analytics-enhancements)
 - [Technical implementation order](#technical-implementation-order)
@@ -125,13 +136,16 @@ Confirmed in code:
 
 ## Remaining implementation backlog
 
-### P1 — None
+### P1 — V4 correctness and security
 
-No remaining P1 items.
+1. V4-05: honor an explicit create-new pending-player decision instead of linking a suggestion.
+2. V4-06: respect the tournament handicap switch during automatic pairing.
+3. V4-07: enforce login-attempt limits before checking the next password.
 
-### P2 — None
+### P2 — Workflow and recovery
 
-No remaining P2 items.
+1. Finish V4-03 with a workbook preflight, explicit replacement confirmation, and a verified backup.
+2. Work through V4-08 through V4-13 after the remaining P1 issues; restore migrations and duplicate tournament POSTs are the first operational risks.
 
 ### P3 — Operational enhancements
 
@@ -155,11 +169,12 @@ No remaining P2 items.
 
 ## Technical implementation order
 
-The login rate-limit settings, typed OpenGotha payload, explicit tournament-delete modal, per-account timezone preferences, account profile/recovery, date-bounded reporting, PDF reporting, and result moderation were completed and are no longer part of the remaining backlog. The next recommended sequence is:
+The login rate-limit settings, typed OpenGotha payload, explicit tournament-delete modal, per-account timezone preferences, account profile/recovery, date-bounded reporting, PDF reporting, and result moderation were completed. V4-07 concerns enforcing the already configurable login limit. The next recommended sequence is:
 
-1. Add scheduled backups with retention and restore verification.
-2. Consider replay observability and tournament preflight.
-3. Add named seasons if the reporting workflow requires them.
+1. Fix V4-05 through V4-07; then complete the workbook replacement preflight.
+2. Fix restore migrations and non-idempotent tournament POST recovery, followed by other V4 P2 findings.
+3. Add scheduled backups with retention and restore verification.
+4. Consider replay observability, tournament preflight, and named seasons as needed.
 
 ## Documentation rules
 

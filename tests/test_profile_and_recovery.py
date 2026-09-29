@@ -1,6 +1,7 @@
 import sqlite3
 import smtplib
 
+import pytest
 from werkzeug.security import check_password_hash, generate_password_hash
 
 import config
@@ -22,6 +23,7 @@ def make_account_app(tmp_path, monkeypatch, role_name="operator"):
             "WTF_CSRF_ENABLED": False,
             "SECRET_KEY": "profile-test-secret",
             "SKIP_INIT_DB": True,
+            "APP_PUBLIC_ORIGIN": "https://go.example",
         },
         auto_init=False,
     )
@@ -262,6 +264,62 @@ def test_forgot_password_sends_reset_url_and_token_is_single_use(tmp_path, monke
     password_hash = conn.execute("SELECT password_hash FROM users WHERE id = ?", (user_id,)).fetchone()[0]
     conn.close()
     assert check_password_hash(password_hash, "reset-password")
+
+
+def test_forgot_password_link_uses_configured_origin(tmp_path, monkeypatch):
+    app, _db_path, _user_id = make_account_app(tmp_path, monkeypatch)
+    sent = []
+    monkeypatch.setattr(admin_routes, "send_password_reset_email", lambda recipient, url: sent.append(url))
+
+    response = app.test_client().post(
+        "/admin/forgot-password?lang=en",
+        data={"email": "user@example.com"},
+        headers={"Host": "attacker.invalid", "X-Forwarded-Host": "other.invalid", "X-Forwarded-Proto": "http"},
+    )
+
+    assert response.status_code == 200
+    assert sent and sent[0].startswith("https://go.example/admin/reset-password/")
+
+
+def test_forgot_password_link_keeps_deployment_prefix(tmp_path, monkeypatch):
+    app, _db_path, _user_id = make_account_app(tmp_path, monkeypatch)
+    sent = []
+    monkeypatch.setattr(admin_routes, "send_password_reset_email", lambda recipient, url: sent.append(url))
+
+    response = app.test_client().post(
+        "/admin/forgot-password?lang=en",
+        data={"email": "user@example.com"},
+        environ_overrides={"SCRIPT_NAME": "/glicko"},
+    )
+
+    assert response.status_code == 200
+    assert sent and sent[0].startswith("https://go.example/glicko/admin/reset-password/")
+
+
+def test_forgot_password_without_public_origin_does_not_issue_token(tmp_path, monkeypatch):
+    app, db_path, _user_id = make_account_app(tmp_path, monkeypatch)
+    app.config["APP_PUBLIC_ORIGIN"] = ""
+    sent = []
+    monkeypatch.setattr(admin_routes, "send_password_reset_email", lambda recipient, url: sent.append(url))
+
+    response = app.test_client().post(
+        "/admin/forgot-password?lang=en", data={"email": "user@example.com"}
+    )
+
+    assert response.status_code == 200
+    assert "If an account exists" in response.get_data(as_text=True)
+    assert not sent
+    with sqlite3.connect(db_path) as conn:
+        assert conn.execute("SELECT COUNT(*) FROM password_reset_tokens").fetchone()[0] == 0
+
+
+@pytest.mark.parametrize("public_origin", [
+    "http://go.example", "https://go.example/glicko", "https://user:pass@go.example",
+    "https://go.example?next=attacker.invalid",
+])
+def test_app_rejects_invalid_public_origin(public_origin):
+    with pytest.raises(ValueError, match="APP_PUBLIC_ORIGIN"):
+        create_app({"SKIP_INIT_DB": True, "APP_PUBLIC_ORIGIN": public_origin}, auto_init=False)
 
 
 def test_forgot_password_handles_missing_smtp_configuration(tmp_path, monkeypatch):

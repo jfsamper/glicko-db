@@ -79,8 +79,9 @@ def admin_backups():
 
 def admin_create_backup():
     admin = _admin_routes()
-    if not admin.admin_required():
-        return redirect(url_for("admin_login", lang=admin.get_language(request.args.get("lang"))))
+    permission_error = admin.require_permission("admin")
+    if permission_error is not None:
+        return permission_error
 
     lang = admin.get_language(request.args.get("lang"))
     admin.ensure_backup_dir()
@@ -100,8 +101,9 @@ def admin_create_backup():
 
 def admin_restore_backup():
     admin = _admin_routes()
-    if not admin.admin_required():
-        return redirect(url_for("admin_login", lang=admin.get_language(request.args.get("lang"))))
+    permission_error = admin.require_permission("admin")
+    if permission_error is not None:
+        return permission_error
 
     lang = admin.get_language(request.args.get("lang"))
     path = admin.get_backup_path(request.form.get("name"))
@@ -137,8 +139,9 @@ def admin_restore_backup():
 
 def admin_delete_backup():
     admin = _admin_routes()
-    if not admin.admin_required():
-        return redirect(url_for("admin_login", lang=admin.get_language(request.args.get("lang"))))
+    permission_error = admin.require_permission("admin")
+    if permission_error is not None:
+        return permission_error
 
     lang = admin.get_language(request.args.get("lang"))
     path = admin.get_backup_path(request.form.get("name"))

@@ -89,7 +89,8 @@ Solo para datos de ejemplo locales, define `LOAD_SAMPLE_DATA=1` antes de iniciar
 Los valores predeterminados están en `config.py`.
 
 - `APP_SECRET_KEY`: clave de firma de las sesiones Flask. Debe configurarse en producción.
-- `ADMIN_PASSWORD`: contraseña del acceso de administración actual. Debe reemplazarse en producción.
+- `ADMIN_PASSWORD`: contraseña usada una sola vez para crear la cuenta administrativa inicial; no reemplaza el inicio de sesión con cuentas personales.
+- `APP_PUBLIC_ORIGIN`: origen HTTPS público, por ejemplo `https://colombiago.org`, para construir enlaces de recuperación sin confiar en el encabezado Host. No incluyas una ruta ni parámetros. Si no se configura, no se envían correos ni se crean tokens de recuperación.
 - `LOAD_SAMPLE_DATA=1`: importa `rank-final.xlsx` si existe y reemplaza el conjunto de datos actual; solo para desarrollo local.
 - `DB_PATH`: ubicación de la base de datos SQLite, definida en `config.py`.
 - `AUDIT_RETENTION_DAYS`: número de días para conservar eventos de auditoría; el valor predeterminado es `730`.
@@ -101,6 +102,8 @@ Los valores predeterminados están en `config.py`.
 - La hora predeterminada es UTC-5. Cada cuenta puede elegir una zona IANA; las partidas del mismo día se procesan por ronda y luego por orden de inserción.
 - `/reports` usa rangos inclusivos `start_date` y `end_date` en la zona fija del servidor. Los totales de pantalla y de las exportaciones CSV/PDF se calculan con los mismos filtros.
 - Las cuentas tienen roles `administrator`, `tournament_director`, `operator` y `member`. Los miembros solo envían resultados de su jugador vinculado; los demás roles revisan la cola de aprobación.
+- Solo los administradores pueden crear, restaurar o eliminar copias de seguridad. No se puede eliminar, desactivar ni degradar al último administrador activo.
+- La sustitución completa de datos por XLSX requiere las hojas `Player List` y `Matches` con al menos un jugador y una partida importables. Si la importación falla, los datos anteriores se conservan; realiza una copia verificada antes de reemplazarlos.
 - `/admin/settings` permite ajustar los límites de inicio de sesión y la caducidad de recuperación. En producción usa HTTPS, contraseñas únicas y secretos solo en variables de entorno.
 - Las cuentas autenticadas pueden cargar archivos SGF sin vincularlos. Los administradores, directores y operadores pueden vincularlos o desvincularlos; solo los administradores pueden eliminar archivos.
 
@@ -124,7 +127,7 @@ pytest -q
 
 ### Organización del código
 
-Las rutas administrativas están separadas por dominio entre `routes/admin_tournaments.py`, `routes/admin_matches.py`, `routes/admin_players.py` y `routes/admin_users.py`. La lógica de torneos está separada por responsabilidad entre `services/tournament_gotha.py`, `services/tournament_participants.py`, `services/tournament_pairing.py`, `services/tournament_matches.py` y `services/tournament_standings.py`. Las traducciones y la selección de idioma viven en `services/i18n.py`, mientras que los helpers puros de gráficos de rating viven en `services/chart_service.py`; `services/common.py` conserva exports de compatibilidad para los imports existentes. `services/tournament_service.py` se conserva como fachada de compatibilidad. La suite completa de regresión pasa actualmente 373 pruebas.
+Las rutas administrativas están separadas por dominio entre `routes/admin_tournaments.py`, `routes/admin_matches.py`, `routes/admin_players.py` y `routes/admin_users.py`. La lógica de torneos está separada por responsabilidad entre `services/tournament_gotha.py`, `services/tournament_participants.py`, `services/tournament_pairing.py`, `services/tournament_matches.py` y `services/tournament_standings.py`. Las traducciones y la selección de idioma viven en `services/i18n.py`, mientras que los helpers puros de gráficos de rating viven en `services/chart_service.py`; `services/common.py` conserva exports de compatibilidad para los imports existentes. `services/tournament_service.py` se conserva como fachada de compatibilidad. Para ejecutar todos los tests se necesitan las guías HTML generadas y los XML de ejemplo locales; usa `pytest -q` para comprobarlos.
 
 ### Instalación en hosting Linux
 

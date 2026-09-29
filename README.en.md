@@ -89,7 +89,8 @@ Only for local sample data, define `LOAD_SAMPLE_DATA=1` before startup. Do not u
 The default values are in `config.py`.
 
 - `APP_SECRET_KEY`: Flask session-signing key. It must be set in production.
-- `ADMIN_PASSWORD`: current admin access password. Replace it in production.
+- `ADMIN_PASSWORD`: one-time password for creating the initial administrator account; named accounts handle subsequent sign-in.
+- `APP_PUBLIC_ORIGIN`: public HTTPS origin, such as `https://colombiago.org`, for recovery links without trusting the request Host header. Do not include a path or query string. When unset, recovery emails and tokens are not issued.
 - `LOAD_SAMPLE_DATA=1`: imports `rank-final.xlsx` if present and replaces the current dataset; intended only for local development.
 - `DB_PATH`: SQLite database path, defined in `config.py`.
 - `AUDIT_RETENTION_DAYS`: number of days to keep audit events; default is `730`.
@@ -101,6 +102,8 @@ The default values are in `config.py`.
 - The default timezone is UTC-5. Each account can choose an IANA timezone; matches on the same day are processed by round number and then insertion order.
 - `/reports` uses inclusive `start_date` and `end_date` ranges in the fixed server timezone. The page and CSV/PDF exports reuse the same filters and totals.
 - Accounts use the roles `administrator`, `tournament_director`, `operator`, and `member`. Members submit results only for their linked player; the other roles review the approval queue.
+- Only administrators can create, restore, or delete backups. The last active administrator cannot be deleted, deactivated, or demoted.
+- Full XLSX replacement requires `Player List` and `Matches` sheets with at least one importable player and match. A failed import preserves the previous data; take a verified backup before replacing it.
 - `/admin/settings` controls login limits and recovery expiry. In production, use HTTPS, unique passwords, and keep secrets in environment variables.
 - Logged-in accounts can upload SGF files without linking them. Administrators, directors, and operators can link or unlink records; only administrators can delete files.
 
@@ -124,7 +127,7 @@ pytest -q
 
 ### Code organization
 
-Administrative routes are split by domain across `routes/admin_tournaments.py`, `routes/admin_matches.py`, `routes/admin_players.py`, and `routes/admin_users.py`. Tournament logic is split by responsibility across `services/tournament_gotha.py`, `services/tournament_participants.py`, `services/tournament_pairing.py`, `services/tournament_matches.py`, and `services/tournament_standings.py`. Translations and language selection live in `services/i18n.py`, while pure rating-chart helpers live in `services/chart_service.py`; `services/common.py` retains compatibility exports for existing imports. `services/tournament_service.py` remains a compatibility facade. The current full regression suite passes 373 tests.
+Administrative routes are split by domain across `routes/admin_tournaments.py`, `routes/admin_matches.py`, `routes/admin_players.py`, and `routes/admin_users.py`. Tournament logic is split by responsibility across `services/tournament_gotha.py`, `services/tournament_participants.py`, `services/tournament_pairing.py`, `services/tournament_matches.py`, and `services/tournament_standings.py`. Translations and language selection live in `services/i18n.py`, while pure rating-chart helpers live in `services/chart_service.py`; `services/common.py` retains compatibility exports for existing imports. `services/tournament_service.py` remains a compatibility facade. The full suite requires generated HTML guides and local sample XML files; run `pytest -q` to check it.
 
 ### Linux hosting installation
 

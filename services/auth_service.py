@@ -305,6 +305,37 @@ def bootstrap_default_admin_account(conn=None, password=None):
     return user_id
 
 
+def ensure_active_administrator_remains(conn, user_id, role_name=None, is_active=False):
+    if role_name == "administrator" and is_active:
+        return
+
+    current = conn.execute(
+        """
+        SELECT 1 FROM users u
+        JOIN user_roles ur ON ur.user_id = u.id
+        JOIN roles r ON r.id = ur.role_id
+        WHERE u.id = ? AND u.is_active = 1 AND r.name = 'administrator'
+        LIMIT 1
+        """,
+        (user_id,),
+    ).fetchone()
+    if current is None:
+        return
+
+    remaining = conn.execute(
+        """
+        SELECT 1 FROM users u
+        JOIN user_roles ur ON ur.user_id = u.id
+        JOIN roles r ON r.id = ur.role_id
+        WHERE u.id != ? AND u.is_active = 1 AND r.name = 'administrator'
+        LIMIT 1
+        """,
+        (user_id,),
+    ).fetchone()
+    if remaining is None:
+        raise ValueError("Cannot remove the last active administrator")
+
+
 def create_user_account(
     username,
     password,

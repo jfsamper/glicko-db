@@ -89,7 +89,8 @@ Apenas para dados de exemplo locais, defina `LOAD_SAMPLE_DATA=1` antes de inicia
 Os valores padrão estão em `config.py`.
 
 - `APP_SECRET_KEY`: chave de assinatura da sessão Flask. Deve ser configurada em produção.
-- `ADMIN_PASSWORD`: senha de acesso administrativa atual. Deve ser substituída em produção.
+- `ADMIN_PASSWORD`: senha usada uma vez para criar a conta administrativa inicial; depois, o acesso usa contas pessoais.
+- `APP_PUBLIC_ORIGIN`: origem HTTPS pública, por exemplo `https://colombiago.org`, para criar links de recuperação sem confiar no cabeçalho Host. Não inclua caminho nem parâmetros. Sem essa configuração, não são enviados e-mails nem criados tokens de recuperação.
 - `LOAD_SAMPLE_DATA=1`: importa `rank-final.xlsx` se existir e substitui o conjunto de dados atual; serve apenas para desenvolvimento local.
 - `DB_PATH`: local do banco SQLite, definido em `config.py`.
 - `AUDIT_RETENTION_DAYS`: número de dias para manter eventos de auditoria; o padrão é `730`.
@@ -101,6 +102,8 @@ Os valores padrão estão em `config.py`.
 - O fuso padrão é UTC-5. Cada conta pode escolher um fuso IANA; partidas do mesmo dia são processadas por rodada e depois pela ordem de inserção.
 - `/reports` usa intervalos inclusivos `start_date` e `end_date` no fuso fixo do servidor. A tela e as exportações CSV/PDF usam os mesmos filtros e totais.
 - As contas têm as funções `administrator`, `tournament_director`, `operator` e `member`. Membros enviam apenas resultados do jogador vinculado; as outras funções revisam a fila de aprovação.
+- Apenas administradores podem criar, restaurar ou excluir cópias de segurança. O último administrador ativo não pode ser excluído, desativado nem rebaixado.
+- A substituição completa de dados por XLSX exige as planilhas `Player List` e `Matches` com ao menos um jogador e uma partida importáveis. Falhas preservam os dados anteriores; faça uma cópia verificada antes da substituição.
 - `/admin/settings` permite ajustar limites de login e expiração da recuperação. Em produção, use HTTPS, senhas exclusivas e segredos apenas em variáveis de ambiente.
 - Contas autenticadas podem enviar arquivos SGF sem vinculá-los. Administradores, diretores e operadores podem vinculá-los ou desvinculá-los; apenas administradores podem excluir arquivos.
 
@@ -124,7 +127,7 @@ pytest -q
 
 ### Organização do código
 
-As rotas administrativas estão separadas por domínio em `routes/admin_tournaments.py`, `routes/admin_matches.py`, `routes/admin_players.py` e `routes/admin_users.py`. A lógica de torneios está separada por responsabilidade em `services/tournament_gotha.py`, `services/tournament_participants.py`, `services/tournament_pairing.py`, `services/tournament_matches.py` e `services/tournament_standings.py`. As traduções e a seleção de idioma ficam em `services/i18n.py`, enquanto os helpers puros de gráficos de rating ficam em `services/chart_service.py`; `services/common.py` mantém exports de compatibilidade para os imports existentes. `services/tournament_service.py` permanece como fachada de compatibilidade. A suíte completa de regressão passa atualmente em 373 testes.
+As rotas administrativas estão separadas por domínio em `routes/admin_tournaments.py`, `routes/admin_matches.py`, `routes/admin_players.py` e `routes/admin_users.py`. A lógica de torneios está separada por responsabilidade em `services/tournament_gotha.py`, `services/tournament_participants.py`, `services/tournament_pairing.py`, `services/tournament_matches.py` e `services/tournament_standings.py`. As traduções e a seleção de idioma ficam em `services/i18n.py`, enquanto os helpers puros de gráficos de rating ficam em `services/chart_service.py`; `services/common.py` mantém exports de compatibilidade para os imports existentes. `services/tournament_service.py` permanece como fachada de compatibilidade. Para executar toda a suíte são necessários os guias HTML gerados e os arquivos XML de exemplo locais; use `pytest -q` para verificá-la.
 
 ### Instalação em hospedagem Linux
 

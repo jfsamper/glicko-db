@@ -295,6 +295,90 @@ def test_workbook_import_normalizes_round_and_preserves_time_notes(tmp_path, mon
     ]
 
 
+def test_workbook_reset_rejects_empty_file_without_erasing_data(tmp_path, isolate_test_database):
+    from openpyxl import Workbook
+
+    db_path = isolate_test_database
+    with sqlite3.connect(db_path) as conn:
+        before = (
+            conn.execute("SELECT COUNT(*) FROM players").fetchone()[0],
+            conn.execute("SELECT COUNT(*) FROM matches").fetchone()[0],
+        )
+    assert all(before)
+
+    workbook_path = tmp_path / "empty.xlsx"
+    workbook = Workbook()
+    workbook.save(workbook_path)
+    workbook.close()
+
+    with pytest.raises(ValueError, match="no importable players or matches"):
+        import_service.import_workbook_data(workbook_path, reset=True)
+
+    with sqlite3.connect(db_path) as conn:
+        after = (
+            conn.execute("SELECT COUNT(*) FROM players").fetchone()[0],
+            conn.execute("SELECT COUNT(*) FROM matches").fetchone()[0],
+        )
+    assert after == before
+
+
+@pytest.mark.parametrize("fail_after_first_player", [False, True])
+def test_workbook_reset_commits_or_rolls_back_all_rows(
+    tmp_path, isolate_test_database, monkeypatch, fail_after_first_player
+):
+    from openpyxl import Workbook
+
+    db_path = isolate_test_database
+    with sqlite3.connect(db_path) as conn:
+        before = (
+            conn.execute("SELECT COUNT(*) FROM players").fetchone()[0],
+            conn.execute("SELECT COUNT(*) FROM matches").fetchone()[0],
+        )
+
+    workbook_path = tmp_path / "replacement.xlsx"
+    workbook = Workbook()
+    players_sheet = workbook.active
+    players_sheet.title = "Player List"
+    players_sheet.append(["Name", "Initial Rating"])
+    players_sheet.append(["Alice Smith", 1500])
+    players_sheet.append(["Bob Jones", 1500])
+    matches_sheet = workbook.create_sheet("Matches")
+    matches_sheet.append(["Date", "White", "Black", "Winner"])
+    matches_sheet.append(["2026-09-10", "Alice Smith", "Bob Jones", "Alice Smith"])
+    workbook.save(workbook_path)
+    workbook.close()
+
+    if fail_after_first_player:
+        real_ensure_player = import_service.ensure_player
+        calls = []
+
+        def fail_on_second_player(*args, **kwargs):
+            calls.append(True)
+            if len(calls) == 2:
+                raise RuntimeError("import interrupted")
+            return real_ensure_player(*args, **kwargs)
+
+        monkeypatch.setattr(import_service, "ensure_player", fail_on_second_player)
+        with pytest.raises(RuntimeError, match="import interrupted"):
+            import_service.import_workbook_data(workbook_path, reset=True)
+    else:
+        assert import_service.import_workbook_data(workbook_path, reset=True) == {
+            "players": 2, "matches": 1,
+        }
+
+    with sqlite3.connect(db_path) as conn:
+        after = (
+            conn.execute("SELECT COUNT(*) FROM players").fetchone()[0],
+            conn.execute("SELECT COUNT(*) FROM matches").fetchone()[0],
+        )
+        dirty_date = conn.execute(
+            "SELECT earliest_dirty_date FROM rating_state WHERE id = 1"
+        ).fetchone()[0]
+    assert after == (before if fail_after_first_player else (2, 1))
+    if not fail_after_first_player:
+        assert dirty_date == "2026-09-10"
+
+
 def test_parse_date_value_rejects_invalid_or_missing_dates():
     with pytest.raises(ValueError):
         parse_date_value("")

@@ -4,6 +4,7 @@ import os
 import sqlite3
 import re
 from pathlib import Path
+from urllib.parse import urlsplit
 
 from flask import Flask, request, url_for
 from flask_wtf.csrf import CSRFProtect
@@ -45,6 +46,7 @@ def create_app(test_config=None, auto_init=True):
     app_instance = Flask(__name__)
     app_instance.config.update(
         SECRET_KEY=os.environ["APP_SECRET_KEY"],
+        APP_PUBLIC_ORIGIN=os.getenv("APP_PUBLIC_ORIGIN", ""),
         SESSION_COOKIE_SECURE=(
             os.getenv("SESSION_COOKIE_SECURE", "true").lower() in ("true", "1")),
         SESSION_COOKIE_HTTPONLY=True,
@@ -59,6 +61,18 @@ def create_app(test_config=None, auto_init=True):
 
     if test_config:
         app_instance.config.update(test_config)
+
+    public_origin = app_instance.config["APP_PUBLIC_ORIGIN"]
+    if public_origin:
+        if not isinstance(public_origin, str):
+            raise ValueError("APP_PUBLIC_ORIGIN must be an HTTPS origin")
+        parsed_origin = urlsplit(public_origin.strip())
+        if (parsed_origin.scheme != "https" or not parsed_origin.hostname
+                or parsed_origin.username or parsed_origin.password
+                or parsed_origin.path not in ("", "/")
+                or parsed_origin.query or parsed_origin.fragment):
+            raise ValueError("APP_PUBLIC_ORIGIN must be an HTTPS origin")
+        app_instance.config["APP_PUBLIC_ORIGIN"] = f"https://{parsed_origin.netloc}"
 
     app_instance.secret_key = app_instance.config["SECRET_KEY"]
 

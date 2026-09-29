@@ -549,6 +549,12 @@ def test_admin_backups_requires_administrator_capability(tmp_path, monkeypatch):
     response = client.get("/admin/backups?lang=en")
     assert response.status_code == 403
 
+    for action in ("create", "restore", "delete"):
+        response = client.post(
+            f"/admin/backups/{action}?lang=en", data={"name": "missing.db"}
+        )
+        assert response.status_code == 403
+
 
 def test_restore_db_from_backup_recreates_auth_schema_for_session_checks(tmp_path, monkeypatch):
     db_path = tmp_path / "restored_auth_backup.db"
@@ -711,6 +717,90 @@ def test_admin_user_management_page_and_create_form_render_for_administrators(tm
     create_response = client.get("/admin/users/create?lang=en")
     assert create_response.status_code == 200
     assert b"Create user" in create_response.data
+
+
+@pytest.mark.parametrize("change", ["demote", "deactivate", "delete"])
+def test_last_active_administrator_cannot_be_removed(admin_client, isolate_test_database, change):
+    db_path = isolate_test_database
+    conn = sqlite3.connect(db_path)
+    try:
+        admin_id = conn.execute("SELECT id FROM users WHERE username = 'admin'").fetchone()[0]
+        conn.execute(
+            "INSERT INTO users (username, password_hash, is_active) VALUES ('member', 'unused', 1)"
+        )
+        inactive_id = conn.execute(
+            "INSERT INTO users (username, password_hash, is_active) VALUES ('inactive-admin', 'unused', 0)"
+        ).lastrowid
+        conn.execute(
+            "INSERT INTO user_roles (user_id, role_id) VALUES (?, "
+            "(SELECT id FROM roles WHERE name = 'administrator'))",
+            (inactive_id,),
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+    if change == "delete":
+        response = admin_client.post(f"/admin/users/{admin_id}/delete?lang=en", follow_redirects=True)
+    else:
+        response = admin_client.post(
+            f"/admin/users/{admin_id}/edit?lang=en",
+            data={
+                "username": "admin", "role_name": "operator" if change == "demote" else "administrator",
+                "is_active": "0" if change == "deactivate" else "1",
+            },
+            follow_redirects=True,
+        )
+
+    assert response.status_code == 200
+    assert b"last active administrator" in response.data
+    with sqlite3.connect(db_path) as conn:
+        row = conn.execute(
+            "SELECT u.is_active, r.name FROM users u JOIN user_roles ur ON ur.user_id = u.id "
+            "JOIN roles r ON r.id = ur.role_id WHERE u.id = ?", (admin_id,)
+        ).fetchone()
+    assert row == (1, "administrator")
+    assert admin_client.get("/admin/users?lang=en").status_code == 200
+
+
+@pytest.mark.parametrize("change", ["demote", "deactivate", "delete"])
+def test_one_of_two_active_administrators_can_be_removed(admin_client, isolate_test_database, change):
+    db_path = isolate_test_database
+    conn = sqlite3.connect(db_path)
+    try:
+        second_id = conn.execute(
+            "INSERT INTO users (username, password_hash, is_active) VALUES ('second-admin', 'unused', 1)"
+        ).lastrowid
+        conn.execute(
+            "INSERT INTO user_roles (user_id, role_id) VALUES (?, "
+            "(SELECT id FROM roles WHERE name = 'administrator'))",
+            (second_id,),
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+    if change == "delete":
+        response = admin_client.post(f"/admin/users/{second_id}/delete?lang=en", follow_redirects=True)
+    else:
+        response = admin_client.post(
+            f"/admin/users/{second_id}/edit?lang=en",
+            data={
+                "username": "second-admin", "role_name": "operator" if change == "demote" else "administrator",
+                "is_active": "0" if change == "deactivate" else "1",
+            },
+            follow_redirects=True,
+        )
+
+    assert response.status_code == 200
+    assert b"last active administrator" not in response.data
+    with sqlite3.connect(db_path) as conn:
+        remaining = conn.execute(
+            "SELECT COUNT(*) FROM users u JOIN user_roles ur ON ur.user_id = u.id "
+            "JOIN roles r ON r.id = ur.role_id "
+            "WHERE u.is_active = 1 AND r.name = 'administrator'"
+        ).fetchone()[0]
+    assert remaining == 1
 
 
 def test_admin_user_timezone_can_be_created_and_updated(tmp_path, monkeypatch):
