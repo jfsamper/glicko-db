@@ -4,6 +4,7 @@ import smtplib
 import pytest
 from werkzeug.security import check_password_hash, generate_password_hash
 
+import conftest
 import config
 import routes.admin as admin_routes
 import services.auth_service as auth_service
@@ -53,9 +54,7 @@ def make_account_app(tmp_path, monkeypatch, role_name="operator"):
 
 
 def authenticate_client(client, user_id, role_name="operator"):
-    with client.session_transaction() as session:
-        session["user_id"] = user_id
-        session["user_role"] = role_name
+    conftest.set_user_session(client, user_id)
 
 
 @pytest.mark.parametrize("vary_ip", [False, True])
@@ -126,7 +125,9 @@ def test_expired_login_attempts_do_not_block_login(tmp_path, monkeypatch):
 def test_profile_persists_preferences_and_changes_password(tmp_path, monkeypatch):
     app, db_path, user_id = make_account_app(tmp_path, monkeypatch)
     client = app.test_client()
+    stale_client = app.test_client()
     authenticate_client(client, user_id)
+    authenticate_client(stale_client, user_id)
 
     response = client.post(
         "/admin/profile?lang=en",
@@ -158,6 +159,7 @@ def test_profile_persists_preferences_and_changes_password(tmp_path, monkeypatch
     response = client.get("/admin/profile")
     assert response.status_code == 200
     assert "Meu perfil" in response.get_data(as_text=True)
+    assert stale_client.get("/admin/profile?lang=en").status_code == 302
 
 
 def test_member_can_view_and_edit_profile(tmp_path, monkeypatch):
@@ -309,6 +311,8 @@ def test_forgot_password_rate_limit_preserves_generic_response(tmp_path, monkeyp
 def test_forgot_password_sends_reset_url_and_token_is_single_use(tmp_path, monkeypatch):
     app, db_path, user_id = make_account_app(tmp_path, monkeypatch)
     client = app.test_client()
+    stale_client = app.test_client()
+    authenticate_client(stale_client, user_id)
     sent = []
     monkeypatch.setattr(admin_routes, "send_password_reset_email", lambda recipient, url: sent.append((recipient, url)))
 
@@ -324,11 +328,51 @@ def test_forgot_password_sends_reset_url_and_token_is_single_use(tmp_path, monke
     )
     assert response.status_code == 302
     assert common.reset_password_with_token(token, "another-password") is False
+    assert stale_client.get("/admin/profile?lang=en").status_code == 302
 
     conn = sqlite3.connect(db_path)
     password_hash = conn.execute("SELECT password_hash FROM users WHERE id = ?", (user_id,)).fetchone()[0]
     conn.close()
     assert check_password_hash(password_hash, "reset-password")
+
+
+def test_admin_deactivation_invalidates_existing_user_session(tmp_path, monkeypatch):
+    app, db_path, user_id = make_account_app(tmp_path, monkeypatch)
+    with sqlite3.connect(db_path) as conn:
+        common.migrate_audit_log_schema(conn)
+        administrator_id = conn.execute(
+            "INSERT INTO users (username, password_hash, is_active) VALUES (?, ?, 1)",
+            ("administrator", generate_password_hash("admin-password")),
+        ).lastrowid
+        conn.execute(
+            "INSERT INTO user_roles (user_id, role_id) VALUES (?, (SELECT id FROM roles WHERE name = 'administrator'))",
+            (administrator_id,),
+        )
+        conn.commit()
+
+    target_client = app.test_client()
+    administrator_client = app.test_client()
+    authenticate_client(target_client, user_id)
+    authenticate_client(administrator_client, administrator_id, "administrator")
+    assert target_client.get("/admin/profile?lang=en").status_code == 200
+
+    response = administrator_client.post(
+        f"/admin/users/{user_id}/edit?lang=en",
+        data={
+            "username": "profile-user",
+            "is_active": "0",
+            "role_name": "operator",
+            "timezone": "UTC",
+            "email": "user@example.com",
+        },
+    )
+
+    assert response.status_code == 302
+    assert target_client.get("/admin/profile?lang=en").status_code == 302
+    with sqlite3.connect(db_path) as conn:
+        assert conn.execute(
+            "SELECT is_active, auth_version FROM users WHERE id = ?", (user_id,)
+        ).fetchone() == (0, 1)
 
 
 def test_forgot_password_link_uses_configured_origin(tmp_path, monkeypatch):

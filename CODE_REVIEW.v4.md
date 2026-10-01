@@ -9,7 +9,10 @@
 - **V4-05 fixed:** only an explicitly chosen player ID links a pending participant; unconfirmed suggestions create a new player, and an exact-name collision stays pending with an error.
 - **V4-06 fixed:** automatic round generation applies handicap stones only when the tournament setting is enabled; tests cover both states.
 - **V4-07 fixed:** login attempts are reserved before password verification with atomic per-IP and normalized-username limits; expiry, success cleanup, legacy-schema migration, and password recovery are covered.
-- Post-change suite: **401 passed, 1 known failure** in the unrelated generated help-link test (V4-11). All findings below describe the **pre-fix review snapshot**; V4-03's preflight and V4-08 onward remain open.
+- **V4-08 fixed (2026-09-30):** startup and restore now share the same complete schema-migration sequence; legacy-backup coverage verifies the moderation and audit tables and loads the moderation queue after restore.
+- **V4-09 fixed (2026-09-30):** failed async POSTs are never resubmitted natively; the dashboard shows a translated reload action so staff can check the committed state before retrying. Server-side idempotency remains separate hardening for non-repeatable commands.
+- **V4-10 fixed (2026-09-30):** sessions carry a database-backed auth version; password changes/resets, role or activity changes, and restore advance it. Regression tests cover stale sessions after reset, deactivation, and restore while preserving the current session after a confirmed self-service change.
+- Post-change suite: **403 passed, 1 known failure** in the unrelated generated help-link test (V4-11). All findings below describe the **pre-fix review snapshot**; V4-03's preflight and V4-11 onward remain open.
 
 ## Findings
 
@@ -107,7 +110,7 @@ The current integration guide explicitly states there is **no stable REST API**;
 
 ### 1. Prerequisites and identity
 
-- Close V4-01 through V4-08, particularly backup authorization, Host validation, actual login throttling, last-admin protection, explicit reconciliation, handicap correctness, and consistent restore migrations. Define whether draft tournaments are confidential. Stabilize transaction boundaries and report query costs before exposing write/high-volume read endpoints.
+- Close V4-01 through V4-10, particularly backup authorization, Host validation, actual login throttling, last-admin protection, explicit reconciliation, handicap correctness, consistent restore migrations, and session invalidation. Define whether draft tournaments are confidential. Stabilize transaction boundaries and report query costs before exposing write/high-volume read endpoints.
 - Use **opaque bearer personal-access tokens**, not the browser's ambient session cookie or a shared `ADMIN_PASSWORD`. Issue them through the existing authenticated, CSRF-protected profile/admin UI after password confirmation; no anonymous `/api/v1/token` bootstrap endpoint. Store only a digest and metadata (`user_id`, allowed scopes, expiry, revoked time, name, last use); show the raw token once. Require HTTPS, short default lifetime, rotation/revocation, per-token/IP rate limits, redacted logs, and no cross-origin browser access by default.
 - Resolve the user and current role(s) on **every** request; deny missing/expired/revoked tokens, inactive users, and unknown scopes. Never serialize `password_hash` from the current auth payload ([services/auth_service.py](services/auth_service.py#L369)). Revoke tokens and browser sessions on password reset, deactivation, role change where scopes shrink, or DB restore. For APIs, return JSON 401 (missing/invalid token) vs 403 (valid identity, insufficient scope); keep existing web login redirects and CSRF behavior unchanged.
 

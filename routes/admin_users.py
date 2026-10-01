@@ -88,6 +88,7 @@ def admin_login():
             if user is not None:
                 session.clear()
                 session["user_id"] = user["id"]
+                session["auth_version"] = user["auth_version"]
                 session["user_role"] = user.get("role") or "administrator"
                 if user.get("language"):
                     session["user_language"] = user["language"]
@@ -598,7 +599,7 @@ def admin_profile():
                 return redirect(url_for("admin_profile", lang=lang))
             if password_hash:
                 conn.execute(
-                    "UPDATE users SET email = ?, language = ?, theme = ?, timezone = ?, password_hash = ? WHERE id = ?",
+                    "UPDATE users SET email = ?, language = ?, theme = ?, timezone = ?, password_hash = ?, auth_version = auth_version + 1 WHERE id = ?",
                     (email, language, theme, timezone_name,
                      password_hash, user["id"]),
                 )
@@ -612,6 +613,8 @@ def admin_profile():
             conn.close()
         session["user_language"] = language
         session["user_theme"] = theme
+        if password_hash:
+            session["auth_version"] = user["auth_version"] + 1
         admin.log_admin_action(
             "profile_updated",
             "user",
@@ -1005,9 +1008,15 @@ def admin_edit_user(user_id):
                 return redirect(url_for("admin_edit_user", user_id=user_id, lang=lang))
             conn.execute("BEGIN IMMEDIATE")
             ensure_active_administrator_remains(conn, user_id, role_name, is_active)
+            auth_version_increment = int(
+                is_active != user["is_active"]
+                or role_name != user["role_name"]
+                or bool(password)
+            )
             conn.execute(
-                "UPDATE users SET username = ?, is_active = ?, timezone = ?, email = ?, player_id = ? WHERE id = ?",
-                (username, is_active, timezone_name, email, player_id, user_id),
+                "UPDATE users SET username = ?, is_active = ?, timezone = ?, email = ?, player_id = ?, auth_version = auth_version + ? WHERE id = ?",
+                (username, is_active, timezone_name, email, player_id,
+                 auth_version_increment, user_id),
             )
             if password:
                 conn.execute(
@@ -1025,6 +1034,10 @@ def admin_edit_user(user_id):
                     (user_id, role["id"]),
                 )
             conn.commit()
+            if (session.get("user_id") == user_id and is_active
+                    and auth_version_increment):
+                session["auth_version"] += auth_version_increment
+                session["user_role"] = role_name
             admin.log_admin_action(
                 "user_updated",
                 "user",

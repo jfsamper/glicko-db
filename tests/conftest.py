@@ -18,7 +18,7 @@ def set_admin_session(client, db_path=None):
     conn = sqlite3.connect(target_db)
     try:
         common.migrate_auth_schema(conn)
-        user = conn.execute("SELECT id FROM users WHERE username = 'admin'").fetchone()
+        user = conn.execute("SELECT id, auth_version FROM users WHERE username = 'admin'").fetchone()
         if user is None:
             conn.execute(
                 "INSERT INTO users (username, password_hash, is_active) VALUES (?, ?, 1)",
@@ -31,7 +31,7 @@ def set_admin_session(client, db_path=None):
                 (user_id, role_id),
             )
             conn.commit()
-            user = conn.execute("SELECT id FROM users WHERE username = 'admin'").fetchone()
+            user = conn.execute("SELECT id, auth_version FROM users WHERE username = 'admin'").fetchone()
     finally:
         conn.close()
 
@@ -42,9 +42,37 @@ def set_admin_session(client, db_path=None):
     with client.session_transaction() as session:
         session.clear()
         session["user_id"] = user[0]
+        session["auth_version"] = user[1]
         session["user_role"] = "administrator"
         session["csrf_token"] = raw_token
     return user[0], signed_token
+
+
+def set_user_session(client, user_id, db_path=None):
+    """Attach a session using the account's current role and auth epoch."""
+    target_db = db_path or config.DB_PATH
+    conn = sqlite3.connect(target_db)
+    try:
+        user = conn.execute(
+            """
+            SELECT u.auth_version,
+                   (SELECT r.name FROM user_roles ur
+                    JOIN roles r ON r.id = ur.role_id
+                    WHERE ur.user_id = u.id ORDER BY r.name LIMIT 1)
+            FROM users u WHERE u.id = ?
+            """,
+            (user_id,),
+        ).fetchone()
+    finally:
+        conn.close()
+    if user is None:
+        raise ValueError("user not found")
+
+    with client.session_transaction() as session:
+        session.clear()
+        session["user_id"] = user_id
+        session["auth_version"] = user[0]
+        session["user_role"] = user[1]
 
 
 @pytest.fixture(scope="session")

@@ -11,7 +11,10 @@ This document lists only unfinished product, operational, and maintainability wo
 - V4-05: an unconfirmed pending-player suggestion no longer links automatically; create-new rejects exact-name collisions instead of silently reusing an ID.
 - V4-06: generated round handicaps now respect the tournament's enabled setting.
 - V4-07: login attempts are checked before authentication using atomic per-IP and per-username windows; password recovery keeps its existing rate limit.
-- V4-08 through V4-14 remain under review in [CODE_REVIEW.v4.md](CODE_REVIEW.v4.md).
+- V4-08: startup and restore use the same complete schema-migration sequence; legacy-backup coverage checks moderation and audit schema recreation.
+- V4-09: failed async POSTs no longer trigger native resubmission; the dashboard offers a translated reload action. Server-side idempotency remains separate hardening for non-repeatable commands.
+- V4-10: database-backed auth versions invalidate stale sessions after password or authorization changes and backup restore.
+- V4-11 through V4-14 remain under review in [CODE_REVIEW.v4.md](CODE_REVIEW.v4.md).
 
 ## Table of contents
 
@@ -146,7 +149,7 @@ No remaining P1 implementation failures from the V4 review; complete the V4-03 w
 ### P2 — Workflow and recovery
 
 1. Finish V4-03 with a workbook preflight, explicit replacement confirmation, and a verified backup.
-2. Work through V4-08 through V4-13 after the remaining P1 issues; restore migrations and duplicate tournament POSTs are the first operational risks.
+2. Work through V4-11 through V4-13 after the remaining P1 issues.
 
 ### P3 — Operational enhancements
 

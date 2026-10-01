@@ -206,6 +206,11 @@ def test_role_permissions_allow_tournament_director_but_not_admin_only_access(tm
 
         session["user_id"] = user_id
         session["user_role"] = "tournament_director"
+        auth_conn = sqlite3.connect(db_path)
+        session["auth_version"] = auth_conn.execute(
+            "SELECT auth_version FROM users WHERE id = ?", (user_id,)
+        ).fetchone()[0]
+        auth_conn.close()
         assert common.admin_required() is True
         assert common.user_has_permission("tournament_admin") is True
         assert common.user_has_permission("data_admin") is False
@@ -275,9 +280,7 @@ def test_tournament_player_management_can_create_and_enroll_player(tmp_path, mon
         conn.close()
 
     client = app_instance.test_client()
-    with client.session_transaction() as session:
-        session["user_id"] = user_id
-        session["user_role"] = "operator"
+    conftest.set_user_session(client, user_id)
 
     response = client.get("/admin/tournaments/1/players?lang=en")
     assert response.status_code == 200
@@ -384,9 +387,7 @@ def test_tournament_player_creation_rejects_missing_name(tmp_path, monkeypatch):
         conn.close()
 
     client = app_instance.test_client()
-    with client.session_transaction() as session:
-        session["user_id"] = user_id
-        session["user_role"] = "operator"
+    conftest.set_user_session(client, user_id)
     response = client.post("/admin/tournaments/1/players/create?lang=en", data={"first_name": "Ada", "last_name": "Lovelace", "glicko": "0"})
 
     assert response.status_code == 302
@@ -415,6 +416,9 @@ def test_get_current_user_keeps_caller_owned_connections_open(tmp_path, monkeypa
 
             session["user_id"] = user_id
             session["user_role"] = "operator"
+            session["auth_version"] = conn.execute(
+                "SELECT auth_version FROM users WHERE id = ?", (user_id,)
+            ).fetchone()[0]
 
             owned_conn = sqlite3.connect(str(db_path))
             assert common.get_current_user(conn=owned_conn) is not None
@@ -453,9 +457,7 @@ def test_non_admin_role_session_remains_valid_across_requests(tmp_path, monkeypa
         conn.close()
 
     client = app_instance.test_client()
-    with client.session_transaction() as session:
-        session["user_id"] = user_id
-        session["user_role"] = "tournament_director"
+    conftest.set_user_session(client, user_id)
 
     response = client.get("/admin?lang=en")
     assert response.status_code == 200
@@ -542,9 +544,7 @@ def test_admin_backups_requires_administrator_capability(tmp_path, monkeypatch):
         conn.close()
 
     client = app_instance.test_client()
-    with client.session_transaction() as session:
-        session["user_id"] = user_id
-        session["user_role"] = "operator"
+    conftest.set_user_session(client, user_id)
 
     response = client.get("/admin/backups?lang=en")
     assert response.status_code == 403
@@ -572,6 +572,10 @@ def test_restore_db_from_backup_recreates_auth_schema_for_session_checks(tmp_pat
         auto_init=False,
     )
 
+    stale_client = app_instance.test_client()
+    conftest.set_admin_session(stale_client, db_path)
+    assert stale_client.get("/admin/backups?lang=en").status_code == 200
+
     with sqlite3.connect(legacy_backup_path) as conn:
         conn.execute(
             "CREATE TABLE players (id INTEGER PRIMARY KEY AUTOINCREMENT, display_name TEXT NOT NULL)"
@@ -586,16 +590,24 @@ def test_restore_db_from_backup_recreates_auth_schema_for_session_checks(tmp_pat
     monkeypatch.setattr(admin_routes, "DB_PATH", str(db_path), raising=False)
 
     assert admin_routes.restore_db_from_backup(str(legacy_backup_path)) is True
+    assert stale_client.get("/admin/backups?lang=en").status_code == 302
 
     client = app_instance.test_client()
     conftest.set_admin_session(client, db_path)
 
     response = client.get("/admin/backups?lang=en")
     assert response.status_code == 200
+    assert client.get("/admin/result-submissions?lang=en").status_code == 200
 
     with sqlite3.connect(db_path) as conn:
         assert conn.execute(
             "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'news_articles'"
+        ).fetchone() is not None
+        assert conn.execute(
+            "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'result_submissions'"
+        ).fetchone() is not None
+        assert conn.execute(
+            "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'audit_log'"
         ).fetchone() is not None
 
 
@@ -614,6 +626,27 @@ def test_migrate_auth_schema_rejects_unknown_roles(tmp_path, monkeypatch):
         )
         conn.commit()
 
+    conn.close()
+
+
+def test_migrate_auth_schema_adds_auth_version_to_legacy_users(tmp_path):
+    db_path = tmp_path / "auth_epoch_migration.db"
+    conn = sqlite3.connect(db_path)
+    conn.execute(
+        "CREATE TABLE users (id INTEGER PRIMARY KEY, username TEXT NOT NULL, password_hash TEXT NOT NULL, is_active INTEGER NOT NULL DEFAULT 1)"
+    )
+    conn.execute(
+        "INSERT INTO users (username, password_hash) VALUES (?, ?)",
+        ("legacy-user", "legacy-hash"),
+    )
+
+    common.migrate_auth_schema(conn)
+
+    columns = {row[1] for row in conn.execute("PRAGMA table_info(users)")}
+    assert "auth_version" in columns
+    assert conn.execute(
+        "SELECT auth_version FROM users WHERE username = 'legacy-user'"
+    ).fetchone() == (0,)
     conn.close()
 
 
@@ -836,9 +869,7 @@ def test_admin_user_timezone_can_be_created_and_updated(tmp_path, monkeypatch):
         conn.close()
 
     client = app_instance.test_client()
-    with client.session_transaction() as session:
-        session["user_id"] = manager_id
-        session["user_role"] = "administrator"
+    conftest.set_user_session(client, manager_id)
 
     response = client.post(
         "/admin/users/create?lang=en",

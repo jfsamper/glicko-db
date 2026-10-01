@@ -4,6 +4,7 @@ import sqlite3
 import pytest
 from werkzeug.datastructures import FileStorage
 
+import conftest
 import services.common as common
 import services.sgf_service as sgf_service
 
@@ -199,9 +200,7 @@ def test_sgf_library_upload_requires_login_and_keeps_file_unlinked(
     user_id = common.create_user_account(
         "sgf-uploader", "sgf-test-password", role_name="member"
     )
-    with client.session_transaction() as session:
-        session.clear()
-        session["user_id"] = user_id
+    conftest.set_user_session(client, user_id)
 
     logged_in_library = client.get("/sgf-library?lang=en")
     assert logged_in_library.status_code == 200
@@ -337,9 +336,7 @@ def test_sgf_link_permissions_follow_staff_roles(
     user_id = common.create_user_account(
         f"sgf-{role}", "sgf-test-password", role_name=role
     )
-    with client.session_transaction() as session:
-        session.clear()
-        session["user_id"] = user_id
+    conftest.set_user_session(client, user_id)
 
     response = client.post(
         "/admin/sgf/link?lang=en",
@@ -372,9 +369,7 @@ def test_only_admin_can_delete_sgf_and_delete_clears_match_link(
     operator_id = common.create_user_account(
         "sgf-delete-operator", "sgf-test-password", role_name="operator"
     )
-    with client.session_transaction() as session:
-        session.clear()
-        session["user_id"] = operator_id
+    conftest.set_user_session(client, operator_id)
 
     response = client.post(
         "/admin/sgf/delete?lang=en",
@@ -383,9 +378,7 @@ def test_only_admin_can_delete_sgf_and_delete_clears_match_link(
     assert response.status_code == 403
     assert (upload_dir / stored_name).is_file()
 
-    with client.session_transaction() as session:
-        session.clear()
-        session["user_id"] = administrator_id
+    conftest.set_user_session(client, administrator_id)
     response = client.post(
         "/admin/sgf/delete?lang=en",
         data={"filename": stored_name},

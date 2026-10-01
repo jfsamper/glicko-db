@@ -106,7 +106,8 @@ def migrate_auth_schema(conn):
             email TEXT,
             player_id INTEGER,
             language TEXT DEFAULT 'es',
-            theme TEXT DEFAULT 'light'
+            theme TEXT DEFAULT 'light',
+            auth_version INTEGER NOT NULL DEFAULT 0
         )
         """
     )
@@ -118,6 +119,10 @@ def migrate_auth_schema(conn):
             definition = "INTEGER" if column_name == "player_id" else "TEXT"
             conn.execute(
                 f"ALTER TABLE users ADD COLUMN {column_name} {definition}")
+    if "auth_version" not in user_columns:
+        conn.execute(
+            "ALTER TABLE users ADD COLUMN auth_version INTEGER NOT NULL DEFAULT 0"
+        )
     conn.execute("UPDATE users SET language = 'es' WHERE language IS NULL")
     conn.execute("UPDATE users SET theme = 'light' WHERE theme IS NULL")
     conn.execute(
@@ -418,13 +423,15 @@ def get_current_user(conn=None):
         user = conn.execute(
             """
                  SELECT u.id, u.username, u.password_hash, u.is_active,
+                     u.auth_version,
                      u.email, u.language, u.theme, u.timezone, u.player_id
             FROM users u
             WHERE u.id = ?
             """,
             (user_id,),
         ).fetchone()
-        if user is None or user["is_active"] != 1:
+        if (user is None or user["is_active"] != 1
+            or session.get("auth_version") != user["auth_version"]):
             session.clear()
             return None
 
@@ -482,7 +489,7 @@ def authenticate_user(username, password, conn=None):
             return None
 
         user = conn.execute(
-            "SELECT id, username, password_hash, is_active, email, language, theme, timezone, player_id FROM users WHERE username = ?",
+            "SELECT id, username, password_hash, is_active, auth_version, email, language, theme, timezone, player_id FROM users WHERE username = ?",
             (username,),
         ).fetchone()
         if user is None or user["is_active"] != 1:
@@ -571,7 +578,7 @@ def reset_password_with_token(raw_token, new_password, conn=None):
             return False
         token_id = row["id"] if isinstance(row, sqlite3.Row) else row[0]
         conn.execute(
-            "UPDATE users SET password_hash = ? WHERE id = (SELECT user_id FROM password_reset_tokens WHERE id = ?)",
+            "UPDATE users SET password_hash = ?, auth_version = auth_version + 1 WHERE id = (SELECT user_id FROM password_reset_tokens WHERE id = ?)",
             (generate_password_hash(new_password), token_id),
         )
         conn.execute(
@@ -584,6 +591,11 @@ def reset_password_with_token(raw_token, new_password, conn=None):
     finally:
         if owns_connection:
             conn.close()
+
+
+def invalidate_all_user_sessions(conn):
+    """Advance every account epoch after restoring a database backup."""
+    conn.execute("UPDATE users SET auth_version = auth_version + 1")
 
 
 def send_password_reset_email(recipient, reset_url):

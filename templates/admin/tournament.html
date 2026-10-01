@@ -12,6 +12,11 @@
     </nav>
   </div>
 
+  <div id="tournament-async-error" class="warning-box" role="alert" hidden>
+    <p>{{ translations.tournament_async_error }}</p>
+    <button type="button" class="button" data-async-admin-reload>{{ translations.reload_page }}</button>
+  </div>
+
   <div class="panel-header">
     <h2>{{ tournament.name }}</h2>
     <p>{{ translations.tournament_type }}: {{ translations.get(tournament.tournament_type, tournament.tournament_type)

@@ -176,44 +176,19 @@ def restore_db_from_backup(path, db_path):
 
     shutil.copy2(path, db_path)
 
-    from app import (
-        bootstrap_default_admin_account,
-        ensure_player_schema_columns,
-        migrate_handicap_schema,
-        migrate_application_settings_schema,
-        migrate_auth_schema,
-        migrate_config_schema,
-        migrate_match_result_schema,
-        migrate_matches_notes_schema,
-        migrate_news_schema,
-        migrate_tournament_match_identity_schema,
-        migrate_tournament_schema,
-        normalize_match_round_values,
-    )
-    from services.sgf_service import clear_missing_sgf_links, ensure_sgf_schema, restore_sgf_files
+    from app import migrate_database_schema
+    from services.auth_service import invalidate_all_user_sessions
+    from services.sgf_service import restore_sgf_files
 
     restore_sgf_files(backup_path)
     conn = sqlite3.connect(db_path)
     conn.row_factory = sqlite3.Row
     try:
-        migrate_tournament_schema(conn)
-        migrate_config_schema(conn)
-        migrate_auth_schema(conn)
-        migrate_application_settings_schema(conn)
-        bootstrap_default_admin_account(conn)
+        migrate_database_schema(conn)
+        invalidate_all_user_sessions(conn)
         rebuild_players_fts_artifacts(conn)
-        ensure_player_schema_columns(conn)
         ensure_players_fts_artifacts(conn)
         ensure_rating_state_table(conn)
-        ensure_sgf_schema(conn)
-        migrate_matches_notes_schema(conn)
-        migrate_match_result_schema(conn)
-        migrate_tournament_match_identity_schema(conn)
-        normalize_match_round_values(conn)
-        migrate_handicap_schema(conn)
-        migrate_news_schema(conn)
-        ensure_sgf_schema(conn)
-        clear_missing_sgf_links(conn)
         conn.commit()
     finally:
         conn.close()

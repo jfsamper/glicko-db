@@ -2,6 +2,7 @@ import sqlite3
 from io import BytesIO
 from werkzeug.datastructures import FileStorage
 
+import conftest
 import config
 import app as app_module
 import routes.admin as admin_routes
@@ -46,9 +47,7 @@ def make_moderation_app(tmp_path, monkeypatch):
 
 
 def authenticate(client, user_id, role):
-    with client.session_transaction() as session:
-        session["user_id"] = user_id
-        session["user_role"] = role
+    conftest.set_user_session(client, user_id)
 
 
 def test_registration_creates_member_account(tmp_path, monkeypatch):

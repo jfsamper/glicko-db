@@ -3,14 +3,9 @@
   const ASYNC_ACTION_ATTR = "data-async-admin-action";
   const busyForms = new WeakSet();
 
-  // Compatibility pattern: requestSubmit ? this.form.requestSubmit() : this.form.submit()
-  function triggerFormSubmit(form) {
+  function submitGetFallback(form) {
     if (form) {
-      if (typeof form.requestSubmit === "function") {
-        form.requestSubmit();
-      } else {
-        form.submit();
-      }
+      form.submit();
     }
   }
 
@@ -34,6 +29,13 @@
     const parser = new DOMParser();
     const doc = parser.parseFromString(html, "text/html");
     return doc.getElementById(DASHBOARD_PANEL_ID);
+  }
+
+  function showActionError() {
+    const notice = document.getElementById("tournament-async-error");
+    if (notice) {
+      notice.hidden = false;
+    }
   }
 
   async function refreshPanel(url) {
@@ -103,9 +105,13 @@
         return;
       }
 
-      form.submit();
+      showActionError();
     } catch (_error) {
-      form.submit();
+      if (method === "GET") {
+        submitGetFallback(form);
+      } else {
+        showActionError();
+      }
     } finally {
       busyForms.delete(form);
     }
@@ -113,6 +119,12 @@
 
   function attachAsyncListeners(scope) {
     const root = scope || document;
+    const reloadButton = root.querySelector("[data-async-admin-reload]");
+    if (reloadButton && reloadButton.dataset.asyncBound !== "1") {
+      reloadButton.dataset.asyncBound = "1";
+      reloadButton.addEventListener("click", () => window.location.reload());
+    }
+
     const forms = root.querySelectorAll(`form[${ASYNC_ACTION_ATTR}]`);
 
     forms.forEach((form) => {

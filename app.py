@@ -918,15 +918,7 @@ def ensure_player_schema_columns(conn):
     conn.commit()
 
 
-def initialize_app():
-    os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
-    init_db()
-
-    conn = get_db()
-    assert_legacy_players_state_clean(conn)
-
-    # migrations
-
+def migrate_database_schema(conn):
     migrate_tournament_schema(conn)
     migrate_config_schema(conn)
     migrate_auth_schema(conn)
@@ -945,6 +937,16 @@ def initialize_app():
     migrate_handicap_schema(conn)
     ensure_sgf_schema(conn)
     clear_missing_sgf_links(conn)
+
+
+def initialize_app():
+    os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
+    init_db()
+
+    conn = get_db()
+    assert_legacy_players_state_clean(conn)
+
+    migrate_database_schema(conn)
 
     columns = {
         row["name"]

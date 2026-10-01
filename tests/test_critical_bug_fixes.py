@@ -1675,14 +1675,25 @@ def test_admin_process_round_async_request_returns_json(monkeypatch, tmp_path):
     assert "round_id=20" in data["redirect_url"]
 
 
-def test_admin_tournament_async_controls_include_request_submit_fallback():
-    """Older browsers without form.requestSubmit should fall back to form.submit()."""
+def test_admin_tournament_async_controls_keep_safe_submission_fallbacks():
+    """Only GET filters may fall back to a native form submission."""
     repo_root = Path(__file__).resolve().parents[1]
     template_text = (repo_root / "templates" / "admin" / "tournament.html").read_text(encoding="utf-8")
     js_text = (repo_root / "static" / "js" / "admin_tournament_async.js").read_text(encoding="utf-8")
+    submit_flow = js_text.split("async function submitAsync(form) {", 1)[1].split(
+        "\n  function attachAsyncListeners", 1
+    )[0]
 
     assert "requestSubmit ? this.form.requestSubmit() : this.form.submit()" in template_text
-    assert "requestSubmit ? this.form.requestSubmit() : this.form.submit()" in js_text
+    assert 'if (method === "GET")' in submit_flow
+    assert "submitGetFallback(form);" in submit_flow
+    assert "form.submit()" not in submit_flow
+    assert "showActionError();" in submit_flow
+    assert "function submitGetFallback(form)" in js_text
+    assert 'id="tournament-async-error"' in template_text
+    assert "translations.tournament_async_error" in template_text
+    assert "data-async-admin-reload" in template_text
+    assert "window.location.reload()" in js_text
 
 
 if __name__ == "__main__":
