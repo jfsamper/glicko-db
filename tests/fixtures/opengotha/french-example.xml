@@ -1,0 +1,466 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Tournament externalIPAddress="" fullVersionNumber="3.51.05" macAddress="" runningMode="SAL" saveDT="20210501151128">
+<Players>
+<Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade="18K" name="Player01" participating="11111111111111111111" rank="18K" rating="276" ratingOrigin="FFG : -1774" registeringStatus="FIN" smmsCorrection="0" />
+<Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade="5K" name="Player02" participating="01111111111111111111" rank="5K" rating="1603" ratingOrigin="FFG : -447" registeringStatus="FIN" smmsCorrection="0" />
+<Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade="3K" name="Player03" participating="11111111111111111111" rank="3K" rating="1840" ratingOrigin="FFG : -210" registeringStatus="FIN" smmsCorrection="0" />
+<Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade="7K" name="Player04" participating="11111111111111111111" rank="7K" rating="1374" ratingOrigin="FFG : -676" registeringStatus="FIN" smmsCorrection="0" />
+<Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade="9K" name="Player05" participating="11111111111111111111" rank="9K" rating="1164" ratingOrigin="FFG : -886" registeringStatus="FIN" smmsCorrection="0" />
+<Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade="5K" name="Player06" participating="11111111111111111111" rank="5K" rating="1582" ratingOrigin="FFG : -468" registeringStatus="FIN" smmsCorrection="0" />
+<Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade="2K" name="Player07" participating="11111111111111111111" rank="2K" rating="1853" ratingOrigin="FFG : -197" registeringStatus="FIN" smmsCorrection="0" />
+<Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade="6K" name="Player08" participating="11111111111111111111" rank="6K" rating="1516" ratingOrigin="FFG : -534" registeringStatus="FIN" smmsCorrection="0" />
+<Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade="2K" name="Player09" participating="11111111111111111111" rank="2K" rating="1894" ratingOrigin="FFG : -156" registeringStatus="FIN" smmsCorrection="0" />
+<Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade="5K" name="Player10" participating="11111111111111111111" rank="5K" rating="1586" ratingOrigin="FFG : -464" registeringStatus="FIN" smmsCorrection="0" />
+<Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade="2D" name="Player11" participating="11111111111111111111" rank="2D" rating="2160" ratingOrigin="FFG : 110" registeringStatus="FIN" smmsCorrection="0" />
+<Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade="4K" name="Player12" participating="11111111111111111111" rank="4K" rating="1653" ratingOrigin="FFG : -397" registeringStatus="FIN" smmsCorrection="0" />
+<Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade="1D" name="Player13" participating="11111111111111111111" rank="1D" rating="2142" ratingOrigin="FFG : 92" registeringStatus="FIN" smmsCorrection="0" />
+<Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade="3K" name="Player14" participating="11111111111111111111" rank="3K" rating="1763" ratingOrigin="FFG : -287" registeringStatus="FIN" smmsCorrection="0" />
+<Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade="4K" name="Player15" participating="11111111111111111111" rank="4K" rating="1671" ratingOrigin="FFG : -379" registeringStatus="FIN" smmsCorrection="0" />
+<Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade="3D" name="Player16" participating="11111111111111111111" rank="3D" rating="2322" ratingOrigin="FFG : 272" registeringStatus="FIN" smmsCorrection="0" />
+<Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade="3K" name="Player17" participating="11111111111111111111" rank="3K" rating="1796" ratingOrigin="FFG : -254" registeringStatus="FIN" smmsCorrection="0" />
+<Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade="11K" name="Player18" participating="11111111111111111111" rank="10K" rating="1114" ratingOrigin="EGF : 1114" registeringStatus="FIN" smmsCorrection="0" />
+<Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade="3D" name="Player19" participating="10000000000000000000" rank="3D" rating="2274" ratingOrigin="FFG : 224" registeringStatus="FIN" smmsCorrection="0" />
+</Players>
+<Games>
+<Game blackPlayer="PLAYER19TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="1" tableNumber="1" whitePlayer="PLAYER16TEST" />
+<Game blackPlayer="PLAYER01TEST" handicap="9" knownColor="true" result="RESULT_WHITEWINS" roundNumber="4" tableNumber="9" whitePlayer="PLAYER10TEST" />
+<Game blackPlayer="PLAYER09TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="1" tableNumber="2" whitePlayer="PLAYER07TEST" />
+<Game blackPlayer="PLAYER15TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="1" tableNumber="3" whitePlayer="PLAYER10TEST" />
+<Game blackPlayer="PLAYER06TEST" handicap="1" knownColor="true" result="RESULT_WHITEWINS" roundNumber="1" tableNumber="4" whitePlayer="PLAYER17TEST" />
+<Game blackPlayer="PLAYER04TEST" handicap="2" knownColor="true" result="RESULT_WHITEWINS" roundNumber="1" tableNumber="5" whitePlayer="PLAYER12TEST" />
+<Game blackPlayer="PLAYER01TEST" handicap="7" knownColor="true" result="RESULT_WHITEWINS" roundNumber="1" tableNumber="6" whitePlayer="PLAYER18TEST" />
+<Game blackPlayer="PLAYER13TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="1" tableNumber="7" whitePlayer="PLAYER11TEST" />
+<Game blackPlayer="PLAYER14TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="1" tableNumber="8" whitePlayer="PLAYER03TEST" />
+<Game blackPlayer="PLAYER05TEST" handicap="2" knownColor="true" result="RESULT_WHITEWINS" roundNumber="1" tableNumber="9" whitePlayer="PLAYER08TEST" />
+<Game blackPlayer="PLAYER17TEST" handicap="1" knownColor="true" result="RESULT_WHITEWINS" roundNumber="3" tableNumber="1" whitePlayer="PLAYER13TEST" />
+<Game blackPlayer="PLAYER03TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="3" tableNumber="2" whitePlayer="PLAYER12TEST" />
+<Game blackPlayer="PLAYER18TEST" handicap="3" knownColor="true" result="RESULT_WHITEWINS" roundNumber="3" tableNumber="3" whitePlayer="PLAYER08TEST" />
+<Game blackPlayer="PLAYER11TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="3" tableNumber="4" whitePlayer="PLAYER16TEST" />
+<Game blackPlayer="PLAYER09TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="3" tableNumber="5" whitePlayer="PLAYER14TEST" />
+<Game blackPlayer="PLAYER05TEST" handicap="3" knownColor="true" result="RESULT_BLACKWINS" roundNumber="3" tableNumber="6" whitePlayer="PLAYER10TEST" />
+<Game blackPlayer="PLAYER06TEST" handicap="4" knownColor="true" result="RESULT_WHITEWINS" roundNumber="3" tableNumber="7" whitePlayer="PLAYER07TEST" />
+<Game blackPlayer="PLAYER04TEST" handicap="2" knownColor="true" result="RESULT_WHITEWINS" roundNumber="3" tableNumber="8" whitePlayer="PLAYER15TEST" />
+<Game blackPlayer="PLAYER01TEST" handicap="9" knownColor="true" result="RESULT_BLACKWINS" roundNumber="3" tableNumber="9" whitePlayer="PLAYER02TEST" />
+<Game blackPlayer="PLAYER07TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="2" tableNumber="1" whitePlayer="PLAYER17TEST" />
+<Game blackPlayer="PLAYER12TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="2" tableNumber="2" whitePlayer="PLAYER15TEST" />
+<Game blackPlayer="PLAYER18TEST" handicap="3" knownColor="true" result="RESULT_WHITEWINS" roundNumber="2" tableNumber="3" whitePlayer="PLAYER02TEST" />
+<Game blackPlayer="PLAYER16TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="2" tableNumber="4" whitePlayer="PLAYER13TEST" />
+<Game blackPlayer="PLAYER03TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="2" tableNumber="5" whitePlayer="PLAYER09TEST" />
+<Game blackPlayer="PLAYER10TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="2" tableNumber="6" whitePlayer="PLAYER08TEST" />
+<Game blackPlayer="PLAYER06TEST" handicap="4" knownColor="true" result="RESULT_WHITEWINS" roundNumber="2" tableNumber="7" whitePlayer="PLAYER11TEST" />
+<Game blackPlayer="PLAYER04TEST" handicap="4" knownColor="true" result="RESULT_BLACKWINS" roundNumber="2" tableNumber="8" whitePlayer="PLAYER14TEST" />
+<Game blackPlayer="PLAYER01TEST" handicap="8" knownColor="true" result="RESULT_WHITEWINS" roundNumber="2" tableNumber="9" whitePlayer="PLAYER05TEST" />
+<Game blackPlayer="PLAYER13TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="4" tableNumber="1" whitePlayer="PLAYER07TEST" />
+<Game blackPlayer="PLAYER15TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="4" tableNumber="2" whitePlayer="PLAYER03TEST" />
+<Game blackPlayer="PLAYER08TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="4" tableNumber="3" whitePlayer="PLAYER02TEST" />
+<Game blackPlayer="PLAYER17TEST" handicap="1" knownColor="true" result="RESULT_WHITEWINS" roundNumber="4" tableNumber="4" whitePlayer="PLAYER11TEST" />
+<Game blackPlayer="PLAYER14TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="4" tableNumber="5" whitePlayer="PLAYER12TEST" />
+<Game blackPlayer="PLAYER18TEST" handicap="1" knownColor="true" result="RESULT_BLACKWINS" roundNumber="4" tableNumber="6" whitePlayer="PLAYER05TEST" />
+<Game blackPlayer="PLAYER06TEST" handicap="4" knownColor="true" result="RESULT_WHITEWINS" roundNumber="4" tableNumber="7" whitePlayer="PLAYER16TEST" />
+<Game blackPlayer="PLAYER04TEST" handicap="4" knownColor="true" result="RESULT_WHITEWINS" roundNumber="4" tableNumber="8" whitePlayer="PLAYER09TEST" />
+</Games>
+<Teams>
+<Team teamName="FLG" teamNumber="4">
+<Board boardNumber="1" player="PLAYER17TEST" roundNumber="1" />
+<Board boardNumber="2" player="PLAYER12TEST" roundNumber="1" />
+<Board boardNumber="3" player="PLAYER18TEST" roundNumber="1" />
+<Board boardNumber="1" player="PLAYER17TEST" roundNumber="2" />
+<Board boardNumber="2" player="PLAYER12TEST" roundNumber="2" />
+<Board boardNumber="3" player="PLAYER18TEST" roundNumber="2" />
+<Board boardNumber="1" player="PLAYER17TEST" roundNumber="3" />
+<Board boardNumber="2" player="PLAYER12TEST" roundNumber="3" />
+<Board boardNumber="3" player="PLAYER18TEST" roundNumber="3" />
+<Board boardNumber="1" player="PLAYER17TEST" roundNumber="4" />
+<Board boardNumber="2" player="PLAYER12TEST" roundNumber="4" />
+<Board boardNumber="3" player="PLAYER18TEST" roundNumber="4" />
+<Board boardNumber="1" player="PLAYER17TEST" roundNumber="5" />
+<Board boardNumber="2" player="PLAYER12TEST" roundNumber="5" />
+<Board boardNumber="3" player="PLAYER18TEST" roundNumber="5" />
+<Board boardNumber="1" player="PLAYER17TEST" roundNumber="6" />
+<Board boardNumber="2" player="PLAYER12TEST" roundNumber="6" />
+<Board boardNumber="3" player="PLAYER18TEST" roundNumber="6" />
+<Board boardNumber="1" player="PLAYER17TEST" roundNumber="7" />
+<Board boardNumber="2" player="PLAYER12TEST" roundNumber="7" />
+<Board boardNumber="3" player="PLAYER18TEST" roundNumber="7" />
+<Board boardNumber="1" player="PLAYER17TEST" roundNumber="8" />
+<Board boardNumber="2" player="PLAYER12TEST" roundNumber="8" />
+<Board boardNumber="3" player="PLAYER18TEST" roundNumber="8" />
+<Board boardNumber="1" player="PLAYER17TEST" roundNumber="9" />
+<Board boardNumber="2" player="PLAYER12TEST" roundNumber="9" />
+<Board boardNumber="3" player="PLAYER18TEST" roundNumber="9" />
+<Board boardNumber="1" player="PLAYER17TEST" roundNumber="10" />
+<Board boardNumber="2" player="PLAYER12TEST" roundNumber="10" />
+<Board boardNumber="3" player="PLAYER18TEST" roundNumber="10" />
+<Board boardNumber="1" player="PLAYER17TEST" roundNumber="11" />
+<Board boardNumber="2" player="PLAYER12TEST" roundNumber="11" />
+<Board boardNumber="3" player="PLAYER18TEST" roundNumber="11" />
+<Board boardNumber="1" player="PLAYER17TEST" roundNumber="12" />
+<Board boardNumber="2" player="PLAYER12TEST" roundNumber="12" />
+<Board boardNumber="3" player="PLAYER18TEST" roundNumber="12" />
+<Board boardNumber="1" player="PLAYER17TEST" roundNumber="13" />
+<Board boardNumber="2" player="PLAYER12TEST" roundNumber="13" />
+<Board boardNumber="3" player="PLAYER18TEST" roundNumber="13" />
+<Board boardNumber="1" player="PLAYER17TEST" roundNumber="14" />
+<Board boardNumber="2" player="PLAYER12TEST" roundNumber="14" />
+<Board boardNumber="3" player="PLAYER18TEST" roundNumber="14" />
+<Board boardNumber="1" player="PLAYER17TEST" roundNumber="15" />
+<Board boardNumber="2" player="PLAYER12TEST" roundNumber="15" />
+<Board boardNumber="3" player="PLAYER18TEST" roundNumber="15" />
+<Board boardNumber="1" player="PLAYER17TEST" roundNumber="16" />
+<Board boardNumber="2" player="PLAYER12TEST" roundNumber="16" />
+<Board boardNumber="3" player="PLAYER18TEST" roundNumber="16" />
+<Board boardNumber="1" player="PLAYER17TEST" roundNumber="17" />
+<Board boardNumber="2" player="PLAYER12TEST" roundNumber="17" />
+<Board boardNumber="3" player="PLAYER18TEST" roundNumber="17" />
+<Board boardNumber="1" player="PLAYER17TEST" roundNumber="18" />
+<Board boardNumber="2" player="PLAYER12TEST" roundNumber="18" />
+<Board boardNumber="3" player="PLAYER18TEST" roundNumber="18" />
+<Board boardNumber="1" player="PLAYER17TEST" roundNumber="19" />
+<Board boardNumber="2" player="PLAYER12TEST" roundNumber="19" />
+<Board boardNumber="3" player="PLAYER18TEST" roundNumber="19" />
+<Board boardNumber="1" player="PLAYER17TEST" roundNumber="20" />
+<Board boardNumber="2" player="PLAYER12TEST" roundNumber="20" />
+<Board boardNumber="3" player="PLAYER18TEST" roundNumber="20" />
+</Team>
+<Team teamName="GELE" teamNumber="5">
+<Board boardNumber="1" player="PLAYER06TEST" roundNumber="1" />
+<Board boardNumber="2" player="PLAYER04TEST" roundNumber="1" />
+<Board boardNumber="3" player="PLAYER01TEST" roundNumber="1" />
+<Board boardNumber="1" player="PLAYER06TEST" roundNumber="2" />
+<Board boardNumber="2" player="PLAYER04TEST" roundNumber="2" />
+<Board boardNumber="3" player="PLAYER01TEST" roundNumber="2" />
+<Board boardNumber="1" player="PLAYER06TEST" roundNumber="3" />
+<Board boardNumber="2" player="PLAYER04TEST" roundNumber="3" />
+<Board boardNumber="3" player="PLAYER01TEST" roundNumber="3" />
+<Board boardNumber="1" player="PLAYER06TEST" roundNumber="4" />
+<Board boardNumber="2" player="PLAYER04TEST" roundNumber="4" />
+<Board boardNumber="3" player="PLAYER01TEST" roundNumber="4" />
+<Board boardNumber="1" player="PLAYER06TEST" roundNumber="5" />
+<Board boardNumber="2" player="PLAYER04TEST" roundNumber="5" />
+<Board boardNumber="3" player="PLAYER01TEST" roundNumber="5" />
+<Board boardNumber="1" player="PLAYER06TEST" roundNumber="6" />
+<Board boardNumber="2" player="PLAYER04TEST" roundNumber="6" />
+<Board boardNumber="3" player="PLAYER01TEST" roundNumber="6" />
+<Board boardNumber="1" player="PLAYER06TEST" roundNumber="7" />
+<Board boardNumber="2" player="PLAYER04TEST" roundNumber="7" />
+<Board boardNumber="3" player="PLAYER01TEST" roundNumber="7" />
+<Board boardNumber="1" player="PLAYER06TEST" roundNumber="8" />
+<Board boardNumber="2" player="PLAYER04TEST" roundNumber="8" />
+<Board boardNumber="3" player="PLAYER01TEST" roundNumber="8" />
+<Board boardNumber="1" player="PLAYER06TEST" roundNumber="9" />
+<Board boardNumber="2" player="PLAYER04TEST" roundNumber="9" />
+<Board boardNumber="3" player="PLAYER01TEST" roundNumber="9" />
+<Board boardNumber="1" player="PLAYER06TEST" roundNumber="10" />
+<Board boardNumber="2" player="PLAYER04TEST" roundNumber="10" />
+<Board boardNumber="3" player="PLAYER01TEST" roundNumber="10" />
+<Board boardNumber="1" player="PLAYER06TEST" roundNumber="11" />
+<Board boardNumber="2" player="PLAYER04TEST" roundNumber="11" />
+<Board boardNumber="3" player="PLAYER01TEST" roundNumber="11" />
+<Board boardNumber="1" player="PLAYER06TEST" roundNumber="12" />
+<Board boardNumber="2" player="PLAYER04TEST" roundNumber="12" />
+<Board boardNumber="3" player="PLAYER01TEST" roundNumber="12" />
+<Board boardNumber="1" player="PLAYER06TEST" roundNumber="13" />
+<Board boardNumber="2" player="PLAYER04TEST" roundNumber="13" />
+<Board boardNumber="3" player="PLAYER01TEST" roundNumber="13" />
+<Board boardNumber="1" player="PLAYER06TEST" roundNumber="14" />
+<Board boardNumber="2" player="PLAYER04TEST" roundNumber="14" />
+<Board boardNumber="3" player="PLAYER01TEST" roundNumber="14" />
+<Board boardNumber="1" player="PLAYER06TEST" roundNumber="15" />
+<Board boardNumber="2" player="PLAYER04TEST" roundNumber="15" />
+<Board boardNumber="3" player="PLAYER01TEST" roundNumber="15" />
+<Board boardNumber="1" player="PLAYER06TEST" roundNumber="16" />
+<Board boardNumber="2" player="PLAYER04TEST" roundNumber="16" />
+<Board boardNumber="3" player="PLAYER01TEST" roundNumber="16" />
+<Board boardNumber="1" player="PLAYER06TEST" roundNumber="17" />
+<Board boardNumber="2" player="PLAYER04TEST" roundNumber="17" />
+<Board boardNumber="3" player="PLAYER01TEST" roundNumber="17" />
+<Board boardNumber="1" player="PLAYER06TEST" roundNumber="18" />
+<Board boardNumber="2" player="PLAYER04TEST" roundNumber="18" />
+<Board boardNumber="3" player="PLAYER01TEST" roundNumber="18" />
+<Board boardNumber="1" player="PLAYER06TEST" roundNumber="19" />
+<Board boardNumber="2" player="PLAYER04TEST" roundNumber="19" />
+<Board boardNumber="3" player="PLAYER01TEST" roundNumber="19" />
+<Board boardNumber="1" player="PLAYER06TEST" roundNumber="20" />
+<Board boardNumber="2" player="PLAYER04TEST" roundNumber="20" />
+<Board boardNumber="3" player="PLAYER01TEST" roundNumber="20" />
+</Team>
+<Team teamName="Olga's team" teamNumber="2">
+<Board boardNumber="1" player="PLAYER19TEST" roundNumber="1" />
+<Board boardNumber="2" player="PLAYER07TEST" roundNumber="1" />
+<Board boardNumber="3" player="PLAYER15TEST" roundNumber="1" />
+<Board boardNumber="1" player="PLAYER07TEST" roundNumber="2" />
+<Board boardNumber="2" player="PLAYER15TEST" roundNumber="2" />
+<Board boardNumber="3" player="PLAYER02TEST" roundNumber="2" />
+<Board boardNumber="1" player="PLAYER07TEST" roundNumber="3" />
+<Board boardNumber="2" player="PLAYER15TEST" roundNumber="3" />
+<Board boardNumber="3" player="PLAYER02TEST" roundNumber="3" />
+<Board boardNumber="1" player="PLAYER07TEST" roundNumber="4" />
+<Board boardNumber="2" player="PLAYER15TEST" roundNumber="4" />
+<Board boardNumber="3" player="PLAYER02TEST" roundNumber="4" />
+<Board boardNumber="1" player="PLAYER19TEST" roundNumber="5" />
+<Board boardNumber="2" player="PLAYER07TEST" roundNumber="5" />
+<Board boardNumber="3" player="PLAYER15TEST" roundNumber="5" />
+<Board boardNumber="1" player="PLAYER19TEST" roundNumber="6" />
+<Board boardNumber="2" player="PLAYER07TEST" roundNumber="6" />
+<Board boardNumber="3" player="PLAYER15TEST" roundNumber="6" />
+<Board boardNumber="1" player="PLAYER19TEST" roundNumber="7" />
+<Board boardNumber="2" player="PLAYER07TEST" roundNumber="7" />
+<Board boardNumber="3" player="PLAYER15TEST" roundNumber="7" />
+<Board boardNumber="1" player="PLAYER19TEST" roundNumber="8" />
+<Board boardNumber="2" player="PLAYER07TEST" roundNumber="8" />
+<Board boardNumber="3" player="PLAYER15TEST" roundNumber="8" />
+<Board boardNumber="1" player="PLAYER19TEST" roundNumber="9" />
+<Board boardNumber="2" player="PLAYER07TEST" roundNumber="9" />
+<Board boardNumber="3" player="PLAYER15TEST" roundNumber="9" />
+<Board boardNumber="1" player="PLAYER19TEST" roundNumber="10" />
+<Board boardNumber="2" player="PLAYER07TEST" roundNumber="10" />
+<Board boardNumber="3" player="PLAYER15TEST" roundNumber="10" />
+<Board boardNumber="1" player="PLAYER19TEST" roundNumber="11" />
+<Board boardNumber="2" player="PLAYER07TEST" roundNumber="11" />
+<Board boardNumber="3" player="PLAYER15TEST" roundNumber="11" />
+<Board boardNumber="1" player="PLAYER19TEST" roundNumber="12" />
+<Board boardNumber="2" player="PLAYER07TEST" roundNumber="12" />
+<Board boardNumber="3" player="PLAYER15TEST" roundNumber="12" />
+<Board boardNumber="1" player="PLAYER19TEST" roundNumber="13" />
+<Board boardNumber="2" player="PLAYER07TEST" roundNumber="13" />
+<Board boardNumber="3" player="PLAYER15TEST" roundNumber="13" />
+<Board boardNumber="1" player="PLAYER19TEST" roundNumber="14" />
+<Board boardNumber="2" player="PLAYER07TEST" roundNumber="14" />
+<Board boardNumber="3" player="PLAYER15TEST" roundNumber="14" />
+<Board boardNumber="1" player="PLAYER19TEST" roundNumber="15" />
+<Board boardNumber="2" player="PLAYER07TEST" roundNumber="15" />
+<Board boardNumber="3" player="PLAYER15TEST" roundNumber="15" />
+<Board boardNumber="1" player="PLAYER19TEST" roundNumber="16" />
+<Board boardNumber="2" player="PLAYER07TEST" roundNumber="16" />
+<Board boardNumber="3" player="PLAYER15TEST" roundNumber="16" />
+<Board boardNumber="1" player="PLAYER19TEST" roundNumber="17" />
+<Board boardNumber="2" player="PLAYER07TEST" roundNumber="17" />
+<Board boardNumber="3" player="PLAYER15TEST" roundNumber="17" />
+<Board boardNumber="1" player="PLAYER19TEST" roundNumber="18" />
+<Board boardNumber="2" player="PLAYER07TEST" roundNumber="18" />
+<Board boardNumber="3" player="PLAYER15TEST" roundNumber="18" />
+<Board boardNumber="1" player="PLAYER19TEST" roundNumber="19" />
+<Board boardNumber="2" player="PLAYER07TEST" roundNumber="19" />
+<Board boardNumber="3" player="PLAYER15TEST" roundNumber="19" />
+<Board boardNumber="1" player="PLAYER19TEST" roundNumber="20" />
+<Board boardNumber="2" player="PLAYER07TEST" roundNumber="20" />
+<Board boardNumber="3" player="PLAYER15TEST" roundNumber="20" />
+</Team>
+<Team teamName="ROBOCOP" teamNumber="3">
+<Board boardNumber="1" player="PLAYER11TEST" roundNumber="1" />
+<Board boardNumber="2" player="PLAYER14TEST" roundNumber="1" />
+<Board boardNumber="3" player="PLAYER05TEST" roundNumber="1" />
+<Board boardNumber="1" player="PLAYER11TEST" roundNumber="2" />
+<Board boardNumber="2" player="PLAYER14TEST" roundNumber="2" />
+<Board boardNumber="3" player="PLAYER05TEST" roundNumber="2" />
+<Board boardNumber="1" player="PLAYER11TEST" roundNumber="3" />
+<Board boardNumber="2" player="PLAYER14TEST" roundNumber="3" />
+<Board boardNumber="3" player="PLAYER05TEST" roundNumber="3" />
+<Board boardNumber="1" player="PLAYER11TEST" roundNumber="4" />
+<Board boardNumber="2" player="PLAYER14TEST" roundNumber="4" />
+<Board boardNumber="3" player="PLAYER05TEST" roundNumber="4" />
+<Board boardNumber="1" player="PLAYER11TEST" roundNumber="5" />
+<Board boardNumber="2" player="PLAYER14TEST" roundNumber="5" />
+<Board boardNumber="3" player="PLAYER05TEST" roundNumber="5" />
+<Board boardNumber="1" player="PLAYER11TEST" roundNumber="6" />
+<Board boardNumber="2" player="PLAYER14TEST" roundNumber="6" />
+<Board boardNumber="3" player="PLAYER05TEST" roundNumber="6" />
+<Board boardNumber="1" player="PLAYER11TEST" roundNumber="7" />
+<Board boardNumber="2" player="PLAYER14TEST" roundNumber="7" />
+<Board boardNumber="3" player="PLAYER05TEST" roundNumber="7" />
+<Board boardNumber="1" player="PLAYER11TEST" roundNumber="8" />
+<Board boardNumber="2" player="PLAYER14TEST" roundNumber="8" />
+<Board boardNumber="3" player="PLAYER05TEST" roundNumber="8" />
+<Board boardNumber="1" player="PLAYER11TEST" roundNumber="9" />
+<Board boardNumber="2" player="PLAYER14TEST" roundNumber="9" />
+<Board boardNumber="3" player="PLAYER05TEST" roundNumber="9" />
+<Board boardNumber="1" player="PLAYER11TEST" roundNumber="10" />
+<Board boardNumber="2" player="PLAYER14TEST" roundNumber="10" />
+<Board boardNumber="3" player="PLAYER05TEST" roundNumber="10" />
+<Board boardNumber="1" player="PLAYER11TEST" roundNumber="11" />
+<Board boardNumber="2" player="PLAYER14TEST" roundNumber="11" />
+<Board boardNumber="3" player="PLAYER05TEST" roundNumber="11" />
+<Board boardNumber="1" player="PLAYER11TEST" roundNumber="12" />
+<Board boardNumber="2" player="PLAYER14TEST" roundNumber="12" />
+<Board boardNumber="3" player="PLAYER05TEST" roundNumber="12" />
+<Board boardNumber="1" player="PLAYER11TEST" roundNumber="13" />
+<Board boardNumber="2" player="PLAYER14TEST" roundNumber="13" />
+<Board boardNumber="3" player="PLAYER05TEST" roundNumber="13" />
+<Board boardNumber="1" player="PLAYER11TEST" roundNumber="14" />
+<Board boardNumber="2" player="PLAYER14TEST" roundNumber="14" />
+<Board boardNumber="3" player="PLAYER05TEST" roundNumber="14" />
+<Board boardNumber="1" player="PLAYER11TEST" roundNumber="15" />
+<Board boardNumber="2" player="PLAYER14TEST" roundNumber="15" />
+<Board boardNumber="3" player="PLAYER05TEST" roundNumber="15" />
+<Board boardNumber="1" player="PLAYER11TEST" roundNumber="16" />
+<Board boardNumber="2" player="PLAYER14TEST" roundNumber="16" />
+<Board boardNumber="3" player="PLAYER05TEST" roundNumber="16" />
+<Board boardNumber="1" player="PLAYER11TEST" roundNumber="17" />
+<Board boardNumber="2" player="PLAYER14TEST" roundNumber="17" />
+<Board boardNumber="3" player="PLAYER05TEST" roundNumber="17" />
+<Board boardNumber="1" player="PLAYER11TEST" roundNumber="18" />
+<Board boardNumber="2" player="PLAYER14TEST" roundNumber="18" />
+<Board boardNumber="3" player="PLAYER05TEST" roundNumber="18" />
+<Board boardNumber="1" player="PLAYER11TEST" roundNumber="19" />
+<Board boardNumber="2" player="PLAYER14TEST" roundNumber="19" />
+<Board boardNumber="3" player="PLAYER05TEST" roundNumber="19" />
+<Board boardNumber="1" player="PLAYER11TEST" roundNumber="20" />
+<Board boardNumber="2" player="PLAYER14TEST" roundNumber="20" />
+<Board boardNumber="3" player="PLAYER05TEST" roundNumber="20" />
+</Team>
+<Team teamName="Levallois-Jussieu" teamNumber="1">
+<Board boardNumber="1" player="PLAYER16TEST" roundNumber="1" />
+<Board boardNumber="2" player="PLAYER09TEST" roundNumber="1" />
+<Board boardNumber="3" player="PLAYER10TEST" roundNumber="1" />
+<Board boardNumber="1" player="PLAYER16TEST" roundNumber="2" />
+<Board boardNumber="2" player="PLAYER09TEST" roundNumber="2" />
+<Board boardNumber="3" player="PLAYER10TEST" roundNumber="2" />
+<Board boardNumber="1" player="PLAYER16TEST" roundNumber="3" />
+<Board boardNumber="2" player="PLAYER09TEST" roundNumber="3" />
+<Board boardNumber="3" player="PLAYER10TEST" roundNumber="3" />
+<Board boardNumber="1" player="PLAYER16TEST" roundNumber="4" />
+<Board boardNumber="2" player="PLAYER09TEST" roundNumber="4" />
+<Board boardNumber="3" player="PLAYER10TEST" roundNumber="4" />
+<Board boardNumber="1" player="PLAYER16TEST" roundNumber="5" />
+<Board boardNumber="2" player="PLAYER09TEST" roundNumber="5" />
+<Board boardNumber="3" player="PLAYER10TEST" roundNumber="5" />
+<Board boardNumber="1" player="PLAYER16TEST" roundNumber="6" />
+<Board boardNumber="2" player="PLAYER09TEST" roundNumber="6" />
+<Board boardNumber="3" player="PLAYER10TEST" roundNumber="6" />
+<Board boardNumber="1" player="PLAYER16TEST" roundNumber="7" />
+<Board boardNumber="2" player="PLAYER09TEST" roundNumber="7" />
+<Board boardNumber="3" player="PLAYER10TEST" roundNumber="7" />
+<Board boardNumber="1" player="PLAYER16TEST" roundNumber="8" />
+<Board boardNumber="2" player="PLAYER09TEST" roundNumber="8" />
+<Board boardNumber="3" player="PLAYER10TEST" roundNumber="8" />
+<Board boardNumber="1" player="PLAYER16TEST" roundNumber="9" />
+<Board boardNumber="2" player="PLAYER09TEST" roundNumber="9" />
+<Board boardNumber="3" player="PLAYER10TEST" roundNumber="9" />
+<Board boardNumber="1" player="PLAYER16TEST" roundNumber="10" />
+<Board boardNumber="2" player="PLAYER09TEST" roundNumber="10" />
+<Board boardNumber="3" player="PLAYER10TEST" roundNumber="10" />
+<Board boardNumber="1" player="PLAYER16TEST" roundNumber="11" />
+<Board boardNumber="2" player="PLAYER09TEST" roundNumber="11" />
+<Board boardNumber="3" player="PLAYER10TEST" roundNumber="11" />
+<Board boardNumber="1" player="PLAYER16TEST" roundNumber="12" />
+<Board boardNumber="2" player="PLAYER09TEST" roundNumber="12" />
+<Board boardNumber="3" player="PLAYER10TEST" roundNumber="12" />
+<Board boardNumber="1" player="PLAYER16TEST" roundNumber="13" />
+<Board boardNumber="2" player="PLAYER09TEST" roundNumber="13" />
+<Board boardNumber="3" player="PLAYER10TEST" roundNumber="13" />
+<Board boardNumber="1" player="PLAYER16TEST" roundNumber="14" />
+<Board boardNumber="2" player="PLAYER09TEST" roundNumber="14" />
+<Board boardNumber="3" player="PLAYER10TEST" roundNumber="14" />
+<Board boardNumber="1" player="PLAYER16TEST" roundNumber="15" />
+<Board boardNumber="2" player="PLAYER09TEST" roundNumber="15" />
+<Board boardNumber="3" player="PLAYER10TEST" roundNumber="15" />
+<Board boardNumber="1" player="PLAYER16TEST" roundNumber="16" />
+<Board boardNumber="2" player="PLAYER09TEST" roundNumber="16" />
+<Board boardNumber="3" player="PLAYER10TEST" roundNumber="16" />
+<Board boardNumber="1" player="PLAYER16TEST" roundNumber="17" />
+<Board boardNumber="2" player="PLAYER09TEST" roundNumber="17" />
+<Board boardNumber="3" player="PLAYER10TEST" roundNumber="17" />
+<Board boardNumber="1" player="PLAYER16TEST" roundNumber="18" />
+<Board boardNumber="2" player="PLAYER09TEST" roundNumber="18" />
+<Board boardNumber="3" player="PLAYER10TEST" roundNumber="18" />
+<Board boardNumber="1" player="PLAYER16TEST" roundNumber="19" />
+<Board boardNumber="2" player="PLAYER09TEST" roundNumber="19" />
+<Board boardNumber="3" player="PLAYER10TEST" roundNumber="19" />
+<Board boardNumber="1" player="PLAYER16TEST" roundNumber="20" />
+<Board boardNumber="2" player="PLAYER09TEST" roundNumber="20" />
+<Board boardNumber="3" player="PLAYER10TEST" roundNumber="20" />
+</Team>
+<Team teamName="Poilâne" teamNumber="6">
+<Board boardNumber="1" player="PLAYER13TEST" roundNumber="1" />
+<Board boardNumber="2" player="PLAYER03TEST" roundNumber="1" />
+<Board boardNumber="3" player="PLAYER08TEST" roundNumber="1" />
+<Board boardNumber="1" player="PLAYER13TEST" roundNumber="2" />
+<Board boardNumber="2" player="PLAYER03TEST" roundNumber="2" />
+<Board boardNumber="3" player="PLAYER08TEST" roundNumber="2" />
+<Board boardNumber="1" player="PLAYER13TEST" roundNumber="3" />
+<Board boardNumber="2" player="PLAYER03TEST" roundNumber="3" />
+<Board boardNumber="3" player="PLAYER08TEST" roundNumber="3" />
+<Board boardNumber="1" player="PLAYER13TEST" roundNumber="4" />
+<Board boardNumber="2" player="PLAYER03TEST" roundNumber="4" />
+<Board boardNumber="3" player="PLAYER08TEST" roundNumber="4" />
+<Board boardNumber="1" player="PLAYER13TEST" roundNumber="5" />
+<Board boardNumber="2" player="PLAYER03TEST" roundNumber="5" />
+<Board boardNumber="3" player="PLAYER08TEST" roundNumber="5" />
+<Board boardNumber="1" player="PLAYER13TEST" roundNumber="6" />
+<Board boardNumber="2" player="PLAYER03TEST" roundNumber="6" />
+<Board boardNumber="3" player="PLAYER08TEST" roundNumber="6" />
+<Board boardNumber="1" player="PLAYER13TEST" roundNumber="7" />
+<Board boardNumber="2" player="PLAYER03TEST" roundNumber="7" />
+<Board boardNumber="3" player="PLAYER08TEST" roundNumber="7" />
+<Board boardNumber="1" player="PLAYER13TEST" roundNumber="8" />
+<Board boardNumber="2" player="PLAYER03TEST" roundNumber="8" />
+<Board boardNumber="3" player="PLAYER08TEST" roundNumber="8" />
+<Board boardNumber="1" player="PLAYER13TEST" roundNumber="9" />
+<Board boardNumber="2" player="PLAYER03TEST" roundNumber="9" />
+<Board boardNumber="3" player="PLAYER08TEST" roundNumber="9" />
+<Board boardNumber="1" player="PLAYER13TEST" roundNumber="10" />
+<Board boardNumber="2" player="PLAYER03TEST" roundNumber="10" />
+<Board boardNumber="3" player="PLAYER08TEST" roundNumber="10" />
+<Board boardNumber="1" player="PLAYER13TEST" roundNumber="11" />
+<Board boardNumber="2" player="PLAYER03TEST" roundNumber="11" />
+<Board boardNumber="3" player="PLAYER08TEST" roundNumber="11" />
+<Board boardNumber="1" player="PLAYER13TEST" roundNumber="12" />
+<Board boardNumber="2" player="PLAYER03TEST" roundNumber="12" />
+<Board boardNumber="3" player="PLAYER08TEST" roundNumber="12" />
+<Board boardNumber="1" player="PLAYER13TEST" roundNumber="13" />
+<Board boardNumber="2" player="PLAYER03TEST" roundNumber="13" />
+<Board boardNumber="3" player="PLAYER08TEST" roundNumber="13" />
+<Board boardNumber="1" player="PLAYER13TEST" roundNumber="14" />
+<Board boardNumber="2" player="PLAYER03TEST" roundNumber="14" />
+<Board boardNumber="3" player="PLAYER08TEST" roundNumber="14" />
+<Board boardNumber="1" player="PLAYER13TEST" roundNumber="15" />
+<Board boardNumber="2" player="PLAYER03TEST" roundNumber="15" />
+<Board boardNumber="3" player="PLAYER08TEST" roundNumber="15" />
+<Board boardNumber="1" player="PLAYER13TEST" roundNumber="16" />
+<Board boardNumber="2" player="PLAYER03TEST" roundNumber="16" />
+<Board boardNumber="3" player="PLAYER08TEST" roundNumber="16" />
+<Board boardNumber="1" player="PLAYER13TEST" roundNumber="17" />
+<Board boardNumber="2" player="PLAYER03TEST" roundNumber="17" />
+<Board boardNumber="3" player="PLAYER08TEST" roundNumber="17" />
+<Board boardNumber="1" player="PLAYER13TEST" roundNumber="18" />
+<Board boardNumber="2" player="PLAYER03TEST" roundNumber="18" />
+<Board boardNumber="3" player="PLAYER08TEST" roundNumber="18" />
+<Board boardNumber="1" player="PLAYER13TEST" roundNumber="19" />
+<Board boardNumber="2" player="PLAYER03TEST" roundNumber="19" />
+<Board boardNumber="3" player="PLAYER08TEST" roundNumber="19" />
+<Board boardNumber="1" player="PLAYER13TEST" roundNumber="20" />
+<Board boardNumber="2" player="PLAYER03TEST" roundNumber="20" />
+<Board boardNumber="3" player="PLAYER08TEST" roundNumber="20" />
+</Team>
+</Teams>
+<TournamentParameterSet>
+<GeneralParameterSet bInternetGame="false" basicTime="60" beginDate="2019-10-26" canByoYomiTime="300" complementaryTimeSystem="STDBYOYOMI" director="Test Director" endDate="2019-10-28" fischerTime="10" genCountNotPlayedGamesAsHalfPoint="false" genMMBar="4D" genMMFloor="20K" genMMS2ValueAbsent="1" genMMS2ValueBye="2" genMMZero="30K" genNBW2ValueAbsent="0" genNBW2ValueBye="2" genRoundDownNBWMMS="true" komi="7.5" location="Juvisy" name="Tournoi de Juvisy" nbMovesCanTime="15" numberOfBZHGroups="1" numberOfCategories="1" numberOfRounds="4" shortName="Tournoi de Juvisy" size="19" stdByoYomiTime="30" />
+<HandicapParameterSet hdBase="MMS" hdCeiling="9" hdCorrection="1" hdNoHdRankThreshold="1D" />
+<PlacementParameterSet>
+<PlacementCriteria>
+<PlacementCriterion name="MMS" number="1" />
+<PlacementCriterion name="SOSM" number="2" />
+<PlacementCriterion name="SOSOSM" number="3" />
+<PlacementCriterion name="NULL" number="4" />
+<PlacementCriterion name="NULL" number="5" />
+<PlacementCriterion name="NULL" number="6" />
+</PlacementCriteria>
+</PlacementParameterSet>
+<PairingParameterSet paiBaAvoidDuplGame="500000000000000" paiBaBalanceWB="1000000" paiBaDeterministic="true" paiBaRandom="0" paiMaAdditionalPlacementCritSystem1="Rating" paiMaAdditionalPlacementCritSystem2="NULL" paiMaAvoidMixingCategories="0" paiMaCompensateDUDD="true" paiMaDUDDLowerMode="MID" paiMaDUDDUpperMode="MID" paiMaDUDDWeight="100000000" paiMaLastRoundForSeedSystem1="2" paiMaMaximizeSeeding="5000000" paiMaMinimizeScoreDifference="100000000000" paiMaSeedSystem1="SPLITANDRANDOM" paiMaSeedSystem2="SPLITANDSLIP" paiSeAvoidSameGeo="100000000000" paiSeBarThresholdActive="true" paiSeDefSecCrit="100000000000" paiSeMinimizeHandicap="0" paiSeNbWinsThresholdActive="false" paiSePreferMMSDiffRatherThanSameClub="3" paiSePreferMMSDiffRatherThanSameCountry="1" paiSeRankThreshold="1D" paiStandardNX1Factor="0.5" />
+<DPParameterSet displayClCol="true" displayCoCol="true" displayIndGamesInMatches="true" displayNPPlayers="false" displayNumCol="true" displayPlCol="true" gameFormat="full" playerSortType="name" showByePlayer="true" showNotFinallyRegisteredPlayers="true" showNotPairedPlayers="true" showNotParticipatingPlayers="false" showPlayerClub="true" showPlayerCountry="false" showPlayerGrade="true" />
+<PublishParameterSet exportToLocalFile="true" htmlAutoScroll="false" print="true" />
+</TournamentParameterSet>
+<TeamTournamentParameterSet>
+<TeamGeneralParameterSet teamSize="3" />
+<TeamPlacementParameterSet>
+<PlacementCriteria>
+<PlacementCriterion name="TEAMP" number="1" />
+<PlacementCriterion name="BDW" number="2" />
+<PlacementCriterion name="BDW3U" number="3" />
+<PlacementCriterion name="BDW2U" number="4" />
+<PlacementCriterion name="BDW1U" number="5" />
+<PlacementCriterion name="MNR" number="6" />
+</PlacementCriteria>
+</TeamPlacementParameterSet>
+</TeamTournamentParameterSet>
+</Tournament>

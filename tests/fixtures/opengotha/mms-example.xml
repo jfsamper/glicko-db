@@ -1,0 +1,674 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Tournament dataVersion="201" externalIPAddress="" fullVersionNumber="3.51" runningMode="SAL" saveDT="20210405175535">
+    <Players>
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade=" 5K" name="Player01" participating="11111111111111111111" rank="5K" rating="1640" ratingOrigin="EGF : 1640" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade=" 3K" name="Player02" participating="11111111111111111111" rank="4K" rating="1739" ratingOrigin="EGF : 1739" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade="20K" name="Player03" participating="11111111111111111111" rank="20K" rating="100" ratingOrigin="INI" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade=" 1K" name="Player04" participating="11111111111111111111" rank="1K" rating="2048" ratingOrigin="EGF : 2048" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade=" 3K" name="Player05" participating="11111111111111111111" rank="4K" rating="1723" ratingOrigin="EGF : 1723" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade="20K" name="Player06" participating="11111111111111111111" rank="20K" rating="100" ratingOrigin="INI" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade=" 4K" name="Player07" participating="11111111111111111111" rank="4K" rating="1700" ratingOrigin="MAN" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade=" 5K" name="Player08" participating="11111111111111111111" rank="5K" rating="1550" ratingOrigin="EGF : 1550" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade=" 9K" name="Player09" participating="01111111111111111111" rank="9K" rating="1176" ratingOrigin="EGF : 1176" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade=" 2K" name="Player10" participating="11111111111111111111" rank="2K" rating="1864" ratingOrigin="EGF : 1864" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade=" 6K" name="Player11" participating="11101000000000000000" rank="6K" rating="1495" ratingOrigin="EGF : 1495" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade="10K" name="Player12" participating="11111111111111111111" rank="11K" rating="1049" ratingOrigin="EGF : 1049" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade=" 3D" name="Player13" participating="11110011111111111111" rank="3D" rating="2257" ratingOrigin="EGF : 2257" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade="10K" name="Player14" participating="11111111111111111111" rank="10K" rating="1149" ratingOrigin="EGF : 1149" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade=" 1K" name="Player15" participating="11111011111111111111" rank="1K" rating="1998" ratingOrigin="EGF : 1998" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade="20K" name="Player16" participating="11111111111111111111" rank="20K" rating="100" ratingOrigin="MAN" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade="14K" name="Player17" participating="11101111111111111111" rank="14K" rating="637" ratingOrigin="EGF : 637" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade="14K" name="Player18" participating="11111111111111111111" rank="14K" rating="676" ratingOrigin="EGF : 676" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade=" 6K" name="Player19" participating="11111111111111111111" rank="7K" rating="1422" ratingOrigin="EGF : 1422" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade="13K" name="Player20" participating="11111111111111111111" rank="14K" rating="668" ratingOrigin="EGF : 668" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade="8K" name="Player21" participating="11111111111111111111" rank="8K" rating="1278" ratingOrigin="FFG : -772" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade="20K" name="Player22" participating="01111111111111111111" rank="20K" rating="100" ratingOrigin="INI" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade="20K" name="Player23" participating="11111111111111111111" rank="20K" rating="100" ratingOrigin="MAN" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade="13K" name="Player24" participating="11111111111111111111" rank="14K" rating="740" ratingOrigin="EGF : 740" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade="15K" name="Player25" participating="11111111111111111111" rank="11K" rating="1036" ratingOrigin="EGF : 1036" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade=" 2D" name="Player26" participating="11111111111111111111" rank="2D" rating="2226" ratingOrigin="EGF : 2226" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade=" 8K" name="Player27" participating="11101111111111111111" rank="8K" rating="1305" ratingOrigin="EGF : 1305" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade="20K" name="Player28" participating="00101000000000000000" rank="19K" rating="215" ratingOrigin="EGF : 215" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade=" 2D" name="Player29" participating="00000000000000000000" rank="2D" rating="2156" ratingOrigin="EGF : 2156" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade="10K" name="Player30" participating="11001000000000000000" rank="10K" rating="1131" ratingOrigin="EGF : 1131" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade=" 4K" name="Player31" participating="11111111111111111111" rank="4K" rating="1675" ratingOrigin="EGF : 1675" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade=" 7K" name="Player32" participating="11111111111111111111" rank="7K" rating="1425" ratingOrigin="EGF : 1425" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade=" 5K" name="Player33" participating="11111111111111111111" rank="5K" rating="1573" ratingOrigin="EGF : 1573" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade="20K" name="Player34" participating="11111111111111111111" rank="20K" rating="115" ratingOrigin="EGF : 115" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade=" 3K" name="Player35" participating="11111111111111111111" rank="3K" rating="1768" ratingOrigin="EGF : 1768" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade="10K" name="Player36" participating="11101111111111111111" rank="10K" rating="1091" ratingOrigin="EGF : 1091" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade="20K" name="Player37" participating="11111111111111111111" rank="20K" rating="100" ratingOrigin="EGF : 100" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade="20K" name="Player38" participating="10000011111111111111" rank="20K" rating="100" ratingOrigin="INI" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade=" 5K" name="Player39" participating="11111111111111111111" rank="5K" rating="1642" ratingOrigin="EGF : 1642" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade=" 3K" name="Player40" participating="11111111111111111111" rank="4K" rating="1700" ratingOrigin="EGF : 1700" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade="10K" name="Player41" participating="10000011111111111111" rank="11K" rating="1039" ratingOrigin="EGF : 1039" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade="3D" name="Player42" participating="11110011111111111111" rank="3D" rating="2300" ratingOrigin="MAN" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade=" 2D" name="Player43" participating="11111111111111111111" rank="2D" rating="2232" ratingOrigin="EGF : 2232" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade="1K" name="Player44" participating="11110011111111111111" rank="1K" rating="2000" ratingOrigin="INI" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade=" 9K" name="Player45" participating="11111011111111111111" rank="9K" rating="1227" ratingOrigin="EGF : 1227" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade=" 4K" name="Player46" participating="11111111111111111111" rank="4K" rating="1684" ratingOrigin="EGF : 1684" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade="20K" name="Player47" participating="11111011111111111111" rank="20K" rating="100" ratingOrigin="INI" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade="8K" name="Player48" participating="10000011111111111111" rank="8K" rating="1300" ratingOrigin="INI" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade=" 4K" name="Player49" participating="10000011111111111111" rank="4K" rating="1650" ratingOrigin="EGF : 1650" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade=" 5D" name="Player50" participating="11111111111111111111" rank="5D" rating="2527" ratingOrigin="EGF : 2527" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade=" 7K" name="Player51" participating="00101111111111111111" rank="7K" rating="1400" ratingOrigin="EGF : 1400" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade="10K" name="Player52" participating="11111111111111111111" rank="10K" rating="1055" ratingOrigin="EGF : 1055" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade="6K" name="Player53" participating="11111111111111111111" rank="6K" rating="1500" ratingOrigin="INI" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade=" 2K" name="Player54" participating="11111111111111111111" rank="2K" rating="1900" ratingOrigin="MAN" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade="20K" name="Player55" participating="01010111111111111111" rank="19K" rating="199" ratingOrigin="EGF : 199" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade=" 5D" name="Player56" participating="11111111111111111111" rank="5D" rating="2544" ratingOrigin="EGF : 2544" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade="10K" name="Player57" participating="11001111111111111111" rank="9K" rating="1182" ratingOrigin="EGF : 1182" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade=" 6D" name="Player58" participating="11111111111111111111" rank="5D" rating="2528" ratingOrigin="EGF : 2528" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade="15K" name="Player59" participating="11101111111111111111" rank="15K" rating="237" ratingOrigin="EGF : 237" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade=" 4K" name="Player60" participating="10100000000000000000" rank="3K" rating="1751" ratingOrigin="EGF : 1751" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade=" 8K" name="Player61" participating="01110000000000000000" rank="8K" rating="1283" ratingOrigin="EGF : 1283" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade=" 2K" name="Player62" participating="11111111111111111111" rank="2K" rating="1871" ratingOrigin="EGF : 1871" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade=" 1D" name="Player63" participating="11111111111111111111" rank="1D" rating="2094" ratingOrigin="EGF : 2094" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade="11K" name="Player64" participating="11111111111111111111" rank="11K" rating="955" ratingOrigin="EGF : 955" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade="18K" name="Player65" participating="11111111111111111111" rank="18K" rating="288" ratingOrigin="EGF : 288" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade=" 8K" name="Player66" participating="10111011111111111111" rank="8K" rating="1269" ratingOrigin="EGF : 1269" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade=" 1K" name="Player67" participating="11111111111111111111" rank="1K" rating="1981" ratingOrigin="EGF : 1981" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade="20K" name="Player68" participating="11111111111111111111" rank="20K" rating="164" ratingOrigin="EGF : 164" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade="4K" name="Player69" participating="11111111111111111111" rank="4K" rating="1700" ratingOrigin="MAN" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade="10K" name="Player70" participating="11111111111111111111" rank="10K" rating="1115" ratingOrigin="EGF : 1115" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade="17K" name="Player71" participating="11111111111111111111" rank="16K" rating="483" ratingOrigin="EGF : 483" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade=" 2D" name="Player72" participating="11111111111111111111" rank="2D" rating="2175" ratingOrigin="EGF : 2175" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade=" 8K" name="Player73" participating="11111111111111111111" rank="7K" rating="1384" ratingOrigin="EGF : 1384" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade=" 2K" name="Player74" participating="11011111111111111111" rank="2K" rating="1939" ratingOrigin="EGF : 1939" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade=" 6K" name="Player75" participating="11111111111111111111" rank="6K" rating="1495" ratingOrigin="EGF : 1495" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade=" 9K" name="Player76" participating="11111111111111111111" rank="9K" rating="1187" ratingOrigin="EGF : 1187" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade=" 1D" name="Player77" participating="11111100000000000000" rank="1D" rating="2109" ratingOrigin="EGF : 2109" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade=" 4K" name="Player78" participating="11110000000000000000" rank="5K" rating="1658" ratingOrigin="EGF : 1658" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade="3K" name="Player79" participating="10000000000000000000" rank="3K" rating="1800" ratingOrigin="INI" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade="11K" name="Player80" participating="11111111111111111111" rank="10K" rating="1086" ratingOrigin="EGF : 1086" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade="20K" name="Player81" participating="11111111111111111111" rank="20K" rating="111" ratingOrigin="EGF : 111" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade=" 6K" name="Player82" participating="11111111111111111111" rank="6K" rating="1534" ratingOrigin="EGF : 1534" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade="17K" name="Player83" participating="11111111111111111111" rank="18K" rating="314" ratingOrigin="EGF : 314" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade=" 4K" name="Player84" participating="11111111111111111111" rank="4K" rating="1675" ratingOrigin="EGF : 1675" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade="20K" name="Player85" participating="11110111111111111111" rank="20K" rating="100" ratingOrigin="INI" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade=" 4D" name="Player86" participating="11111111111111111111" rank="4D" rating="2406" ratingOrigin="EGF : 2406" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade=" 4D" name="Player87" participating="11111111111111111111" rank="5D" rating="2501" ratingOrigin="EGF : 2501" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade="17K" name="Player88" participating="11111111111111111111" rank="17K" rating="400" ratingOrigin="MAN" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade=" 6D" name="Player89" participating="11111111111111111111" rank="6D" rating="2609" ratingOrigin="EGF : 2609" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade=" 7K" name="Player90" participating="11111111111111111111" rank="8K" rating="1298" ratingOrigin="EGF : 1298" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade="14K" name="Player91" participating="11111111111111111111" rank="14K" rating="693" ratingOrigin="EGF : 693" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade=" 1K" name="Player92" participating="11111111111111111111" rank="1K" rating="2040" ratingOrigin="EGF : 2040" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade="10K" name="Player93" participating="11111111111111111111" rank="10K" rating="1100" ratingOrigin="INI" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade=" 10K" name="Player94" participating="10101000000000000000" rank="10K" rating="1135" ratingOrigin="EGF : 1135" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade="20K" name="Player95" participating="11111111111111111111" rank="20K" rating="100" ratingOrigin="MAN" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade=" 6K" name="Player96" participating="11111111111111111111" rank="6K" rating="1535" ratingOrigin="EGF : 1535" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade="3K" name="Player97" participating="11111111111111111111" rank="3K" rating="1800" ratingOrigin="MAN" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade=" 4K" name="Player98" participating="11110011111111111111" rank="4K" rating="1704" ratingOrigin="EGF : 1704" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade=" 2D" name="Player99" participating="11111111111111111111" rank="1D" rating="2117" ratingOrigin="EGF : 2117" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade="9K" name="Player100" participating="10100011111111111111" rank="9K" rating="1200" ratingOrigin="INI" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade=" 6D" name="Player101" participating="11111111111111111111" rank="5D" rating="2504" ratingOrigin="EGF : 2504" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade=" 1D" name="Player102" participating="11111111111111111111" rank="1D" rating="2057" ratingOrigin="EGF : 2057" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade=" 1D" name="Player103" participating="01111111111111111111" rank="1K" rating="2029" ratingOrigin="EGF : 2029" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade=" 2K" name="Player104" participating="01010111111111111111" rank="3K" rating="1828" ratingOrigin="EGF : 1828" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade=" 8K" name="Player105" participating="11101011111111111111" rank="8K" rating="1251" ratingOrigin="EGF : 1251" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade="6D" name="Player106" participating="11111011111111111111" rank="3D" rating="2342" ratingOrigin="AGA : 3.92" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade=" 1K" name="Player107" participating="11111111111111111111" rank="1K" rating="1957" ratingOrigin="EGF : 1957" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade=" 9K" name="Player108" participating="11111111111111111111" rank="9K" rating="1303" ratingOrigin="EGF : 1303" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade=" 8K" name="Player109" participating="11111111111111111111" rank="8K" rating="1285" ratingOrigin="EGF : 1285" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade=" 6K" name="Player110" participating="11111111111111111111" rank="6K" rating="1547" ratingOrigin="EGF : 1547" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade="15K" name="Player111" participating="11111111111111111111" rank="15K" rating="600" ratingOrigin="INI" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade="6K" name="Player112" participating="11111111111111111111" rank="6K" rating="1500" ratingOrigin="MAN" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade="10K" name="Player113" participating="11111111111111111111" rank="11K" rating="1024" ratingOrigin="EGF : 1024" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade=" 6K" name="Player114" participating="11111111111111111111" rank="6K" rating="1459" ratingOrigin="EGF : 1459" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade="19K" name="Player115" participating="11111111111111111111" rank="19K" rating="170" ratingOrigin="EGF : 170" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade="12K" name="Player116" participating="11111111111111111111" rank="12K" rating="876" ratingOrigin="EGF : 876" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade=" 3K" name="Player117" participating="11111111111111111111" rank="3K" rating="1779" ratingOrigin="EGF : 1779" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade=" 2P" name="Player118" participating="11111111111111111111" rank="8D" rating="2754" ratingOrigin="EGF : 2754" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade=" 3K" name="Player119" participating="11111111111111111111" rank="3K" rating="1800" ratingOrigin="MAN" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade=" 8D" name="Player120" participating="11111111111111111111" rank="8D" rating="2840" ratingOrigin="EGF : 2840" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade=" 5K" name="Player121" participating="01111111111111111111" rank="6K" rating="1504" ratingOrigin="EGF : 1504" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade="4K" name="Player122" participating="11111111111111111111" rank="4K" rating="1700" ratingOrigin="MAN" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade="4K" name="Player123" participating="11111111111111111111" rank="4K" rating="1700" ratingOrigin="INI" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade="7K" name="Player124" participating="11111111111111111111" rank="7K" rating="1384" ratingOrigin="EGF : 1384" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade="10K" name="Player125" participating="11000000000000000000" rank="10K" rating="1117" ratingOrigin="EGF : 1117" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade="20K" name="Player126" participating="11111111111111111111" rank="20K" rating="100" ratingOrigin="INI" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade=" 5D" name="Player127" participating="11111111111111111111" rank="5D" rating="2512" ratingOrigin="EGF : 2512" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade=" 8K" name="Player128" participating="11111111111111111111" rank="8K" rating="1234" ratingOrigin="EGF : 1234" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade="18K" name="Player129" participating="11111111111111111111" rank="17K" rating="353" ratingOrigin="EGF : 353" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade=" 5K" name="Player130" participating="11111111111111111111" rank="5K" rating="1514" ratingOrigin="EGF : 1514" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade="7K" name="Player131" participating="11111111111111111111" rank="7K" rating="1400" ratingOrigin="MAN" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade="11K" name="Player132" participating="11101111111111111111" rank="9K" rating="1151" ratingOrigin="EGF : 1151" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade=" 2K" name="Player133" participating="11111111111111111111" rank="2K" rating="1875" ratingOrigin="EGF : 1875" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade=" 2D" name="Player134" participating="11000011111111111111" rank="2D" rating="2155" ratingOrigin="EGF : 2155" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade=" 4K" name="Player135" participating="11111111111111111111" rank="4K" rating="1664" ratingOrigin="EGF : 1664" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade="20K" name="Player136" participating="10101000000000000000" rank="20K" rating="100" ratingOrigin="EGF : 100" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade=" 6K" name="Player137" participating="11111111111111111111" rank="6K" rating="1487" ratingOrigin="EGF : 1487" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade="17K" name="Player138" participating="10000011111111111111" rank="17K" rating="400" ratingOrigin="INI" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade=" 4K" name="Player139" participating="11111111111111111111" rank="4K" rating="1661" ratingOrigin="EGF : 1661" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade="8K" name="Player140" participating="10111111111111111111" rank="8K" rating="1304" ratingOrigin="EGF : 1304" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade=" 1K" name="Player141" participating="11001111111111111111" rank="1K" rating="2022" ratingOrigin="EGF : 2022" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade="10K" name="Player142" participating="11110011111111111111" rank="10K" rating="1111" ratingOrigin="EGF : 1111" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade=" 4D" name="Player143" participating="11111111111111111111" rank="3D" rating="2317" ratingOrigin="EGF : 2317" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade=" 5K" name="Player144" participating="00111111111111111111" rank="5K" rating="1594" ratingOrigin="EGF : 1594" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade=" 1K" name="Player145" participating="11111111111111111111" rank="1K" rating="1999" ratingOrigin="EGF : 1999" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade=" 1D" name="Player146" participating="11111111111111111111" rank="1K" rating="2014" ratingOrigin="EGF : 2014" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade=" 5K" name="Player147" participating="11101011111111111111" rank="5K" rating="1556" ratingOrigin="EGF : 1556" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade="7K" name="Player148" participating="11111111111111111111" rank="9K" rating="1169" ratingOrigin="EGF : 1169" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade=" 7K" name="Player149" participating="11111111111111111111" rank="8K" rating="1323" ratingOrigin="EGF : 1323" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade=" 4K" name="Player150" participating="11111111111111111111" rank="4K" rating="1741" ratingOrigin="EGF : 1741" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade=" 8D" name="Player151" participating="11111111111111111111" rank="8D" rating="2803" ratingOrigin="EGF : 2803" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade="16K" name="Player152" participating="11111111111111111111" rank="15K" rating="556" ratingOrigin="EGF : 556" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade="15K" name="Player153" participating="11111111111111111111" rank="15K" rating="574" ratingOrigin="EGF : 574" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade=" 6K" name="Player154" participating="11011111111111111111" rank="7K" rating="1364" ratingOrigin="EGF : 1364" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade="10K" name="Player155" participating="11111111111111111111" rank="10K" rating="1099" ratingOrigin="EGF : 1099" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade=" 3K" name="Player156" participating="11111111111111111111" rank="3K" rating="1794" ratingOrigin="EGF : 1794" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade="12K" name="Player157" participating="10111111111111111111" rank="13K" rating="785" ratingOrigin="EGF : 785" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade=" 1D" name="Player158" participating="11110011111111111111" rank="1D" rating="2104" ratingOrigin="EGF : 2104" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade="12K" name="Player159" participating="11111111111111111111" rank="12K" rating="943" ratingOrigin="EGF : 943" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade="9K" name="Player160" participating="11111111111111111111" rank="9K" rating="1191" ratingOrigin="EGF : 1191" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade=" 2K" name="Player161" participating="10000011111111111111" rank="5K" rating="1628" ratingOrigin="EGF : 1628" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade=" 7K" name="Player162" participating="01000100000000000000" rank="7K" rating="1379" ratingOrigin="EGF : 1379" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade="10K" name="Player163" participating="11111111111111111111" rank="10K" rating="1087" ratingOrigin="EGF : 1087" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade="16K" name="Player164" participating="11111111111111111111" rank="15K" rating="564" ratingOrigin="EGF : 564" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade="17K" name="Player165" participating="11101000000000000000" rank="17K" rating="416" ratingOrigin="EGF : 416" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade="15K" name="Player166" participating="11111111111111111111" rank="17K" rating="400" ratingOrigin="FFG : -1650" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade=" 6K" name="Player167" participating="11111111111111111111" rank="6K" rating="1540" ratingOrigin="EGF : 1540" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade=" 7K" name="Player168" participating="11111111111111111111" rank="6K" rating="1471" ratingOrigin="EGF : 1471" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade=" 5K" name="Player169" participating="11111111111111111111" rank="6K" rating="1525" ratingOrigin="EGF : 1525" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade=" 9K" name="Player170" participating="11111111111111111111" rank="9K" rating="1331" ratingOrigin="EGF : 1331" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade=" 3K" name="Player171" participating="11001111111111111111" rank="3K" rating="1809" ratingOrigin="EGF : 1809" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade="5K" name="Player172" participating="11111111111111111111" rank="5K" rating="1600" ratingOrigin="INI" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade="11K" name="Player173" participating="11101111111111111111" rank="11K" rating="980" ratingOrigin="EGF : 980" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade=" 4K" name="Player174" participating="11001111111111111111" rank="4K" rating="1657" ratingOrigin="EGF : 1657" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade="12K" name="Player175" participating="11111111111111111111" rank="12K" rating="861" ratingOrigin="EGF : 861" registeringStatus="FIN" smmsCorrection="0" />
+        <Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade="18K" name="Player176" participating="11111111111111111111" rank="18K" rating="347" ratingOrigin="EGF : 347" registeringStatus="FIN" smmsCorrection="0" />
+    </Players>
+    <Games>
+        <Game blackPlayer="PLAYER127TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="1" tableNumber="1" whitePlayer="PLAYER89TEST" />
+        <Game blackPlayer="PLAYER122TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="2" tableNumber="25" whitePlayer="PLAYER104TEST" />
+        <Game blackPlayer="PLAYER140TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="3" tableNumber="49" whitePlayer="PLAYER148TEST" />
+        <Game blackPlayer="PLAYER118TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="1" tableNumber="2" whitePlayer="PLAYER101TEST" />
+        <Game blackPlayer="PLAYER139TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="2" tableNumber="26" whitePlayer="PLAYER123TEST" />
+        <Game blackPlayer="PLAYER100TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="3" tableNumber="50" whitePlayer="PLAYER45TEST" />
+        <Game blackPlayer="PLAYER50TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="1" tableNumber="3" whitePlayer="PLAYER151TEST" />
+        <Game blackPlayer="PLAYER135TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="2" tableNumber="27" whitePlayer="PLAYER150TEST" />
+        <Game blackPlayer="PLAYER155TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="3" tableNumber="51" whitePlayer="PLAYER170TEST" />
+        <Game blackPlayer="PLAYER86TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="1" tableNumber="4" whitePlayer="PLAYER120TEST" />
+        <Game blackPlayer="PLAYER02TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="2" tableNumber="28" whitePlayer="PLAYER07TEST" />
+        <Game blackPlayer="PLAYER70TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="3" tableNumber="52" whitePlayer="PLAYER132TEST" />
+        <Game blackPlayer="PLAYER87TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="1" tableNumber="5" whitePlayer="PLAYER56TEST" />
+        <Game blackPlayer="PLAYER147TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="2" tableNumber="29" whitePlayer="PLAYER40TEST" />
+        <Game blackPlayer="PLAYER80TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="3" tableNumber="53" whitePlayer="PLAYER142TEST" />
+        <Game blackPlayer="PLAYER42TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="1" tableNumber="6" whitePlayer="PLAYER58TEST" />
+        <Game blackPlayer="PLAYER46TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="2" tableNumber="30" whitePlayer="PLAYER01TEST" />
+        <Game blackPlayer="PLAYER52TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="3" tableNumber="54" whitePlayer="PLAYER93TEST" />
+        <Game blackPlayer="PLAYER106TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="1" tableNumber="7" whitePlayer="PLAYER13TEST" />
+        <Game blackPlayer="PLAYER08TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="2" tableNumber="31" whitePlayer="PLAYER98TEST" />
+        <Game blackPlayer="PLAYER09TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="3" tableNumber="55" whitePlayer="PLAYER94TEST" />
+        <Game blackPlayer="PLAYER72TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="1" tableNumber="8" whitePlayer="PLAYER143TEST" />
+        <Game blackPlayer="PLAYER130TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="2" tableNumber="32" whitePlayer="PLAYER84TEST" />
+        <Game blackPlayer="PLAYER113TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="3" tableNumber="56" whitePlayer="PLAYER36TEST" />
+        <Game blackPlayer="PLAYER134TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="1" tableNumber="9" whitePlayer="PLAYER43TEST" />
+        <Game blackPlayer="PLAYER33TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="2" tableNumber="33" whitePlayer="PLAYER169TEST" />
+        <Game blackPlayer="PLAYER64TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="3" tableNumber="57" whitePlayer="PLAYER14TEST" />
+        <Game blackPlayer="PLAYER158TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="1" tableNumber="10" whitePlayer="PLAYER26TEST" />
+        <Game blackPlayer="PLAYER39TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="2" tableNumber="34" whitePlayer="PLAYER82TEST" />
+        <Game blackPlayer="PLAYER163TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="3" tableNumber="58" whitePlayer="PLAYER12TEST" />
+        <Game blackPlayer="PLAYER77TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="1" tableNumber="11" whitePlayer="PLAYER102TEST" />
+        <Game blackPlayer="PLAYER78TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="2" tableNumber="35" whitePlayer="PLAYER167TEST" />
+        <Game blackPlayer="PLAYER173TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="3" tableNumber="59" whitePlayer="PLAYER25TEST" />
+        <Game blackPlayer="PLAYER99TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="1" tableNumber="12" whitePlayer="PLAYER63TEST" />
+        <Game blackPlayer="PLAYER75TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="2" tableNumber="36" whitePlayer="PLAYER31TEST" />
+        <Game blackPlayer="PLAYER159TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="3" tableNumber="60" whitePlayer="PLAYER116TEST" />
+        <Game blackPlayer="PLAYER145TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="1" tableNumber="13" whitePlayer="PLAYER141TEST" />
+        <Game blackPlayer="PLAYER168TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="2" tableNumber="37" whitePlayer="PLAYER172TEST" />
+        <Game blackPlayer="PLAYER91TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="3" tableNumber="61" whitePlayer="PLAYER175TEST" />
+        <Game blackPlayer="PLAYER107TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="1" tableNumber="14" whitePlayer="PLAYER92TEST" />
+        <Game blackPlayer="PLAYER11TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="2" tableNumber="38" whitePlayer="PLAYER114TEST" />
+        <Game blackPlayer="PLAYER157TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="3" tableNumber="62" whitePlayer="PLAYER20TEST" />
+        <Game blackPlayer="PLAYER146TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="1" tableNumber="15" whitePlayer="PLAYER67TEST" />
+        <Game blackPlayer="PLAYER112TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="2" tableNumber="39" whitePlayer="PLAYER121TEST" />
+        <Game blackPlayer="PLAYER24TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="3" tableNumber="63" whitePlayer="PLAYER59TEST" />
+        <Game blackPlayer="PLAYER04TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="1" tableNumber="16" whitePlayer="PLAYER15TEST" />
+        <Game blackPlayer="PLAYER96TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="2" tableNumber="40" whitePlayer="PLAYER53TEST" />
+        <Game blackPlayer="PLAYER111TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="3" tableNumber="64" whitePlayer="PLAYER18TEST" />
+        <Game blackPlayer="PLAYER44TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="1" tableNumber="17" whitePlayer="PLAYER74TEST" />
+        <Game blackPlayer="PLAYER73TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="2" tableNumber="41" whitePlayer="PLAYER110TEST" />
+        <Game blackPlayer="PLAYER153TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="3" tableNumber="65" whitePlayer="PLAYER164TEST" />
+        <Game blackPlayer="PLAYER10TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="1" tableNumber="18" whitePlayer="PLAYER54TEST" />
+        <Game blackPlayer="PLAYER32TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="2" tableNumber="42" whitePlayer="PLAYER137TEST" />
+        <Game blackPlayer="PLAYER152TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="3" tableNumber="66" whitePlayer="PLAYER88TEST" />
+        <Game blackPlayer="PLAYER133TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="1" tableNumber="19" whitePlayer="PLAYER62TEST" />
+        <Game blackPlayer="PLAYER109TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="2" tableNumber="43" whitePlayer="PLAYER124TEST" />
+        <Game blackPlayer="PLAYER129TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="3" tableNumber="67" whitePlayer="PLAYER17TEST" />
+        <Game blackPlayer="PLAYER156TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="1" tableNumber="20" whitePlayer="PLAYER171TEST" />
+        <Game blackPlayer="PLAYER105TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="2" tableNumber="44" whitePlayer="PLAYER19TEST" />
+        <Game blackPlayer="PLAYER176TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="3" tableNumber="68" whitePlayer="PLAYER71TEST" />
+        <Game blackPlayer="PLAYER79TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS_BYDEF" roundNumber="1" tableNumber="21" whitePlayer="PLAYER60TEST" />
+        <Game blackPlayer="PLAYER149TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="2" tableNumber="45" whitePlayer="PLAYER154TEST" />
+        <Game blackPlayer="PLAYER166TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="3" tableNumber="69" whitePlayer="PLAYER65TEST" />
+        <Game blackPlayer="PLAYER35TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="1" tableNumber="22" whitePlayer="PLAYER97TEST" />
+        <Game blackPlayer="PLAYER131TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="2" tableNumber="46" whitePlayer="PLAYER128TEST" />
+        <Game blackPlayer="PLAYER23TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="3" tableNumber="70" whitePlayer="PLAYER83TEST" />
+        <Game blackPlayer="PLAYER117TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="1" tableNumber="23" whitePlayer="PLAYER119TEST" />
+        <Game blackPlayer="PLAYER162TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="2" tableNumber="47" whitePlayer="PLAYER27TEST" />
+        <Game blackPlayer="PLAYER16TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="3" tableNumber="71" whitePlayer="PLAYER165TEST" />
+        <Game blackPlayer="PLAYER40TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="1" tableNumber="24" whitePlayer="PLAYER122TEST" />
+        <Game blackPlayer="PLAYER21TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="2" tableNumber="48" whitePlayer="PLAYER45TEST" />
+        <Game blackPlayer="PLAYER85TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="3" tableNumber="72" whitePlayer="PLAYER68TEST" />
+        <Game blackPlayer="PLAYER69TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS_BYDEF" roundNumber="1" tableNumber="25" whitePlayer="PLAYER49TEST" />
+        <Game blackPlayer="PLAYER170TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="2" tableNumber="49" whitePlayer="PLAYER61TEST" />
+        <Game blackPlayer="PLAYER115TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="3" tableNumber="73" whitePlayer="PLAYER37TEST" />
+        <Game blackPlayer="PLAYER07TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="1" tableNumber="26" whitePlayer="PLAYER46TEST" />
+        <Game blackPlayer="PLAYER108TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="2" tableNumber="50" whitePlayer="PLAYER90TEST" />
+        <Game blackPlayer="PLAYER81TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="3" tableNumber="74" whitePlayer="PLAYER28TEST" />
+        <Game blackPlayer="PLAYER150TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="1" tableNumber="27" whitePlayer="PLAYER139TEST" />
+        <Game blackPlayer="PLAYER160TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="2" tableNumber="51" whitePlayer="PLAYER30TEST" />
+        <Game blackPlayer="PLAYER03TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS_BYDEF" roundNumber="3" tableNumber="75" whitePlayer="PLAYER47TEST" />
+        <Game blackPlayer="PLAYER123TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="1" tableNumber="28" whitePlayer="PLAYER174TEST" />
+        <Game blackPlayer="PLAYER36TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="2" tableNumber="52" whitePlayer="PLAYER09TEST" />
+        <Game blackPlayer="PLAYER95TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS_BYDEF" roundNumber="3" tableNumber="76" whitePlayer="PLAYER136TEST" />
+        <Game blackPlayer="PLAYER98TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="1" tableNumber="29" whitePlayer="PLAYER135TEST" />
+        <Game blackPlayer="PLAYER52TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="2" tableNumber="53" whitePlayer="PLAYER76TEST" />
+        <Game blackPlayer="PLAYER34TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS_BYDEF" roundNumber="3" tableNumber="77" whitePlayer="PLAYER06TEST" />
+        <Game blackPlayer="PLAYER84TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="1" tableNumber="30" whitePlayer="PLAYER05TEST" />
+        <Game blackPlayer="PLAYER148TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="2" tableNumber="54" whitePlayer="PLAYER125TEST" />
+        <Game blackPlayer="PLAYER126TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="3" tableNumber="78" whitePlayer="PLAYER22TEST" />
+        <Game blackPlayer="PLAYER31TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="1" tableNumber="31" whitePlayer="PLAYER02TEST" />
+        <Game blackPlayer="PLAYER132TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="2" tableNumber="55" whitePlayer="PLAYER155TEST" />
+        <Game blackPlayer="PLAYER01TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="1" tableNumber="32" whitePlayer="PLAYER33TEST" />
+        <Game blackPlayer="PLAYER80TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="2" tableNumber="56" whitePlayer="PLAYER57TEST" />
+        <Game blackPlayer="PLAYER08TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="1" tableNumber="33" whitePlayer="PLAYER78TEST" />
+        <Game blackPlayer="PLAYER163TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="2" tableNumber="57" whitePlayer="PLAYER142TEST" />
+        <Game blackPlayer="PLAYER130TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="1" tableNumber="34" whitePlayer="PLAYER39TEST" />
+        <Game blackPlayer="PLAYER93TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="2" tableNumber="58" whitePlayer="PLAYER173TEST" />
+        <Game blackPlayer="PLAYER147TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS_BYDEF" roundNumber="1" tableNumber="35" whitePlayer="PLAYER161TEST" />
+        <Game blackPlayer="PLAYER113TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="2" tableNumber="59" whitePlayer="PLAYER14TEST" />
+        <Game blackPlayer="PLAYER172TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="1" tableNumber="36" whitePlayer="PLAYER169TEST" />
+        <Game blackPlayer="PLAYER70TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="2" tableNumber="60" whitePlayer="PLAYER64TEST" />
+        <Game blackPlayer="PLAYER167TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="1" tableNumber="37" whitePlayer="PLAYER11TEST" />
+        <Game blackPlayer="PLAYER12TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="2" tableNumber="61" whitePlayer="PLAYER175TEST" />
+        <Game blackPlayer="PLAYER114TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="1" tableNumber="38" whitePlayer="PLAYER53TEST" />
+        <Game blackPlayer="PLAYER116TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="2" tableNumber="62" whitePlayer="PLAYER25TEST" />
+        <Game blackPlayer="PLAYER82TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="1" tableNumber="39" whitePlayer="PLAYER112TEST" />
+        <Game blackPlayer="PLAYER24TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="2" tableNumber="63" whitePlayer="PLAYER159TEST" />
+        <Game blackPlayer="PLAYER110TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="1" tableNumber="40" whitePlayer="PLAYER168TEST" />
+        <Game blackPlayer="PLAYER18TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="2" tableNumber="64" whitePlayer="PLAYER91TEST" />
+        <Game blackPlayer="PLAYER137TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="1" tableNumber="41" whitePlayer="PLAYER96TEST" />
+        <Game blackPlayer="PLAYER20TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="2" tableNumber="65" whitePlayer="PLAYER111TEST" />
+        <Game blackPlayer="PLAYER124TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="1" tableNumber="42" whitePlayer="PLAYER75TEST" />
+        <Game blackPlayer="PLAYER59TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="2" tableNumber="66" whitePlayer="PLAYER17TEST" />
+        <Game blackPlayer="PLAYER154TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="1" tableNumber="43" whitePlayer="PLAYER32TEST" />
+        <Game blackPlayer="PLAYER152TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="2" tableNumber="67" whitePlayer="PLAYER153TEST" />
+        <Game blackPlayer="PLAYER19TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="1" tableNumber="44" whitePlayer="PLAYER73TEST" />
+        <Game blackPlayer="PLAYER71TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="2" tableNumber="68" whitePlayer="PLAYER164TEST" />
+        <Game blackPlayer="PLAYER131TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="1" tableNumber="45" whitePlayer="PLAYER109TEST" />
+        <Game blackPlayer="PLAYER165TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="2" tableNumber="69" whitePlayer="PLAYER88TEST" />
+        <Game blackPlayer="PLAYER128TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="1" tableNumber="46" whitePlayer="PLAYER140TEST" />
+        <Game blackPlayer="PLAYER166TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="2" tableNumber="70" whitePlayer="PLAYER129TEST" />
+        <Game blackPlayer="PLAYER27TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="1" tableNumber="47" whitePlayer="PLAYER105TEST" />
+        <Game blackPlayer="PLAYER176TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="2" tableNumber="71" whitePlayer="PLAYER83TEST" />
+        <Game blackPlayer="PLAYER149TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="1" tableNumber="48" whitePlayer="PLAYER21TEST" />
+        <Game blackPlayer="PLAYER115TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="2" tableNumber="72" whitePlayer="PLAYER65TEST" />
+        <Game blackPlayer="PLAYER66TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS_BYDEF" roundNumber="1" tableNumber="49" whitePlayer="PLAYER48TEST" />
+        <Game blackPlayer="PLAYER55TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="2" tableNumber="73" whitePlayer="PLAYER85TEST" />
+        <Game blackPlayer="PLAYER90TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="1" tableNumber="50" whitePlayer="PLAYER160TEST" />
+        <Game blackPlayer="PLAYER37TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="2" tableNumber="74" whitePlayer="PLAYER68TEST" />
+        <Game blackPlayer="PLAYER45TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="1" tableNumber="51" whitePlayer="PLAYER148TEST" />
+        <Game blackPlayer="PLAYER81TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="2" tableNumber="75" whitePlayer="PLAYER23TEST" />
+        <Game blackPlayer="PLAYER76TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="1" tableNumber="52" whitePlayer="PLAYER108TEST" />
+        <Game blackPlayer="PLAYER16TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="2" tableNumber="76" whitePlayer="PLAYER126TEST" />
+        <Game blackPlayer="PLAYER132TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="1" tableNumber="53" whitePlayer="PLAYER100TEST" />
+        <Game blackPlayer="PLAYER03TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="2" tableNumber="77" whitePlayer="PLAYER06TEST" />
+        <Game blackPlayer="PLAYER57TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="1" tableNumber="54" whitePlayer="PLAYER170TEST" />
+        <Game blackPlayer="PLAYER34TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="2" tableNumber="78" whitePlayer="PLAYER47TEST" />
+        <Game blackPlayer="PLAYER125TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="1" tableNumber="55" whitePlayer="PLAYER93TEST" />
+        <Game blackPlayer="PLAYER22TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="2" tableNumber="79" whitePlayer="PLAYER95TEST" />
+        <Game blackPlayer="PLAYER14TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="1" tableNumber="56" whitePlayer="PLAYER80TEST" />
+        <Game blackPlayer="PLAYER94TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="1" tableNumber="57" whitePlayer="PLAYER163TEST" />
+        <Game blackPlayer="PLAYER142TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="1" tableNumber="58" whitePlayer="PLAYER52TEST" />
+        <Game blackPlayer="PLAYER30TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="1" tableNumber="59" whitePlayer="PLAYER36TEST" />
+        <Game blackPlayer="PLAYER155TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="1" tableNumber="60" whitePlayer="PLAYER70TEST" />
+        <Game blackPlayer="PLAYER25TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="1" tableNumber="61" whitePlayer="PLAYER64TEST" />
+        <Game blackPlayer="PLAYER41TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS_BYDEF" roundNumber="1" tableNumber="62" whitePlayer="PLAYER173TEST" />
+        <Game blackPlayer="PLAYER12TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="1" tableNumber="63" whitePlayer="PLAYER113TEST" />
+        <Game blackPlayer="PLAYER175TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="1" tableNumber="64" whitePlayer="PLAYER159TEST" />
+        <Game blackPlayer="PLAYER116TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="1" tableNumber="65" whitePlayer="PLAYER157TEST" />
+        <Game blackPlayer="PLAYER17TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="1" tableNumber="66" whitePlayer="PLAYER24TEST" />
+        <Game blackPlayer="PLAYER20TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="1" tableNumber="67" whitePlayer="PLAYER91TEST" />
+        <Game blackPlayer="PLAYER153TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="1" tableNumber="68" whitePlayer="PLAYER18TEST" />
+        <Game blackPlayer="PLAYER111TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="1" tableNumber="69" whitePlayer="PLAYER152TEST" />
+        <Game blackPlayer="PLAYER164TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="1" tableNumber="70" whitePlayer="PLAYER59TEST" />
+        <Game blackPlayer="PLAYER88TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="1" tableNumber="71" whitePlayer="PLAYER71TEST" />
+        <Game blackPlayer="PLAYER129TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="1" tableNumber="72" whitePlayer="PLAYER165TEST" />
+        <Game blackPlayer="PLAYER138TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS_BYDEF" roundNumber="1" tableNumber="73" whitePlayer="PLAYER166TEST" />
+        <Game blackPlayer="PLAYER65TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="1" tableNumber="74" whitePlayer="PLAYER176TEST" />
+        <Game blackPlayer="PLAYER83TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="1" tableNumber="75" whitePlayer="PLAYER115TEST" />
+        <Game blackPlayer="PLAYER68TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="1" tableNumber="76" whitePlayer="PLAYER126TEST" />
+        <Game blackPlayer="PLAYER47TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="1" tableNumber="77" whitePlayer="PLAYER16TEST" />
+        <Game blackPlayer="PLAYER06TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="1" tableNumber="78" whitePlayer="PLAYER37TEST" />
+        <Game blackPlayer="PLAYER95TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="1" tableNumber="79" whitePlayer="PLAYER23TEST" />
+        <Game blackPlayer="PLAYER136TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="1" tableNumber="80" whitePlayer="PLAYER34TEST" />
+        <Game blackPlayer="PLAYER85TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="1" tableNumber="81" whitePlayer="PLAYER03TEST" />
+        <Game blackPlayer="PLAYER38TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS_BYDEF" roundNumber="1" tableNumber="82" whitePlayer="PLAYER81TEST" />
+        <Game blackPlayer="PLAYER89TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="6" tableNumber="1" whitePlayer="PLAYER118TEST" />
+        <Game blackPlayer="PLAYER151TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="6" tableNumber="2" whitePlayer="PLAYER101TEST" />
+        <Game blackPlayer="PLAYER127TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="6" tableNumber="3" whitePlayer="PLAYER58TEST" />
+        <Game blackPlayer="PLAYER56TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="6" tableNumber="4" whitePlayer="PLAYER50TEST" />
+        <Game blackPlayer="PLAYER143TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="6" tableNumber="5" whitePlayer="PLAYER86TEST" />
+        <Game blackPlayer="PLAYER87TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="6" tableNumber="6" whitePlayer="PLAYER120TEST" />
+        <Game blackPlayer="PLAYER99TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="6" tableNumber="7" whitePlayer="PLAYER43TEST" />
+        <Game blackPlayer="PLAYER26TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="6" tableNumber="8" whitePlayer="PLAYER72TEST" />
+        <Game blackPlayer="PLAYER146TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="6" tableNumber="9" whitePlayer="PLAYER92TEST" />
+        <Game blackPlayer="PLAYER67TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="6" tableNumber="10" whitePlayer="PLAYER63TEST" />
+        <Game blackPlayer="PLAYER103TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="6" tableNumber="11" whitePlayer="PLAYER133TEST" />
+        <Game blackPlayer="PLAYER141TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="6" tableNumber="12" whitePlayer="PLAYER04TEST" />
+        <Game blackPlayer="PLAYER54TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="6" tableNumber="13" whitePlayer="PLAYER107TEST" />
+        <Game blackPlayer="PLAYER102TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="6" tableNumber="14" whitePlayer="PLAYER74TEST" />
+        <Game blackPlayer="PLAYER117TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="6" tableNumber="15" whitePlayer="PLAYER145TEST" />
+        <Game blackPlayer="PLAYER84TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="6" tableNumber="16" whitePlayer="PLAYER10TEST" />
+        <Game blackPlayer="PLAYER62TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="6" tableNumber="17" whitePlayer="PLAYER40TEST" />
+        <Game blackPlayer="PLAYER171TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="6" tableNumber="18" whitePlayer="PLAYER05TEST" />
+        <Game blackPlayer="PLAYER104TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="6" tableNumber="19" whitePlayer="PLAYER07TEST" />
+        <Game blackPlayer="PLAYER33TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="6" tableNumber="20" whitePlayer="PLAYER150TEST" />
+        <Game blackPlayer="PLAYER69TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="6" tableNumber="21" whitePlayer="PLAYER168TEST" />
+        <Game blackPlayer="PLAYER96TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="6" tableNumber="22" whitePlayer="PLAYER31TEST" />
+        <Game blackPlayer="PLAYER139TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="6" tableNumber="23" whitePlayer="PLAYER156TEST" />
+        <Game blackPlayer="PLAYER35TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="6" tableNumber="24" whitePlayer="PLAYER46TEST" />
+        <Game blackPlayer="PLAYER118TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="5" tableNumber="1" whitePlayer="PLAYER127TEST" />
+        <Game blackPlayer="PLAYER174TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="6" tableNumber="25" whitePlayer="PLAYER97TEST" />
+        <Game blackPlayer="PLAYER151TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="5" tableNumber="2" whitePlayer="PLAYER89TEST" />
+        <Game blackPlayer="PLAYER135TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="6" tableNumber="26" whitePlayer="PLAYER82TEST" />
+        <Game blackPlayer="PLAYER50TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="5" tableNumber="3" whitePlayer="PLAYER120TEST" />
+        <Game blackPlayer="PLAYER123TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="6" tableNumber="27" whitePlayer="PLAYER114TEST" />
+        <Game blackPlayer="PLAYER58TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="5" tableNumber="4" whitePlayer="PLAYER56TEST" />
+        <Game blackPlayer="PLAYER167TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="6" tableNumber="28" whitePlayer="PLAYER02TEST" />
+        <Game blackPlayer="PLAYER101TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="5" tableNumber="5" whitePlayer="PLAYER143TEST" />
+        <Game blackPlayer="PLAYER172TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="6" tableNumber="29" whitePlayer="PLAYER122TEST" />
+        <Game blackPlayer="PLAYER43TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="5" tableNumber="6" whitePlayer="PLAYER86TEST" />
+        <Game blackPlayer="PLAYER119TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="6" tableNumber="30" whitePlayer="PLAYER169TEST" />
+        <Game blackPlayer="PLAYER99TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="5" tableNumber="7" whitePlayer="PLAYER87TEST" />
+        <Game blackPlayer="PLAYER144TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="6" tableNumber="31" whitePlayer="PLAYER53TEST" />
+        <Game blackPlayer="PLAYER72TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="5" tableNumber="8" whitePlayer="PLAYER106TEST" />
+        <Game blackPlayer="PLAYER01TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="6" tableNumber="32" whitePlayer="PLAYER73TEST" />
+        <Game blackPlayer="PLAYER146TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="5" tableNumber="9" whitePlayer="PLAYER26TEST" />
+        <Game blackPlayer="PLAYER121TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="6" tableNumber="33" whitePlayer="PLAYER130TEST" />
+        <Game blackPlayer="PLAYER04TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="5" tableNumber="10" whitePlayer="PLAYER77TEST" />
+        <Game blackPlayer="PLAYER08TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="6" tableNumber="34" whitePlayer="PLAYER32TEST" />
+        <Game blackPlayer="PLAYER107TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="5" tableNumber="11" whitePlayer="PLAYER63TEST" />
+        <Game blackPlayer="PLAYER39TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="6" tableNumber="35" whitePlayer="PLAYER19TEST" />
+        <Game blackPlayer="PLAYER92TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="5" tableNumber="12" whitePlayer="PLAYER67TEST" />
+        <Game blackPlayer="PLAYER110TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="6" tableNumber="36" whitePlayer="PLAYER108TEST" />
+        <Game blackPlayer="PLAYER15TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="5" tableNumber="13" whitePlayer="PLAYER103TEST" />
+        <Game blackPlayer="PLAYER109TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="6" tableNumber="37" whitePlayer="PLAYER137TEST" />
+        <Game blackPlayer="PLAYER10TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="5" tableNumber="14" whitePlayer="PLAYER133TEST" />
+        <Game blackPlayer="PLAYER140TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="6" tableNumber="38" whitePlayer="PLAYER149TEST" />
+        <Game blackPlayer="PLAYER141TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="5" tableNumber="15" whitePlayer="PLAYER102TEST" />
+        <Game blackPlayer="PLAYER75TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="6" tableNumber="39" whitePlayer="PLAYER160TEST" />
+        <Game blackPlayer="PLAYER74TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="5" tableNumber="16" whitePlayer="PLAYER145TEST" />
+        <Game blackPlayer="PLAYER51TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="6" tableNumber="40" whitePlayer="PLAYER128TEST" />
+        <Game blackPlayer="PLAYER150TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="5" tableNumber="17" whitePlayer="PLAYER54TEST" />
+        <Game blackPlayer="PLAYER21TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="6" tableNumber="41" whitePlayer="PLAYER76TEST" />
+        <Game blackPlayer="PLAYER117TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="5" tableNumber="18" whitePlayer="PLAYER171TEST" />
+        <Game blackPlayer="PLAYER148TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="6" tableNumber="42" whitePlayer="PLAYER131TEST" />
+        <Game blackPlayer="PLAYER07TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="5" tableNumber="19" whitePlayer="PLAYER40TEST" />
+        <Game blackPlayer="PLAYER112TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="6" tableNumber="43" whitePlayer="PLAYER162TEST" />
+        <Game blackPlayer="PLAYER69TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="5" tableNumber="20" whitePlayer="PLAYER84TEST" />
+        <Game blackPlayer="PLAYER124TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="6" tableNumber="44" whitePlayer="PLAYER09TEST" />
+        <Game blackPlayer="PLAYER97TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="5" tableNumber="21" whitePlayer="PLAYER62TEST" />
+        <Game blackPlayer="PLAYER113TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="6" tableNumber="45" whitePlayer="PLAYER155TEST" />
+        <Game blackPlayer="PLAYER05TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="5" tableNumber="22" whitePlayer="PLAYER139TEST" />
+        <Game blackPlayer="PLAYER93TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="6" tableNumber="46" whitePlayer="PLAYER154TEST" />
+        <Game blackPlayer="PLAYER31TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="5" tableNumber="23" whitePlayer="PLAYER35TEST" />
+        <Game blackPlayer="PLAYER14TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="6" tableNumber="47" whitePlayer="PLAYER170TEST" />
+        <Game blackPlayer="PLAYER156TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="5" tableNumber="24" whitePlayer="PLAYER33TEST" />
+        <Game blackPlayer="PLAYER90TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="6" tableNumber="48" whitePlayer="PLAYER52TEST" />
+        <Game blackPlayer="PLAYER127TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="4" tableNumber="1" whitePlayer="PLAYER151TEST" />
+        <Game blackPlayer="PLAYER02TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="5" tableNumber="25" whitePlayer="PLAYER96TEST" />
+        <Game blackPlayer="PLAYER57TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="6" tableNumber="49" whitePlayer="PLAYER70TEST" />
+        <Game blackPlayer="PLAYER120TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="4" tableNumber="2" whitePlayer="PLAYER118TEST" />
+        <Game blackPlayer="PLAYER168TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="5" tableNumber="26" whitePlayer="PLAYER123TEST" />
+        <Game blackPlayer="PLAYER80TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="6" tableNumber="50" whitePlayer="PLAYER36TEST" />
+        <Game blackPlayer="PLAYER50TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="4" tableNumber="3" whitePlayer="PLAYER86TEST" />
+        <Game blackPlayer="PLAYER53TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="5" tableNumber="27" whitePlayer="PLAYER135TEST" />
+        <Game blackPlayer="PLAYER27TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="6" tableNumber="51" whitePlayer="PLAYER12TEST" />
+        <Game blackPlayer="PLAYER56TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="4" tableNumber="4" whitePlayer="PLAYER89TEST" />
+        <Game blackPlayer="PLAYER122TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="5" tableNumber="28" whitePlayer="PLAYER167TEST" />
+        <Game blackPlayer="PLAYER25TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="6" tableNumber="52" whitePlayer="PLAYER132TEST" />
+        <Game blackPlayer="PLAYER42TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="4" tableNumber="5" whitePlayer="PLAYER101TEST" />
+        <Game blackPlayer="PLAYER82TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="5" tableNumber="29" whitePlayer="PLAYER119TEST" />
+        <Game blackPlayer="PLAYER175TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="6" tableNumber="53" whitePlayer="PLAYER173TEST" />
+        <Game blackPlayer="PLAYER58TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="4" tableNumber="6" whitePlayer="PLAYER143TEST" />
+        <Game blackPlayer="PLAYER114TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="5" tableNumber="30" whitePlayer="PLAYER01TEST" />
+        <Game blackPlayer="PLAYER64TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="6" tableNumber="54" whitePlayer="PLAYER163TEST" />
+        <Game blackPlayer="PLAYER106TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS_BYDEF" roundNumber="4" tableNumber="7" whitePlayer="PLAYER87TEST" />
+        <Game blackPlayer="PLAYER46TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="5" tableNumber="31" whitePlayer="PLAYER144TEST" />
+        <Game blackPlayer="PLAYER153TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="6" tableNumber="55" whitePlayer="PLAYER91TEST" />
+        <Game blackPlayer="PLAYER13TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="4" tableNumber="8" whitePlayer="PLAYER99TEST" />
+        <Game blackPlayer="PLAYER130TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="5" tableNumber="32" whitePlayer="PLAYER08TEST" />
+        <Game blackPlayer="PLAYER159TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="6" tableNumber="56" whitePlayer="PLAYER20TEST" />
+        <Game blackPlayer="PLAYER43TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="4" tableNumber="9" whitePlayer="PLAYER26TEST" />
+        <Game blackPlayer="PLAYER121TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="5" tableNumber="33" whitePlayer="PLAYER147TEST" />
+        <Game blackPlayer="PLAYER59TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="6" tableNumber="57" whitePlayer="PLAYER116TEST" />
+        <Game blackPlayer="PLAYER72TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="4" tableNumber="10" whitePlayer="PLAYER158TEST" />
+        <Game blackPlayer="PLAYER32TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="5" tableNumber="34" whitePlayer="PLAYER174TEST" />
+        <Game blackPlayer="PLAYER164TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="6" tableNumber="58" whitePlayer="PLAYER157TEST" />
+        <Game blackPlayer="PLAYER44TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="4" tableNumber="11" whitePlayer="PLAYER77TEST" />
+        <Game blackPlayer="PLAYER19TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="5" tableNumber="35" whitePlayer="PLAYER172TEST" />
+        <Game blackPlayer="PLAYER111TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="6" tableNumber="59" whitePlayer="PLAYER24TEST" />
+        <Game blackPlayer="PLAYER63TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="4" tableNumber="12" whitePlayer="PLAYER146TEST" />
+        <Game blackPlayer="PLAYER73TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="5" tableNumber="36" whitePlayer="PLAYER109TEST" />
+        <Game blackPlayer="PLAYER176TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="6" tableNumber="60" whitePlayer="PLAYER18TEST" />
+        <Game blackPlayer="PLAYER107TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="4" tableNumber="13" whitePlayer="PLAYER04TEST" />
+        <Game blackPlayer="PLAYER128TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="5" tableNumber="37" whitePlayer="PLAYER39TEST" />
+        <Game blackPlayer="PLAYER152TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="6" tableNumber="61" whitePlayer="PLAYER71TEST" />
+        <Game blackPlayer="PLAYER92TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="4" tableNumber="14" whitePlayer="PLAYER133TEST" />
+        <Game blackPlayer="PLAYER169TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="5" tableNumber="38" whitePlayer="PLAYER149TEST" />
+        <Game blackPlayer="PLAYER17TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS_BYDEF" roundNumber="6" tableNumber="62" whitePlayer="PLAYER166TEST" />
+        <Game blackPlayer="PLAYER103TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="4" tableNumber="15" whitePlayer="PLAYER102TEST" />
+        <Game blackPlayer="PLAYER110TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="5" tableNumber="39" whitePlayer="PLAYER66TEST" />
+        <Game blackPlayer="PLAYER16TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="6" tableNumber="63" whitePlayer="PLAYER88TEST" />
+        <Game blackPlayer="PLAYER145TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="4" tableNumber="16" whitePlayer="PLAYER67TEST" />
+        <Game blackPlayer="PLAYER75TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="5" tableNumber="40" whitePlayer="PLAYER108TEST" />
+        <Game blackPlayer="PLAYER129TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="6" tableNumber="64" whitePlayer="PLAYER23TEST" />
+        <Game blackPlayer="PLAYER62TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="4" tableNumber="17" whitePlayer="PLAYER15TEST" />
+        <Game blackPlayer="PLAYER21TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="5" tableNumber="41" whitePlayer="PLAYER137TEST" />
+        <Game blackPlayer="PLAYER83TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="6" tableNumber="65" whitePlayer="PLAYER65TEST" />
+        <Game blackPlayer="PLAYER10TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="4" tableNumber="18" whitePlayer="PLAYER117TEST" />
+        <Game blackPlayer="PLAYER140TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="5" tableNumber="42" whitePlayer="PLAYER112TEST" />
+        <Game blackPlayer="PLAYER115TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="6" tableNumber="66" whitePlayer="PLAYER126TEST" />
+        <Game blackPlayer="PLAYER07TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="4" tableNumber="19" whitePlayer="PLAYER74TEST" />
+        <Game blackPlayer="PLAYER51TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="5" tableNumber="43" whitePlayer="PLAYER124TEST" />
+        <Game blackPlayer="PLAYER68TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="6" tableNumber="67" whitePlayer="PLAYER34TEST" />
+        <Game blackPlayer="PLAYER54TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="4" tableNumber="20" whitePlayer="PLAYER69TEST" />
+        <Game blackPlayer="PLAYER11TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="5" tableNumber="44" whitePlayer="PLAYER160TEST" />
+        <Game blackPlayer="PLAYER95TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="6" tableNumber="68" whitePlayer="PLAYER85TEST" />
+        <Game blackPlayer="PLAYER05TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="4" tableNumber="21" whitePlayer="PLAYER104TEST" />
+        <Game blackPlayer="PLAYER76TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="5" tableNumber="45" whitePlayer="PLAYER105TEST" />
+        <Game blackPlayer="PLAYER22TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="6" tableNumber="69" whitePlayer="PLAYER03TEST" />
+        <Game blackPlayer="PLAYER40TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="4" tableNumber="22" whitePlayer="PLAYER156TEST" />
+        <Game blackPlayer="PLAYER155TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="5" tableNumber="46" whitePlayer="PLAYER131TEST" />
+        <Game blackPlayer="PLAYER37TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="6" tableNumber="70" whitePlayer="PLAYER55TEST" />
+        <Game blackPlayer="PLAYER35TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="4" tableNumber="23" whitePlayer="PLAYER98TEST" />
+        <Game blackPlayer="PLAYER154TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="5" tableNumber="47" whitePlayer="PLAYER09TEST" />
+        <Game blackPlayer="PLAYER06TEST" handicap="1" knownColor="true" result="RESULT_WHITEWINS" roundNumber="6" tableNumber="71" whitePlayer="PLAYER81TEST" />
+        <Game blackPlayer="PLAYER02TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="4" tableNumber="24" whitePlayer="PLAYER84TEST" />
+        <Game blackPlayer="PLAYER113TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="5" tableNumber="48" whitePlayer="PLAYER45TEST" />
+        <Game blackPlayer="PLAYER151TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="3" tableNumber="1" whitePlayer="PLAYER118TEST" />
+        <Game blackPlayer="PLAYER31TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="4" tableNumber="25" whitePlayer="PLAYER150TEST" />
+        <Game blackPlayer="PLAYER52TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="5" tableNumber="49" whitePlayer="PLAYER148TEST" />
+        <Game blackPlayer="PLAYER101TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="3" tableNumber="2" whitePlayer="PLAYER120TEST" />
+        <Game blackPlayer="PLAYER123TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="4" tableNumber="26" whitePlayer="PLAYER135TEST" />
+        <Game blackPlayer="PLAYER170TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="5" tableNumber="50" whitePlayer="PLAYER70TEST" />
+        <Game blackPlayer="PLAYER86TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="3" tableNumber="3" whitePlayer="PLAYER56TEST" />
+        <Game blackPlayer="PLAYER33TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="4" tableNumber="27" whitePlayer="PLAYER97TEST" />
+        <Game blackPlayer="PLAYER90TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="5" tableNumber="51" whitePlayer="PLAYER14TEST" />
+        <Game blackPlayer="PLAYER143TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="3" tableNumber="4" whitePlayer="PLAYER127TEST" />
+        <Game blackPlayer="PLAYER119TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="4" tableNumber="28" whitePlayer="PLAYER96TEST" />
+        <Game blackPlayer="PLAYER27TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="5" tableNumber="52" whitePlayer="PLAYER57TEST" />
+        <Game blackPlayer="PLAYER42TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="3" tableNumber="5" whitePlayer="PLAYER50TEST" />
+        <Game blackPlayer="PLAYER168TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="4" tableNumber="29" whitePlayer="PLAYER01TEST" />
+        <Game blackPlayer="PLAYER93TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="5" tableNumber="53" whitePlayer="PLAYER12TEST" />
+        <Game blackPlayer="PLAYER89TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="3" tableNumber="6" whitePlayer="PLAYER13TEST" />
+        <Game blackPlayer="PLAYER139TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="4" tableNumber="30" whitePlayer="PLAYER82TEST" />
+        <Game blackPlayer="PLAYER30TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="5" tableNumber="54" whitePlayer="PLAYER80TEST" />
+        <Game blackPlayer="PLAYER106TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="3" tableNumber="7" whitePlayer="PLAYER58TEST" />
+        <Game blackPlayer="PLAYER53TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="4" tableNumber="31" whitePlayer="PLAYER122TEST" />
+        <Game blackPlayer="PLAYER94TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="5" tableNumber="55" whitePlayer="PLAYER132TEST" />
+        <Game blackPlayer="PLAYER87TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="3" tableNumber="8" whitePlayer="PLAYER43TEST" />
+        <Game blackPlayer="PLAYER169TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="4" tableNumber="32" whitePlayer="PLAYER46TEST" />
+        <Game blackPlayer="PLAYER36TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="5" tableNumber="56" whitePlayer="PLAYER25TEST" />
+        <Game blackPlayer="PLAYER99TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="3" tableNumber="9" whitePlayer="PLAYER72TEST" />
+        <Game blackPlayer="PLAYER144TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="4" tableNumber="33" whitePlayer="PLAYER08TEST" />
+        <Game blackPlayer="PLAYER163TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="5" tableNumber="57" whitePlayer="PLAYER175TEST" />
+        <Game blackPlayer="PLAYER26TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="3" tableNumber="10" whitePlayer="PLAYER107TEST" />
+        <Game blackPlayer="PLAYER114TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="4" tableNumber="34" whitePlayer="PLAYER130TEST" />
+        <Game blackPlayer="PLAYER64TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="5" tableNumber="58" whitePlayer="PLAYER159TEST" />
+        <Game blackPlayer="PLAYER158TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="3" tableNumber="11" whitePlayer="PLAYER44TEST" />
+        <Game blackPlayer="PLAYER32TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="4" tableNumber="35" whitePlayer="PLAYER167TEST" />
+        <Game blackPlayer="PLAYER173TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="5" tableNumber="59" whitePlayer="PLAYER91TEST" />
+        <Game blackPlayer="PLAYER77TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="3" tableNumber="12" whitePlayer="PLAYER146TEST" />
+        <Game blackPlayer="PLAYER137TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="4" tableNumber="36" whitePlayer="PLAYER172TEST" />
+        <Game blackPlayer="PLAYER116TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="5" tableNumber="60" whitePlayer="PLAYER153TEST" />
+        <Game blackPlayer="PLAYER63TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="3" tableNumber="13" whitePlayer="PLAYER92TEST" />
+        <Game blackPlayer="PLAYER121TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="4" tableNumber="37" whitePlayer="PLAYER39TEST" />
+        <Game blackPlayer="PLAYER24TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="5" tableNumber="61" whitePlayer="PLAYER20TEST" />
+        <Game blackPlayer="PLAYER102TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="3" tableNumber="14" whitePlayer="PLAYER04TEST" />
+        <Game blackPlayer="PLAYER73TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="4" tableNumber="38" whitePlayer="PLAYER78TEST" />
+        <Game blackPlayer="PLAYER59TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="5" tableNumber="62" whitePlayer="PLAYER157TEST" />
+        <Game blackPlayer="PLAYER133TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="3" tableNumber="15" whitePlayer="PLAYER15TEST" />
+        <Game blackPlayer="PLAYER110TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="4" tableNumber="39" whitePlayer="PLAYER19TEST" />
+        <Game blackPlayer="PLAYER18TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="5" tableNumber="63" whitePlayer="PLAYER164TEST" />
+        <Game blackPlayer="PLAYER67TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="3" tableNumber="16" whitePlayer="PLAYER10TEST" />
+        <Game blackPlayer="PLAYER109TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="4" tableNumber="40" whitePlayer="PLAYER75TEST" />
+        <Game blackPlayer="PLAYER17TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="5" tableNumber="64" whitePlayer="PLAYER111TEST" />
+        <Game blackPlayer="PLAYER54TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="3" tableNumber="17" whitePlayer="PLAYER103TEST" />
+        <Game blackPlayer="PLAYER108TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="4" tableNumber="41" whitePlayer="PLAYER112TEST" />
+        <Game blackPlayer="PLAYER88TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="5" tableNumber="65" whitePlayer="PLAYER176TEST" />
+        <Game blackPlayer="PLAYER60TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="3" tableNumber="18" whitePlayer="PLAYER117TEST" />
+        <Game blackPlayer="PLAYER66TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="4" tableNumber="42" whitePlayer="PLAYER124TEST" />
+        <Game blackPlayer="PLAYER129TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="5" tableNumber="66" whitePlayer="PLAYER71TEST" />
+        <Game blackPlayer="PLAYER05TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="3" tableNumber="19" whitePlayer="PLAYER145TEST" />
+        <Game blackPlayer="PLAYER160TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="4" tableNumber="43" whitePlayer="PLAYER128TEST" />
+        <Game blackPlayer="PLAYER166TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="5" tableNumber="67" whitePlayer="PLAYER152TEST" />
+        <Game blackPlayer="PLAYER150TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="3" tableNumber="20" whitePlayer="PLAYER62TEST" />
+        <Game blackPlayer="PLAYER149TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="4" tableNumber="44" whitePlayer="PLAYER131TEST" />
+        <Game blackPlayer="PLAYER23TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="5" tableNumber="68" whitePlayer="PLAYER16TEST" />
+        <Game blackPlayer="PLAYER69TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="3" tableNumber="21" whitePlayer="PLAYER35TEST" />
+        <Game blackPlayer="PLAYER154TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="4" tableNumber="45" whitePlayer="PLAYER76TEST" />
+        <Game blackPlayer="PLAYER165TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="5" tableNumber="69" whitePlayer="PLAYER115TEST" />
+        <Game blackPlayer="PLAYER156TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="3" tableNumber="22" whitePlayer="PLAYER07TEST" />
+        <Game blackPlayer="PLAYER45TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="4" tableNumber="46" whitePlayer="PLAYER140TEST" />
+        <Game blackPlayer="PLAYER68TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="5" tableNumber="70" whitePlayer="PLAYER65TEST" />
+        <Game blackPlayer="PLAYER97TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="3" tableNumber="23" whitePlayer="PLAYER139TEST" />
+        <Game blackPlayer="PLAYER21TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="4" tableNumber="47" whitePlayer="PLAYER155TEST" />
+        <Game blackPlayer="PLAYER34TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="5" tableNumber="71" whitePlayer="PLAYER81TEST" />
+        <Game blackPlayer="PLAYER40TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="3" tableNumber="24" whitePlayer="PLAYER119TEST" />
+        <Game blackPlayer="PLAYER09TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="4" tableNumber="48" whitePlayer="PLAYER61TEST" />
+        <Game blackPlayer="PLAYER28TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="5" tableNumber="72" whitePlayer="PLAYER83TEST" />
+        <Game blackPlayer="PLAYER56TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="2" tableNumber="1" whitePlayer="PLAYER118TEST" />
+        <Game blackPlayer="PLAYER122TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="3" tableNumber="25" whitePlayer="PLAYER98TEST" />
+        <Game blackPlayer="PLAYER142TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="4" tableNumber="49" whitePlayer="PLAYER90TEST" />
+        <Game blackPlayer="PLAYER03TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="5" tableNumber="73" whitePlayer="PLAYER136TEST" />
+        <Game blackPlayer="PLAYER101TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="2" tableNumber="2" whitePlayer="PLAYER87TEST" />
+        <Game blackPlayer="PLAYER135TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="3" tableNumber="26" whitePlayer="PLAYER31TEST" />
+        <Game blackPlayer="PLAYER148TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="4" tableNumber="50" whitePlayer="PLAYER93TEST" />
+        <Game blackPlayer="PLAYER47TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS_BYDEF" roundNumber="5" tableNumber="74" whitePlayer="PLAYER126TEST" />
+        <Game blackPlayer="PLAYER120TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="2" tableNumber="3" whitePlayer="PLAYER127TEST" />
+        <Game blackPlayer="PLAYER01TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="3" tableNumber="27" whitePlayer="PLAYER02TEST" />
+        <Game blackPlayer="PLAYER170TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="4" tableNumber="51" whitePlayer="PLAYER113TEST" />
+        <Game blackPlayer="PLAYER22TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="5" tableNumber="75" whitePlayer="PLAYER37TEST" />
+        <Game blackPlayer="PLAYER58TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="2" tableNumber="4" whitePlayer="PLAYER151TEST" />
+        <Game blackPlayer="PLAYER84TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="3" tableNumber="28" whitePlayer="PLAYER08TEST" />
+        <Game blackPlayer="PLAYER14TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="4" tableNumber="52" whitePlayer="PLAYER70TEST" />
+        <Game blackPlayer="PLAYER06TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="5" tableNumber="76" whitePlayer="PLAYER95TEST" />
+        <Game blackPlayer="PLAYER89TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="2" tableNumber="5" whitePlayer="PLAYER42TEST" />
+        <Game blackPlayer="PLAYER46TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="3" tableNumber="29" whitePlayer="PLAYER168TEST" />
+        <Game blackPlayer="PLAYER12TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="4" tableNumber="53" whitePlayer="PLAYER80TEST" />
+        <Game blackPlayer="PLAYER13TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="2" tableNumber="6" whitePlayer="PLAYER86TEST" />
+        <Game blackPlayer="PLAYER167TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="3" tableNumber="30" whitePlayer="PLAYER123TEST" />
+        <Game blackPlayer="PLAYER25TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="4" tableNumber="54" whitePlayer="PLAYER163TEST" />
+        <Game blackPlayer="PLAYER143TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="2" tableNumber="7" whitePlayer="PLAYER50TEST" />
+        <Game blackPlayer="PLAYER82TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="3" tableNumber="31" whitePlayer="PLAYER130TEST" />
+        <Game blackPlayer="PLAYER159TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="4" tableNumber="55" whitePlayer="PLAYER52TEST" />
+        <Game blackPlayer="PLAYER43TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="2" tableNumber="8" whitePlayer="PLAYER106TEST" />
+        <Game blackPlayer="PLAYER96TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="3" tableNumber="32" whitePlayer="PLAYER147TEST" />
+        <Game blackPlayer="PLAYER175TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="4" tableNumber="56" whitePlayer="PLAYER64TEST" />
+        <Game blackPlayer="PLAYER134TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="2" tableNumber="9" whitePlayer="PLAYER158TEST" />
+        <Game blackPlayer="PLAYER172TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="3" tableNumber="33" whitePlayer="PLAYER33TEST" />
+        <Game blackPlayer="PLAYER91TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="4" tableNumber="57" whitePlayer="PLAYER116TEST" />
+        <Game blackPlayer="PLAYER72TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="2" tableNumber="10" whitePlayer="PLAYER77TEST" />
+        <Game blackPlayer="PLAYER39TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="3" tableNumber="34" whitePlayer="PLAYER144TEST" />
+        <Game blackPlayer="PLAYER20TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="4" tableNumber="58" whitePlayer="PLAYER153TEST" />
+        <Game blackPlayer="PLAYER26TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="2" tableNumber="11" whitePlayer="PLAYER99TEST" />
+        <Game blackPlayer="PLAYER169TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="3" tableNumber="35" whitePlayer="PLAYER110TEST" />
+        <Game blackPlayer="PLAYER157TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="4" tableNumber="59" whitePlayer="PLAYER24TEST" />
+        <Game blackPlayer="PLAYER102TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="2" tableNumber="12" whitePlayer="PLAYER107TEST" />
+        <Game blackPlayer="PLAYER78TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="3" tableNumber="36" whitePlayer="PLAYER114TEST" />
+        <Game blackPlayer="PLAYER164TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="4" tableNumber="60" whitePlayer="PLAYER111TEST" />
+        <Game blackPlayer="PLAYER15TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="2" tableNumber="13" whitePlayer="PLAYER63TEST" />
+        <Game blackPlayer="PLAYER53TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="3" tableNumber="37" whitePlayer="PLAYER121TEST" />
+        <Game blackPlayer="PLAYER18TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="4" tableNumber="61" whitePlayer="PLAYER152TEST" />
+        <Game blackPlayer="PLAYER92TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="2" tableNumber="14" whitePlayer="PLAYER103TEST" />
+        <Game blackPlayer="PLAYER75TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="3" tableNumber="38" whitePlayer="PLAYER32TEST" />
+        <Game blackPlayer="PLAYER88TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="4" tableNumber="62" whitePlayer="PLAYER166TEST" />
+        <Game blackPlayer="PLAYER146TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="2" tableNumber="15" whitePlayer="PLAYER145TEST" />
+        <Game blackPlayer="PLAYER19TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="3" tableNumber="39" whitePlayer="PLAYER11TEST" />
+        <Game blackPlayer="PLAYER176TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="4" tableNumber="63" whitePlayer="PLAYER129TEST" />
+        <Game blackPlayer="PLAYER141TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="2" tableNumber="16" whitePlayer="PLAYER44TEST" />
+        <Game blackPlayer="PLAYER112TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="3" tableNumber="40" whitePlayer="PLAYER109TEST" />
+        <Game blackPlayer="PLAYER65TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="4" tableNumber="64" whitePlayer="PLAYER16TEST" />
+        <Game blackPlayer="PLAYER67TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="2" tableNumber="17" whitePlayer="PLAYER133TEST" />
+        <Game blackPlayer="PLAYER137TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="3" tableNumber="41" whitePlayer="PLAYER149TEST" />
+        <Game blackPlayer="PLAYER71TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="4" tableNumber="65" whitePlayer="PLAYER85TEST" />
+        <Game blackPlayer="PLAYER04TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="2" tableNumber="18" whitePlayer="PLAYER10TEST" />
+        <Game blackPlayer="PLAYER128TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="3" tableNumber="42" whitePlayer="PLAYER73TEST" />
+        <Game blackPlayer="PLAYER23TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="4" tableNumber="66" whitePlayer="PLAYER115TEST" />
+        <Game blackPlayer="PLAYER62TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="2" tableNumber="19" whitePlayer="PLAYER54TEST" />
+        <Game blackPlayer="PLAYER105TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="3" tableNumber="43" whitePlayer="PLAYER66TEST" />
+        <Game blackPlayer="PLAYER68TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="4" tableNumber="67" whitePlayer="PLAYER83TEST" />
+        <Game blackPlayer="PLAYER74TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="2" tableNumber="20" whitePlayer="PLAYER117TEST" />
+        <Game blackPlayer="PLAYER61TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="3" tableNumber="44" whitePlayer="PLAYER51TEST" />
+        <Game blackPlayer="PLAYER55TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="4" tableNumber="68" whitePlayer="PLAYER03TEST" />
+        <Game blackPlayer="PLAYER171TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="2" tableNumber="21" whitePlayer="PLAYER35TEST" />
+        <Game blackPlayer="PLAYER108TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="3" tableNumber="45" whitePlayer="PLAYER131TEST" />
+        <Game blackPlayer="PLAYER47TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS_BYDEF" roundNumber="4" tableNumber="69" whitePlayer="PLAYER81TEST" />
+        <Game blackPlayer="PLAYER174TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="2" tableNumber="22" whitePlayer="PLAYER156TEST" />
+        <Game blackPlayer="PLAYER160TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="3" tableNumber="46" whitePlayer="PLAYER21TEST" />
+        <Game blackPlayer="PLAYER126TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="4" tableNumber="70" whitePlayer="PLAYER95TEST" />
+        <Game blackPlayer="PLAYER119TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="2" tableNumber="23" whitePlayer="PLAYER69TEST" />
+        <Game blackPlayer="PLAYER124TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="3" tableNumber="47" whitePlayer="PLAYER90TEST" />
+        <Game blackPlayer="PLAYER37TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="4" tableNumber="71" whitePlayer="PLAYER34TEST" />
+        <Game blackPlayer="PLAYER97TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="2" tableNumber="24" whitePlayer="PLAYER05TEST" />
+        <Game blackPlayer="PLAYER76TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="3" tableNumber="48" whitePlayer="PLAYER27TEST" />
+        <Game blackPlayer="PLAYER06TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="4" tableNumber="72" whitePlayer="PLAYER22TEST" />
+    </Games>
+    <ByePlayers>
+        <ByePlayer player="PLAYER77TEST" roundNumber="6" />
+    </ByePlayers>
+    <TournamentParameterSet>
+        <GeneralParameterSet bInternet="true" basicTime="60" beginDate="2021-04-03" canByoYomiTime="300" complementaryTimeSystem="FISCHER" director="Test Director" endDate="2021-04-05" fischerTime="20" genCountNotPlayedGamesAsHalfPoint="true" genMMBar="4D" genMMFloor="20K" genMMS2ValueAbsent="0" genMMS2ValueBye="2" genMMZero="30K" genNBW2ValueAbsent="0" genNBW2ValueBye="2" genRoundDownNBWMMS="true" komi="7.5" location="OGS" name="48th Paris International Tournament 2021" nbMovesCanTime="15" numberOfCategories="1" numberOfRounds="6" shortName="48th Paris International Tournament 2021" size="19" stdByoYomiTime="30" />
+        <HandicapParameterSet hdBasedOnMMS="true" hdCeiling="9" hdCorrection="1" hdNoHdRankThreshold="1D" />
+        <PlacementParameterSet>
+            <PlacementCriteria>
+                <PlacementCriterion name="MMS" number="1" />
+                <PlacementCriterion name="SOSM" number="2" />
+                <PlacementCriterion name="SOSOSM" number="3" />
+                <PlacementCriterion name="NULL" number="4" />
+                <PlacementCriterion name="NULL" number="5" />
+                <PlacementCriterion name="NULL" number="6" />
+            </PlacementCriteria>
+        </PlacementParameterSet>
+        <PairingParameterSet paiBaAvoidDuplGame="500000000000000" paiBaBalanceWB="1000000" paiBaDeterministic="true" paiBaRandom="0" paiMaAdditionalPlacementCritSystem1="Rating" paiMaAdditionalPlacementCritSystem2="NULL" paiMaAvoidMixingCategories="0" paiMaCompensateDUDD="true" paiMaDUDDLowerMode="MID" paiMaDUDDUpperMode="MID" paiMaDUDDWeight="100000000" paiMaLastRoundForSeedSystem1="2" paiMaMaximizeSeeding="5000000" paiMaMinimizeScoreDifference="100000000000" paiMaSeedSystem1="SPLITANDRANDOM" paiMaSeedSystem2="SPLITANDSLIP" paiSeAvoidSameGeo="100000000000" paiSeBarThresholdActive="true" paiSeDefSecCrit="100000000000" paiSeMinimizeHandicap="0" paiSeNbWinsThresholdActive="false" paiSePreferMMSDiffRatherThanSameClub="3" paiSePreferMMSDiffRatherThanSameCountry="1" paiSeRankThreshold="1D" paiStandardNX1Factor="0.5" />
+        <DPParameterSet displayClCol="true" displayCoCol="true" displayIndGamesInMatches="true" displayNPPlayers="false" displayNumCol="true" displayPlCol="true" gameFormat="full" playerSortType="rank" showByePlayer="true" showNotFinallyRegisteredPlayers="true" showNotPairedPlayers="true" showNotParticipatingPlayers="false" showPlayerClub="true" showPlayerCountry="false" showPlayerGrade="true" />
+        <PublishParameterSet exportToLocalFile="true" htmlAutoScroll="false" print="false" />
+    </TournamentParameterSet>
+    <TeamTournamentParameterSet>
+        <TeamGeneralParameterSet teamSize="4" />
+        <TeamPlacementParameterSet>
+            <PlacementCriteria>
+                <PlacementCriterion name="TEAMP" number="1" />
+                <PlacementCriterion name="BDW" number="2" />
+                <PlacementCriterion name="BDW3U" number="3" />
+                <PlacementCriterion name="BDW2U" number="4" />
+                <PlacementCriterion name="BDW1U" number="5" />
+                <PlacementCriterion name="MNR" number="6" />
+            </PlacementCriteria>
+        </TeamPlacementParameterSet>
+    </TeamTournamentParameterSet>
+</Tournament>

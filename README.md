@@ -100,7 +100,7 @@ Los valores predeterminados están en `config.py`.
 - `RECAPTCHA_EXPECTED_HOSTNAME`: comprobación opcional del hostname en la respuesta; déjalo vacío si la clave sirve para varios hostnames configurados.
 
 - La hora predeterminada es UTC-5. Cada cuenta puede elegir una zona IANA; las partidas del mismo día se procesan por ronda y luego por orden de inserción.
-- `/reports` usa rangos inclusivos `start_date` y `end_date` en la zona fija del servidor. Los totales de pantalla y de las exportaciones CSV/PDF se calculan con los mismos filtros.
+- `/reports` usa rangos inclusivos `start_date` y `end_date` en la zona fija del servidor. Los totales de pantalla y de las exportaciones CSV/PDF se calculan con los mismos filtros. El cambio de rating compara la última instantánea anterior al inicio con la última hasta el final; las partidas del primer día están incluidas.
 - Las cuentas tienen roles `administrator`, `tournament_director`, `operator` y `member`. Los miembros solo envían resultados de su jugador vinculado; los demás roles revisan la cola de aprobación.
 - El inicio de sesión limita los intentos por IP y nombre de usuario antes de comprobar la contraseña; los límites se configuran en `/admin/settings`.
 - Las sugerencias para jugadores pendientes solo vinculan una cuenta existente al seleccionarla explícitamente. "Crear nuevo" crea otro jugador o rechaza un nombre ya existente; los torneos con hándicap desactivado generan emparejamientos sin piedras.
@@ -115,7 +115,7 @@ La hoja de ruta está en [FUTURE_FEATURES.md](FUTURE_FEATURES.md). La reconcilia
 
 ## Desarrollo
 
-Regenera las guías HTML después de cambiar sus fuentes Markdown:
+La aplicación renderiza las guías desde Markdown al solicitarlas; no es necesario generar HTML para ejecutarla ni para probarla. Para exportar copias HTML estáticas después de cambiar las fuentes:
 
 ```powershell
 python scripts/build_help_html.py
@@ -129,7 +129,9 @@ pytest -q
 
 ### Organización del código
 
-Las rutas administrativas están separadas por dominio entre `routes/admin_tournaments.py`, `routes/admin_matches.py`, `routes/admin_players.py` y `routes/admin_users.py`. La lógica de torneos está separada por responsabilidad entre `services/tournament_gotha.py`, `services/tournament_participants.py`, `services/tournament_pairing.py`, `services/tournament_matches.py` y `services/tournament_standings.py`. Las traducciones y la selección de idioma viven en `services/i18n.py`, mientras que los helpers puros de gráficos de rating viven en `services/chart_service.py`; `services/common.py` conserva exports de compatibilidad para los imports existentes. `services/tournament_service.py` se conserva como fachada de compatibilidad. Para ejecutar todos los tests se necesitan las guías HTML generadas y los XML de ejemplo locales; usa `pytest -q` para comprobarlos.
+La importación CSV normaliza los encabezados sin distinguir mayúsculas ni espacios exteriores, y rechaza encabezados duplicados después de normalizarlos. `scripts/export_players.py` crea `exports/` si todavía no existe.
+
+Las rutas administrativas están separadas por dominio entre `routes/admin_tournaments.py`, `routes/admin_matches.py`, `routes/admin_players.py` y `routes/admin_users.py`. La lógica de torneos está separada por responsabilidad entre `services/tournament_gotha.py`, `services/tournament_participants.py`, `services/tournament_pairing.py`, `services/tournament_matches.py` y `services/tournament_standings.py`. Las traducciones y la selección de idioma viven en `services/i18n.py`, mientras que los helpers puros de gráficos de rating viven en `services/chart_service.py`; `services/common.py` conserva exports de compatibilidad para los imports existentes. `services/tournament_service.py` se conserva como fachada de compatibilidad. Los ejemplos XML de OpenGotha usados por los tests están versionados y anonimizados en `tests/fixtures/opengotha/`; no se necesitan archivos locales en `uploads/` ni guías generadas para ejecutar `pytest -q`.
 
 ### Instalación en hosting Linux
 

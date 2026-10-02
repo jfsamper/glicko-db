@@ -153,16 +153,18 @@ def test_duplicate_tournament_pairing_is_counted_once_and_export_contains_range(
     conn.close()
 
 
-def test_rating_change_uses_snapshot_on_start_date():
+def test_one_day_rating_change_uses_preperiod_baseline():
     conn = create_report_db()
     conn.execute(
         "INSERT INTO rating_snapshots (id, player_id, snapshot_date, rating) VALUES (?, ?, ?, ?)",
         (5, 1, "2026-01-01", 1550),
     )
 
-    report = build_date_report(conn, "2026-01-01", "2026-01-02")
+    report = build_date_report(conn, "2026-01-01", "2026-01-01")
     alice = next(row for row in report["players"] if row["display_name"] == "Alice")
 
+    assert alice["start_rating"] == 1500.0
+    assert alice["end_rating"] == 1550.0
     assert alice["rating_change_points"] == 50.0
     conn.close()
 

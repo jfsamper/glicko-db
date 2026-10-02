@@ -14,7 +14,10 @@ This document lists only unfinished product, operational, and maintainability wo
 - V4-08: startup and restore use the same complete schema-migration sequence; legacy-backup coverage checks moderation and audit schema recreation.
 - V4-09: failed async POSTs no longer trigger native resubmission; the dashboard offers a translated reload action. Server-side idempotency remains separate hardening for non-repeatable commands.
 - V4-10: database-backed auth versions invalidate stale sessions after password or authorization changes and backup restore.
-- V4-11 through V4-14 remain under review in [CODE_REVIEW.v4.md](CODE_REVIEW.v4.md).
+- V4-11: help pages render from Markdown with the active mount prefix, and tests use tracked anonymized OpenGotha fixtures; no ignored generated pages or upload samples are required.
+- V4-12: CSV headers are normalized before row import, and ambiguous duplicate headers are rejected.
+- V4-13: report rating changes use the prior snapshot as baseline and include changes from the first selected day.
+- V4-14: player export creates its output directory if it is absent.
 
 ## Table of contents
 
@@ -59,7 +62,7 @@ This document lists only unfinished product, operational, and maintainability wo
 - Full rating recomputation and incremental replay process same-day matches by round, treating unknown rounds as round 1.
 - Login rate-limit thresholds are environment-configurable through `config.py`, with defaults of five attempts in sixty seconds; login enforces IP and normalized-username windows before checking passwords.
 - Account profile and password recovery are available: users can save email, language, theme, timezone, and password at `/admin/profile`; recovery uses configurable SMTP, hashed expiring tokens, single-use consumption, and generic responses.
-- Public reporting is available at `/reports` with inclusive calendar periods, All time defaults, player filtering, games-based selector ordering, opponent/country/club aggregates, and shared server-side totals.
+- Public reporting is available at `/reports` with inclusive calendar periods, All time defaults, player filtering, games-based selector ordering, opponent/country/club aggregates, shared server-side totals, and rating-change baselines from before the selected period.
 - Reports can be exported as CSV or localized PDF; PDF exports include centered headings, the selected player and period in the filename, and preserve the active filters.
 - Admin tournament actions support asynchronous panel refresh with redirect fallback for non-AJAX clients.
 - Result moderation is available: members submit only for their linked player, and staff approve or reject before publication; hashed expiring approval-code helpers scaffold the future email flow.
@@ -149,7 +152,6 @@ No remaining P1 implementation failures from the V4 review; complete the V4-03 w
 ### P2 — Workflow and recovery
 
 1. Finish V4-03 with a workbook preflight, explicit replacement confirmation, and a verified backup.
-2. Work through V4-11 through V4-13 after the remaining P1 issues.
 
 ### P3 — Operational enhancements
 

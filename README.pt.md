@@ -100,7 +100,7 @@ Os valores padrão estão em `config.py`.
 - `RECAPTCHA_EXPECTED_HOSTNAME`: verificação opcional do hostname na resposta; deixe vazio se a chave servir para vários hostnames configurados.
 
 - O fuso padrão é UTC-5. Cada conta pode escolher um fuso IANA; partidas do mesmo dia são processadas por rodada e depois pela ordem de inserção.
-- `/reports` usa intervalos inclusivos `start_date` e `end_date` no fuso fixo do servidor. A tela e as exportações CSV/PDF usam os mesmos filtros e totais.
+- `/reports` usa intervalos inclusivos `start_date` e `end_date` no fuso fixo do servidor. A tela e as exportações CSV/PDF usam os mesmos filtros e totais. A mudança de rating compara a última captura antes do início com a última até o fim, incluindo o primeiro dia selecionado.
 - As contas têm as funções `administrator`, `tournament_director`, `operator` e `member`. Membros enviam apenas resultados do jogador vinculado; as outras funções revisam a fila de aprovação.
 - O login limita tentativas por IP e nome de usuário antes de verificar a senha; configure os limites em `/admin/settings`.
 - Sugestões de jogadores pendentes só vinculam um jogador existente após seleção explícita. "Criar novo" cria outro jogador ou rejeita um nome já existente; torneios com hándicap desativado geram emparelhamentos sem pedras.
@@ -115,7 +115,7 @@ O plano está em [FUTURE_FEATURES.md](FUTURE_FEATURES.md). A reconciliação de 
 
 ## Desenvolvimento
 
-Regenere os guias HTML depois de alterar suas fontes Markdown:
+A aplicação renderiza as páginas de ajuda a partir do Markdown quando solicitadas; não é necessário gerar HTML para executá-la nem para testar. Para exportar cópias HTML estáticas depois de alterar as fontes:
 
 ```powershell
 python scripts/build_help_html.py
@@ -129,7 +129,9 @@ pytest -q
 
 ### Organização do código
 
-As rotas administrativas estão separadas por domínio em `routes/admin_tournaments.py`, `routes/admin_matches.py`, `routes/admin_players.py` e `routes/admin_users.py`. A lógica de torneios está separada por responsabilidade em `services/tournament_gotha.py`, `services/tournament_participants.py`, `services/tournament_pairing.py`, `services/tournament_matches.py` e `services/tournament_standings.py`. As traduções e a seleção de idioma ficam em `services/i18n.py`, enquanto os helpers puros de gráficos de rating ficam em `services/chart_service.py`; `services/common.py` mantém exports de compatibilidade para os imports existentes. `services/tournament_service.py` permanece como fachada de compatibilidade. Para executar toda a suíte são necessários os guias HTML gerados e os arquivos XML de exemplo locais; use `pytest -q` para verificá-la.
+A importação CSV normaliza maiúsculas/minúsculas e espaços externos nos cabeçalhos, e rejeita cabeçalhos que se tornam duplicados após a normalização. `scripts/export_players.py` cria `exports/` quando ela não existe.
+
+As rotas administrativas estão separadas por domínio em `routes/admin_tournaments.py`, `routes/admin_matches.py`, `routes/admin_players.py` e `routes/admin_users.py`. A lógica de torneios está separada por responsabilidade em `services/tournament_gotha.py`, `services/tournament_participants.py`, `services/tournament_pairing.py`, `services/tournament_matches.py` e `services/tournament_standings.py`. As traduções e a seleção de idioma ficam em `services/i18n.py`, enquanto os helpers puros de gráficos de rating ficam em `services/chart_service.py`; `services/common.py` mantém exports de compatibilidade para os imports existentes. `services/tournament_service.py` permanece como fachada de compatibilidade. Os exemplos OpenGotha anonimizados usados pelos testes estão versionados em `tests/fixtures/opengotha/`; não são necessários arquivos locais em `uploads/` nem guias HTML gerados para executar `pytest -q`.
 
 ### Instalação em hospedagem Linux
 

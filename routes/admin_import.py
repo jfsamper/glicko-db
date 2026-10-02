@@ -161,8 +161,14 @@ def admin_import():
                 with open(upload_path, newline="", encoding="utf-8-sig") as csv_file:
                     reader = csv.DictReader(csv_file)
                     required_columns = {"date", "white", "black", "result"}
-                    columns = {col.strip().lower()
-                               for col in reader.fieldnames or []}
+                    headers = [
+                        (column or "").strip().casefold()
+                        for column in reader.fieldnames or []
+                    ]
+                    if len(headers) != len(set(headers)):
+                        raise ValueError(TRANSLATIONS[lang]["duplicate_csv_columns"])
+                    reader.fieldnames = headers
+                    columns = set(headers)
                     if not required_columns.issubset(columns):
                         raise ValueError(
                             TRANSLATIONS[lang]["required_columns_missing"])

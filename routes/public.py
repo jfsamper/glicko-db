@@ -37,6 +37,7 @@ from services.reporting_service import (
     list_report_seasons,
     resolve_report_range,
 )
+from scripts import build_help_html
 from services.news_service import get_article, list_articles, resolve_news_tags
 from services.player_service import (
     count_rankings,
@@ -54,22 +55,17 @@ from services.tournament_standings import get_tournament_standings
 public_bp = Blueprint("public", __name__)
 HOME_STATS_PERIODS = ("all_time", "year", "quarter")
 NEWS_TAG_TOKEN_RE = re.compile(r"\[(player|tournament|match):(\d+)\]")
-HELP_HTML_FILES = {
-    "es": "docs/generated/user_interface.html",
-    "en": "docs/generated/user_interface.en.html",
-    "pt": "docs/generated/user_interface.pt.html",
-}
-HELP_API_HTML_FILES = {
-    "es": "docs/generated/api_endpoints.html",
-    "en": "docs/generated/api_endpoints.en.html",
-    "pt": "docs/generated/api_endpoints.pt.html",
-}
-HELP_README_HTML_FILES = {
-    "es": "docs/generated/README.html",
-    "en": "docs/generated/README.en.html",
-    "pt": "docs/generated/README.pt.html",
-}
 HELP_SCREENSHOTS_DIR = os.path.join(BASE_DIR, "docs", "screenshots")
+
+
+def render_help_document(documents, language, document_type):
+    source_path, title = documents[language]
+    return Response(
+        build_help_html.render_document(
+            language, source_path, title, document_type, request.script_root
+        ),
+        mimetype="text/html",
+    )
 
 
 def render_news_body(body, tags, lang):
@@ -222,28 +218,19 @@ def show_drafts_requested():
 @public_bp.route("/help")
 def help_file():
     lang = get_language(request.args.get("lang"))
-    return send_file(
-        os.path.join(BASE_DIR, HELP_HTML_FILES[lang]),
-        mimetype="text/html",
-    )
+    return render_help_document(build_help_html.GUIDES, lang, "guide")
 
 
 @public_bp.route("/help/api")
 def help_api_file():
     lang = get_language(request.args.get("lang"))
-    return send_file(
-        os.path.join(BASE_DIR, HELP_API_HTML_FILES[lang]),
-        mimetype="text/html",
-    )
+    return render_help_document(build_help_html.API_DOCS, lang, "api")
 
 
 @public_bp.route("/help/readme")
 def help_readme_file():
     lang = get_language(request.args.get("lang"))
-    return send_file(
-        os.path.join(BASE_DIR, HELP_README_HTML_FILES[lang]),
-        mimetype="text/html",
-    )
+    return render_help_document(build_help_html.READMES, lang, "readme")
 
 
 @public_bp.route("/help-assets/screenshots/<path:filename>")

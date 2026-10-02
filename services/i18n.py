@@ -167,6 +167,7 @@ TRANSLATIONS = {
         "dan_label": "dan",
         "kyu_label": "kyu",
         "required_columns_missing": "Faltan columnas obligatorias",
+        "duplicate_csv_columns": "Hay encabezados CSV duplicados después de normalizarlos",
         "unsupported_file_format": "Formato de archivo no compatible",
         "invalid_date_format": "Formato de fecha no válido (usa AAAA-MM-DD)",
 
@@ -699,6 +700,7 @@ TRANSLATIONS = {
         "dan_label": "dan",
         "kyu_label": "kyu",
         "required_columns_missing": "Required columns are missing",
+        "duplicate_csv_columns": "CSV column headers are duplicated after normalization",
         "unsupported_file_format": "Unsupported file format",
         "invalid_date_format": "Invalid date format (use YYYY-MM-DD)",
 
@@ -1227,6 +1229,7 @@ TRANSLATIONS = {
         "dan_label": "dan",
         "kyu_label": "kyu",
         "required_columns_missing": "Faltam colunas obrigatórias",
+        "duplicate_csv_columns": "Há cabeçalhos CSV duplicados após a normalização",
         "unsupported_file_format": "Formato de arquivo não suportado",
         "invalid_date_format": "Formato de data inválido (use AAAA-MM-DD)",
         "period_all_time": "Todo o período",

@@ -1485,6 +1485,71 @@ def test_csv_import_rejects_invalid_handicap_instead_of_clamping(
         ).fetchone()[0] == 0
 
 
+def test_csv_import_normalizes_headers_and_rejects_ambiguous_duplicates(
+    monkeypatch, tmp_path, isolate_test_database
+):
+    db_path = isolate_test_database
+    with sqlite3.connect(db_path) as conn:
+        conn.executemany(
+            "INSERT INTO players (first_name, last_name, display_name, rating, active) VALUES (?, ?, ?, ?, 1)",
+            [
+                ("Alice", "White", "Alice White", 1500),
+                ("Bob", "Black", "Bob Black", 1500),
+            ],
+        )
+
+    monkeypatch.setattr(admin_routes, "BASE_DIR", str(tmp_path))
+    (tmp_path / "uploads").mkdir()
+
+    app.testing = True
+    client = app.test_client()
+    conftest.set_admin_session(client, db_path)
+    response = client.post(
+        "/admin/import?lang=en",
+        data={
+            "file": (
+                BytesIO(
+                    b" Date , White ,Black,Result, Notes \n"
+                    b"2026-09-02,Alice White,Bob Black,1-0,Round 3\n"
+                ),
+                "normalized-headers.csv",
+            )
+        },
+        content_type="multipart/form-data",
+    )
+
+    assert response.status_code == 302
+    with sqlite3.connect(db_path) as conn:
+        imported = conn.execute(
+            "SELECT match_date, result, round_number FROM matches WHERE match_date = ?",
+            ("2026-09-02",),
+        ).fetchall()
+    assert imported == [("2026-09-02", "1-0", 3)]
+
+    duplicate_response = client.post(
+        "/admin/import?lang=en",
+        data={
+            "file": (
+                BytesIO(
+                    b"date, Date ,white,black,result\n"
+                    b"2026-09-03,2026-09-03,Alice White,Bob Black,1-0\n"
+                ),
+                "duplicate-headers.csv",
+            )
+        },
+        content_type="multipart/form-data",
+        follow_redirects=True,
+    )
+
+    assert duplicate_response.status_code == 200
+    assert "CSV column headers are duplicated after normalization" in duplicate_response.get_data(as_text=True)
+    with sqlite3.connect(db_path) as conn:
+        assert conn.execute(
+            "SELECT COUNT(*) FROM matches WHERE match_date = ?",
+            ("2026-09-03",),
+        ).fetchone()[0] == 0
+
+
 def test_admin_import_commit_passes_reconciliation_decisions(monkeypatch, tmp_path):
     db_path = tmp_path / "admin_commit_preview.db"
     conn = sqlite3.connect(db_path)

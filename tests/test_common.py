@@ -207,14 +207,30 @@ def test_sql_round_normalizer_keeps_original_note_text_for_display():
     assert rows[4]["round_number"] == 3
 
 
-def test_export_players_exposes_a_main_entrypoint():
+def test_export_players_creates_missing_output_directory(tmp_path):
     script_path = Path(__file__).resolve().parents[1] / "scripts" / "export_players.py"
     spec = importlib.util.spec_from_file_location("export_players", script_path)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
 
-    assert hasattr(module, "main")
-    assert callable(module.main)
+    database_path = tmp_path / "players.db"
+    with sqlite3.connect(database_path) as conn:
+        conn.execute(
+            "CREATE TABLE players (id INTEGER, display_name TEXT, games_played INTEGER, rating REAL)"
+        )
+        conn.execute(
+            "INSERT INTO players VALUES (1, 'Alice Example', 4, 1500)"
+        )
+
+    output_file = tmp_path / "exports" / "player_categories.csv"
+    assert not output_file.parent.exists()
+    module.DB_PATH = database_path
+    module.OUTPUT_FILE = output_file
+
+    module.main()
+
+    assert output_file.exists()
+    assert "Alice Example" in output_file.read_text(encoding="utf-8")
 
 
 def test_import_gotha_parses_winner_metadata_for_decisive_games():

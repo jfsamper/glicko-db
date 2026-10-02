@@ -46,8 +46,9 @@ from services.helpers import normalize_key
 from services.import_gotha import GothaPlayer, GothaTournamentPayload
 
 
-XML_PATH = Path(__file__).parents[1] / "uploads" / "abierto3-26.xml"
-FRENCH_XML_PATH = Path(__file__).parents[1] / "uploads" / "french-example.xml"
+FIXTURE_DIR = Path(__file__).parent / "fixtures" / "opengotha"
+XML_PATH = FIXTURE_DIR / "abierto3-26.xml"
+FRENCH_XML_PATH = FIXTURE_DIR / "french-example.xml"
 
 
 def create_db():
@@ -358,13 +359,13 @@ def test_opengotha_import_persists_fuzzy_player_suggestion():
     conn = create_db()
     conn.execute(
         "INSERT INTO players (id, first_name, last_name, display_name, rating, active) VALUES (?, ?, ?, ?, ?, ?)",
-        (1, "Juan Felipe", "Burgos", "Juan Felipe Burgos", 2400, 1),
+        (1, "Given Middle", "Family", "Given Middle Family", 2400, 1),
     )
     conn.commit()
 
     tournament_id, _, _ = create_tournament_from_gotha(
         conn,
-        Path(__file__).parents[1] / "uploads" / "ABIERTO II-2024.xml",
+        XML_PATH,
         "swiss",
     )
 
@@ -374,11 +375,11 @@ def test_opengotha_import_persists_fuzzy_player_suggestion():
         FROM tournament_pending_players
         WHERE tournament_id = ? AND display_name = ?
         """,
-        (tournament_id, "Burgos Juan"),
+        (tournament_id, "Given Family"),
     ).fetchone()
 
     assert pending is not None
-    assert pending["suggested_name"] == "Juan Felipe Burgos"
+    assert pending["suggested_name"] == "Given Middle Family"
 
 
 def test_opengotha_import_does_not_create_missing_players_until_processing():
@@ -591,7 +592,7 @@ def test_opengotha_metadata_uses_typed_payload_with_mapping_compatibility():
 
 
 def test_opengotha_mcmahon_mm_values_are_read_when_criteria_are_trimmed_or_forced(tmp_path):
-    source = (Path(__file__).parents[1] / "uploads" / "mms-example.xml").read_text(encoding="utf-8")
+    source = (FIXTURE_DIR / "mms-example.xml").read_text(encoding="utf-8")
     xml_path = tmp_path / "mcmahon_variant.xml"
     xml_path.write_text(source.replace('name="MMS"', 'name="mms "'), encoding="utf-8")
 
@@ -605,11 +606,11 @@ def test_opengotha_mcmahon_mm_values_are_read_when_criteria_are_trimmed_or_force
 
 
 def test_opengotha_ratings_never_fall_below_glicko_floor():
-    metadata = read_gotha_tournament(Path(__file__).parents[1] / "uploads" / "OGSTest.xml")
+    metadata = read_gotha_tournament(FIXTURE_DIR / "OGSTest.xml")
 
-    akita = next(player for player in metadata["players"] if player["display_name"] == "Akita Noek")
+    first_player = next(player for player in metadata["players"] if player["display_name"] == "Test Player01")
 
-    assert akita["rating"] == GLICKO_M
+    assert first_player["rating"] == GLICKO_M
     assert all(player["rating"] >= GLICKO_M for player in metadata["players"])
 
 
@@ -657,7 +658,7 @@ def test_opengotha_import_marks_empty_black_player_as_bye(tmp_path):
     conn = create_db()
     seed_players(conn)
     source = XML_PATH.read_text(encoding="utf-8")
-    source = source.replace('blackPlayer="LARAJOSELUIS"', 'blackPlayer=""', 1)
+    source = source.replace('blackPlayer="PLAYER02TEST"', 'blackPlayer=""', 1)
     xml_path = tmp_path / "import-with-bye.xml"
     xml_path.write_text(source, encoding="utf-8")
 

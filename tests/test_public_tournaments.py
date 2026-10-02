@@ -150,6 +150,15 @@ def test_help_route_serves_the_localized_interface_guide():
     assert screenshot.status_code == 200
     assert screenshot.mimetype == "image/png"
 
+    prefixed = client.get(
+        "/help?lang=en", environ_overrides={"SCRIPT_NAME": "/glicko"}
+    )
+    assert prefixed.status_code == 200
+    prefixed_body = prefixed.get_data(as_text=True)
+    assert 'href="/glicko/help/readme?lang=en"' in prefixed_body
+    assert 'href="/glicko/help/api?lang=en"' in prefixed_body
+    assert "/glicko/help-assets/screenshots/public-home.png" in prefixed_body
+
     api = client.get("/help/api?lang=en")
     assert api.status_code == 200
     assert api.mimetype == "text/html"
@@ -157,13 +166,14 @@ def test_help_route_serves_the_localized_interface_guide():
     assert ">Routes and integration notes</h1>" in api_body
     assert 'href="/help?lang=en"' in api_body
 
+    expected_readme_titles = {"es": "Glicko BD", "en": "Glicko DB", "pt": "Glicko BD"}
     for language in ("es", "en", "pt"):
         readme = client.get(f"/help/readme?lang={language}")
         assert readme.status_code == 200
         assert readme.mimetype == "text/html"
         readme_body = readme.get_data(as_text=True)
         assert f'<html lang="{language}">' in readme_body
-        assert ">Glicko DB</h1>" in readme_body
+        assert f">{expected_readme_titles[language]}</h1>" in readme_body
         assert f'href="/help?lang={language}"' in readme_body
 
 

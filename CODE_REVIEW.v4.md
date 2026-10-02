@@ -12,11 +12,15 @@
 - **V4-08 fixed (2026-09-30):** startup and restore now share the same complete schema-migration sequence; legacy-backup coverage verifies the moderation and audit tables and loads the moderation queue after restore.
 - **V4-09 fixed (2026-09-30):** failed async POSTs are never resubmitted natively; the dashboard shows a translated reload action so staff can check the committed state before retrying. Server-side idempotency remains separate hardening for non-repeatable commands.
 - **V4-10 fixed (2026-09-30):** sessions carry a database-backed auth version; password changes/resets, role or activity changes, and restore advance it. Regression tests cover stale sessions after reset, deactivation, and restore while preserving the current session after a confirmed self-service change.
-- Post-change suite: **403 passed, 1 known failure** in the unrelated generated help-link test (V4-11). All findings below describe the **pre-fix review snapshot**; V4-03's preflight and V4-11 onward remain open.
+- **V4-11 fixed (2026-10-01):** help pages render from tracked Markdown per request and use the active mount prefix; OpenGotha tests use anonymized, tracked fixtures instead of ignored uploads. Clean checkouts no longer need generated help HTML or local XML examples.
+- **V4-12 fixed (2026-10-01):** CSV headers are normalized before row access, and collisions after normalization are rejected. Tests verify the imported match and duplicate-header rejection.
+- **V4-13 fixed (2026-10-01):** report rating changes use the last snapshot before the inclusive start date as baseline; snapshots on the first selected day count in the result. One-day coverage verifies the behavior.
+- **V4-14 fixed (2026-10-01):** player export creates its output directory, with a test using a temporary database and absent directory.
+- Post-change suite: **405 passed**. All findings below describe the **pre-fix review snapshot**; V4-03's preflight remains open.
 
 ## Findings
 
-Priority: P1 = security, data integrity, or operational continuity; P2 = significant correctness or workflow failure; P3 = lower-impact maintenance. These are current-code findings, not proposed patches. Reproductions used isolated databases and disposable scripts that were removed afterward.
+Priority: P1 = security, data integrity, or operational continuity; P2 = significant correctness or workflow failure; P3 = lower-impact maintenance. Findings below describe the pre-fix review snapshot; implementation status is recorded above. Reproductions used isolated databases and disposable scripts that were removed afterward.
 
 ### V4-01 [P1] Operators can restore or delete backups
 
@@ -60,7 +64,7 @@ Sessions contain a user ID, and every request checks only that the account still
 
 ### V4-11 [P2] Clean checkouts lack help HTML and OpenGotha test fixtures
 
-The app serves prebuilt HTML files directly ([routes/public.py](routes/public.py#L223)), but their entire output directory is ignored ([.gitignore](.gitignore#L78)); `git ls-files docs/generated` is empty. A fresh checkout therefore lacks the files unless a separate build runs. This local output was built with a `/glicko` prefix, while root-mounted routes serve it unchanged; the full suite fails the expected root `href="/help/readme?lang=es"` assertion ([tests/test_public_tournaments.py](tests/test_public_tournaments.py#L139)). Several OpenGotha tests also read sample XML from ignored `uploads/` ([tests/test_tournament_service.py](tests/test_tournament_service.py#L47), [tests/test_opengotha_comparison.py](tests/test_opengotha_comparison.py#L18), [.gitignore](.gitignore#L75)); no upload files are tracked. A clean clone cannot run those tests without local data. Make guide generation a required build/deployment and test prerequisite, handle mount prefixes consistently, and move sanitized XML examples into tracked test fixtures rather than runtime uploads. Test both root and prefixed installations from a clean checkout.
+Pre-fix behavior: the app served prebuilt HTML files directly ([routes/public.py](routes/public.py#L223)), but their entire output directory is ignored ([.gitignore](.gitignore#L78)); `git ls-files docs/generated` is empty. A fresh checkout therefore lacked the files unless a separate build ran. The local output was built with a `/glicko` prefix, while root-mounted routes served it unchanged; the help test failed its root-link assertion. Several OpenGotha tests also read sample XML from ignored `uploads/`, so a clean clone lacked those inputs. Fixed 2026-10-01: help endpoints render from Markdown with the request's mount prefix, and the tests now use anonymized XML fixtures under `tests/fixtures/opengotha/`.
 
 ### V4-12 [P2] CSV header normalization accepts rows the importer cannot read
 
@@ -78,7 +82,7 @@ This fixes v3's root-level CSV concern but introduces a clean-checkout failure: 
 
 | v3 item | Current verdict | Evidence / remaining work |
 | --- | --- | --- |
-| 1.1 root-level player CSV | Resolved, with V4-14 follow-up | Output moved under ignored `exports/` ([scripts/export_players.py](scripts/export_players.py#L13)). No root CSV is tracked here. |
+| 1.1 root-level player CSV | Resolved | Output is under ignored `exports/`, and the exporter creates that directory when needed ([scripts/export_players.py](scripts/export_players.py#L13)). No root CSV is tracked here. |
 | 1.2 double-closing rating connection | Resolved | The owning connection is closed once, in `finally` ([services/rating_service.py](services/rating_service.py#L149)). |
 | 1.3 duplicate `unpair` translation keys | Resolved | Each of es/en/pt has one `unpair` entry ([services/i18n.py](services/i18n.py#L360), [services/i18n.py](services/i18n.py#L887), [services/i18n.py](services/i18n.py#L1411)); an AST scan found no duplicate literal keys in any translation map. |
 | 1.4 OpenGotha triple XML parse | Resolved | Import parses once and passes that root to metadata extraction ([services/tournament_gotha.py](services/tournament_gotha.py#L172)). |
@@ -102,7 +106,7 @@ The v3 "already fixed" claims still hold for Glicko-2 `_f()` ([services/glicko2.
 1. **Self-service tournament registration** (carried forward from v3): member accounts linked to players can request a spot on a *published, registration-open* tournament, with a director-set close time/capacity, idempotent enrollment, waitlist/withdrawal rules, and staff approval for unmatched accounts. Keep unpublished draft policy separate from registration state.
 2. **Import safety workflow:** Show a validated preview with row-level errors, affected-player/match counts, reconciliation choices, and a backup snapshot before destructive replacement; require a second confirmation and provide an audit/recovery receipt.
 3. **Operational visibility:** Schedule verified backups only after restore is safe; surface dirty-rating replay state, last successful replay, backup health, and failed administrative actions without exposing secrets to members.
-4. **Report scalability and clarity:** Fix or relabel first-day rating change, measure report/home response time against a larger fixture, and add named seasons only if the organization needs them (as the current roadmap suggests).
+4. **Report scalability and clarity:** Measure report/home response time against a larger fixture, and add named seasons only if the organization needs them (as the current roadmap suggests). Rating-change baseline semantics are resolved in V4-13.
 
 ## Plan: A Real Auth-Only API
 
@@ -143,6 +147,6 @@ Publish a versioned OpenAPI 3.1 schema and authenticated interactive docs, typed
 
 ## Verification and Limits
 
-- Full suite in this local checkout: **377 passed, 1 failed** (`tests/test_public_tournaments.py::test_help_route_serves_the_localized_interface_guide`), with the root-link assertion described in V4-11. A fresh clone is additionally missing the ignored XML fixtures; it was not run here. The prior README's passing-test count is not a current verification result.
+- Pre-fix review suite: **377 passed, 1 failed** (`tests/test_public_tournaments.py::test_help_route_serves_the_localized_interface_guide`). After V4-11 through V4-14, the full suite passes: **405 passed**. A separate fresh clone was not created for this follow-up; the tests now reference tracked fixtures and no longer require generated help pages. The prior README's passing-test count is not a current verification result.
 - Isolated throwaway probes confirmed backup deletion by an operator, reset-link Host poisoning, login after the attempt threshold, surviving session after reset, last-admin demotion, empty-workbook data loss, missing restored tables, wrong pending-player linkage, ignored handicap flag, start-day report calculation, CSV header behavior, and duplicate AJAX submission. No production database, external email, or vendor folder was tested or modified.
-- This was a source-and-test review, not a production penetration test, accessibility audit, restore-under-concurrent-write test, or large-dataset benchmark. The performance and backup-copy notes above are labeled as risks until measured. All one-off scripts were deleted; existing review-file worktree changes were left untouched.
+- This was a source-and-test review, not a production penetration test, accessibility audit, restore-under-concurrent-write test, or large-dataset benchmark. The performance and backup-copy notes above are labeled as risks until measured. No production database, external email, or vendor folder was used for this follow-up; unrelated pre-existing worktree changes were left untouched.

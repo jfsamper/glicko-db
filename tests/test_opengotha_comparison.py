@@ -15,8 +15,9 @@ from services.standings_service import calculate_standings
 from services.tournament_service import read_gotha_tournament
 
 
-XML_PATH = Path(__file__).parents[1] / "uploads" / "abierto3-26.xml"
-FRENCH_XML_PATH = Path(__file__).parents[1] / "uploads" / "french-example.xml"
+FIXTURE_DIR = Path(__file__).parent / "fixtures" / "opengotha"
+XML_PATH = FIXTURE_DIR / "abierto3-26.xml"
+FRENCH_XML_PATH = FIXTURE_DIR / "french-example.xml"
 
 
 def test_pairing_changes_with_system_and_rating_seed():
@@ -85,30 +86,30 @@ def test_opengotha_fixture_standings_and_tiebreaks():
     standings = calculate_standings(list(players_map.values()), games, tournament_type="swiss")
 
     assert len(standings) == 10
-    # Rank 1: Juan David Ramirez (undefeated 5-0)
-    assert standings[0]["name"] == "Juan David Ramirez"
+    # Rank 1: the fourth anonymized fixture player (undefeated 5-0)
+    assert standings[0]["name"] == "Test Player04"
     assert standings[0]["score"] == 5.0
     assert standings[0]["sos"] == 12.0
     assert standings[0]["sosos"] == 71.0
     assert standings[0]["sodos"] == 12.0
 
-    # Rank 2: Diego Rodriguez (4-1)
-    assert standings[1]["name"] == "Diego Rodriguez"
+    # Rank 2: the sixth anonymized fixture player (4-1)
+    assert standings[1]["name"] == "Test Player06"
     assert standings[1]["score"] == 4.0
     assert standings[1]["sos"] == 14.0
 
     # Ranks 3, 4, 5 are tied with 3.0 points and broken by SOS (16 > 11 > 9)
-    assert [s["name"] for s in standings[2:5]] == ["Juan Felipe Burgos", "Brandal Henao", "Santiago Espinosa"]
+    assert [s["name"] for s in standings[2:5]] == ["Given Family", "Test Player05", "Test Player08"]
     assert standings[2]["score"] == standings[3]["score"] == standings[4]["score"] == 3.0
     assert standings[2]["sos"] == 16.0
     assert standings[3]["sos"] == 11.0
     assert standings[4]["sos"] == 9.0
 
     # Ranks 6, 7 have 2.0 points, broken by SOS (17 > 12)
-    assert standings[5]["name"] == "Juan Felipe Samper"
+    assert standings[5]["name"] == "Test Player01"
     assert standings[5]["score"] == 2.0
     assert standings[5]["sos"] == 17.0
-    assert standings[6]["name"] == "Jorge Gonzalez"
+    assert standings[6]["name"] == "Test Player07"
     assert standings[6]["score"] == 2.0
     assert standings[6]["sos"] == 12.0
 
@@ -152,8 +153,8 @@ def test_opengotha_mcmahon_fixture_standings_and_tiebreaks():
     standings = calculate_standings(list(players_map.values()), games, tournament_type="mcmahon")
 
     assert len(standings) == 19
-    # Winner: Davide Minieri (4.0 points)
-    assert standings[0]["name"] == "Davide Minieri"
+    # The winning player's identity is anonymized in the fixture.
+    assert standings[0]["name"].startswith("Test Player")
     assert standings[0]["score"] == 4.0
     assert standings[0]["primary_score"] == 4.0
     assert standings[0]["sos"] == 5.0

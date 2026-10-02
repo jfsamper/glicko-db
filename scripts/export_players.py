@@ -29,6 +29,7 @@ def main():
         """
     ).fetchall()
 
+    OUTPUT_FILE.parent.mkdir(parents=True, exist_ok=True)
     with open(
         OUTPUT_FILE,
         "w",

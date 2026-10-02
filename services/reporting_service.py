@@ -179,7 +179,7 @@ def _rating_change(conn, player, start_date, end_date, category_config):
             before_start.append(parsed[0][1])
     else:
         before_start = [rating for snapshot_date,
-                        rating in parsed if snapshot_date <= start_date]
+                        rating in parsed if snapshot_date < start_date]
         if not before_start and player["initial_rating"] is not None:
             before_start.append(float(player["initial_rating"]))
     through_end = [rating for snapshot_date,

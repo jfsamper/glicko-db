@@ -100,7 +100,7 @@ The default values are in `config.py`.
 - `RECAPTCHA_EXPECTED_HOSTNAME`: optional hostname check in the verification response; leave it empty if the key serves multiple configured hostnames.
 
 - The default timezone is UTC-5. Each account can choose an IANA timezone; matches on the same day are processed by round number and then insertion order.
-- `/reports` uses inclusive `start_date` and `end_date` ranges in the fixed server timezone. The page and CSV/PDF exports reuse the same filters and totals.
+- `/reports` uses inclusive `start_date` and `end_date` ranges in the fixed server timezone. The page and CSV/PDF exports reuse the same filters and totals. Rating change compares the last snapshot before the start with the last snapshot through the end, including the first selected day.
 - Accounts use the roles `administrator`, `tournament_director`, `operator`, and `member`. Members submit results only for their linked player; the other roles review the approval queue.
 - Login limits attempts by IP and username before checking the password; configure the limits in `/admin/settings`.
 - Pending-player suggestions link existing players only when explicitly selected. "Create new" creates another player or rejects an existing name; tournaments with handicaps disabled generate pairings with zero stones.
@@ -115,7 +115,7 @@ The detailed roadmap is in [FUTURE_FEATURES.md](FUTURE_FEATURES.md). Import reco
 
 ## Development
 
-Regenerate the HTML guides after changing their Markdown sources:
+The app renders help pages from Markdown when requested; generated HTML is not required to run the app or its tests. To export static HTML copies after changing the sources:
 
 ```powershell
 python scripts/build_help_html.py
@@ -129,7 +129,9 @@ pytest -q
 
 ### Code organization
 
-Administrative routes are split by domain across `routes/admin_tournaments.py`, `routes/admin_matches.py`, `routes/admin_players.py`, and `routes/admin_users.py`. Tournament logic is split by responsibility across `services/tournament_gotha.py`, `services/tournament_participants.py`, `services/tournament_pairing.py`, `services/tournament_matches.py`, and `services/tournament_standings.py`. Translations and language selection live in `services/i18n.py`, while pure rating-chart helpers live in `services/chart_service.py`; `services/common.py` retains compatibility exports for existing imports. `services/tournament_service.py` remains a compatibility facade. The full suite requires generated HTML guides and local sample XML files; run `pytest -q` to check it.
+CSV imports normalize header case and surrounding whitespace, and reject headers that become duplicates after normalization. `scripts/export_players.py` creates `exports/` when it is missing.
+
+Administrative routes are split by domain across `routes/admin_tournaments.py`, `routes/admin_matches.py`, `routes/admin_players.py`, and `routes/admin_users.py`. Tournament logic is split by responsibility across `services/tournament_gotha.py`, `services/tournament_participants.py`, `services/tournament_pairing.py`, `services/tournament_matches.py`, and `services/tournament_standings.py`. Translations and language selection live in `services/i18n.py`, while pure rating-chart helpers live in `services/chart_service.py`; `services/common.py` retains compatibility exports for existing imports. `services/tournament_service.py` remains a compatibility facade. The anonymized OpenGotha examples used by tests are tracked under `tests/fixtures/opengotha/`; neither local `uploads/` files nor generated HTML guides are required to run `pytest -q`.
 
 ### Linux hosting installation
 

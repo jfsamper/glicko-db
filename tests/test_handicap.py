@@ -19,7 +19,7 @@ from services.tournament_service import (
 )
 from routes.admin import parse_handicap_stones
 
-XML_PATH = Path(__file__).parent.parent / "uploads" / "abierto3-26.xml"
+XML_PATH = Path(__file__).parent / "fixtures" / "opengotha" / "abierto3-26.xml"
 K, M = 16.6, 340.0
 
 
@@ -472,8 +472,8 @@ def test_create_tournament_from_gotha_imports_handicap_from_xml(tmp_path):
     conn = _create_tournament_db()
     source = XML_PATH.read_text(encoding="utf-8")
     source = source.replace(
-        'blackPlayer="LARAJOSELUIS" handicap="0"',
-        'blackPlayer="LARAJOSELUIS" handicap="3"',
+        'blackPlayer="PLAYER02TEST" handicap="0"',
+        'blackPlayer="PLAYER02TEST" handicap="3"',
         1,
     )
     xml_path = tmp_path / "abierto3-26-handicap.xml"

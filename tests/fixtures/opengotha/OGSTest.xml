@@ -1,0 +1,135 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Tournament externalIPAddress="" fullVersionNumber="3.52" privateTournament="true" remoteUUID="" runningMode="SAL" saveDT="20210723102413">
+<Players>
+<Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade="28K" name="Player01" participating="11111111111111111111" rank="28K" rating="-700" ratingOrigin="AGA : -28.50" registeringStatus="FIN" smmsCorrection="0" userName="" />
+<Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade="4K" name="Player02" participating="11111111111111111111" rank="4K" rating="1668" ratingOrigin="AGA : -4.82" registeringStatus="FIN" smmsCorrection="0" userName="" />
+<Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade="3K" name="Player03" participating="11111111111111111111" rank="3K" rating="1791" ratingOrigin="FFG : -259" registeringStatus="FIN" smmsCorrection="0" userName="" />
+<Player agaExpirationDate="" agaId="" club="" country="" egfPin="" ffgLicence="" ffgLicenceStatus="" firstName="Test" grade="2D" name="Player04" participating="11111111111111111111" rank="2D" rating="2159" ratingOrigin="FFG : 109" registeringStatus="FIN" smmsCorrection="0" userName="" />
+</Players>
+<Games>
+<Game blackPlayer="PLAYER02TEST" handicap="0" knownColor="true" result="RESULT_BLACKWINS" roundNumber="1" tableNumber="1" whitePlayer="PLAYER04TEST" />
+<Game blackPlayer="PLAYER03TEST" handicap="0" knownColor="true" result="RESULT_WHITEWINS" roundNumber="1" tableNumber="2" whitePlayer="PLAYER01TEST" />
+</Games>
+<Teams>
+<Team teamName="EU" teamNumber="2">
+<Board boardNumber="1" player="PLAYER04TEST" roundNumber="1" />
+<Board boardNumber="2" player="PLAYER03TEST" roundNumber="1" />
+<Board boardNumber="1" player="PLAYER04TEST" roundNumber="2" />
+<Board boardNumber="2" player="PLAYER03TEST" roundNumber="2" />
+<Board boardNumber="1" player="PLAYER04TEST" roundNumber="3" />
+<Board boardNumber="2" player="PLAYER03TEST" roundNumber="3" />
+<Board boardNumber="1" player="PLAYER04TEST" roundNumber="4" />
+<Board boardNumber="2" player="PLAYER03TEST" roundNumber="4" />
+<Board boardNumber="1" player="PLAYER04TEST" roundNumber="5" />
+<Board boardNumber="2" player="PLAYER03TEST" roundNumber="5" />
+<Board boardNumber="1" player="PLAYER04TEST" roundNumber="6" />
+<Board boardNumber="2" player="PLAYER03TEST" roundNumber="6" />
+<Board boardNumber="1" player="PLAYER04TEST" roundNumber="7" />
+<Board boardNumber="2" player="PLAYER03TEST" roundNumber="7" />
+<Board boardNumber="1" player="PLAYER04TEST" roundNumber="8" />
+<Board boardNumber="2" player="PLAYER03TEST" roundNumber="8" />
+<Board boardNumber="1" player="PLAYER04TEST" roundNumber="9" />
+<Board boardNumber="2" player="PLAYER03TEST" roundNumber="9" />
+<Board boardNumber="1" player="PLAYER04TEST" roundNumber="10" />
+<Board boardNumber="2" player="PLAYER03TEST" roundNumber="10" />
+<Board boardNumber="1" player="PLAYER04TEST" roundNumber="11" />
+<Board boardNumber="2" player="PLAYER03TEST" roundNumber="11" />
+<Board boardNumber="1" player="PLAYER04TEST" roundNumber="12" />
+<Board boardNumber="2" player="PLAYER03TEST" roundNumber="12" />
+<Board boardNumber="1" player="PLAYER04TEST" roundNumber="13" />
+<Board boardNumber="2" player="PLAYER03TEST" roundNumber="13" />
+<Board boardNumber="1" player="PLAYER04TEST" roundNumber="14" />
+<Board boardNumber="2" player="PLAYER03TEST" roundNumber="14" />
+<Board boardNumber="1" player="PLAYER04TEST" roundNumber="15" />
+<Board boardNumber="2" player="PLAYER03TEST" roundNumber="15" />
+<Board boardNumber="1" player="PLAYER04TEST" roundNumber="16" />
+<Board boardNumber="2" player="PLAYER03TEST" roundNumber="16" />
+<Board boardNumber="1" player="PLAYER04TEST" roundNumber="17" />
+<Board boardNumber="2" player="PLAYER03TEST" roundNumber="17" />
+<Board boardNumber="1" player="PLAYER04TEST" roundNumber="18" />
+<Board boardNumber="2" player="PLAYER03TEST" roundNumber="18" />
+<Board boardNumber="1" player="PLAYER04TEST" roundNumber="19" />
+<Board boardNumber="2" player="PLAYER03TEST" roundNumber="19" />
+<Board boardNumber="1" player="PLAYER04TEST" roundNumber="20" />
+<Board boardNumber="2" player="PLAYER03TEST" roundNumber="20" />
+</Team>
+<Team teamName="US" teamNumber="1">
+<Board boardNumber="1" player="PLAYER02TEST" roundNumber="1" />
+<Board boardNumber="2" player="PLAYER01TEST" roundNumber="1" />
+<Board boardNumber="1" player="PLAYER02TEST" roundNumber="2" />
+<Board boardNumber="2" player="PLAYER01TEST" roundNumber="2" />
+<Board boardNumber="1" player="PLAYER02TEST" roundNumber="3" />
+<Board boardNumber="2" player="PLAYER01TEST" roundNumber="3" />
+<Board boardNumber="1" player="PLAYER02TEST" roundNumber="4" />
+<Board boardNumber="2" player="PLAYER01TEST" roundNumber="4" />
+<Board boardNumber="1" player="PLAYER02TEST" roundNumber="5" />
+<Board boardNumber="2" player="PLAYER01TEST" roundNumber="5" />
+<Board boardNumber="1" player="PLAYER02TEST" roundNumber="6" />
+<Board boardNumber="2" player="PLAYER01TEST" roundNumber="6" />
+<Board boardNumber="1" player="PLAYER02TEST" roundNumber="7" />
+<Board boardNumber="2" player="PLAYER01TEST" roundNumber="7" />
+<Board boardNumber="1" player="PLAYER02TEST" roundNumber="8" />
+<Board boardNumber="2" player="PLAYER01TEST" roundNumber="8" />
+<Board boardNumber="1" player="PLAYER02TEST" roundNumber="9" />
+<Board boardNumber="2" player="PLAYER01TEST" roundNumber="9" />
+<Board boardNumber="1" player="PLAYER02TEST" roundNumber="10" />
+<Board boardNumber="2" player="PLAYER01TEST" roundNumber="10" />
+<Board boardNumber="1" player="PLAYER02TEST" roundNumber="11" />
+<Board boardNumber="2" player="PLAYER01TEST" roundNumber="11" />
+<Board boardNumber="1" player="PLAYER02TEST" roundNumber="12" />
+<Board boardNumber="2" player="PLAYER01TEST" roundNumber="12" />
+<Board boardNumber="1" player="PLAYER02TEST" roundNumber="13" />
+<Board boardNumber="2" player="PLAYER01TEST" roundNumber="13" />
+<Board boardNumber="1" player="PLAYER02TEST" roundNumber="14" />
+<Board boardNumber="2" player="PLAYER01TEST" roundNumber="14" />
+<Board boardNumber="1" player="PLAYER02TEST" roundNumber="15" />
+<Board boardNumber="2" player="PLAYER01TEST" roundNumber="15" />
+<Board boardNumber="1" player="PLAYER02TEST" roundNumber="16" />
+<Board boardNumber="2" player="PLAYER01TEST" roundNumber="16" />
+<Board boardNumber="1" player="PLAYER02TEST" roundNumber="17" />
+<Board boardNumber="2" player="PLAYER01TEST" roundNumber="17" />
+<Board boardNumber="1" player="PLAYER02TEST" roundNumber="18" />
+<Board boardNumber="2" player="PLAYER01TEST" roundNumber="18" />
+<Board boardNumber="1" player="PLAYER02TEST" roundNumber="19" />
+<Board boardNumber="2" player="PLAYER01TEST" roundNumber="19" />
+<Board boardNumber="1" player="PLAYER02TEST" roundNumber="20" />
+<Board boardNumber="2" player="PLAYER01TEST" roundNumber="20" />
+</Team>
+</Teams>
+<TournamentParameterSet>
+<GeneralParameterSet bInternetGame="false" basicTime="60" beginDate="2021-06-26" canByoYomiTime="300" complementaryTimeSystem="STDBYOYOMI" director="Test Director" endDate="2021-06-27" fischerTime="10" genCountNotPlayedGamesAsHalfPoint="false" genMMBar="4D" genMMFloor="20K" genMMS2ValueAbsent="1" genMMS2ValueBye="2" genMMZero="30K" genNBW2ValueAbsent="0" genNBW2ValueBye="2" genRoundDownNBWMMS="true" komi="7.5" location="Toulouse" name="OnLineTest" nbMovesCanTime="15" numberOfBZHGroups="4" numberOfCategories="1" numberOfRounds="5" shortName="OGSTest" size="19" stdByoYomiTime="30">
+<BZHGroups>
+<BZHGroup lowerLimit="2K" number="1" />
+<BZHGroup lowerLimit="7K" number="2" />
+<BZHGroup lowerLimit="12K" number="3" />
+</BZHGroups>
+</GeneralParameterSet>
+<HandicapParameterSet hdBase="BZS" hdCeiling="0" hdCorrection="0" hdNoHdRankThreshold="30K" />
+<PlacementParameterSet>
+<PlacementCriteria>
+<PlacementCriterion name="BZS" number="1" />
+<PlacementCriterion name="SOSB" number="2" />
+<PlacementCriterion name="SOSOSB" number="3" />
+<PlacementCriterion name="NULL" number="4" />
+<PlacementCriterion name="NULL" number="5" />
+<PlacementCriterion name="NULL" number="6" />
+</PlacementCriteria>
+</PlacementParameterSet>
+<PairingParameterSet paiBaAvoidDuplGame="500000000000000" paiBaBalanceWB="1000000" paiBaDeterministic="true" paiBaRandom="0" paiMaAdditionalPlacementCritSystem1="Rating" paiMaAdditionalPlacementCritSystem2="NULL" paiMaAvoidMixingCategories="0" paiMaCompensateDUDD="true" paiMaDUDDLowerMode="MID" paiMaDUDDUpperMode="MID" paiMaDUDDWeight="100000000" paiMaLastRoundForSeedSystem1="2" paiMaMaximizeSeeding="5000000" paiMaMinimizeScoreDifference="100000000000" paiMaSeedSystem1="SPLITANDRANDOM" paiMaSeedSystem2="SPLITANDSLIP" paiSeAvoidSameGeo="100000000000" paiSeBarThresholdActive="true" paiSeDefSecCrit="100000000000" paiSeMinimizeHandicap="0" paiSeNbWinsThresholdActive="false" paiSePreferMMSDiffRatherThanSameClub="3" paiSePreferMMSDiffRatherThanSameCountry="1" paiSeRankThreshold="1D" paiStandardNX1Factor="0.5" />
+<DPParameterSet displayClCol="true" displayCoCol="true" displayIndGamesInMatches="true" displayNPPlayers="false" displayNumCol="true" displayPlCol="true" gameFormat="full" playerSortType="name" showByePlayer="true" showNotFinallyRegisteredPlayers="true" showNotPairedPlayers="true" showNotParticipatingPlayers="false" showPlayerClub="true" showPlayerCountry="false" showPlayerGrade="true" />
+<PublishParameterSet exportToLocalFile="true" htmlAutoScroll="false" print="true" />
+</TournamentParameterSet>
+<TeamTournamentParameterSet>
+<TeamGeneralParameterSet teamSize="2" />
+<TeamPlacementParameterSet>
+<PlacementCriteria>
+<PlacementCriterion name="TEAMP" number="1" />
+<PlacementCriterion name="BDW" number="2" />
+<PlacementCriterion name="BDW3U" number="3" />
+<PlacementCriterion name="BDW2U" number="4" />
+<PlacementCriterion name="BDW1U" number="5" />
+<PlacementCriterion name="MNR" number="6" />
+</PlacementCriteria>
+</TeamPlacementParameterSet>
+</TeamTournamentParameterSet>
+</Tournament>
