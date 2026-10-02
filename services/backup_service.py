@@ -4,6 +4,7 @@ import os
 import re
 import shutil
 import sqlite3
+import uuid
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
@@ -44,18 +45,61 @@ def is_valid_sqlite_backup(path):
     if path is None or not Path(path).is_file():
         return False
 
+    conn = None
     try:
-        with sqlite3.connect(path) as conn:
-            table_count = conn.execute(
-                "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table'"
-            ).fetchone()[0]
-            if table_count <= 0:
-                return False
+        conn = sqlite3.connect(path)
+        table_count = conn.execute(
+            "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table'"
+        ).fetchone()[0]
+        if table_count <= 0:
+            return False
 
-            integrity = conn.execute("PRAGMA integrity_check").fetchone()
-            return integrity is not None and integrity[0] == "ok"
+        integrity = conn.execute("PRAGMA integrity_check").fetchone()
+        return integrity is not None and integrity[0] == "ok"
     except sqlite3.DatabaseError:
         return False
+    finally:
+        if conn is not None:
+            conn.close()
+
+
+def create_verified_backup(db_path, backup_dir, filename):
+    """Create an atomic SQLite snapshot and verify its integrity before publishing it."""
+    ensure_backup_dir(backup_dir)
+    backup_path = get_backup_path(filename, backup_dir)
+    if backup_path is None:
+        raise ValueError("Invalid backup filename")
+    if backup_path.exists():
+        raise FileExistsError("Backup already exists")
+
+    staging_path = backup_path.with_name(
+        f".{backup_path.stem}.{uuid.uuid4().hex}.tmp"
+    )
+    source_conn = None
+    staging_conn = None
+    try:
+        source_conn = sqlite3.connect(db_path)
+        staging_conn = sqlite3.connect(staging_path)
+        source_conn.backup(staging_conn)
+        staging_conn.commit()
+        staging_conn.close()
+        staging_conn = None
+        source_conn.close()
+        source_conn = None
+        if not is_valid_sqlite_backup(staging_path):
+            raise sqlite3.DatabaseError("Staged backup failed integrity verification")
+        os.replace(staging_path, backup_path)
+        if not is_valid_sqlite_backup(backup_path):
+            raise sqlite3.DatabaseError("Published backup failed integrity verification")
+        return backup_path
+    except Exception:
+        if staging_conn is not None:
+            staging_conn.close()
+        if source_conn is not None:
+            source_conn.close()
+        staging_path.unlink(missing_ok=True)
+        backup_path.unlink(missing_ok=True)
+        raise
 
 
 def get_latest_valid_backup_path(db_path, backup_dir, base_dir):

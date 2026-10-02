@@ -6,7 +6,7 @@ This document lists only unfinished product, operational, and maintainability wo
 
 - V4-01: backup create/restore/delete now require administrator permission in the route map and handlers.
 - V4-02: recovery links use validated `APP_PUBLIC_ORIGIN`; email/token issuance is disabled until a public HTTPS origin is configured.
-- V4-03: XLSX replacement rejects empty/incomplete data, rolls back failures, and closes workbook handles. A preflight, explicit confirmation, and verified backup are still open.
+- V4-03: XLSX replacement previews current/importable counts, requires explicit confirmation, creates and verifies a SQLite backup plus SGF sidecar, and rolls back failures.
 - V4-04: user edits/deletions cannot remove the last active administrator, including when another administrator is inactive.
 - V4-05: an unconfirmed pending-player suggestion no longer links automatically; create-new rejects exact-name collisions instead of silently reusing an ID.
 - V4-06: generated round handicaps now respect the tournament's enabled setting.
@@ -32,7 +32,7 @@ This document lists only unfinished product, operational, and maintainability wo
    - [Public SGF library and match linking](#public-sgf-library-and-match-linking)
 - [Remaining implementation backlog](#remaining-implementation-backlog)
    - [P1 — None](#p1--none)
-   - [P2 — Workflow and recovery](#p2--workflow-and-recovery)
+   - [P2 — None](#p2--none)
    - [P3 — Operational enhancements](#p3--operational-enhancements)
    - [P4 — Workflow and analytics enhancements](#p4--workflow-and-analytics-enhancements)
 - [Technical implementation order](#technical-implementation-order)
@@ -147,11 +147,11 @@ Confirmed in code:
 
 ### P1 — None
 
-No remaining P1 implementation failures from the V4 review; complete the V4-03 workflow safeguards below.
+No numbered V4 implementation findings remain open.
 
-### P2 — Workflow and recovery
+### P2 — None
 
-1. Finish V4-03 with a workbook preflight, explicit replacement confirmation, and a verified backup.
+The V4 P2 findings are resolved. The remaining operational and product work below is optional or requires prioritization.
 
 ### P3 — Operational enhancements
 
@@ -175,11 +175,11 @@ No remaining P1 implementation failures from the V4 review; complete the V4-03 w
 
 ## Technical implementation order
 
-Login rate-limit enforcement, typed OpenGotha payloads, explicit tournament deletion, per-account timezone preferences, account profile/recovery, date-bounded reporting, PDF reporting, and result moderation are implemented. The next recommended sequence is:
+Login rate-limit enforcement, typed OpenGotha payloads, explicit tournament deletion, per-account timezone preferences, account profile/recovery, date-bounded reporting, PDF reporting, result moderation, and XLSX replacement safeguards are implemented. The next recommended sequence is:
 
-1. Complete the V4-03 workbook replacement preflight, confirmation, and verified backup.
-2. Fix restore migrations and non-idempotent tournament POST recovery, followed by other V4 P2 findings.
-3. Add scheduled backups with retention and restore verification.
+1. Harden backup restore with staged migration, atomic replacement, and rollback on failure.
+2. Add scheduled backups with retention and restore verification.
+3. Add server-side idempotency for non-repeatable tournament commands before exposing API writes.
 4. Consider replay observability, tournament preflight, and named seasons as needed.
 
 ## Documentation rules

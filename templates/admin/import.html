@@ -200,6 +200,57 @@
   </div>
   {% endif %}
 
+  {% if workbook_preview %}
+  <section class="warning-box" style="margin-top: 1.5rem;">
+    <h3>{{ translations.workbook_preview_heading }}</h3>
+    <p>{{ translations.workbook_replacement_warning }}</p>
+
+    <div class="stats-grid">
+      <div class="stats-panel">
+        <h4>{{ translations.workbook_current_players }}</h4>
+        <p class="metric small">{{ workbook_preview.current_players }}</p>
+      </div>
+      <div class="stats-panel">
+        <h4>{{ translations.workbook_current_matches }}</h4>
+        <p class="metric small">{{ workbook_preview.current_matches }}</p>
+      </div>
+      <div class="stats-panel">
+        <h4>{{ translations.workbook_imported_players }}</h4>
+        <p class="metric small">{{ workbook_preview.imported_players }}</p>
+      </div>
+      <div class="stats-panel">
+        <h4>{{ translations.workbook_imported_matches }}</h4>
+        <p class="metric small">{{ workbook_preview.imported_matches }}</p>
+      </div>
+    </div>
+
+    {% if workbook_preview_error %}
+    <p role="alert" class="error-message">{{ workbook_preview_error }}</p>
+    {% endif %}
+
+    <form method="post" action="{{ url_for('admin_import', lang=lang) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+      <input type="hidden" name="action" value="commit_workbook" />
+      <input type="hidden" name="preview_token" value="{{ workbook_preview_token }}" />
+      <label class="filter-item">
+        <input type="checkbox" name="confirm_replacement" value="yes" required>
+        {{ translations.workbook_replacement_confirm }}
+      </label>
+      <div class="filter-actions">
+        <button type="submit" class="button">{{ translations.workbook_replacement_submit }}</button>
+      </div>
+    </form>
+    <form method="post" action="{{ url_for('admin_import', lang=lang) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+      <input type="hidden" name="action" value="cancel_workbook_preview" />
+      <input type="hidden" name="preview_token" value="{{ workbook_preview_token }}" />
+      <div class="filter-actions">
+        <button type="submit" class="button secondary">{{ translations.workbook_preview_cancel }}</button>
+      </div>
+    </form>
+  </section>
+  {% endif %}
+
 </section>
 
 {% if preview %}

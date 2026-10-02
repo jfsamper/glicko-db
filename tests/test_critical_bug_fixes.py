@@ -313,6 +313,9 @@ def test_workbook_reset_rejects_empty_file_without_erasing_data(tmp_path, isolat
     workbook.close()
 
     with pytest.raises(ValueError, match="no importable players or matches"):
+        import_service.preview_workbook_data(workbook_path)
+
+    with pytest.raises(ValueError, match="no importable players or matches"):
         import_service.import_workbook_data(workbook_path, reset=True)
 
     with sqlite3.connect(db_path) as conn:
@@ -321,6 +324,189 @@ def test_workbook_reset_rejects_empty_file_without_erasing_data(tmp_path, isolat
             conn.execute("SELECT COUNT(*) FROM matches").fetchone()[0],
         )
     assert after == before
+
+
+def test_workbook_preview_reports_replacement_counts_without_mutating_live_db(
+    tmp_path, isolate_test_database
+):
+    from openpyxl import Workbook
+
+    db_path = isolate_test_database
+    with sqlite3.connect(db_path) as conn:
+        before = (
+            conn.execute("SELECT COUNT(*) FROM players").fetchone()[0],
+            conn.execute("SELECT COUNT(*) FROM matches").fetchone()[0],
+        )
+
+    workbook_path = tmp_path / "replacement-preview.xlsx"
+    workbook = Workbook()
+    players_sheet = workbook.active
+    players_sheet.title = "Player List"
+    players_sheet.append(["Name", "Initial Rating"])
+    players_sheet.append(["Preview Alice", 1500])
+    players_sheet.append(["Preview Bob", 1500])
+    matches_sheet = workbook.create_sheet("Matches")
+    matches_sheet.append(["Date", "White", "Black", "Winner"])
+    matches_sheet.append(
+        ["2026-09-15", "Preview Alice", "Preview Bob", "Preview Alice"]
+    )
+    workbook.save(workbook_path)
+    workbook.close()
+
+    preview = import_service.preview_workbook_data(workbook_path)
+
+    assert preview == {
+        "current_players": before[0],
+        "current_matches": before[1],
+        "imported_players": 2,
+        "imported_matches": 1,
+    }
+    with sqlite3.connect(db_path) as conn:
+        after = (
+            conn.execute("SELECT COUNT(*) FROM players").fetchone()[0],
+            conn.execute("SELECT COUNT(*) FROM matches").fetchone()[0],
+        )
+    assert after == before
+
+
+def _replacement_workbook_bytes():
+    from openpyxl import Workbook
+
+    workbook = Workbook()
+    players_sheet = workbook.active
+    players_sheet.title = "Player List"
+    players_sheet.append(["Name", "Initial Rating"])
+    players_sheet.append(["Replacement Alice", 1500])
+    players_sheet.append(["Replacement Bob", 1500])
+    matches_sheet = workbook.create_sheet("Matches")
+    matches_sheet.append(["Date", "White", "Black", "Winner"])
+    matches_sheet.append(
+        ["2026-09-15", "Replacement Alice", "Replacement Bob", "Replacement Alice"]
+    )
+    buffer = BytesIO()
+    workbook.save(buffer)
+    workbook.close()
+    buffer.seek(0)
+    return buffer
+
+
+@pytest.mark.parametrize("postprocess_fails", [False, True])
+def test_xlsx_replacement_requires_confirmation_and_verified_backup(
+    monkeypatch, tmp_path, isolate_test_database, postprocess_fails
+):
+    db_path = isolate_test_database
+    backup_dir = tmp_path / "backups"
+    monkeypatch.setattr(admin_routes, "BASE_DIR", str(tmp_path))
+    monkeypatch.setattr(admin_routes, "BACKUP_DIR", str(backup_dir))
+    def run_replay():
+        if postprocess_fails:
+            raise RuntimeError("rating replay unavailable")
+
+    monkeypatch.setattr(admin_routes, "run_post_import_replay", run_replay)
+    with sqlite3.connect(db_path) as conn:
+        before = (
+            conn.execute("SELECT COUNT(*) FROM players").fetchone()[0],
+            conn.execute("SELECT COUNT(*) FROM matches").fetchone()[0],
+        )
+
+    app.testing = True
+    client = app.test_client()
+    conftest.set_admin_session(client, db_path)
+    preview_response = client.post(
+        "/admin/import?lang=en",
+        data={"file": (_replacement_workbook_bytes(), "replacement.xlsx")},
+        content_type="multipart/form-data",
+    )
+
+    assert preview_response.status_code == 200
+    preview_body = preview_response.get_data(as_text=True)
+    assert "XLSX replacement preview" in preview_body
+    assert "Current players" in preview_body
+    assert "Players to import" in preview_body
+    with client.session_transaction() as session:
+        preview_token = session["workbook_import_preview"]["token"]
+    with sqlite3.connect(db_path) as conn:
+        assert conn.execute("SELECT COUNT(*) FROM players").fetchone()[0] == before[0]
+        assert conn.execute("SELECT COUNT(*) FROM matches").fetchone()[0] == before[1]
+    assert not backup_dir.exists()
+
+    unconfirmed_response = client.post(
+        "/admin/import?lang=en",
+        data={"action": "commit_workbook", "preview_token": preview_token},
+    )
+    assert unconfirmed_response.status_code == 200
+    assert "Explicitly confirm the replacement" in unconfirmed_response.get_data(as_text=True)
+    assert not backup_dir.exists()
+
+    confirmed_response = client.post(
+        "/admin/import?lang=en",
+        data={
+            "action": "commit_workbook",
+            "preview_token": preview_token,
+            "confirm_replacement": "yes",
+        },
+        follow_redirects=True,
+    )
+    assert confirmed_response.status_code == 200
+    assert "Verified backup:" in confirmed_response.get_data(as_text=True)
+    if postprocess_fails:
+        assert "Data replacement committed, but post-import processing failed" in confirmed_response.get_data(as_text=True)
+    with client.session_transaction() as session:
+        assert "workbook_import_preview" not in session
+    with sqlite3.connect(db_path) as conn:
+        assert conn.execute("SELECT COUNT(*) FROM players").fetchone()[0] == 2
+        assert conn.execute("SELECT COUNT(*) FROM matches").fetchone()[0] == 1
+
+    backups = list(backup_dir.glob("*.db"))
+    assert len(backups) == 1
+    assert admin_routes.is_valid_sqlite_backup(backups[0])
+    with sqlite3.connect(backups[0]) as conn:
+        assert conn.execute("SELECT COUNT(*) FROM players").fetchone()[0] == before[0]
+        assert conn.execute("SELECT COUNT(*) FROM matches").fetchone()[0] == before[1]
+    assert backups[0].with_suffix(".sgf").is_dir()
+
+
+def test_xlsx_replacement_aborts_when_backup_verification_fails(
+    monkeypatch, tmp_path, isolate_test_database
+):
+    db_path = isolate_test_database
+    backup_dir = tmp_path / "backups"
+    monkeypatch.setattr(admin_routes, "BASE_DIR", str(tmp_path))
+    monkeypatch.setattr(admin_routes, "BACKUP_DIR", str(backup_dir))
+    monkeypatch.setattr(admin_routes, "is_valid_sqlite_backup", lambda _path: False)
+    with sqlite3.connect(db_path) as conn:
+        before = (
+            conn.execute("SELECT COUNT(*) FROM players").fetchone()[0],
+            conn.execute("SELECT COUNT(*) FROM matches").fetchone()[0],
+        )
+
+    app.testing = True
+    client = app.test_client()
+    conftest.set_admin_session(client, db_path)
+    preview_response = client.post(
+        "/admin/import?lang=en",
+        data={"file": (_replacement_workbook_bytes(), "replacement.xlsx")},
+        content_type="multipart/form-data",
+    )
+    assert preview_response.status_code == 200
+    with client.session_transaction() as session:
+        preview_token = session["workbook_import_preview"]["token"]
+
+    response = client.post(
+        "/admin/import?lang=en",
+        data={
+            "action": "commit_workbook",
+            "preview_token": preview_token,
+            "confirm_replacement": "yes",
+        },
+    )
+
+    assert response.status_code == 200
+    assert "Backup integrity verification failed" in response.get_data(as_text=True)
+    with sqlite3.connect(db_path) as conn:
+        assert conn.execute("SELECT COUNT(*) FROM players").fetchone()[0] == before[0]
+        assert conn.execute("SELECT COUNT(*) FROM matches").fetchone()[0] == before[1]
+    assert not list(backup_dir.glob("*.db"))
 
 
 @pytest.mark.parametrize("fail_after_first_player", [False, True])

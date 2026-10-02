@@ -2,6 +2,7 @@
 """Service for importing player and match data from Excel workbooks and OpenGotha XML files."""
 from pathlib import Path
 import logging
+import sqlite3
 
 import openpyxl
 
@@ -180,6 +181,46 @@ def import_workbook_data(file_path, reset=False):
     finally:
         if conn is not None:
             conn.close()
+        workbook.close()
+
+
+def preview_workbook_data(file_path):
+    """Run a full replacement import against an in-memory database snapshot."""
+    path = Path(file_path)
+    if not path.exists():
+        raise ValueError("Workbook file not found")
+
+    workbook = openpyxl.load_workbook(
+        path,
+        data_only=True,
+        read_only=True,
+    )
+    source_conn = None
+    preview_conn = sqlite3.connect(":memory:")
+    preview_conn.row_factory = sqlite3.Row
+    try:
+        source_conn = get_db()
+        source_conn.backup(preview_conn)
+        current_counts = {
+            "players": preview_conn.execute(
+                "SELECT COUNT(*) FROM players"
+            ).fetchone()[0],
+            "matches": preview_conn.execute(
+                "SELECT COUNT(*) FROM matches"
+            ).fetchone()[0],
+        }
+        preview_conn.execute("PRAGMA foreign_keys = ON")
+        imported_counts = _import_workbook_data(preview_conn, workbook, reset=True)
+        return {
+            "current_players": current_counts["players"],
+            "current_matches": current_counts["matches"],
+            "imported_players": imported_counts["players"],
+            "imported_matches": imported_counts["matches"],
+        }
+    finally:
+        if source_conn is not None:
+            source_conn.close()
+        preview_conn.close()
         workbook.close()
 
 

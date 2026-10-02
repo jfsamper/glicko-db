@@ -105,7 +105,7 @@ Os valores padrão estão em `config.py`.
 - O login limita tentativas por IP e nome de usuário antes de verificar a senha; configure os limites em `/admin/settings`.
 - Sugestões de jogadores pendentes só vinculam um jogador existente após seleção explícita. "Criar novo" cria outro jogador ou rejeita um nome já existente; torneios com hándicap desativado geram emparelhamentos sem pedras.
 - Apenas administradores podem criar, restaurar ou excluir cópias de segurança. O último administrador ativo não pode ser excluído, desativado nem rebaixado.
-- A substituição completa de dados por XLSX exige as planilhas `Player List` e `Matches` com ao menos um jogador e uma partida importáveis. Falhas preservam os dados anteriores; faça uma cópia verificada antes da substituição.
+- A substituição completa por XLSX primeiro mostra os totais atuais e os que serão importados, e exige confirmação explícita. Antes de substituir os dados, cria um backup SQLite com integridade verificada e copia os arquivos SGF disponíveis para junto dele; se a importação falhar, os dados anteriores são preservados.
 - `/admin/settings` permite ajustar limites de login e expiração da recuperação. Em produção, use HTTPS, senhas exclusivas e segredos apenas em variáveis de ambiente.
 - Contas autenticadas podem enviar arquivos SGF sem vinculá-los. Administradores, diretores e operadores podem vinculá-los ou desvinculá-los; apenas administradores podem excluir arquivos.
 

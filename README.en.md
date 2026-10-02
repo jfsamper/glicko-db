@@ -105,7 +105,7 @@ The default values are in `config.py`.
 - Login limits attempts by IP and username before checking the password; configure the limits in `/admin/settings`.
 - Pending-player suggestions link existing players only when explicitly selected. "Create new" creates another player or rejects an existing name; tournaments with handicaps disabled generate pairings with zero stones.
 - Only administrators can create, restore, or delete backups. The last active administrator cannot be deleted, deactivated, or demoted.
-- Full XLSX replacement requires `Player List` and `Matches` sheets with at least one importable player and match. A failed import preserves the previous data; take a verified backup before replacing it.
+- Full XLSX replacement first previews current and importable counts and requires explicit confirmation. Before replacing data, it creates an integrity-verified SQLite backup and copies available SGF files beside it; if import fails, the previous data is preserved.
 - `/admin/settings` controls login limits and recovery expiry. In production, use HTTPS, unique passwords, and keep secrets in environment variables.
 - Logged-in accounts can upload SGF files without linking them. Administrators, directors, and operators can link or unlink records; only administrators can delete files.
 

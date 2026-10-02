@@ -89,7 +89,11 @@ from config import (
     RECAPTCHA_SITE_KEY,
 )
 from services.helpers import normalize_key, normalize_round_note, normalize_round_note_for_storage, parse_date_value
-from services.import_service import build_import_preview, import_workbook_data
+from services.import_service import (
+    build_import_preview,
+    import_workbook_data,
+    preview_workbook_data,
+)
 from services.player_service import (
     count_rankings,
     load_rankings,
@@ -525,6 +529,10 @@ def load_players_for_user_link():
 
 def get_backup_path(filename):
     return backup_service.get_backup_path(filename, BACKUP_DIR)
+
+
+def create_verified_backup(filename):
+    return backup_service.create_verified_backup(DB_PATH, BACKUP_DIR, filename)
 
 
 def is_valid_sqlite_backup(path):
