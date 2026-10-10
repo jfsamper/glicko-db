@@ -437,31 +437,31 @@ def load_player(
             else:
                 recent_streak.append("D")
     recent_streak = "".join(recent_streak)
-    current_streak = len(recent_streak) - len(recent_streak.lstrip("X"))
 
     best_snapshot_rating = player["rating"]
     if snapshots:
         best_snapshot_rating = max(float(row["rating"]) for row in snapshots)
 
-    longest_streak = 0
-    current_streak = 0
-    last_result = None
+    results = []
     for match in all_matches:
         if match["white_player_id"] == player["id"]:
             result = "W" if match["result"] == "1-0" else "L" if match["result"] == "0-1" else "D"
         else:
             result = "W" if match["result"] == "0-1" else "L" if match["result"] == "1-0" else "D"
+        results.append(result)
 
-        if result == "D":
-            current_streak = 0
-        elif result == "W":
-            current_streak += 1
-            longest_streak = max(longest_streak, current_streak)
-        else:
-            current_streak = 0
-            longest_streak = max(longest_streak, 0)
+    longest_streak = 0
+    running_streak = 0
+    for result in results:
+        running_streak = running_streak + 1 if result == "W" else 0
+        longest_streak = max(longest_streak, running_streak)
 
-        last_result = result
+    # all_matches is ordered newest first, so leading wins form the latest streak.
+    current_streak = 0
+    for result in results:
+        if result != "W":
+            break
+        current_streak += 1
 
     last_played = None
     if all_matches:
