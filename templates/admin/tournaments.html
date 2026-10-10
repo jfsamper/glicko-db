@@ -70,6 +70,7 @@
       <h3>{{ translations.import_opengotha }}</h3>
       <form method="post" enctype="multipart/form-data" class="filter-form">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+        <input type="hidden" name="idempotency_key" value="{{ new_idempotency_key() }}" />
         <div class="filter-panel">
 
           <input type="hidden" name="action" value="import_opengotha">

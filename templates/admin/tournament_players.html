@@ -53,6 +53,7 @@
                 <form method="post"
                   action="{{ url_for('admin_remove_tournament_participant', tournament_id=tournament.id, lang=lang) }}">
                   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                  <input type="hidden" name="idempotency_key" value="{{ new_idempotency_key() }}" />
                   <input type="hidden" name="player_id" value="{{ participant.player_id }}">
                   <button type="submit">{{ translations.remove_player }}</button>
                 </form>
@@ -74,6 +75,7 @@
         action="{{ url_for('admin_add_tournament_participant', tournament_id=tournament.id, lang=lang) }}"
         class="filter-form">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+        <input type="hidden" name="idempotency_key" value="{{ new_idempotency_key() }}" />
         <label for="player_id">{{ translations.select_player }}</label>
         <select id="player_id" name="player_id" required>
           <option value="" disabled selected>{{ translations.select_player }}</option>

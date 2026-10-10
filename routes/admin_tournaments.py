@@ -2,8 +2,9 @@
 import os
 import math
 import sqlite3
+from functools import wraps
 
-from flask import Response, flash, redirect, render_template, request, url_for
+from flask import Response, flash, redirect, render_template, request, session, url_for
 from werkzeug.utils import secure_filename
 
 from services.i18n import TRANSLATIONS
@@ -12,12 +13,124 @@ from services.display_name import (
     read_display_name_setting,
     render_display_name,
 )
+from services.idempotency_service import (
+    IdempotencyConflict,
+    IdempotencyInProgress,
+    InvalidIdempotencyKey,
+    claim_command,
+    complete_command,
+)
 
 
 def _admin_routes():
     from routes import admin
 
     return admin
+
+
+def _response_location(response):
+    if response.status_code in (301, 302, 303, 307, 308):
+        return response.headers.get("Location")
+    if response.is_json:
+        payload = response.get_json(silent=True) or {}
+        return payload.get("redirect_url")
+    return None
+
+
+def run_idempotent_command(command, tournament_id, lang, produce, default_location):
+    """Run a non-repeatable command at most once for each idempotency key."""
+    admin = _admin_routes()
+    if not admin.admin_required():
+        return produce()
+
+    translations = TRANSLATIONS[lang]
+    key = (
+        request.form.get("idempotency_key")
+        or request.headers.get("Idempotency-Key")
+        or ""
+    ).strip()
+    user_id = session.get("user_id")
+    conn = admin.get_db()
+    try:
+        stored = claim_command(conn, user_id, key, command, tournament_id)
+    except InvalidIdempotencyKey:
+        flash(translations["idempotency_key_invalid"])
+        return admin.redirect_or_json(default_location)
+    except IdempotencyConflict:
+        flash(translations["idempotency_conflict"])
+        return admin.redirect_or_json(default_location)
+    except IdempotencyInProgress:
+        flash(translations["idempotency_in_progress"])
+        return admin.redirect_or_json(default_location)
+    finally:
+        conn.close()
+
+    if stored is not None:
+        flash(translations["idempotency_replayed"])
+        return admin.redirect_or_json(stored["response_location"] or default_location)
+
+    response = produce()
+    conn = admin.get_db()
+    try:
+        complete_command(
+            conn, user_id, key, response.status_code, _response_location(response)
+        )
+    finally:
+        conn.close()
+    return response
+
+
+def idempotent_command(command):
+    """Require an idempotency key for a tournament command; see run_idempotent_command."""
+    def decorator(view):
+        @wraps(view)
+        def wrapper(tournament_id, *args, **kwargs):
+            admin = _admin_routes()
+            lang = admin.get_language(request.args.get("lang"))
+            return run_idempotent_command(
+                command,
+                tournament_id,
+                lang,
+                lambda: view(tournament_id, *args, **kwargs),
+                url_for("admin_tournament", tournament_id=tournament_id, lang=lang),
+            )
+        return wrapper
+    return decorator
+
+
+def _import_opengotha_tournament(admin, lang, translations):
+    tournaments_url = url_for("admin_tournaments", lang=lang)
+    file = request.files.get("file")
+    if not file or not (file.filename or "").lower().endswith(".xml"):
+        flash(translations["no_file"])
+        return redirect(tournaments_url)
+
+    filename = secure_filename(file.filename or "")
+    upload_path = os.path.join(admin.BASE_DIR, "uploads", filename)
+    file.save(upload_path)
+    conn = admin.get_db()
+    try:
+        tournament_id, metadata, matched = admin.create_tournament_from_gotha(
+            conn, upload_path)
+        admin.log_admin_action(
+            "tournament_imported",
+            "tournament",
+            {"tournament_id": tournament_id,
+                "filename": filename, "matched_players": matched},
+            user_id=admin.session.get("user_id"),
+        )
+        flash(f"{translations['success']} ({matched} players)")
+        return redirect(url_for("admin_tournament", tournament_id=tournament_id, lang=lang))
+    except (OSError, ValueError) as exc:
+        flash(f"{translations['error']}: {exc}")
+    except sqlite3.DatabaseError as exc:
+        conn.rollback()
+        admin.logger.exception(
+            "OpenGotha tournament import failed for %s", upload_path)
+        flash(f"{translations['error']}: {exc}")
+    finally:
+        conn.close()
+    return redirect(tournaments_url)
 
 
 def register_tournament_routes(admin_bp):
@@ -734,6 +847,7 @@ def admin_create_tournament_player(tournament_id):
     return redirect(url_for("admin_tournament_players", tournament_id=tournament_id, lang=lang))
 
 
+@idempotent_command("tournament.participant_add")
 def admin_add_tournament_participant(tournament_id):
     admin = _admin_routes()
     if not admin.admin_required():
@@ -786,6 +900,7 @@ def admin_delete_pending_player(tournament_id):
     return redirect(url_for(destination, tournament_id=tournament_id, lang=lang))
 
 
+@idempotent_command("tournament.participant_remove")
 def admin_remove_tournament_participant(tournament_id):
     admin = _admin_routes()
     if not admin.admin_required():
@@ -837,6 +952,7 @@ def admin_update_pairing_handicap(tournament_id):
     )
 
 
+@idempotent_command("tournament.pair")
 def admin_manual_pair(tournament_id):
     admin = _admin_routes()
     if not admin.admin_required():
@@ -864,6 +980,7 @@ def admin_manual_pair(tournament_id):
     return redirect(url_for("admin_tournament", tournament_id=tournament_id, lang=lang, round_id=request.form.get("round_id", type=int)))
 
 
+@idempotent_command("tournament.pair_selected")
 def admin_pair_selected_players(tournament_id):
     admin = _admin_routes()
     if not admin.admin_required():
@@ -1052,6 +1169,7 @@ def admin_set_tournament_result(tournament_id):
     return admin.redirect_or_json(url_for("admin_tournament", tournament_id=tournament_id, lang=lang, round_id=request.form.get("round_id", type=int)))
 
 
+@idempotent_command("tournament.round_generate")
 def admin_generate_tournament_round(tournament_id):
     admin = _admin_routes()
     if not admin.admin_required():
@@ -1111,6 +1229,7 @@ def admin_save_tournament(tournament_id):
     return admin.redirect_or_json(url_for("admin_tournament", tournament_id=tournament_id, lang=lang))
 
 
+@idempotent_command("tournament.round_process")
 def admin_process_tournament_round(tournament_id):
     admin = _admin_routes()
     if not admin.admin_required():
@@ -1171,41 +1290,14 @@ def admin_tournaments():
             or request.form.get("pairing_system", "swiss")
         )
         if action == "import_opengotha":
-            file = request.files.get("file")
-            if not file or not (file.filename or "").lower().endswith(".xml"):
-                flash(translations["no_file"])
-            else:
-                filename = secure_filename(file.filename or "")
-                upload_path = os.path.join(admin.BASE_DIR, "uploads", filename)
-                file.save(upload_path)
-                try:
-                    tournament_id, metadata, matched = admin.create_tournament_from_gotha(
-                        conn, upload_path)
-                    admin.log_admin_action(
-                        "tournament_imported",
-                        "tournament",
-                        {"tournament_id": tournament_id,
-                            "filename": filename, "matched_players": matched},
-                        user_id=admin.session.get("user_id"),
-                    )
-                    flash(f"{translations['success']} ({matched} players)")
-                    conn.close()
-                    return redirect(url_for("admin_tournament", tournament_id=tournament_id, lang=lang))
-                except (OSError, ValueError) as exc:
-                    flash(f"{translations['error']}: {exc}")
-                except sqlite3.DatabaseError as exc:
-                    conn.rollback()
-                    admin.logger.exception(
-                        "OpenGotha tournament import failed for %s", upload_path)
-                    flash(f"{translations['error']}: {exc}")
-                    conn.close()
-                    return render_template(
-                        "admin/tournaments.html",
-                        tournaments=[],
-                        systems=admin.SUPPORTED_SYSTEMS,
-                        lang=lang,
-                        translations=translations,
-                    )
+            conn.close()
+            return run_idempotent_command(
+                "tournament.import_opengotha",
+                None,
+                lang,
+                lambda: _import_opengotha_tournament(admin, lang, translations),
+                url_for("admin_tournaments", lang=lang),
+            )
         elif action == "create" and pairing_system in admin.SUPPORTED_SYSTEMS:
             name = request.form.get("name", "").strip()
             if not name:

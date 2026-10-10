@@ -1,6 +1,5 @@
 """Administrative backup routes registered on the shared admin blueprint."""
 import os
-import shutil
 import uuid
 from datetime import datetime
 
@@ -87,8 +86,13 @@ def admin_create_backup():
     lang = admin.get_language(request.args.get("lang"))
     admin.ensure_backup_dir()
     filename = current_datetime().strftime("%Y-%m-%d-%H%M%S") + ".db"
-    backup_path = os.path.join(admin.BACKUP_DIR, filename)
-    shutil.copy2(admin.DB_PATH, backup_path)
+    try:
+        admin.create_checked_backup(filename)
+    except Exception:
+        admin.logger.exception("Manual backup %s could not be verified", filename)
+        flash(TRANSLATIONS[lang]["error"])
+        return redirect(url_for("admin_backups", lang=lang))
+
     log_admin_action(
         "backup_created",
         "backup",

@@ -173,6 +173,7 @@
       <form method="post" action="{{ url_for('admin_pair_selected_players', tournament_id=tournament.id, lang=lang) }}"
         class="filter-form" data-async-admin-action="1">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+        <input type="hidden" name="idempotency_key" value="{{ new_idempotency_key() }}" />
         <div class="filter-panel">
           <input type="hidden" name="round_id" value="{{ selected_round_id }}">
           <div class="filter-grid">
@@ -329,6 +330,7 @@
         action="{{ url_for('admin_generate_tournament_round', tournament_id=tournament.id, lang=lang) }}"
         class="filter-form" style="margin-top: 12px;" data-async-admin-action="1">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+        <input type="hidden" name="idempotency_key" value="{{ new_idempotency_key() }}" />
         <button type="submit" class="button">{{ translations.generate_round }}</button>
       </form>
     </article>

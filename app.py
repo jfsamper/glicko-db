@@ -30,6 +30,7 @@ from services.i18n import TRANSLATIONS, get_language
 
 from services.helpers import normalize_round_note
 from services.import_service import import_workbook_data
+from services.idempotency_service import migrate_idempotency_schema, new_idempotency_key
 from services.rating_service import recompute_ratings
 from services.settings_service import migrate_application_settings_schema
 from services.news_service import migrate_news_schema
@@ -89,6 +90,7 @@ def create_app(test_config=None, auto_init=True):
             app_instance.config["WTF_CSRF_CHECK_DEFAULT"] = True
 
     csrf.init_app(app_instance)
+    app_instance.jinja_env.globals["new_idempotency_key"] = new_idempotency_key
 
     @app_instance.context_processor
     def inject_globals():
@@ -948,6 +950,7 @@ def migrate_database_schema(conn):
     migrate_handicap_schema(conn)
     ensure_sgf_schema(conn)
     clear_missing_sgf_links(conn)
+    migrate_idempotency_schema(conn)
 
 
 def initialize_app():

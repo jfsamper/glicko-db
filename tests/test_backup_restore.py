@@ -1,3 +1,4 @@
+import re
 import shutil
 import sqlite3
 
@@ -159,3 +160,31 @@ def test_restore_route_removes_snapshot_when_restore_fails(
     assert response.status_code == 302
     _assert_live_state_unchanged(live_db, sgf_dir, kept_match, missing_match)
     assert list(backup_path.parent.glob("*-pre-restore-*")) == []
+
+
+def test_manual_backup_route_creates_verified_database_backup(admin_client, restore_env):
+    _, backup_path, _, _, _ = restore_env
+
+    response = admin_client.post("/admin/backups/create?lang=en")
+
+    assert response.status_code == 302
+    created = [
+        path
+        for path in backup_path.parent.glob("*.db")
+        if re.fullmatch(r"\d{4}-\d{2}-\d{2}-\d{6}\.db", path.name)
+    ]
+    assert len(created) == 1
+    assert admin_routes.is_valid_sqlite_backup(created[0])
+    assert not created[0].with_suffix(".sgf").exists()
+
+
+def test_manual_backup_route_leaves_no_file_when_verification_fails(
+    admin_client, restore_env, monkeypatch
+):
+    _, backup_path, _, _, _ = restore_env
+    monkeypatch.setattr(admin_routes, "is_valid_sqlite_backup", lambda path: False)
+
+    response = admin_client.post("/admin/backups/create?lang=en")
+
+    assert response.status_code == 302
+    assert [path.name for path in backup_path.parent.glob("*.db")] == ["source.db"]

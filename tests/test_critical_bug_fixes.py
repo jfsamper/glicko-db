@@ -1892,13 +1892,14 @@ def test_admin_tournaments_import_handles_database_error(monkeypatch, tmp_path):
         "/admin/tournaments?lang=es",
         data={
             "action": "import_opengotha",
+            "idempotency_key": "import-test-key-001",
             "pairing_system": "swiss",
             "file": (BytesIO(b"<Tournament/>"), "import-test.xml"),
         },
         content_type="multipart/form-data",
     )
 
-    assert response.status_code == 200
+    assert response.status_code == 302
 
 
 def test_admin_update_tournament_status_async_request_returns_json(monkeypatch, tmp_path):
@@ -1971,7 +1972,7 @@ def test_admin_process_round_async_request_returns_json(monkeypatch, tmp_path):
 
     response = client.post(
         "/admin/tournaments/10/process-round?lang=es",
-        data={"round_id": "20", "match_date": "2026-08-15", "event": "Open"},
+        data={"round_id": "20", "match_date": "2026-08-15", "event": "Open", "idempotency_key": "process-round-key-001"},
         headers={"X-Requested-With": "XMLHttpRequest"},
     )
 
