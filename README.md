@@ -129,7 +129,7 @@ pytest -q
 
 ### Organización del código
 
-La importación CSV normaliza los encabezados sin distinguir mayúsculas ni espacios exteriores, y rechaza encabezados duplicados después de normalizarlos. `scripts/export_players.py` crea `exports/` si todavía no existe.
+La importación CSV normaliza los encabezados sin distinguir mayúsculas ni espacios exteriores, y rechaza encabezados duplicados después de normalizarlos. `scripts/export_players.py` crea `exports/` si todavía no existe. `scripts/set_display_names.py --format {first-last,last-first,custom}` establece el `display_name` de todos los jugadores como `Nombre Apellido`, `Apellido, Nombre` o una plantilla personalizada (`--template`, con los marcadores `{first_name}` y `{last_name}`); use `--dry-run` para previsualizar los cambios antes de aplicarlos.
 
 Las rutas administrativas están separadas por dominio entre `routes/admin_tournaments.py`, `routes/admin_matches.py`, `routes/admin_players.py` y `routes/admin_users.py`. La lógica de torneos está separada por responsabilidad entre `services/tournament_gotha.py`, `services/tournament_participants.py`, `services/tournament_pairing.py`, `services/tournament_matches.py` y `services/tournament_standings.py`. Las traducciones y la selección de idioma viven en `services/i18n.py`, mientras que los helpers puros de gráficos de rating viven en `services/chart_service.py`; `services/common.py` conserva exports de compatibilidad para los imports existentes. `services/tournament_service.py` se conserva como fachada de compatibilidad. Los ejemplos XML de OpenGotha usados por los tests están versionados y anonimizados en `tests/fixtures/opengotha/`; no se necesitan archivos locales en `uploads/` ni guías generadas para ejecutar `pytest -q`.
 

@@ -129,7 +129,7 @@ pytest -q
 
 ### Code organization
 
-CSV imports normalize header case and surrounding whitespace, and reject headers that become duplicates after normalization. `scripts/export_players.py` creates `exports/` when it is missing.
+CSV imports normalize header case and surrounding whitespace, and reject headers that become duplicates after normalization. `scripts/export_players.py` creates `exports/` when it is missing. `scripts/set_display_names.py --format {first-last,last-first,custom}` sets every player's `display_name` to `First Last`, `Last, First`, or a custom template (`--template`, with `{first_name}` and `{last_name}` placeholders); add `--dry-run` to preview the changes first.
 
 Administrative routes are split by domain across `routes/admin_tournaments.py`, `routes/admin_matches.py`, `routes/admin_players.py`, and `routes/admin_users.py`. Tournament logic is split by responsibility across `services/tournament_gotha.py`, `services/tournament_participants.py`, `services/tournament_pairing.py`, `services/tournament_matches.py`, and `services/tournament_standings.py`. Translations and language selection live in `services/i18n.py`, while pure rating-chart helpers live in `services/chart_service.py`; `services/common.py` retains compatibility exports for existing imports. `services/tournament_service.py` remains a compatibility facade. The anonymized OpenGotha examples used by tests are tracked under `tests/fixtures/opengotha/`; neither local `uploads/` files nor generated HTML guides are required to run `pytest -q`.
 
