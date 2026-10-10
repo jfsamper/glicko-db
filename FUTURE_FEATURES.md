@@ -15,6 +15,7 @@ This document lists only unfinished product, operational, and maintainability wo
 - V4-09: failed async POSTs no longer trigger native resubmission; the dashboard offers a translated reload action. Server-side idempotency remains separate hardening for non-repeatable commands.
 - V4-10: database-backed auth versions invalidate stale sessions after password or authorization changes and backup restore.
 - V4-11: help pages render from Markdown with the active mount prefix, and tests use tracked anonymized OpenGotha fixtures; no ignored generated pages or upload samples are required.
+- Report and home statistics read rating snapshots in one query per page instead of one per player; `scripts/dev_only/benchmark_public_pages.py` times public pages and counts SQL statements against a generated dataset.
 - V4-12: CSV headers are normalized before row import, and ambiguous duplicate headers are rejected.
 - V4-13: report rating changes use the prior snapshot as baseline and include changes from the first selected day.
 - V4-14: player export creates its output directory if it is absent.

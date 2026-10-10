@@ -3,6 +3,7 @@ import csv
 import math
 import re
 from datetime import date, datetime
+from functools import lru_cache
 from io import BytesIO, StringIO
 
 from reportlab.lib import colors
@@ -110,10 +111,16 @@ def ensure_tournament_match_identity(conn):
     )
 
 
+@lru_cache(maxsize=65536)
 def _normalized_date(value):
     if not value:
         return None
     text = str(value).strip()
+    if len(text) == 10 and text[4] == "-" and text[7] == "-":
+        try:
+            return date.fromisoformat(text)
+        except ValueError:
+            pass
     for fmt in ("%Y-%m-%d", "%Y/%m/%d", "%d/%m/%Y", "%m/%d/%Y", "%d-%m-%Y"):
         try:
             return datetime.strptime(text, fmt).date()
@@ -162,11 +169,18 @@ def _category_rank(rating, k, m):
     return math.floor(value)
 
 
-def _rating_change(conn, player, start_date, end_date, category_config):
-    snapshots = conn.execute(
-        "SELECT snapshot_date, rating FROM rating_snapshots WHERE player_id = ? ORDER BY snapshot_date, id",
-        (player["id"],),
+def _load_snapshots_by_player(conn):
+    """Every rating snapshot, read once and grouped by player."""
+    grouped = {}
+    rows = conn.execute(
+        "SELECT player_id, snapshot_date, rating FROM rating_snapshots ORDER BY player_id, snapshot_date, id"
     ).fetchall()
+    for row in rows:
+        grouped.setdefault(row["player_id"], []).append(row)
+    return grouped
+
+
+def _rating_change(snapshots, player, start_date, end_date, category_config):
     parsed = [
         (_normalized_date(row["snapshot_date"]), float(row["rating"]))
         for row in snapshots
@@ -232,11 +246,12 @@ def build_date_report(conn, start_date=None, end_date=None, selected_player_id=N
     if start_date and end_date and start_date > end_date:
         raise ValueError("Start date must not be after end date")
 
-    ensure_tournament_match_identity(conn)
+    match_columns = {row["name"] for row in conn.execute("PRAGMA table_info(matches)").fetchall()}
+    pairing_select = "m.tournament_pairing_id" if "tournament_pairing_id" in match_columns else "NULL AS tournament_pairing_id"
     match_rows = conn.execute(
         f"""
         SELECT m.id, m.match_date, m.white_player_id, m.black_player_id, m.result,
-               m.tournament_pairing_id,
+               {pairing_select},
                white.display_name AS white_name, white.country AS white_country, white.club AS white_club,
                black.display_name AS black_name, black.country AS black_country, black.club AS black_club
         FROM matches m
@@ -323,6 +338,7 @@ def build_date_report(conn, start_date=None, end_date=None, selected_player_id=N
             _finish_record(record)
 
     category_config = _load_category_config(conn)
+    snapshots_by_player = _load_snapshots_by_player(conn)
     player_rows = []
     for player in players:
         player_id = player["id"]
@@ -330,7 +346,7 @@ def build_date_report(conn, start_date=None, end_date=None, selected_player_id=N
             continue
         row = {"player_id": player_id, **stats[player_id]}
         row.update(_rating_change(
-            conn, player, start_date, end_date, category_config))
+            snapshots_by_player.get(player_id, []), player, start_date, end_date, category_config))
         row["opponents"] = sorted(
             ({"player_id": opponent_id, **record}
              for opponent_id, record in opponent_records[player_id].items()),
@@ -355,10 +371,7 @@ def build_date_report(conn, start_date=None, end_date=None, selected_player_id=N
         selected_player] if selected_player is not None else player_rows
     rating_chart = build_rating_chart_data([])
     if selected_player is not None:
-        snapshot_rows = conn.execute(
-            "SELECT snapshot_date, rating FROM rating_snapshots WHERE player_id = ? ORDER BY snapshot_date, id",
-            (selected_player_id,),
-        ).fetchall()
+        snapshot_rows = snapshots_by_player.get(selected_player_id, [])
         period_snapshots = []
         for snapshot in snapshot_rows:
             snapshot_date = _normalized_date(snapshot["snapshot_date"])

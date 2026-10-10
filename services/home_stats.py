@@ -104,6 +104,28 @@ def _snapshots_in_period(conn, player_id, start_date=None, end_date=None):
     return conn.execute(query, params).fetchall()
 
 
+def _snapshots_by_player(conn, start_date=None, end_date=None):
+    """Rating snapshots for every player in the period, read with one query."""
+    normalized_snapshot_date = _normalized_sql_date("snapshot_date")
+    clauses = []
+    params = []
+    if start_date is not None:
+        clauses.append(f"{normalized_snapshot_date} >= ?")
+        params.append(start_date.isoformat())
+    if end_date is not None:
+        clauses.append(f"{normalized_snapshot_date} <= ?")
+        params.append(end_date.isoformat())
+    where_sql = f"WHERE {' AND '.join(clauses)}" if clauses else ""
+    rows = conn.execute(
+        f"SELECT player_id, snapshot_date, rating FROM rating_snapshots {where_sql} ORDER BY player_id, snapshot_date, id",
+        params,
+    ).fetchall()
+    grouped = {}
+    for row in rows:
+        grouped.setdefault(row["player_id"], []).append(row)
+    return grouped
+
+
 def _build_metric_entries(players, metric_values, min_value=1):
     ranked = []
 
@@ -176,6 +198,7 @@ def _period_stats(conn, period):
         "most_wins_as_black": {},
         "relative_glicko_gain": {},
     }
+    snapshots_by_player = _snapshots_by_player(conn, start_date, end_date)
 
     for player in player_rows:
         player_id = player["player_id"]
@@ -186,7 +209,7 @@ def _period_stats(conn, period):
         metric_values["most_wins_as_white"][player_id] = stats["wins_as_white"]
         metric_values["most_wins_as_black"][player_id] = stats["wins_as_black"]
 
-        snapshots = _snapshots_in_period(conn, player_id, start_date, end_date)
+        snapshots = snapshots_by_player.get(player_id, [])
         if not snapshots:
             metric_values["relative_glicko_gain"][player_id] = 0
         else:

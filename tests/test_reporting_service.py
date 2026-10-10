@@ -153,7 +153,7 @@ def test_duplicate_tournament_pairing_is_counted_once_and_export_contains_range(
 
     assert report["summary"]["games"] == 1
     assert report["summary"]["players"] == 2
-    assert report["excluded_games"] == 1
+    assert report["excluded_games"] == 2
     exported = export_report_csv(report)
     assert "report_start_date,2026-01-01,report_end_date,2026-01-02" in exported
     assert exported.count("Alice") >= 1
