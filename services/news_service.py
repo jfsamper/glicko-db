@@ -53,14 +53,14 @@ def _load_tag(conn, tag_type, entity_id):
             SELECT m.id, m.sgf_filename,
                    printf('%s: %s vs %s', m.match_date, white.display_name, black.display_name) AS label
             FROM matches m
-            JOIN players white ON white.id = m.white_player_id
-            JOIN players black ON black.id = m.black_player_id
+            JOIN players_display white ON white.id = m.white_player_id
+            JOIN players_display black ON black.id = m.black_player_id
             WHERE m.id = ?
             """,
             (entity_id,),
         ).fetchone()
     else:
-        table = "players" if tag_type == "player" else "tournaments"
+        table = "players_display" if tag_type == "player" else "tournaments"
         label_column = "display_name" if tag_type == "player" else "name"
         target = conn.execute(
             f"SELECT id, {label_column} AS label FROM {table} WHERE id = ?",
@@ -185,12 +185,12 @@ def get_article(conn, article_id):
 
 def tag_options(conn):
     return {
-        "player": [dict(row) for row in conn.execute("SELECT id, display_name AS label FROM players ORDER BY display_name").fetchall()],
+        "player": [dict(row) for row in conn.execute("SELECT id, display_name AS label FROM players_display ORDER BY display_name").fetchall()],
         "tournament": [dict(row) for row in conn.execute("SELECT id, name AS label FROM tournaments ORDER BY COALESCE(begin_date, created_at) DESC, name").fetchall()],
         "match": [dict(row) for row in conn.execute("""
             SELECT m.id, printf('%s: %s vs %s', m.match_date, white.display_name, black.display_name) AS label,
                    m.sgf_filename
-            FROM matches m JOIN players white ON white.id = m.white_player_id JOIN players black ON black.id = m.black_player_id
+            FROM matches m JOIN players_display white ON white.id = m.white_player_id JOIN players_display black ON black.id = m.black_player_id
             ORDER BY m.match_date DESC, m.id DESC
         """).fetchall()],
     }

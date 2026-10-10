@@ -147,3 +147,34 @@ def test_invalid_news_tags_are_ignored_and_unknown_article_delete_fails_safely(a
 
     response = admin_client.post("/admin/news/999999/delete?lang=en", follow_redirects=False)
     assert response.status_code == 302
+
+
+def test_news_article_tagged_to_a_match_renders_on_home_and_article_pages(admin_client, isolate_test_database):
+    with sqlite3.connect(isolate_test_database) as conn:
+        white_id = conn.execute(
+            "INSERT INTO players (first_name, last_name, slug, rating, active) VALUES ('Juan', 'Burgos', 'juan-burgos', 1500, 1)"
+        ).lastrowid
+        black_id = conn.execute(
+            "INSERT INTO players (first_name, last_name, slug, rating, active) VALUES ('Ana', 'Lopez', 'ana-lopez', 1500, 1)"
+        ).lastrowid
+        match_id = conn.execute(
+            "INSERT INTO matches (match_date, white_player_id, black_player_id, result) VALUES ('2026-01-05', ?, ?, '1-0')",
+            (white_id, black_id),
+        ).lastrowid
+        article_id = save_article(
+            conn,
+            "Match report",
+            f"Great game [match:{match_id}].",
+            True,
+            [{"tag_type": "match", "entity_id": str(match_id)}],
+        )
+
+    homepage = admin_client.get("/?lang=en")
+    assert homepage.status_code == 200
+    assert "Lopez, Ana" in homepage.get_data(as_text=True)
+
+    article_page = admin_client.get(f"/news/{article_id}?lang=en")
+    assert article_page.status_code == 200
+    body = article_page.get_data(as_text=True)
+    assert "2026-01-05" in body
+    assert "Burgos, Juan" in body
