@@ -3,7 +3,6 @@ from pathlib import Path
 from datetime import datetime
 import math
 import re
-import shutil
 import uuid
 
 from config import BASE_DIR
@@ -156,13 +155,15 @@ def list_sgf_files():
     return sorted(records, key=lambda record: (record["modified_at"], record["filename"]), reverse=True)
 
 
-def clear_missing_sgf_links(conn):
-    """Clear match links whose SGF file is no longer present on disk."""
-    if not has_sgf_column(conn):
-        return 0
+def _table_has_column(conn, table, column):
+    return column in {
+        row[1] for row in conn.execute(f"PRAGMA table_info({table})").fetchall()
+    }
 
+
+def _clear_missing_links_in_table(conn, table):
     rows = conn.execute(
-        "SELECT id, sgf_filename FROM matches WHERE sgf_filename IS NOT NULL"
+        f"SELECT id, sgf_filename FROM {table} WHERE sgf_filename IS NOT NULL"
     ).fetchall()
     missing_ids = [
         row["id"]
@@ -171,78 +172,22 @@ def clear_missing_sgf_links(conn):
     ]
     if missing_ids:
         conn.executemany(
-            "UPDATE matches SET sgf_filename = NULL WHERE id = ?",
-            ((match_id,) for match_id in missing_ids),
+            f"UPDATE {table} SET sgf_filename = NULL WHERE id = ?",
+            ((record_id,) for record_id in missing_ids),
         )
-        conn.commit()
     return len(missing_ids)
 
 
-def backup_sgf_files(backup_path):
-    """Copy the SGF library beside a database backup."""
-    target = Path(backup_path).with_suffix(".sgf")
-    if target.exists():
-        shutil.rmtree(target)
-    target.mkdir(parents=True, exist_ok=True)
-    for record in list_sgf_files():
-        source = get_sgf_path(record["filename"])
-        if source is not None:
-            shutil.copy2(source, target / source.name)
-    return target
-
-
-def _sgf_restore_plan(backup_path):
-    source_dir = Path(backup_path).with_suffix(".sgf")
-    if not source_dir.is_dir():
-        return []
-    return [
-        (source, SGF_UPLOAD_DIR / source.name)
-        for source in sorted(source_dir.glob("*.sgf"))
-        if _safe_sgf_path(source.name) is not None
-    ]
-
-
-def restore_sgf_files(backup_path):
-    """Restore SGFs from a backup sidecar without removing newer library files."""
-    plan = _sgf_restore_plan(backup_path)
-    if not plan:
-        return False
-
-    SGF_UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
-    for source, target in plan:
-        shutil.copy2(source, target)
-    return True
-
-
-def restore_sgf_files_reversibly(backup_path):
-    """Restore SGFs like restore_sgf_files and return a callable that undoes the copy.
-
-    Overwritten files are held in memory so the previous library contents can be
-    put back exactly if the surrounding restore fails.
-    """
-    plan = _sgf_restore_plan(backup_path)
-    if not plan:
-        return lambda: None
-
-    SGF_UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
-    undo_steps = []
-
-    def revert():
-        for target, previous_bytes in reversed(undo_steps):
-            if previous_bytes is None:
-                target.unlink(missing_ok=True)
-            else:
-                target.write_bytes(previous_bytes)
-
-    try:
-        for source, target in plan:
-            previous_bytes = target.read_bytes() if target.is_file() else None
-            undo_steps.append((target, previous_bytes))
-            shutil.copy2(source, target)
-    except Exception:
-        revert()
-        raise
-    return revert
+def clear_missing_sgf_links(conn):
+    """Clear SGF pointers on matches and member submissions whose file is missing on disk."""
+    cleared = 0
+    if has_sgf_column(conn):
+        cleared += _clear_missing_links_in_table(conn, "matches")
+    if _table_has_column(conn, "result_submissions", "sgf_filename"):
+        cleared += _clear_missing_links_in_table(conn, "result_submissions")
+    if cleared:
+        conn.commit()
+    return cleared
 
 
 def _escape_sgf_value(value):

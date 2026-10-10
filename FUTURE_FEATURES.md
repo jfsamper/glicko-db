@@ -6,7 +6,7 @@ This document lists only unfinished product, operational, and maintainability wo
 
 - V4-01: backup create/restore/delete now require administrator permission in the route map and handlers.
 - V4-02: recovery links use validated `APP_PUBLIC_ORIGIN`; email/token issuance is disabled until a public HTTPS origin is configured.
-- V4-03: XLSX replacement previews current/importable counts, requires explicit confirmation, creates and verifies a SQLite backup plus SGF sidecar, and rolls back failures.
+- V4-03: XLSX replacement previews current/importable counts, requires explicit confirmation, creates and verifies a SQLite backup, and rolls back failures.
 - V4-04: user edits/deletions cannot remove the last active administrator, including when another administrator is inactive.
 - V4-05: an unconfirmed pending-player suggestion no longer links automatically; create-new rejects exact-name collisions instead of silently reusing an ID.
 - V4-06: generated round handicaps now respect the tournament's enabled setting.
@@ -136,7 +136,7 @@ The active workflow requires staff approval. Email delivery and automatic approv
 Status: implemented and verified.
 
 Confirmed in code:
-- [services/sgf_service.py](services/sgf_service.py): validates SGF size, UTF-8 content, and structure for both uploads and library links; rewrites root metadata from the linked match; clears links when files are missing; and preserves the library through backup sidecars.
+- [services/sgf_service.py](services/sgf_service.py): validates SGF size, UTF-8 content, and structure for both uploads and library links; rewrites root metadata from the linked match; and clears links, on matches and member submissions, when files are missing. SGF files stay in `uploads/sgf`; backups store only the links.
 - [routes/public.py](routes/public.py): exposes the public `/sgf-library`, SGF viewer, and download routes, and self-heals stale match links during public access.
 - [routes/admin_sgf.py](routes/admin_sgf.py): allows `administrator`, `tournament_director`, and `operator` to link or unlink SGFs, while restricting deletion to `administrator` and clearing database links before removal.
 - [routes/admin_sgf.py](routes/admin_sgf.py): allows authenticated accounts to upload unlinked SGFs; `administrator`, `tournament_director`, and `operator` can link or unlink them, while deletion remains restricted to `administrator` and clears database links before removal.

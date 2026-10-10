@@ -7,10 +7,9 @@ from services.backup_service import (
     create_verified_backup,
     is_valid_sqlite_backup,
     prune_scheduled_backups,
-    remove_backup_with_sgf,
+    remove_backup,
     verify_backup_restore_path,
 )
-from services.sgf_service import backup_sgf_files
 from services.timezone_service import current_datetime
 
 
@@ -29,11 +28,10 @@ def run_scheduled_backup(db_path, backup_dir, keep):
     try:
         if not is_valid_sqlite_backup(backup_path):
             raise sqlite3.DatabaseError("Scheduled backup failed integrity verification")
-        backup_sgf_files(backup_path)
         with tempfile.TemporaryDirectory(prefix="scheduled-restore-check-") as scratch_dir:
             verify_backup_restore_path(backup_path, scratch_dir)
     except Exception:
-        remove_backup_with_sgf(backup_path)
+        remove_backup(backup_path)
         raise
 
     return {

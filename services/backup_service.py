@@ -217,13 +217,13 @@ def ensure_rating_state_table(conn):
     )
 
 
-def remove_backup_with_sgf(backup_path):
-    """Delete a backup database and its SGF sidecar folder if present."""
+def remove_backup(backup_path):
+    """Delete a backup database. Older backups may also have an SGF folder, which is removed too."""
     backup_path = Path(backup_path)
     backup_path.unlink(missing_ok=True)
-    sidecar_path = backup_path.with_suffix(".sgf")
-    if sidecar_path.is_dir():
-        shutil.rmtree(sidecar_path)
+    legacy_sidecar_path = backup_path.with_suffix(".sgf")
+    if legacy_sidecar_path.is_dir():
+        shutil.rmtree(legacy_sidecar_path)
 
 
 def list_scheduled_backups(backup_dir):
@@ -246,7 +246,7 @@ def prune_scheduled_backups(backup_dir, keep):
     """Delete scheduled backups beyond the newest ``keep`` and return their filenames."""
     removed = []
     for path in list_scheduled_backups(backup_dir)[keep:]:
-        remove_backup_with_sgf(path)
+        remove_backup(path)
         removed.append(path.name)
     return removed
 
@@ -295,8 +295,9 @@ def restore_db_from_backup(path, db_path):
 
     The backup is copied and migrated in a staging file beside the active database,
     verified, and only then swapped in with ``os.replace``. Any failure before the
-    swap deletes the staging file, and a failure after SGF files were copied reverts
-    them, so the active database and SGF library are never left half-restored.
+    swap deletes the staging file. SGF files are never changed by a restore; match
+    and submission links to files that are missing from disk are cleared by the
+    migrations.
     """
     if path is None or not Path(path).is_file() or not is_valid_sqlite_backup(path):
         return False
@@ -310,22 +311,16 @@ def restore_db_from_backup(path, db_path):
         )
         return False
 
-    from services.sgf_service import restore_sgf_files_reversibly
-
     staging_path = active_db_path.with_name(
         f".{active_db_path.stem}.restore-{uuid.uuid4().hex}.tmp"
     )
-    revert_sgf = None
     try:
         _prepare_staged_database(backup_path, staging_path)
-        revert_sgf = restore_sgf_files_reversibly(backup_path)
         os.replace(staging_path, active_db_path)
     except Exception:
         logger.exception(
             "Backup restore failed; the active database was left unchanged: %s", path
         )
-        if revert_sgf is not None:
-            revert_sgf()
         staging_path.unlink(missing_ok=True)
         return False
 

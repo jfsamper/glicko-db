@@ -451,16 +451,34 @@ def test_missing_sgf_link_self_heals_and_match_delete_keeps_file(admin_client, t
     assert retained_match["sgf_filename"] in admin_client.get("/sgf-library?lang=en").get_data(as_text=True)
 
 
-def test_sgf_backup_sidecar_restores_library_file(tmp_path, monkeypatch):
+def test_missing_sgf_pointers_are_cleared_on_matches_and_submissions(tmp_path, monkeypatch):
     upload_dir = tmp_path / "sgf"
+    upload_dir.mkdir()
+    (upload_dir / "present.sgf").write_text(SGF_TEXT, encoding="utf-8")
     monkeypatch.setattr(sgf_service, "SGF_UPLOAD_DIR", upload_dir)
-    stored_name = sgf_service.save_sgf_upload(
-        FileStorage(stream=BytesIO(SGF_TEXT.encode("utf-8")), filename="backup.sgf")
+    conn = sqlite3.connect(":memory:")
+    conn.row_factory = sqlite3.Row
+    conn.executescript(
+        """
+        CREATE TABLE matches (id INTEGER PRIMARY KEY, sgf_filename TEXT);
+        CREATE TABLE result_submissions (id INTEGER PRIMARY KEY, sgf_filename TEXT);
+        INSERT INTO matches (id, sgf_filename)
+        VALUES (1, 'present.sgf'), (2, 'missing.sgf');
+        INSERT INTO result_submissions (id, sgf_filename)
+        VALUES (1, 'present.sgf'), (2, 'missing.sgf'), (3, NULL);
+        """
     )
-    backup_path = tmp_path / "backup.db"
 
-    sidecar = sgf_service.backup_sgf_files(backup_path)
-    (upload_dir / stored_name).unlink()
-    assert (sidecar / stored_name).is_file()
-    assert sgf_service.restore_sgf_files(backup_path) is True
-    assert (upload_dir / stored_name).is_file()
+    assert sgf_service.clear_missing_sgf_links(conn) == 2
+
+    assert [tuple(row) for row in conn.execute("SELECT id, sgf_filename FROM matches ORDER BY id")] == [
+        (1, "present.sgf"),
+        (2, None),
+    ]
+    assert [tuple(row) for row in conn.execute("SELECT id, sgf_filename FROM result_submissions ORDER BY id")] == [
+        (1, "present.sgf"),
+        (2, None),
+        (3, None),
+    ]
+    conn.close()
+

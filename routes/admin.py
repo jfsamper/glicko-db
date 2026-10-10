@@ -114,7 +114,6 @@ from services.rating_service import (
 from services.category_service import get_category_config, update_category_config
 from services.recaptcha import verify_recaptcha
 from services.sgf_service import (
-    backup_sgf_files,
     clear_missing_sgf_links,
     delete_sgf_file,
     ensure_sgf_schema,
@@ -535,25 +534,20 @@ def create_verified_backup(filename):
     return backup_service.create_verified_backup(DB_PATH, BACKUP_DIR, filename)
 
 
-def create_verified_backup_with_sgf(filename):
-    """Create a verified database backup plus its SGF sidecar, removing partial output on failure."""
+def create_checked_backup(filename):
+    """Create a verified database backup, removing it again if the final check fails."""
     backup_path = create_verified_backup(filename)
     try:
         if not is_valid_sqlite_backup(backup_path):
             raise sqlite3.DatabaseError("Backup integrity verification failed")
-        backup_sgf_files(backup_path)
-        if not backup_path.with_suffix(".sgf").is_dir():
-            raise OSError("Backup SGF sidecar could not be verified")
-        if not is_valid_sqlite_backup(backup_path):
-            raise sqlite3.DatabaseError("Backup integrity verification failed")
     except Exception:
-        remove_backup_with_sgf(backup_path)
+        remove_backup(backup_path)
         raise
     return backup_path
 
 
-def remove_backup_with_sgf(backup_path):
-    backup_service.remove_backup_with_sgf(backup_path)
+def remove_backup(backup_path):
+    backup_service.remove_backup(backup_path)
 
 
 def is_valid_sqlite_backup(path):

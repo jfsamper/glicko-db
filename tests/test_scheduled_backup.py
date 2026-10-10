@@ -18,14 +18,15 @@ def backup_env(tmp_path, monkeypatch, isolate_test_database):
     return isolate_test_database, backup_dir
 
 
-def _seed_scheduled(backup_dir, source_db, index):
+def _seed_scheduled(backup_dir, source_db, index, legacy_sidecar=False):
     path = backup_dir / f"2026-01-{index:02d}-120000-scheduled-{index:08x}.db"
     shutil.copy2(source_db, path)
-    path.with_suffix(".sgf").mkdir()
+    if legacy_sidecar:
+        path.with_suffix(".sgf").mkdir()
     return path
 
 
-def test_scheduled_run_creates_verified_backup_with_sgf_sidecar(backup_env):
+def test_scheduled_run_creates_verified_backup_without_sgf_sidecar(backup_env):
     live_db, backup_dir = backup_env
 
     result = scheduled_service.run_scheduled_backup(live_db, backup_dir, keep=14)
@@ -33,13 +34,16 @@ def test_scheduled_run_creates_verified_backup_with_sgf_sidecar(backup_env):
     created = backup_dir / result["filename"]
     assert backup_service.SCHEDULED_BACKUP_PATTERN.fullmatch(result["filename"])
     assert backup_service.is_valid_sqlite_backup(created)
-    assert created.with_suffix(".sgf").is_dir()
+    assert not created.with_suffix(".sgf").exists()
     assert result["pruned"] == []
 
 
 def test_retention_keeps_newest_scheduled_and_leaves_other_backups(backup_env):
     live_db, backup_dir = backup_env
-    seeds = [_seed_scheduled(backup_dir, live_db, index) for index in range(1, 5)]
+    seeds = [
+        _seed_scheduled(backup_dir, live_db, index, legacy_sidecar=(index == 1))
+        for index in range(1, 5)
+    ]
     manual = backup_dir / "2026-01-01-120000.db"
     pre_restore = backup_dir / "2026-01-01-120000-pre-restore-abcdef12.db"
     shutil.copy2(live_db, manual)
@@ -74,7 +78,6 @@ def test_failed_verification_removes_new_backup_and_prunes_nothing(backup_env, m
 
     assert backup_service.list_scheduled_backups(backup_dir) == [seeds[1], seeds[0]]
     assert len(list(backup_dir.glob("*.db"))) == 2
-    assert all(path.with_suffix(".sgf").is_dir() for path in seeds)
 
 
 def test_scheduled_run_rejects_keep_below_one(backup_env):

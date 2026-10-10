@@ -96,7 +96,7 @@ def _get_workbook_preview(admin, token):
 def _create_verified_import_backup(admin):
     timestamp = admin.current_datetime().strftime("%Y-%m-%d-%H%M%S")
     filename = f"{timestamp}-pre-xlsx-import-{uuid.uuid4().hex[:8]}.db"
-    admin.create_verified_backup_with_sgf(filename)
+    admin.create_checked_backup(filename)
     return filename
 
 

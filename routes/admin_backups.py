@@ -89,7 +89,6 @@ def admin_create_backup():
     filename = current_datetime().strftime("%Y-%m-%d-%H%M%S") + ".db"
     backup_path = os.path.join(admin.BACKUP_DIR, filename)
     shutil.copy2(admin.DB_PATH, backup_path)
-    admin.backup_sgf_files(backup_path)
     log_admin_action(
         "backup_created",
         "backup",
@@ -127,7 +126,7 @@ def admin_restore_backup():
         f"{uuid.uuid4().hex[:8]}.db"
     )
     try:
-        snapshot_path = admin.create_verified_backup_with_sgf(snapshot_name)
+        snapshot_path = admin.create_checked_backup(snapshot_name)
     except Exception:
         admin.logger.exception(
             "Backup restore aborted: pre-restore snapshot could not be verified")
@@ -135,7 +134,7 @@ def admin_restore_backup():
         return redirect(url_for("admin_backups", lang=lang))
 
     if not admin.restore_db_from_backup(path):
-        admin.remove_backup_with_sgf(snapshot_path)
+        admin.remove_backup(snapshot_path)
         admin.logger.warning(
             "Backup restore failed during restore step for %s", path)
         flash(TRANSLATIONS[lang]["error"])
@@ -163,10 +162,7 @@ def admin_delete_backup():
         flash(TRANSLATIONS[lang]["error"])
         return redirect(url_for("admin_backups", lang=lang))
 
-    os.remove(path)
-    sgf_sidecar = path.with_suffix(".sgf")
-    if sgf_sidecar.is_dir():
-        shutil.rmtree(sgf_sidecar)
+    admin.remove_backup(path)
     log_admin_action(
         "backup_deleted",
         "backup",

@@ -467,7 +467,6 @@ def test_xlsx_replacement_requires_confirmation_and_verified_backup(
     with sqlite3.connect(backups[0]) as conn:
         assert conn.execute("SELECT COUNT(*) FROM players").fetchone()[0] == before[0]
         assert conn.execute("SELECT COUNT(*) FROM matches").fetchone()[0] == before[1]
-    assert backups[0].with_suffix(".sgf").is_dir()
 
 
 def test_xlsx_replacement_aborts_when_backup_verification_fails(
