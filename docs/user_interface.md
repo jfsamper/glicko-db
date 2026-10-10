@@ -87,7 +87,7 @@ Las páginas aceptan `?lang=es`, `?lang=en` o `?lang=pt`; usa `AAAA-MM-DD` en lo
 
 ### Torneos públicos
 
-- **Lista de torneos (`/tournaments`)**: muestra los torneos activos y finalizados con su fecha, lugar, sistema de juego, número de rondas y estado. Los torneos en estado borrador permanecen ocultos para el público general.
+- **Lista de torneos (`/tournaments`)**: muestra los torneos activos y finalizados con su fecha, lugar, sistema de juego, número de rondas y estado. Los torneos en estado borrador y sus partidas permanecen ocultos para el público general. Directores, operadores y administradores ven los borradores con la opción Mostrar borradores.
 - **Detalle del torneo (`/tournaments/<id>`)**: permite consultar los emparejamientos y resultados mesa por mesa de cada ronda disputada, así como la tabla de posiciones oficial actualizada con puntuación (Pts/MMS), SOS, SOSOS y SODOS.
 
 <a href="screenshots/public-tournaments.png"><img src="screenshots/public-tournaments.png" alt="Torneos públicos" width="560" /></a>

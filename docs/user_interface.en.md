@@ -87,7 +87,7 @@ Pages accept `?lang=es`, `?lang=en`, or `?lang=pt`; use `YYYY-MM-DD` in date fil
 
 ### Public tournaments
 
-- **Tournament list (`/tournaments`)**: displays active and completed tournaments with date, location, pairing system, round count, and status. Draft tournaments remain hidden from the public.
+- **Tournament list (`/tournaments`)**: displays active and completed tournaments with date, location, pairing system, round count, and status. Draft tournaments and their games remain hidden from the public. Directors, operators, and administrators see draft tournaments with the Show drafts option.
 - **Tournament details (`/tournaments/<id>`)**: view round-by-round pairings, table assignments, match results, and live standings with points (Pts/MMS), SOS, SOSOS, and SODOS tiebreaks.
 
 <a href="screenshots/public-tournaments.png"><img src="screenshots/public-tournaments.png" alt="Public tournaments" width="560" /></a>

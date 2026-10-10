@@ -85,12 +85,14 @@
   {% endif %}
 
   <div class="filter-actions" style="gap: 0.75rem; flex-wrap: wrap; margin-top: 1rem;">
+    {% if can_view_drafts %}
     {% if show_drafts %}
     <a class="button small" href="{{ url_for('tournaments', lang=lang, search=search_term) }}">{{
       translations.hide_drafts if translations.hide_drafts else 'Hide drafts' }}</a>
     {% else %}
     <a class="button small" href="{{ url_for('tournaments', lang=lang, show_drafts=1, search=search_term) }}">{{
       translations.show_drafts if translations.show_drafts else 'Show drafts' }}</a>
+    {% endif %}
     {% endif %}
   </div>
 

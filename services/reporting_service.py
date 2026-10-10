@@ -14,6 +14,7 @@ from reportlab.platypus import SimpleDocTemplate, Spacer, Table, TableStyle, Par
 
 from config import GLICKO_K, GLICKO_M
 from services.chart_service import build_rating_chart_data
+from services.public_visibility import public_match_condition
 from services.timezone_service import server_date as configured_server_date
 from services.rating_service import glicko_to_category
 
@@ -233,7 +234,7 @@ def build_date_report(conn, start_date=None, end_date=None, selected_player_id=N
 
     ensure_tournament_match_identity(conn)
     match_rows = conn.execute(
-        """
+        f"""
         SELECT m.id, m.match_date, m.white_player_id, m.black_player_id, m.result,
                m.tournament_pairing_id,
                white.display_name AS white_name, white.country AS white_country, white.club AS white_club,
@@ -241,6 +242,7 @@ def build_date_report(conn, start_date=None, end_date=None, selected_player_id=N
         FROM matches m
         JOIN players_display white ON white.id = m.white_player_id
         JOIN players_display black ON black.id = m.black_player_id
+        WHERE {public_match_condition(conn, 'm')}
         ORDER BY m.match_date, m.id
         """
     ).fetchall()

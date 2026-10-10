@@ -1,5 +1,6 @@
 # services/player_stats.py
 """Service for calculating player statistics and performance metrics."""
+from services.public_visibility import public_match_condition
 
 
 def summarize_result(player_id, match):
@@ -18,7 +19,7 @@ def summarize_result(player_id, match):
 
 def build_player_result_summary(player_id, conn):
     matches = conn.execute(
-        "SELECT white_player_id, black_player_id, result FROM matches WHERE (white_player_id = ? OR black_player_id = ?) AND result NOT LIKE '%!%' ORDER BY match_date DESC LIMIT 8",
+        f"SELECT white_player_id, black_player_id, result FROM matches WHERE (white_player_id = ? OR black_player_id = ?) AND result NOT LIKE '%!%' AND {public_match_condition(conn, 'matches')} ORDER BY match_date DESC LIMIT 8",
         (player_id, player_id),
     ).fetchall()
     return "".join(summarize_result(player_id, match) for match in matches)
@@ -33,10 +34,10 @@ def build_recent_result_summaries(conn, limit=8, days=90):
         (server_date().isoformat(), days),
     ).fetchone()[0]
     rows = conn.execute(
-        """
+        f"""
         SELECT id, match_date, white_player_id, black_player_id, result
         FROM matches
-        WHERE match_date >= ? AND result NOT LIKE '%!%'
+        WHERE match_date >= ? AND result NOT LIKE '%!%' AND {public_match_condition(conn, 'matches')}
         ORDER BY match_date DESC, id DESC
         """,
         (cutoff,),

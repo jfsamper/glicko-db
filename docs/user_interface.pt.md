@@ -87,7 +87,7 @@ As páginas aceitam `?lang=es`, `?lang=en` ou `?lang=pt`; use `AAAA-MM-DD` nos f
 
 ### Torneios públicos
 
-- **Lista de torneios (`/tournaments`)**: exibe torneios ativos e concluídos com data, local, sistema de jogo, número de rodadas e status. Torneios em rascunho permanecem ocultos do público.
+- **Lista de torneios (`/tournaments`)**: exibe torneios ativos e concluídos com data, local, sistema de jogo, número de rodadas e status. Torneios em rascunho e suas partidas permanecem ocultos do público. Diretores, operadores e administradores veem os rascunhos com a opção Mostrar rascunhos.
 - **Detalhes do torneio (`/tournaments/<id>`)**: consulte emparelhamentos e resultados mesa por mesa de cada rodada disputada, além da tabela de classificação oficial atualizada com pontuação (Pts/MMS), SOS, SOSOS e SODOS.
 
 <a href="screenshots/public-tournaments.png"><img src="screenshots/public-tournaments.png" alt="Torneios públicos" width="560" /></a>

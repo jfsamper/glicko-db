@@ -11,6 +11,7 @@ from services.timezone_service import current_date
 from services.i18n import TRANSLATIONS
 from services.home_stats import build_player_badges
 from services.player_stats import build_recent_result_summaries
+from services.public_visibility import public_match_condition
 from services.display_name import (
     read_display_name_setting, render_display_name, split_display_name)
 from services.helpers import normalize_key, normalize_text, slugify
@@ -218,7 +219,7 @@ def _player_result_record(player_id, match):
 def _summarize_matches_for_period(conn, player_id, start_date=None, end_date=None):
     result = {"wins": 0, "losses": 0, "draws": 0}
     clauses = ["(white_player_id = ? OR black_player_id = ?)",
-               "result NOT LIKE '%!%'"]
+               "result NOT LIKE '%!%'", public_match_condition(conn, "matches")]
     params = [player_id, player_id]
 
     if start_date is not None and end_date is not None:
@@ -270,13 +271,14 @@ def load_player(
         match_condition = f"({match_condition}) AND m.match_date GLOB ?"
         match_params.append(f"{season}-??-??")
     count_condition = match_condition.replace("m.", "")
+    public_filter = public_match_condition(conn, "m")
 
     columns = conn.execute("PRAGMA table_info(matches)").fetchall()
     has_event = any(column[1] == "event" for column in columns)
     has_sgf = any(column[1] == "sgf_filename" for column in columns)
 
     total_matches = conn.execute(
-        f"SELECT COUNT(*) FROM matches WHERE {count_condition}",
+        f"SELECT COUNT(*) FROM matches WHERE {count_condition} AND {public_match_condition(conn, 'matches')}",
         match_params,
     ).fetchone()[0]
 
@@ -292,7 +294,7 @@ def load_player(
         FROM matches m
         JOIN players_display p_white ON p_white.id = m.white_player_id
         JOIN players_display p_black ON p_black.id = m.black_player_id
-        WHERE {match_condition}
+        WHERE {match_condition} AND {public_filter}
         ORDER BY m.match_date DESC, m.id DESC
     """
     if has_event:
@@ -306,12 +308,12 @@ def load_player(
 
     matches = conn.execute(
         match_select.format(event_select=match_event_select, sgf_select=match_sgf_select,
-                            match_condition=match_condition) + " LIMIT ? OFFSET ?",
+                            match_condition=match_condition, public_filter=public_filter) + " LIMIT ? OFFSET ?",
         (*match_params, page_size, offset),
     ).fetchall()
     all_matches = conn.execute(
         match_select.format(event_select=match_event_select, sgf_select=match_sgf_select,
-                            match_condition=match_condition) + " LIMIT -1 OFFSET 0",
+                            match_condition=match_condition, public_filter=public_filter) + " LIMIT -1 OFFSET 0",
         match_params,
     ).fetchall()
     white_stats = {"games": 0, "wins": 0, "losses": 0, "draws": 0}
@@ -486,7 +488,7 @@ def load_player(
                    tp.player_id
             FROM tournament_participants tp
             JOIN tournaments t ON t.id = tp.tournament_id
-            WHERE tp.player_id = ?
+            WHERE tp.player_id = ? AND t.status != 'draft'
             ORDER BY t.begin_date DESC, t.id DESC
             """,
             (player["id"],),

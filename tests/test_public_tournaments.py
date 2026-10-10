@@ -23,11 +23,20 @@ def test_public_tournament_index_renders_in_supported_languages():
     }
 
     for language, (show_text, hide_text) in expected_labels.items():
-        response = client.get(f"/tournaments?lang={language}")
+        response = client.get(f"/tournaments?lang={language}&show_drafts=1")
+        assert response.status_code == 200
+        body = response.get_data(as_text=True)
+        assert show_text not in body
+        assert hide_text not in body
+
+    staff_client = app.test_client()
+    conftest.set_admin_session(staff_client)
+    for language, (show_text, hide_text) in expected_labels.items():
+        response = staff_client.get(f"/tournaments?lang={language}")
         assert response.status_code == 200
         body = response.get_data(as_text=True)
         assert show_text in body
-        response = client.get(f"/tournaments?lang={language}&show_drafts=1")
+        response = staff_client.get(f"/tournaments?lang={language}&show_drafts=1")
         assert response.status_code == 200
         body = response.get_data(as_text=True)
         assert hide_text in body
@@ -754,6 +763,15 @@ def test_public_tournament_index_hides_drafts_by_default(monkeypatch, tmp_path):
     response = client.get("/tournaments?lang=en&show_drafts=1")
     assert response.status_code == 200
     body = response.get_data(as_text=True)
+    assert "Draft import preview" not in body
+
+    staff_client = app.test_client()
+    conftest.set_admin_session(staff_client, db_path)
+    response = staff_client.get("/tournaments?lang=en")
+    assert "Draft import preview" not in response.get_data(as_text=True)
+    response = staff_client.get("/tournaments?lang=en&show_drafts=1")
+    assert response.status_code == 200
+    body = response.get_data(as_text=True)
     assert "Draft import preview" in body
 
 
@@ -874,6 +892,7 @@ def test_public_tournament_detail_uses_public_status_helper(monkeypatch, tmp_pat
 
     monkeypatch.setattr(public_routes, "render_template", fake_render_template)
     monkeypatch.setattr(public_routes, "get_db", lambda: conn)
+    monkeypatch.setattr(public_routes, "can_view_draft_tournaments", lambda: True)
 
     app.testing = True
     client = app.test_client()
@@ -1070,6 +1089,9 @@ def test_public_tournament_detail_renders_draft_round_results(monkeypatch, tmp_p
     conn.close()
 
     client = app.test_client()
+    assert client.get("/tournaments/1?lang=en").status_code == 302
+
+    monkeypatch.setattr(public_routes, "can_view_draft_tournaments", lambda: True)
     response = client.get("/tournaments/1?lang=en")
 
     assert response.status_code == 200

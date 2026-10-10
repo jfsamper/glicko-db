@@ -2,6 +2,7 @@
 import re
 
 from services.db import get_db
+from services.public_visibility import public_match_condition
 from services.sgf_service import get_sgf_path
 
 TAG_TYPES = ("player", "tournament", "match")
@@ -46,24 +47,26 @@ def _tag_target(conn, tag_type, entity_id):
     return conn.execute(f"SELECT 1 FROM {table} WHERE id = ?", (entity_id,)).fetchone()
 
 
-def _load_tag(conn, tag_type, entity_id):
+def _load_tag(conn, tag_type, entity_id, include_drafts=False):
     if tag_type == "match":
+        visible = "1 = 1" if include_drafts else public_match_condition(conn, "m")
         target = conn.execute(
-            """
+            f"""
             SELECT m.id, m.sgf_filename,
                    printf('%s: %s vs %s', m.match_date, white.display_name, black.display_name) AS label
             FROM matches m
             JOIN players_display white ON white.id = m.white_player_id
             JOIN players_display black ON black.id = m.black_player_id
-            WHERE m.id = ?
+            WHERE m.id = ? AND {visible}
             """,
             (entity_id,),
         ).fetchone()
     else:
         table = "players_display" if tag_type == "player" else "tournaments"
         label_column = "display_name" if tag_type == "player" else "name"
+        draft_clause = " AND status != 'draft'" if tag_type == "tournament" and not include_drafts else ""
         target = conn.execute(
-            f"SELECT id, {label_column} AS label FROM {table} WHERE id = ?",
+            f"SELECT id, {label_column} AS label FROM {table} WHERE id = ?{draft_clause}",
             (entity_id,),
         ).fetchone()
     if target is None:
@@ -74,15 +77,18 @@ def _load_tag(conn, tag_type, entity_id):
     return tag
 
 
-def resolve_news_tags(conn, body, tags):
-    """Resolve saved tags plus valid tokens typed directly into article text."""
+def resolve_news_tags(conn, body, tags, include_drafts=False):
+    """Resolve saved tags plus valid tokens typed directly into article text.
+
+    Public articles (the default) never show tags for draft tournaments or their games.
+    """
     resolved = list(tags or [])
     known = {(tag["tag_type"], int(tag["entity_id"])) for tag in resolved}
     for match in NEWS_TAG_TOKEN_RE.finditer(body or ""):
         key = (match.group(1), int(match.group(2)))
         if key in known:
             continue
-        tag = _load_tag(conn, *key)
+        tag = _load_tag(conn, *key, include_drafts=include_drafts)
         if tag is not None:
             resolved.append(tag)
             known.add(key)
@@ -144,7 +150,7 @@ def delete_article(conn, article_id):
     conn.commit()
 
 
-def _article_rows(conn, where="", params=(), limit=None):
+def _article_rows(conn, where="", params=(), limit=None, include_drafts=True):
     limit_clause = " LIMIT ?" if limit is not None else ""
     query_params = (*params, limit) if limit is not None else params
     rows = conn.execute(
@@ -159,27 +165,27 @@ def _article_rows(conn, where="", params=(), limit=None):
             (article["id"],),
         ).fetchall():
             tag = dict(tag)
-            target = _load_tag(conn, tag["tag_type"], tag["entity_id"])
+            target = _load_tag(conn, tag["tag_type"], tag["entity_id"], include_drafts=include_drafts)
             if target:
                 tag.update(dict(target))
                 article["tags"].append(tag)
     return articles
 
 
-def list_articles(conn=None, published_only=False, limit=None):
+def list_articles(conn=None, published_only=False, limit=None, include_drafts=True):
     owns_conn = conn is None
     if conn is None:
         conn = get_db()
     try:
         where = "WHERE is_published = 1" if published_only else ""
-        return _article_rows(conn, where, limit=limit)
+        return _article_rows(conn, where, limit=limit, include_drafts=include_drafts)
     finally:
         if owns_conn:
             conn.close()
 
 
-def get_article(conn, article_id):
-    articles = _article_rows(conn, "WHERE id = ?", (article_id,))
+def get_article(conn, article_id, include_drafts=True):
+    articles = _article_rows(conn, "WHERE id = ?", (article_id,), include_drafts=include_drafts)
     return articles[0] if articles else None
 
 

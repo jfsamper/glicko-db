@@ -50,6 +50,11 @@ from services.player_service import (
     parse_player_sort,
 )
 from services.tournament_service import TOURNAMENT_STATUSES
+from services.public_visibility import (
+    can_view_draft_tournaments,
+    draft_only_sgf_filenames,
+    public_match_condition,
+)
 from services.tournament_standings import get_tournament_standings
 
 public_bp = Blueprint("public", __name__)
@@ -117,8 +122,8 @@ def _parse_match_filters(args):
     return date_from, date_to, player_id
 
 
-def _match_filter_sql(date_from, date_to, player_id):
-    clauses = []
+def _match_filter_sql(date_from, date_to, player_id, visible_sql="1 = 1"):
+    clauses = [visible_sql]
     params = []
     if date_from:
         clauses.append("m.match_date >= ?")
@@ -129,7 +134,7 @@ def _match_filter_sql(date_from, date_to, player_id):
     if player_id:
         clauses.append("(m.white_player_id = ? OR m.black_player_id = ?)")
         params.extend([int(player_id), int(player_id)])
-    return ("WHERE " + " AND ".join(clauses)) if clauses else "", params
+    return "WHERE " + " AND ".join(clauses), params
 
 
 TEAM_ROLE_ALIASES = {
@@ -215,6 +220,11 @@ def show_drafts_requested():
     return str(request.args.get("show_drafts", "")).strip().lower() in {"1", "true", "yes", "on"}
 
 
+def _hidden_sgf_filenames(conn):
+    """SGF files that only support draft games; public pages never show them."""
+    return draft_only_sgf_filenames(conn)
+
+
 @public_bp.route("/help")
 def help_file():
     lang = get_language(request.args.get("lang"))
@@ -249,7 +259,7 @@ def index():
     stats = build_home_stats()
     category_config = get_category_config()
     team_members = get_team_members()
-    news_articles = list_articles(published_only=True, limit=5)
+    news_articles = list_articles(published_only=True, limit=5, include_drafts=False)
     conn = get_db()
     try:
         for article in news_articles:
@@ -282,7 +292,7 @@ def news_article(article_id):
     lang = get_language(request.args.get("lang"))
     conn = get_db()
     try:
-        article = get_article(conn, article_id)
+        article = get_article(conn, article_id, include_drafts=False)
         if article is not None and article["is_published"]:
             article_tags = resolve_news_tags(
                 conn, article["body"], article["tags"])
@@ -638,10 +648,10 @@ def matches():
     sort_key = _parse_match_sort(request.args.get("sort"))
     sort_order = _parse_match_order(request.args.get("order"))
     date_from, date_to, player_id = _parse_match_filters(request.args)
-    filter_sql, filter_params = _match_filter_sql(
-        date_from, date_to, player_id)
 
     conn = get_db()
+    filter_sql, filter_params = _match_filter_sql(
+        date_from, date_to, player_id, public_match_condition(conn, "m"))
     clear_missing_sgf_links(conn)
     sgf_select = "m.sgf_filename" if has_sgf_column(
         conn) else "NULL AS sgf_filename"
@@ -707,33 +717,36 @@ def sgf_library():
     lang = get_language(request.args.get("lang"))
     conn = get_db()
     has_column = has_sgf_column(conn)
+    visible = public_match_condition(conn, "m")
     if has_column:
         clear_missing_sgf_links(conn)
         linked_matches = conn.execute(
-            """
+            f"""
             SELECT m.id, m.match_date, m.event, m.sgf_filename,
                    white.display_name AS white_name,
                    black.display_name AS black_name
             FROM matches m
             JOIN players_display white ON white.id = m.white_player_id
             JOIN players_display black ON black.id = m.black_player_id
-            WHERE m.sgf_filename IS NOT NULL
+            WHERE m.sgf_filename IS NOT NULL AND {visible}
             ORDER BY m.match_date DESC, m.id DESC
             """
         ).fetchall()
     else:
         linked_matches = []
     match_options = conn.execute(
-        """
+        f"""
         SELECT m.id, m.match_date, m.event,
                white.display_name AS white_name,
                black.display_name AS black_name
         FROM matches m
         JOIN players_display white ON white.id = m.white_player_id
         JOIN players_display black ON black.id = m.black_player_id
+        WHERE {visible}
         ORDER BY m.match_date DESC, m.id DESC
         """
     ).fetchall()
+    hidden_sgf = _hidden_sgf_filenames(conn)
     conn.close()
 
     linked_by_filename = {
@@ -742,6 +755,8 @@ def sgf_library():
     }
     files = []
     for record in list_sgf_files():
+        if record["filename"] in hidden_sgf:
+            continue
         file_record = dict(record)
         file_record["linked_match"] = linked_by_filename.get(
             record["filename"])
@@ -765,6 +780,11 @@ def sgf_library_record(filename):
     metadata = get_sgf_metadata(filename)
     if metadata is None:
         abort(404)
+    conn = get_db()
+    hidden_sgf = _hidden_sgf_filenames(conn)
+    conn.close()
+    if metadata["filename"] in hidden_sgf:
+        abort(404)
 
     theme = (request.args.get("theme") or "").strip().lower()
     if theme not in {"simple", "dark"}:
@@ -785,6 +805,11 @@ def sgf_file(filename):
     path = get_sgf_path(filename)
     if path is None:
         abort(404)
+    conn = get_db()
+    hidden_sgf = _hidden_sgf_filenames(conn)
+    conn.close()
+    if path.name in hidden_sgf:
+        abort(404)
     return send_file(
         path,
         mimetype="application/x-go-sgf",
@@ -802,7 +827,7 @@ def match_sgf(match_id):
         abort(404)
     clear_missing_sgf_links(conn)
     row = conn.execute(
-        "SELECT sgf_filename FROM matches WHERE id = ?",
+        f"SELECT sgf_filename FROM matches m WHERE m.id = ? AND {public_match_condition(conn, 'm')}",
         (match_id,),
     ).fetchone()
     conn.close()
@@ -829,14 +854,14 @@ def match_record(match_id):
         abort(404)
     clear_missing_sgf_links(conn)
     row = conn.execute(
-        """
+        f"""
         SELECT m.id, m.match_date, m.result, m.event, m.sgf_filename,
                white.display_name AS white_name,
                black.display_name AS black_name
         FROM matches m
         JOIN players_display white ON white.id = m.white_player_id
         JOIN players_display black ON black.id = m.black_player_id
-        WHERE m.id = ?
+        WHERE m.id = ? AND {public_match_condition(conn, 'm')}
         """,
         (match_id,),
     ).fetchone()
@@ -861,7 +886,8 @@ def match_record(match_id):
 @public_bp.route("/tournaments")
 def tournaments():
     lang = get_language(request.args.get("lang"))
-    show_drafts = show_drafts_requested()
+    can_view_drafts = can_view_draft_tournaments()
+    show_drafts = can_view_drafts and show_drafts_requested()
     search_term = request.args.get("search", "").strip()
     page = parse_page_number(request.args.get("page"), default=1)
     page_size = parse_page_size(request.args.get("page_size"), default=25)
@@ -980,6 +1006,7 @@ def tournaments():
         translations=TRANSLATIONS[lang],
         tournaments=tournaments,
         show_drafts=show_drafts,
+        can_view_drafts=can_view_drafts,
         search_term=search_term,
         sort=sort_key,
         order=sort_order,
@@ -992,8 +1019,13 @@ def tournaments():
 def tournament_page(tournament_id):
     lang = get_language(request.args.get("lang"))
     conn = get_db()
+    status_clause = (
+        "t.status IN ('draft', 'active', 'canceled', 'completed')"
+        if can_view_draft_tournaments()
+        else "t.status IN ('active', 'canceled', 'completed')"
+    )
     tournament = conn.execute(
-        """
+        f"""
         SELECT t.*,
                CASE
                    WHEN t.status = 'draft' THEN 'draft'
@@ -1003,7 +1035,7 @@ def tournament_page(tournament_id):
                    ELSE 'draft'
                END AS public_status
         FROM tournaments t
-        WHERE t.id = ? AND t.status IN ('draft', 'active', 'canceled', 'completed')
+        WHERE t.id = ? AND {status_clause}
         """,
         (tournament_id,),
     ).fetchone()
