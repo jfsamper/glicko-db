@@ -392,10 +392,12 @@ Permite cargar datos históricos o torneos masivos:
 
 - **Crear copia**: genera una copia de seguridad SQLite con nombre seguro y fecha en `backups/`, incluyendo la carpeta auxiliar de archivos SGF.
 - **Restaurar copia**:
-  - Restaura la base de datos seleccionada aplicando automáticamente las migraciones pendientes de esquema.
+  - Antes de restaurar, guarda una copia verificada de la base actual y de la biblioteca SGF como `*-pre-restore-*.db` en `backups/`.
+  - Prepara la copia restaurada, aplica sobre ella las migraciones pendientes y la verifica antes de reemplazar la base activa. Si algún paso falla, la base activa y la biblioteca SGF no cambian.
   - Reconstruye los artefactos y el índice de búsqueda de texto completo FTS5 (`players_fts`).
   - Restaura la biblioteca SGF preservando los enlaces existentes.
   - Bloquea el uso de archivos temporales de `data/` como origen de restauración.
+- **Copias programadas**: las copias creadas por el trabajo `scripts/scheduled_backup.py` aparecen aquí junto con las manuales. El trabajo conserva las `SCHEDULED_BACKUP_KEEP` copias programadas más recientes (predeterminado 14) y nunca elimina copias manuales, previas a una importación ni previas a una restauración.
 - **Eliminar copias**: elimina copias de seguridad obsoletas para liberar almacenamiento.
 - Ejecuta `python scripts/check_legacy_players_state.py` para auditar la base activa y las copias administradas.
 

@@ -191,20 +191,58 @@ def backup_sgf_files(backup_path):
     return target
 
 
-def restore_sgf_files(backup_path):
-    """Restore SGFs from a backup sidecar without removing newer library files."""
+def _sgf_restore_plan(backup_path):
     source_dir = Path(backup_path).with_suffix(".sgf")
     if not source_dir.is_dir():
+        return []
+    return [
+        (source, SGF_UPLOAD_DIR / source.name)
+        for source in sorted(source_dir.glob("*.sgf"))
+        if _safe_sgf_path(source.name) is not None
+    ]
+
+
+def restore_sgf_files(backup_path):
+    """Restore SGFs from a backup sidecar without removing newer library files."""
+    plan = _sgf_restore_plan(backup_path)
+    if not plan:
         return False
 
     SGF_UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
-    restored = False
-    for source in source_dir.glob("*.sgf"):
-        if _safe_sgf_path(source.name) is None:
-            continue
-        shutil.copy2(source, SGF_UPLOAD_DIR / source.name)
-        restored = True
-    return restored
+    for source, target in plan:
+        shutil.copy2(source, target)
+    return True
+
+
+def restore_sgf_files_reversibly(backup_path):
+    """Restore SGFs like restore_sgf_files and return a callable that undoes the copy.
+
+    Overwritten files are held in memory so the previous library contents can be
+    put back exactly if the surrounding restore fails.
+    """
+    plan = _sgf_restore_plan(backup_path)
+    if not plan:
+        return lambda: None
+
+    SGF_UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+    undo_steps = []
+
+    def revert():
+        for target, previous_bytes in reversed(undo_steps):
+            if previous_bytes is None:
+                target.unlink(missing_ok=True)
+            else:
+                target.write_bytes(previous_bytes)
+
+    try:
+        for source, target in plan:
+            previous_bytes = target.read_bytes() if target.is_file() else None
+            undo_steps.append((target, previous_bytes))
+            shutil.copy2(source, target)
+    except Exception:
+        revert()
+        raise
+    return revert
 
 
 def _escape_sgf_value(value):

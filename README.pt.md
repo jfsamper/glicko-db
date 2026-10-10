@@ -94,6 +94,7 @@ Os valores padrão estão em `config.py`.
 - `LOAD_SAMPLE_DATA=1`: importa `rank-final.xlsx` se existir e substitui o conjunto de dados atual; serve apenas para desenvolvimento local.
 - `DB_PATH`: local do banco SQLite, definido em `config.py`.
 - `AUDIT_RETENTION_DAYS`: número de dias para manter eventos de auditoria; o padrão é `730`.
+- `SCHEDULED_BACKUP_KEEP`: número de backups agendados a manter; o padrão é `14`, com mínimo `1`.
 - `MAIL_SERVER`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_USE_TLS` e `MAIL_FROM`: configurações SMTP para recuperação de senha; `PASSWORD_RESET_TTL_SECONDS` controla a expiração do link e usa 3600 segundos por padrão.
 - `RECAPTCHA_SITE_KEY` e `RECAPTCHA_SECRET_KEY`: chaves do Google reCAPTCHA v3 para o formulário de registro de membros. A chave secreta é verificada no servidor e nunca deve ser exposta ao navegador.
 - `RECAPTCHA_MIN_SCORE`: pontuação v3 mínima aceita para o registro; o padrão é `0.5`.
@@ -105,6 +106,7 @@ Os valores padrão estão em `config.py`.
 - O login limita tentativas por IP e nome de usuário antes de verificar a senha; configure os limites em `/admin/settings`.
 - Sugestões de jogadores pendentes só vinculam um jogador existente após seleção explícita. "Criar novo" cria outro jogador ou rejeita um nome já existente; torneios com hándicap desativado geram emparelhamentos sem pedras.
 - Apenas administradores podem criar, restaurar ou excluir cópias de segurança. O último administrador ativo não pode ser excluído, desativado nem rebaixado.
+- Backups agendados: execute `python scripts/scheduled_backup.py` pelo Agendador de Tarefas do Windows ou pelo cron, por exemplo uma vez por dia. Cada execução cria um backup, verifica se uma cópia de trabalho pode ser migrada e restaurada e somente então exclui os backups agendados além de `SCHEDULED_BACKUP_KEEP`. Esta tarefa nunca exclui backups manuais, anteriores a importações ou anteriores a restaurações. O script termina com status 1 quando a verificação falha.
 - A substituição completa por XLSX primeiro mostra os totais atuais e os que serão importados, e exige confirmação explícita. Antes de substituir os dados, cria um backup SQLite com integridade verificada e copia os arquivos SGF disponíveis para junto dele; se a importação falhar, os dados anteriores são preservados.
 - `/admin/settings` permite ajustar limites de login, expiração da recuperação e o formato do nome dos jogadores (`Sobrenome, Nome` por padrão, `Nome Sobrenome` ou um modelo personalizado). Os nomes são exibidos na hora conforme o formato; os dados armazenados não mudam. Cada jogador pode ter um nome personalizado opcional, editável por operadores e administradores. Nome e sobrenome não podem conter vírgulas. Em produção, use HTTPS, senhas exclusivas e segredos apenas em variáveis de ambiente.
 - Contas autenticadas podem enviar arquivos SGF sem vinculá-los. Administradores, diretores e operadores podem vinculá-los ou desvinculá-los; apenas administradores podem excluir arquivos.

@@ -94,6 +94,7 @@ The default values are in `config.py`.
 - `LOAD_SAMPLE_DATA=1`: imports `rank-final.xlsx` if present and replaces the current dataset; intended only for local development.
 - `DB_PATH`: SQLite database path, defined in `config.py`.
 - `AUDIT_RETENTION_DAYS`: number of days to keep audit events; default is `730`.
+- `SCHEDULED_BACKUP_KEEP`: number of scheduled backups to keep; default is `14`, minimum `1`.
 - `MAIL_SERVER`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_USE_TLS`, and `MAIL_FROM`: SMTP settings for password recovery; `PASSWORD_RESET_TTL_SECONDS` controls link expiry and defaults to 3600 seconds.
 - `RECAPTCHA_SITE_KEY` and `RECAPTCHA_SECRET_KEY`: Google reCAPTCHA v3 keys for the member registration form. The secret key is verified on the server and must never be exposed to the browser.
 - `RECAPTCHA_MIN_SCORE`: minimum accepted v3 score for registration; default is `0.5`.
@@ -105,6 +106,7 @@ The default values are in `config.py`.
 - Login limits attempts by IP and username before checking the password; configure the limits in `/admin/settings`.
 - Pending-player suggestions link existing players only when explicitly selected. "Create new" creates another player or rejects an existing name; tournaments with handicaps disabled generate pairings with zero stones.
 - Only administrators can create, restore, or delete backups. The last active administrator cannot be deleted, deactivated, or demoted.
+- Scheduled backups: run `python scripts/scheduled_backup.py` from Windows Task Scheduler or cron, for example once a day. Each run creates a backup, verifies that a scratch copy can be migrated and restored, and only then deletes scheduled backups beyond `SCHEDULED_BACKUP_KEEP`. Manual, pre-import, and pre-restore backups are never deleted by this job. The script exits with status 1 when verification fails.
 - Full XLSX replacement first previews current and importable counts and requires explicit confirmation. Before replacing data, it creates an integrity-verified SQLite backup and copies available SGF files beside it; if import fails, the previous data is preserved.
 - `/admin/settings` controls login limits, recovery expiry, and the player name format (`Last name, First name` by default, `First name Last name`, or a custom template). Names are rendered on the fly from the format, so changing it never rewrites stored data. Each player can also have an optional custom name, editable by operators and admins. First and last names cannot contain commas. In production, use HTTPS, unique passwords, and keep secrets in environment variables.
 - Logged-in accounts can upload SGF files without linking them. Administrators, directors, and operators can link or unlink records; only administrators can delete files.

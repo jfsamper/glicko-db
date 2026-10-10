@@ -9,6 +9,9 @@ from pathlib import Path
 
 logger = logging.getLogger(__name__)
 BACKUP_NAME_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*\.db$")
+SCHEDULED_BACKUP_PATTERN = re.compile(
+    r"^\d{4}-\d{2}-\d{2}-\d{6}-scheduled-[0-9a-f]{8}\.db$"
+)
 
 
 def ensure_backup_dir(backup_dir):
@@ -214,8 +217,87 @@ def ensure_rating_state_table(conn):
     )
 
 
+def remove_backup_with_sgf(backup_path):
+    """Delete a backup database and its SGF sidecar folder if present."""
+    backup_path = Path(backup_path)
+    backup_path.unlink(missing_ok=True)
+    sidecar_path = backup_path.with_suffix(".sgf")
+    if sidecar_path.is_dir():
+        shutil.rmtree(sidecar_path)
+
+
+def list_scheduled_backups(backup_dir):
+    """Return scheduled backups newest first; the timestamp prefix makes names sort by age."""
+    directory = Path(backup_dir)
+    if not directory.is_dir():
+        return []
+    return sorted(
+        (
+            path
+            for path in directory.iterdir()
+            if path.is_file() and SCHEDULED_BACKUP_PATTERN.fullmatch(path.name)
+        ),
+        key=lambda path: path.name,
+        reverse=True,
+    )
+
+
+def prune_scheduled_backups(backup_dir, keep):
+    """Delete scheduled backups beyond the newest ``keep`` and return their filenames."""
+    removed = []
+    for path in list_scheduled_backups(backup_dir)[keep:]:
+        remove_backup_with_sgf(path)
+        removed.append(path.name)
+    return removed
+
+
+def verify_backup_restore_path(backup_path, scratch_dir):
+    """Run the restore preparation (copy, migrate, verify) on a scratch copy of a backup.
+
+    Raises on any failure. The backup itself and the live database are not modified.
+    """
+    _prepare_staged_database(Path(backup_path), Path(scratch_dir) / "restore-check.db")
+
+
+def _prepare_staged_database(backup_path, staging_path):
+    """Copy a backup to ``staging_path`` and bring the copy up to the current schema."""
+    from app import migrate_database_schema
+    from services.auth_service import invalidate_all_user_sessions
+
+    source_conn = sqlite3.connect(backup_path)
+    try:
+        staging_conn = sqlite3.connect(staging_path)
+        try:
+            source_conn.backup(staging_conn)
+        finally:
+            staging_conn.close()
+    finally:
+        source_conn.close()
+
+    conn = sqlite3.connect(staging_path)
+    conn.row_factory = sqlite3.Row
+    try:
+        migrate_database_schema(conn)
+        invalidate_all_user_sessions(conn)
+        rebuild_players_fts_artifacts(conn)
+        ensure_players_fts_artifacts(conn)
+        ensure_rating_state_table(conn)
+        conn.commit()
+    finally:
+        conn.close()
+
+    if not is_valid_sqlite_backup(staging_path):
+        raise sqlite3.DatabaseError("Staged restore failed integrity verification")
+
+
 def restore_db_from_backup(path, db_path):
-    """Restore the canonical database and re-run its schema migrations."""
+    """Replace the active database with a verified backup, or leave it unchanged.
+
+    The backup is copied and migrated in a staging file beside the active database,
+    verified, and only then swapped in with ``os.replace``. Any failure before the
+    swap deletes the staging file, and a failure after SGF files were copied reverts
+    them, so the active database and SGF library are never left half-restored.
+    """
     if path is None or not Path(path).is_file() or not is_valid_sqlite_backup(path):
         return False
 
@@ -228,23 +310,23 @@ def restore_db_from_backup(path, db_path):
         )
         return False
 
-    shutil.copy2(path, db_path)
+    from services.sgf_service import restore_sgf_files_reversibly
 
-    from app import migrate_database_schema
-    from services.auth_service import invalidate_all_user_sessions
-    from services.sgf_service import restore_sgf_files
-
-    restore_sgf_files(backup_path)
-    conn = sqlite3.connect(db_path)
-    conn.row_factory = sqlite3.Row
+    staging_path = active_db_path.with_name(
+        f".{active_db_path.stem}.restore-{uuid.uuid4().hex}.tmp"
+    )
+    revert_sgf = None
     try:
-        migrate_database_schema(conn)
-        invalidate_all_user_sessions(conn)
-        rebuild_players_fts_artifacts(conn)
-        ensure_players_fts_artifacts(conn)
-        ensure_rating_state_table(conn)
-        conn.commit()
-    finally:
-        conn.close()
+        _prepare_staged_database(backup_path, staging_path)
+        revert_sgf = restore_sgf_files_reversibly(backup_path)
+        os.replace(staging_path, active_db_path)
+    except Exception:
+        logger.exception(
+            "Backup restore failed; the active database was left unchanged: %s", path
+        )
+        if revert_sgf is not None:
+            revert_sgf()
+        staging_path.unlink(missing_ok=True)
+        return False
 
     return True

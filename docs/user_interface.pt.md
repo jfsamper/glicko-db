@@ -392,10 +392,12 @@ Importe planilhas históricas, partidas ou arquivos do OpenGotha:
 
 - **Criar backup**: gera um backup SQLite com data e nome seguro em `backups/`, incluindo o diretório auxiliar de SGF.
 - **Restaurar backup**:
-  - Restaura o banco de dados selecionado e executa migrações pendentes de esquema.
+  - Antes de restaurar, guarda um snapshot verificado do banco atual e da biblioteca SGF como `*-pre-restore-*.db` em `backups/`.
+  - Prepara a cópia restaurada, executa sobre ela as migrações pendentes e a verifica antes de substituir o banco ativo. Se alguma etapa falhar, o banco ativo e a biblioteca SGF permanecem inalterados.
   - Reconstrói os artefatos e o índice de busca textual FTS5 (`players_fts`).
   - Restaura a biblioteca SGF sem quebrar vínculos.
   - Restringe candidatos a arquivos gerenciados e ao backup `.bak` designado.
+- **Backups agendados**: os backups criados pelo job `scripts/scheduled_backup.py` aparecem aqui junto com os manuais. O job mantém os `SCHEDULED_BACKUP_KEEP` backups agendados mais recentes (padrão 14) e nunca exclui backups manuais, anteriores a importações ou anteriores a restaurações.
 - **Excluir backups**: remove cópias antigas para liberar espaço de armazenamento.
 - Execute `python scripts/check_legacy_players_state.py` para auditar o banco ativo e os backups gerenciados.
 

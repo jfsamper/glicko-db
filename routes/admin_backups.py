@@ -1,6 +1,7 @@
 """Administrative backup routes registered on the shared admin blueprint."""
 import os
 import shutil
+import uuid
 from datetime import datetime
 
 from flask import flash, redirect, render_template, request, url_for
@@ -121,7 +122,20 @@ def admin_restore_backup():
         flash(TRANSLATIONS[lang]["error"])
         return redirect(url_for("admin_backups", lang=lang))
 
+    snapshot_name = (
+        f"{current_datetime().strftime('%Y-%m-%d-%H%M%S')}-pre-restore-"
+        f"{uuid.uuid4().hex[:8]}.db"
+    )
+    try:
+        snapshot_path = admin.create_verified_backup_with_sgf(snapshot_name)
+    except Exception:
+        admin.logger.exception(
+            "Backup restore aborted: pre-restore snapshot could not be verified")
+        flash(TRANSLATIONS[lang]["error"])
+        return redirect(url_for("admin_backups", lang=lang))
+
     if not admin.restore_db_from_backup(path):
+        admin.remove_backup_with_sgf(snapshot_path)
         admin.logger.warning(
             "Backup restore failed during restore step for %s", path)
         flash(TRANSLATIONS[lang]["error"])
@@ -130,7 +144,7 @@ def admin_restore_backup():
     log_admin_action(
         "backup_restored",
         "backup",
-        {"filename": path.name},
+        {"filename": path.name, "pre_restore_snapshot": snapshot_name},
         user_id=admin.session.get("user_id"),
     )
     flash(TRANSLATIONS[lang]["success"])

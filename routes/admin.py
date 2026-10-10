@@ -535,6 +535,27 @@ def create_verified_backup(filename):
     return backup_service.create_verified_backup(DB_PATH, BACKUP_DIR, filename)
 
 
+def create_verified_backup_with_sgf(filename):
+    """Create a verified database backup plus its SGF sidecar, removing partial output on failure."""
+    backup_path = create_verified_backup(filename)
+    try:
+        if not is_valid_sqlite_backup(backup_path):
+            raise sqlite3.DatabaseError("Backup integrity verification failed")
+        backup_sgf_files(backup_path)
+        if not backup_path.with_suffix(".sgf").is_dir():
+            raise OSError("Backup SGF sidecar could not be verified")
+        if not is_valid_sqlite_backup(backup_path):
+            raise sqlite3.DatabaseError("Backup integrity verification failed")
+    except Exception:
+        remove_backup_with_sgf(backup_path)
+        raise
+    return backup_path
+
+
+def remove_backup_with_sgf(backup_path):
+    backup_service.remove_backup_with_sgf(backup_path)
+
+
 def is_valid_sqlite_backup(path):
     return backup_service.is_valid_sqlite_backup(path)
 

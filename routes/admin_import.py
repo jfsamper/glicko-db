@@ -4,7 +4,6 @@ import hashlib
 import os
 from pathlib import Path
 import re
-import shutil
 import sqlite3
 import time
 import uuid
@@ -97,22 +96,8 @@ def _get_workbook_preview(admin, token):
 def _create_verified_import_backup(admin):
     timestamp = admin.current_datetime().strftime("%Y-%m-%d-%H%M%S")
     filename = f"{timestamp}-pre-xlsx-import-{uuid.uuid4().hex[:8]}.db"
-    backup_path = admin.create_verified_backup(filename)
-    sidecar_path = backup_path.with_suffix(".sgf")
-    try:
-        if not admin.is_valid_sqlite_backup(backup_path):
-            raise sqlite3.DatabaseError("Backup integrity verification failed")
-        admin.backup_sgf_files(backup_path)
-        if not sidecar_path.is_dir():
-            raise OSError("Backup SGF sidecar could not be verified")
-        if not admin.is_valid_sqlite_backup(backup_path):
-            raise sqlite3.DatabaseError("Backup integrity verification failed")
-        return filename
-    except Exception:
-        backup_path.unlink(missing_ok=True)
-        if sidecar_path.is_dir():
-            shutil.rmtree(sidecar_path)
-        raise
+    admin.create_verified_backup_with_sgf(filename)
+    return filename
 
 
 def _admin_routes():

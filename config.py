@@ -6,6 +6,7 @@ from datetime import timedelta, timezone
 ADMIN_PASSWORD = os.environ["ADMIN_PASSWORD"]  # dev-example-password
 MAX_LOGIN_ATTEMPTS = int(os.getenv("MAX_LOGIN_ATTEMPTS", "5"))
 LOGIN_WINDOW_SECONDS = int(os.getenv("LOGIN_WINDOW_SECONDS", "60"))
+SCHEDULED_BACKUP_KEEP = max(1, int(os.getenv("SCHEDULED_BACKUP_KEEP", "14")))
 MAIL_SERVER = os.getenv("MAIL_SERVER", "")
 MAIL_PORT = int(os.getenv("MAIL_PORT", "587"))
 MAIL_USERNAME = os.getenv("MAIL_USERNAME", "")

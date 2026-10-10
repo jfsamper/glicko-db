@@ -392,10 +392,12 @@ Import historical workbooks, match spreadsheets, or OpenGotha files:
 
 - **Create backup**: generates timestamped SQLite backup in `backups/`, including the SGF sidecar folder.
 - **Restore backup**:
-  - Restores the selected database and runs pending database migrations.
+  - Before restoring, saves a verified snapshot of the current database and SGF library as `*-pre-restore-*.db` in `backups/`.
+  - Prepares the restored copy, runs pending database migrations on it, and verifies it before replacing the active database. If any step fails, the active database and SGF library are left unchanged.
   - Rebuilds full-text search artifacts and the FTS5 search index (`players_fts`).
   - Restores the SGF library sidecar without breaking links.
   - Restricts candidate backups to managed files and designated `.bak` fallbacks.
+- **Scheduled backups**: backups created by the `scripts/scheduled_backup.py` job are listed here with the manual ones. The job keeps the newest `SCHEDULED_BACKUP_KEEP` scheduled backups (default 14) and never deletes manual, pre-import, or pre-restore backups.
 - **Delete backups**: purge older backups to free storage space.
 - Run `python scripts/check_legacy_players_state.py` to audit the active database and managed backups.
 

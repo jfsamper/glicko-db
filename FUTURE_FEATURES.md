@@ -175,12 +175,10 @@ The V4 P2 findings are resolved. The remaining operational and product work belo
 
 ## Technical implementation order
 
-Login rate-limit enforcement, typed OpenGotha payloads, explicit tournament deletion, per-account timezone preferences, account profile/recovery, date-bounded reporting, PDF reporting, result moderation, and XLSX replacement safeguards are implemented. The next recommended sequence is:
+Login rate-limit enforcement, typed OpenGotha payloads, explicit tournament deletion, per-account timezone preferences, account profile/recovery, date-bounded reporting, PDF reporting, result moderation, XLSX replacement safeguards, staged backup restore with a verified pre-restore snapshot, and scheduled verified backups with retention are implemented. The next recommended sequence is:
 
-1. Harden backup restore with staged migration, atomic replacement, and rollback on failure.
-2. Add scheduled backups with retention and restore verification.
-3. Add server-side idempotency for non-repeatable tournament commands before exposing API writes.
-4. Consider replay observability, tournament preflight, and named seasons as needed.
+1. Add server-side idempotency for non-repeatable tournament commands before exposing API writes.
+2. Consider replay observability, tournament preflight, and named seasons as needed.
 
 ## Documentation rules
 
