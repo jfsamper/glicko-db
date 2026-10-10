@@ -1,4 +1,5 @@
 """Tournament-to-match synchronization service."""
+from services.transactions import commit, transactional
 
 
 def sync_match_pairing(conn, match_id, white_player_id, black_player_id, result, handicap_stones):
@@ -97,6 +98,7 @@ def sync_tournament_matches(conn, tournament_id, name=None, match_date=None):
     ).rowcount
 
 
+@transactional
 def save_tournament_matches(conn, tournament_id):
     from services.tournament_status import _refresh_tournament_completion_state
 
@@ -118,6 +120,7 @@ def save_tournament_matches(conn, tournament_id):
     return saved
 
 
+@transactional
 def process_tournament_round_matches(conn, tournament_id, round_id=None, match_date=None, event=None):
     from services.timezone_service import current_date
     from services.reporting_service import ensure_tournament_match_identity
@@ -176,6 +179,7 @@ def process_tournament_round_matches(conn, tournament_id, round_id=None, match_d
     return inserted
 
 
+@transactional
 def set_pairing_result(conn, tournament_id, pairing_id, result):
     from services.tournament_status import VALID_TOURNAMENT_RESULTS, _refresh_tournament_completion_state
 
@@ -202,4 +206,4 @@ def set_pairing_result(conn, tournament_id, pairing_id, result):
     sync_pairing_match(conn, tournament_id, pairing_id)
     _refresh_tournament_completion_state(
         conn, tournament_id, pairing["round_id"])
-    conn.commit()
+    commit(conn)

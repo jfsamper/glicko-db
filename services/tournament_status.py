@@ -1,4 +1,5 @@
 """Tournament round completion and status helpers."""
+from services.transactions import commit
 
 
 VALID_TOURNAMENT_RESULTS = {"1-0", "0-1", "1/2-1/2", "!0-1", "1-!0", "!0-0"}
@@ -39,7 +40,7 @@ def _refresh_tournament_completion_state(conn, tournament_id, round_id=None):
                 "UPDATE tournaments SET status = 'draft' WHERE id = ?", (
                     tournament_id,)
             )
-            conn.commit()
+            commit(conn)
             return
         round_id = row[0]
     if conn.execute(
@@ -70,7 +71,7 @@ def _refresh_tournament_completion_state(conn, tournament_id, round_id=None):
             "UPDATE tournaments SET status = 'draft' WHERE id = ?", (
                 tournament_id,)
         )
-        conn.commit()
+        commit(conn)
         return
     completed_rounds = sum(
         row["status"] == "completed" or _round_is_complete(conn, row["id"])
@@ -87,4 +88,4 @@ def _refresh_tournament_completion_state(conn, tournament_id, round_id=None):
             tournament_id,
         ),
     )
-    conn.commit()
+    commit(conn)

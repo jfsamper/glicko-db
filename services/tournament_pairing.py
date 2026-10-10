@@ -1,6 +1,7 @@
 """Tournament pairing policy, orchestration, and round state."""
 from collections import defaultdict
 from config import GLICKO_K, GLICKO_M
+from services.transactions import commit, transactional
 from services.category_service import suggested_handicap_stones
 from services.category_service import category_value
 from services.pairing_service import DEFAULT_CATEGORY_ROUNDS, acceleration_for_rank, default_acceleration_rounds, effective_score_for_player, pair_players
@@ -219,6 +220,7 @@ def reorder_round_boards(conn, tournament_id, round_id):
                      (board_number, pairing["id"]))
 
 
+@transactional
 def generate_next_round(conn, tournament_id):
     from services.tournament_status import _refresh_tournament_completion_state
     tournament = conn.execute(
@@ -258,10 +260,11 @@ def generate_next_round(conn, tournament_id):
     conn.execute(
         "UPDATE tournaments SET status = 'active' WHERE id = ?", (tournament_id,))
     _refresh_tournament_completion_state(conn, tournament_id, round_id)
-    conn.commit()
+    commit(conn)
     return round_id, pairings
 
 
+@transactional
 def set_round_player_status(conn, tournament_id, round_id, player_id, status):
     if status != "bye":
         raise ValueError("Invalid round player status")
@@ -277,9 +280,10 @@ def set_round_player_status(conn, tournament_id, round_id, player_id, status):
     conn.execute("UPDATE tournament_participants SET received_bye = 1 WHERE tournament_id = ? AND player_id = ?",
                  (tournament_id, player_id))
     reorder_round_boards(conn, tournament_id, round_id)
-    conn.commit()
+    commit(conn)
 
 
+@transactional
 def pair_selected_players(conn, tournament_id, round_id, player_ids):
     selected = list(dict.fromkeys(int(player_id)
                     for player_id in player_ids if player_id not in (None, "")))
@@ -313,6 +317,7 @@ def pair_selected_players(conn, tournament_id, round_id, player_ids):
                         pairing["white_player_id"], pairing["black_player_id"])
 
 
+@transactional
 def add_participant(conn, tournament_id, player_id):
     from services.tournament_participants import recalculate_mcmahon_seeds
     columns = table_columns(conn, "tournaments")
@@ -349,13 +354,14 @@ def add_participant(conn, tournament_id, player_id):
             conn.execute("INSERT INTO tournament_participants (tournament_id, player_id, seed_rating, category, initial_score, acceleration) VALUES (?, ?, ?, ?, 0, 0)",
                          (tournament_id, player_id, player["rating"] or 0, category))
         recalculate_mcmahon_seeds(conn, tournament_id)
-        conn.commit()
+        commit(conn)
         return
     conn.execute("INSERT INTO tournament_participants (tournament_id, player_id, seed_rating, seed_rank, category, initial_score, acceleration) VALUES (?, ?, ?, ?, ?, ?, ?)",
                  (tournament_id, player_id, player["rating"] or 0, count + 1, "", 0.0, 0.0))
-    conn.commit()
+    commit(conn)
 
 
+@transactional
 def remove_participant(conn, tournament_id, player_id):
     tournament = conn.execute(
         "SELECT pairing_system FROM tournaments WHERE id = ?", (tournament_id,)).fetchone()
@@ -366,9 +372,10 @@ def remove_participant(conn, tournament_id, player_id):
     if tournament and tournament["pairing_system"] == "mcmahon":
         from services.tournament_participants import recalculate_mcmahon_seeds
         recalculate_mcmahon_seeds(conn, tournament_id)
-    conn.commit()
+    commit(conn)
 
 
+@transactional
 def manual_pair(conn, tournament_id, round_id, white_player_id, black_player_id, handicap_stones=None):
     if conn.execute("SELECT 1 FROM tournament_rounds WHERE id = ? AND tournament_id = ?", (round_id, tournament_id)).fetchone() is None or white_player_id == black_player_id:
         raise ValueError("Invalid manual pairing")
@@ -389,9 +396,10 @@ def manual_pair(conn, tournament_id, round_id, white_player_id, black_player_id,
     conn.execute("INSERT INTO tournament_pairings (round_id, board_number, white_player_id, black_player_id, is_bye, handicap_stones) VALUES (?, ?, ?, ?, 0, ?)",
                  (round_id, board, white_player_id, black_player_id, handicap_stones or 0))
     reorder_round_boards(conn, tournament_id, round_id)
-    conn.commit()
+    commit(conn)
 
 
+@transactional
 def update_pairing(conn, tournament_id, pairing_id, white_player_id, black_player_id):
     from services.tournament_matches import sync_pairing_match
     from services.tournament_status import _refresh_tournament_completion_state
@@ -413,9 +421,10 @@ def update_pairing(conn, tournament_id, pairing_id, white_player_id, black_playe
     sync_pairing_match(conn, tournament_id, pairing_id)
     _refresh_tournament_completion_state(
         conn, tournament_id, pairing["round_id"])
-    conn.commit()
+    commit(conn)
 
 
+@transactional
 def update_pairing_handicap(conn, tournament_id, pairing_id, handicap_stones):
     from services.tournament_matches import sync_pairing_match
     if handicap_stones is None:
@@ -431,9 +440,10 @@ def update_pairing_handicap(conn, tournament_id, pairing_id, handicap_stones):
     if not updated:
         raise ValueError("Pairing not found")
     sync_pairing_match(conn, tournament_id, pairing_id)
-    conn.commit()
+    commit(conn)
 
 
+@transactional
 def unpair(conn, tournament_id, pairing_id):
     from services.reporting_service import ensure_tournament_match_identity
     from services.tournament_status import _refresh_tournament_completion_state
@@ -451,9 +461,10 @@ def unpair(conn, tournament_id, pairing_id):
             "DELETE FROM matches WHERE tournament_pairing_id = ?", (pairing_id,))
         _refresh_tournament_completion_state(
             conn, tournament_id, pairing["round_id"])
-    conn.commit()
+    commit(conn)
 
 
+@transactional
 def unpair_all(conn, tournament_id, round_id):
     if conn.execute("SELECT id FROM tournament_rounds WHERE id = ? AND tournament_id = ?", (round_id, tournament_id)).fetchone() is None:
         raise ValueError("Round not found")

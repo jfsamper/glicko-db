@@ -14,6 +14,18 @@ from services.db import get_db
 from services.timezone_service import current_timestamp
 
 ALLOWED_ROLES = ("administrator", "tournament_director", "operator", "member")
+# Highest privilege first. The first role an account holds is its primary role, used
+# for display and for the member-only redirect; permissions use every held role.
+ROLE_PRIORITY = ALLOWED_ROLES
+PERMISSION_ROLES = {
+    "admin": frozenset({"administrator"}),
+    "tournament_admin": frozenset({"administrator", "tournament_director"}),
+    "data_admin": frozenset({"administrator", "operator"}),
+    "operator": frozenset({"administrator", "tournament_director", "operator"}),
+    "dashboard": frozenset({"administrator", "tournament_director", "operator"}),
+    "results_submitter": frozenset({"administrator", "tournament_director", "operator", "member"}),
+}
+DEFAULT_PERMISSION_ROLES = frozenset({"administrator"})
 
 
 def validate_theme(value):
@@ -402,6 +414,29 @@ def create_user_account(
             conn.close()
 
 
+def _load_role_names(conn, user_id):
+    """Return every role the account holds, highest priority first."""
+    names = {
+        row[0]
+        for row in conn.execute(
+            """
+            SELECT r.name
+            FROM user_roles ur
+            JOIN roles r ON r.id = ur.role_id
+            WHERE ur.user_id = ?
+            """,
+            (user_id,),
+        ).fetchall()
+    }
+    return tuple(role for role in ROLE_PRIORITY if role in names)
+
+
+def _apply_roles(payload, role_names):
+    payload["roles"] = role_names
+    payload["role"] = role_names[0] if role_names else None
+    return payload
+
+
 def get_current_user(conn=None):
     user_id = session.get("user_id")
     if user_id is None:
@@ -435,44 +470,20 @@ def get_current_user(conn=None):
             session.clear()
             return None
 
-        role = conn.execute(
-            """
-            SELECT r.name
-            FROM user_roles ur
-            JOIN roles r ON r.id = ur.role_id
-            WHERE ur.user_id = ?
-            ORDER BY r.name
-            LIMIT 1
-            """,
-            (user_id,),
-        ).fetchone()
-        payload = dict(user)
-        payload["role"] = role["name"] if role else None
-        return payload
+        return _apply_roles(dict(user), _load_role_names(conn, user_id))
     finally:
         if owns_connection:
             conn.close()
 
 
 def user_has_permission(permission_name):
+    """An account holds a permission when any of its roles grants it."""
     user = get_current_user()
     if user is None:
         return False
 
-    role = user.get("role")
-    if permission_name == "admin":
-        return role == "administrator"
-    if permission_name == "tournament_admin":
-        return role in {"administrator", "tournament_director"}
-    if permission_name == "data_admin":
-        return role in {"administrator", "operator"}
-    if permission_name == "operator":
-        return role in {"administrator", "tournament_director", "operator"}
-    if permission_name == "dashboard":
-        return role in {"administrator", "tournament_director", "operator"}
-    if permission_name == "results_submitter":
-        return role in {"administrator", "tournament_director", "operator", "member"}
-    return role == "administrator"
+    allowed = PERMISSION_ROLES.get(permission_name, DEFAULT_PERMISSION_ROLES)
+    return bool(set(user.get("roles") or ()) & allowed)
 
 
 def authenticate_user(username, password, conn=None):
@@ -495,20 +506,7 @@ def authenticate_user(username, password, conn=None):
         if user is None or user["is_active"] != 1:
             return None
         if check_password_hash(user["password_hash"], password):
-            role = conn.execute(
-                """
-                SELECT r.name
-                FROM user_roles ur
-                JOIN roles r ON r.id = ur.role_id
-                WHERE ur.user_id = ?
-                ORDER BY r.name
-                LIMIT 1
-                """,
-                (user["id"],),
-            ).fetchone()
-            payload = dict(user)
-            payload["role"] = role["name"] if role else None
-            return payload
+            return _apply_roles(dict(user), _load_role_names(conn, user["id"]))
         return None
     finally:
         if owns_connection:

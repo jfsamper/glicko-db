@@ -6,6 +6,7 @@ from flask import abort, current_app, flash, redirect, render_template, request,
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from services.auth_service import ensure_active_administrator_remains
+from services.transactions import command
 
 
 def _admin_routes():
@@ -384,35 +385,38 @@ def admin_approve_result_submission(submission_id):
             flash(admin.TRANSLATIONS[lang]["submission_not_pending"])
             return redirect(url_for("admin_result_submissions", lang=lang))
         now = admin.current_timestamp()
-        match_id = conn.execute(
-            """
-            INSERT INTO matches
-                (match_date, white_player_id, black_player_id, result, event, location, notes, round_number, handicap_stones, sgf_filename)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """,
-            (
-                submission["match_date"],
-                submission["white_player_id"],
-                submission["black_player_id"],
-                submission["result"],
-                submission["event"],
-                submission["location"],
-                submission["notes"],
-                submission["round_number"],
-                submission["handicap_stones"],
-                submission["sgf_filename"],
-            ),
-        ).lastrowid
-        conn.execute(
-            """
-            UPDATE result_submissions
-            SET status = 'approved', reviewed_by_user_id = ?, reviewed_at = ?, review_notes = ?
-            WHERE id = ? AND status = 'pending'
-            """,
-            (session.get("user_id"), now, request.form.get(
-                "review_notes", "").strip(), submission_id),
-        )
-        conn.commit()
+        with command(conn):
+            claimed = conn.execute(
+                """
+                UPDATE result_submissions
+                SET status = 'approved', reviewed_by_user_id = ?, reviewed_at = ?, review_notes = ?
+                WHERE id = ? AND status = 'pending'
+                """,
+                (session.get("user_id"), now, request.form.get(
+                    "review_notes", "").strip(), submission_id),
+            ).rowcount
+            if claimed != 1:
+                flash(admin.TRANSLATIONS[lang]["submission_not_pending"])
+                return redirect(url_for("admin_result_submissions", lang=lang))
+            match_id = conn.execute(
+                """
+                INSERT INTO matches
+                    (match_date, white_player_id, black_player_id, result, event, location, notes, round_number, handicap_stones, sgf_filename)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    submission["match_date"],
+                    submission["white_player_id"],
+                    submission["black_player_id"],
+                    submission["result"],
+                    submission["event"],
+                    submission["location"],
+                    submission["notes"],
+                    submission["round_number"],
+                    submission["handicap_stones"],
+                    submission["sgf_filename"],
+                ),
+            ).lastrowid
     except sqlite3.DatabaseError:
         conn.rollback()
         admin.logger.exception(

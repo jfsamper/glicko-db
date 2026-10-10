@@ -6,6 +6,7 @@ from services.category_service import glicko_to_category
 from services.helpers import normalize_key, normalize_text
 from services.pairing_service import mcmahon_score_from_rank
 from services.player_service import build_player_lookup, ensure_player
+from services.transactions import commit, transactional
 from services.tournament_pairing import table_columns
 
 
@@ -205,6 +206,7 @@ def recalculate_mcmahon_seeds(conn, tournament_id):
                          (seed_rank, initial_score, row["id"]))
 
 
+@transactional
 def materialize_pending_players(conn, tournament_id, pending_id=None):
     pending_players = list_pending_players(conn, tournament_id)
     if pending_id is not None:
@@ -265,5 +267,5 @@ def materialize_pending_players(conn, tournament_id, pending_id=None):
     if materialized_ids:
         conn.execute(f"DELETE FROM tournament_pending_players WHERE tournament_id = ? AND id IN ({', '.join('?' for _ in materialized_ids)})", (
             tournament_id, *materialized_ids))
-    conn.commit()
+    commit(conn)
     return created

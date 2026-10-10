@@ -2,6 +2,8 @@
 import sqlite3
 from flask import Response, flash, redirect, render_template, request, url_for
 
+from services.transactions import command
+
 
 def _admin_routes():
     from routes import admin
@@ -166,11 +168,11 @@ def admin_edit_match():
                 new_sgf = None if request.form.get(
                     "remove_sgf") == "1" else old_sgf
             try:
-                conn.execute("UPDATE matches SET match_date = ?, white_player_id = ?, black_player_id = ?, result = ?, event = ?, location = ?, notes = ?, round_number = ?, handicap_stones = ?, sgf_filename = ? WHERE id = ?",
-                             (match_date, white_id, black_id, result, event, location, notes, admin.normalize_round_note(raw_notes), handicap, new_sgf, match_id))
-                admin.sync_match_pairing(
-                    conn, match_id, white_id, black_id, result, handicap)
-                conn.commit()
+                with command(conn):
+                    conn.execute("UPDATE matches SET match_date = ?, white_player_id = ?, black_player_id = ?, result = ?, event = ?, location = ?, notes = ?, round_number = ?, handicap_stones = ?, sgf_filename = ? WHERE id = ?",
+                                 (match_date, white_id, black_id, result, event, location, notes, admin.normalize_round_note(raw_notes), handicap, new_sgf, match_id))
+                    admin.sync_match_pairing(
+                        conn, match_id, white_id, black_id, result, handicap)
                 if new_sgf:
                     admin.update_sgf_metadata(new_sgf, admin.match_sgf_metadata(
                         conn, white_id, black_id, match_date, result, event))
