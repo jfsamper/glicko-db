@@ -172,7 +172,7 @@
                 </option>{% endif %}
                 {% if row.resolved_player_id %}<option value="{{ row.resolved_player_id }}">Use exact player</option>{%
                 endif %}
-                <option value="new" {% if row.status=='new' %}selected{% endif %}>Create new player</option>
+                <option value="new" {% if row.status in ('new', 'fuzzy') %}selected{% endif %}>Create new player</option>
                 <option value="reject" {% if row.status=='duplicate' %}selected{% endif %}>Reject row</option>
               </select>
             </td>

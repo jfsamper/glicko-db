@@ -519,7 +519,7 @@ def load_players_for_user_link():
     try:
         try:
             return conn.execute(
-                "SELECT id, display_name FROM players ORDER BY display_name"
+                "SELECT id, display_name FROM players_display ORDER BY display_name"
             ).fetchall()
         except sqlite3.OperationalError:
             return []

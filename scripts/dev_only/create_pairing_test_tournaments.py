@@ -57,7 +57,7 @@ def choose_players(conn, count, offset):
     players = conn.execute(
         """
         SELECT id, rating, display_name
-        FROM players
+        FROM players_display
         WHERE active = 1
         ORDER BY rating DESC, id
         """

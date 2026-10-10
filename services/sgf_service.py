@@ -287,7 +287,7 @@ def _rank_label(rating, config):
 
 def match_sgf_metadata(conn, white_player_id, black_player_id, match_date, result, event="", location=None):
     players = conn.execute(
-        "SELECT id, display_name, rating FROM players WHERE id IN (?, ?)",
+        "SELECT id, display_name, rating FROM players_display WHERE id IN (?, ?)",
         (white_player_id, black_player_id),
     ).fetchall()
     by_id = {row["id"]: row for row in players}

@@ -15,6 +15,8 @@ import app as app_module
 import config
 import services.common as common
 import routes.admin as admin_routes
+from services.display_name import create_display_name_views
+from services.settings_service import ensure_application_settings_table
 
 
 def test_create_app_factory_creates_isolated_instances(tmp_path):
@@ -254,7 +256,7 @@ def test_tournament_player_management_can_create_and_enroll_player(tmp_path, mon
             CREATE TABLE tournaments (id INTEGER PRIMARY KEY, name TEXT, pairing_system TEXT, tournament_type TEXT);
             CREATE TABLE players (
                 id INTEGER PRIMARY KEY AUTOINCREMENT, first_name TEXT NOT NULL, last_name TEXT NOT NULL,
-                display_name TEXT NOT NULL, country TEXT, club TEXT, slug TEXT UNIQUE, active INTEGER DEFAULT 1,
+                custom_display_name TEXT, country TEXT, club TEXT, slug TEXT UNIQUE, active INTEGER DEFAULT 1,
                 rating REAL DEFAULT 1500, initial_rating REAL, rd REAL DEFAULT 350, volatility REAL DEFAULT 0.06
             );
             CREATE TABLE tournament_participants (
@@ -263,13 +265,16 @@ def test_tournament_player_management_can_create_and_enroll_player(tmp_path, mon
                 initial_score REAL DEFAULT 0, acceleration REAL DEFAULT 0, UNIQUE(tournament_id, player_id)
             );
             CREATE TABLE tournament_pending_players (
-                id INTEGER PRIMARY KEY AUTOINCREMENT, tournament_id INTEGER, display_name TEXT,
-                suggested_name TEXT, resolved_player_id INTEGER, rating REAL DEFAULT 0,
+                id INTEGER PRIMARY KEY AUTOINCREMENT, tournament_id INTEGER,
+                first_name TEXT NOT NULL DEFAULT '', last_name TEXT NOT NULL DEFAULT '', suggested_name TEXT,
+                resolved_player_id INTEGER, rating REAL DEFAULT 0,
                 rank INTEGER DEFAULT 0, category TEXT DEFAULT '', source_key TEXT
             );
             INSERT INTO tournaments VALUES (1, 'Test tournament', 'swiss', 'swiss');
             """
         )
+        ensure_application_settings_table(conn)
+        create_display_name_views(conn)
         conn.execute("INSERT INTO users (username, password_hash, is_active) VALUES (?, ?, 1)", ("operator", "sha256"))
         user_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
         conn.execute(
@@ -305,12 +310,12 @@ def test_tournament_player_management_can_create_and_enroll_player(tmp_path, mon
         (player[0] if player else None,),
     ).fetchone()
     pending = conn.execute(
-        "SELECT id, display_name, rating, rank FROM tournament_pending_players WHERE tournament_id = 1"
+        "SELECT id, display_name, rating, rank FROM tournament_pending_players_display WHERE tournament_id = 1"
     ).fetchone()
     conn.close()
     assert player is None
     assert participant is None
-    assert tuple(pending[1:]) == ("Ada Lovelace", float(selected_glicko), 1)
+    assert tuple(pending[1:]) == ("Lovelace, Ada", float(selected_glicko), 1)
 
     management_page = client.get("/admin/tournaments/1/players?lang=en")
     assert management_page.status_code == 200
@@ -333,8 +338,8 @@ def test_tournament_player_management_can_create_and_enroll_player(tmp_path, mon
 
     conn = sqlite3.connect(db_path)
     conn.execute(
-        "INSERT INTO players (first_name, last_name, display_name, rating) VALUES (?, ?, ?, ?)",
-        ("Ada", "Lovelace", "Ada Lovelace", 1800),
+        "INSERT INTO players (first_name, last_name, rating) VALUES (?, ?, ?)",
+        ("Ada", "Lovelace", 1800),
     )
     conn.commit()
     conn.close()
@@ -375,11 +380,14 @@ def test_tournament_player_creation_rejects_missing_name(tmp_path, monkeypatch):
         conn.executescript(
             """
             CREATE TABLE tournaments (id INTEGER PRIMARY KEY, name TEXT, pairing_system TEXT, tournament_type TEXT);
-            CREATE TABLE players (id INTEGER PRIMARY KEY AUTOINCREMENT, first_name TEXT NOT NULL, last_name TEXT NOT NULL, display_name TEXT NOT NULL, slug TEXT UNIQUE, active INTEGER DEFAULT 1, rating REAL DEFAULT 1500, rd REAL DEFAULT 350, volatility REAL DEFAULT 0.06);
+            CREATE TABLE players (id INTEGER PRIMARY KEY AUTOINCREMENT, first_name TEXT NOT NULL, last_name TEXT NOT NULL, custom_display_name TEXT, slug TEXT UNIQUE, active INTEGER DEFAULT 1, rating REAL DEFAULT 1500, rd REAL DEFAULT 350, volatility REAL DEFAULT 0.06);
             CREATE TABLE tournament_participants (id INTEGER PRIMARY KEY AUTOINCREMENT, tournament_id INTEGER, player_id INTEGER, seed_rating REAL DEFAULT 0, seed_rank INTEGER DEFAULT 0, category TEXT DEFAULT '', initial_score REAL DEFAULT 0, acceleration REAL DEFAULT 0, UNIQUE(tournament_id, player_id));
+            CREATE TABLE tournament_pending_players (id INTEGER PRIMARY KEY AUTOINCREMENT, tournament_id INTEGER, first_name TEXT NOT NULL DEFAULT '', last_name TEXT NOT NULL DEFAULT '', suggested_name TEXT);
             INSERT INTO tournaments VALUES (1, 'Test tournament', 'swiss', 'swiss');
             """
         )
+        ensure_application_settings_table(conn)
+        create_display_name_views(conn)
         conn.execute("INSERT INTO users (username, password_hash, is_active) VALUES (?, ?, 1)", ("operator", "sha256"))
         user_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
         conn.execute("INSERT INTO user_roles (user_id, role_id) VALUES (?, (SELECT id FROM roles WHERE name = 'operator'))", (user_id,))
@@ -578,11 +586,16 @@ def test_restore_db_from_backup_recreates_auth_schema_for_session_checks(tmp_pat
 
     with sqlite3.connect(legacy_backup_path) as conn:
         conn.execute(
-            "CREATE TABLE players (id INTEGER PRIMARY KEY AUTOINCREMENT, display_name TEXT NOT NULL)"
+            "CREATE TABLE players (id INTEGER PRIMARY KEY AUTOINCREMENT, first_name TEXT NOT NULL, last_name TEXT NOT NULL, custom_display_name TEXT)"
         )
         conn.execute(
-            "INSERT INTO players (display_name) VALUES (?)",
-            ("Legacy backup player",),
+            "CREATE TABLE tournament_pending_players (id INTEGER PRIMARY KEY AUTOINCREMENT, first_name TEXT NOT NULL DEFAULT '', last_name TEXT NOT NULL DEFAULT '', suggested_name TEXT)"
+        )
+        ensure_application_settings_table(conn)
+        create_display_name_views(conn)
+        conn.execute(
+            "INSERT INTO players (first_name, last_name) VALUES (?, ?)",
+            ("Legacy", "backup player"),
         )
         conn.commit()
 
@@ -929,7 +942,9 @@ def test_admin_audit_log_tracks_login_logout_and_config_changes(tmp_path, monkey
             """
             CREATE TABLE IF NOT EXISTS players (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                display_name TEXT,
+                first_name TEXT,
+                last_name TEXT,
+                custom_display_name TEXT,
                 rating REAL DEFAULT 1500,
                 games_played INTEGER DEFAULT 0,
                 active INTEGER DEFAULT 1,
@@ -939,6 +954,19 @@ def test_admin_audit_log_tracks_login_logout_and_config_changes(tmp_path, monkey
             )
             """
         )
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS tournament_pending_players (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                tournament_id INTEGER,
+                first_name TEXT NOT NULL DEFAULT '',
+                last_name TEXT NOT NULL DEFAULT '',
+                suggested_name TEXT
+            )
+            """
+        )
+        ensure_application_settings_table(conn)
+        create_display_name_views(conn)
         conn.execute(
             """
             CREATE TABLE IF NOT EXISTS category_config (
@@ -954,8 +982,8 @@ def test_admin_audit_log_tracks_login_logout_and_config_changes(tmp_path, monkey
             (1, 20.0, 400.0),
         )
         conn.execute(
-            "INSERT INTO players (display_name, rating, games_played, active) VALUES (?, ?, ?, ?)",
-            ("Audit Player", 1700.0, 3, 1),
+            "INSERT INTO players (first_name, last_name, rating, games_played, active) VALUES (?, ?, ?, ?, ?)",
+            ("Audit", "Player", 1700.0, 3, 1),
         )
         role_id = conn.execute("SELECT id FROM roles WHERE name = 'administrator' ").fetchone()[0]
         conn.execute(

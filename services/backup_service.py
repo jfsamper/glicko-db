@@ -148,7 +148,9 @@ def ensure_players_fts_artifacts(conn):
         """
         CREATE VIRTUAL TABLE IF NOT EXISTS players_fts USING fts5(
             id UNINDEXED,
-            display_name,
+            first_name,
+            last_name,
+            custom_display_name,
             country,
             club,
             slug,
@@ -160,26 +162,34 @@ def ensure_players_fts_artifacts(conn):
     conn.execute(
         """
         CREATE TRIGGER IF NOT EXISTS players_fts_ai AFTER INSERT ON players BEGIN
-            INSERT INTO players_fts(rowid, id, display_name, country, club, slug)
-            VALUES (new.id, new.id, new.display_name, new.country, new.club, new.slug);
+            INSERT INTO players_fts(rowid, id, first_name, last_name, custom_display_name,
+                                    country, club, slug)
+            VALUES (new.id, new.id, new.first_name, new.last_name, new.custom_display_name,
+                    new.country, new.club, new.slug);
         END
         """
     )
     conn.execute(
         """
         CREATE TRIGGER IF NOT EXISTS players_fts_ad AFTER DELETE ON players BEGIN
-            INSERT INTO players_fts(players_fts, rowid, id, display_name, country, club, slug)
-            VALUES('delete', old.id, old.id, old.display_name, old.country, old.club, old.slug);
+            INSERT INTO players_fts(players_fts, rowid, id, first_name, last_name,
+                                    custom_display_name, country, club, slug)
+            VALUES('delete', old.id, old.id, old.first_name, old.last_name,
+                   old.custom_display_name, old.country, old.club, old.slug);
         END
         """
     )
     conn.execute(
         """
         CREATE TRIGGER IF NOT EXISTS players_fts_au AFTER UPDATE ON players BEGIN
-            INSERT INTO players_fts(players_fts, rowid, id, display_name, country, club, slug)
-            VALUES('delete', old.id, old.id, old.display_name, old.country, old.club, old.slug);
-            INSERT INTO players_fts(rowid, id, display_name, country, club, slug)
-            VALUES (new.id, new.id, new.display_name, new.country, new.club, new.slug);
+            INSERT INTO players_fts(players_fts, rowid, id, first_name, last_name,
+                                    custom_display_name, country, club, slug)
+            VALUES('delete', old.id, old.id, old.first_name, old.last_name,
+                   old.custom_display_name, old.country, old.club, old.slug);
+            INSERT INTO players_fts(rowid, id, first_name, last_name, custom_display_name,
+                                    country, club, slug)
+            VALUES (new.id, new.id, new.first_name, new.last_name, new.custom_display_name,
+                    new.country, new.club, new.slug);
         END
         """
     )

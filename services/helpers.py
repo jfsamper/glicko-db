@@ -5,6 +5,7 @@ import hashlib
 import re
 
 from config import SKIP_SHEETS
+from services.display_name import split_display_name
 
 
 def normalize_text(value):
@@ -246,11 +247,4 @@ def slugify(value):
 
 
 def split_name(display_name):
-    text = normalize_text(display_name)
-    if "," in text:
-        last_name, first_name = text.split(",", 1)
-        return first_name.strip(), last_name.strip()
-    parts = text.split()
-    if len(parts) >= 2:
-        return parts[0], " ".join(parts[1:])
-    return text, ""
+    return split_display_name(display_name)

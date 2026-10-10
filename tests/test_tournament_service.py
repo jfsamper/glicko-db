@@ -43,6 +43,8 @@ from services.tournament_service import (
 )
 from services.pairing_service import default_acceleration_rounds
 from services.helpers import normalize_key
+from services.display_name import create_display_name_views, split_display_name
+from services.settings_service import ensure_application_settings_table
 from services.import_gotha import GothaPlayer, GothaTournamentPayload
 
 
@@ -60,7 +62,7 @@ def create_db():
             id INTEGER PRIMARY KEY,
             first_name TEXT,
             last_name TEXT,
-            display_name TEXT,
+            custom_display_name TEXT,
             rating REAL,
             active INTEGER DEFAULT 1
         );
@@ -121,8 +123,10 @@ def create_db():
         CREATE TABLE tournament_pending_players (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             tournament_id INTEGER NOT NULL,
-            display_name TEXT NOT NULL,
+            first_name TEXT NOT NULL DEFAULT '',
+            last_name TEXT NOT NULL DEFAULT '',
             suggested_name TEXT,
+            suggested_player_id INTEGER,
             resolved_player_id INTEGER,
             rating REAL NOT NULL DEFAULT 0,
             rank INTEGER NOT NULL DEFAULT 0,
@@ -145,6 +149,9 @@ def create_db():
         );
         """
     )
+    ensure_application_settings_table(conn)
+    create_display_name_views(conn)
+    conn.commit()
     return conn
 
 
@@ -153,8 +160,8 @@ def seed_players(conn):
     for index, player in enumerate(metadata["players"], 1):
         first_name, last_name = player["display_name"].rsplit(" ", 1)
         conn.execute(
-            "INSERT INTO players VALUES (?, ?, ?, ?, ?, 1)",
-            (index, first_name, last_name, player["display_name"], player["rating"]),
+            "INSERT INTO players (id, first_name, last_name, rating, active) VALUES (?, ?, ?, ?, 1)",
+            (index, first_name, last_name, player["rating"]),
         )
     conn.commit()
 
@@ -177,22 +184,22 @@ def create_manual_tournament(conn, rounds=5, pairing_system="swiss", name="Manua
 def test_suggest_player_name_uses_token_overlap_for_reordered_names():
     conn = create_db()
     conn.execute(
-        "INSERT INTO players (id, first_name, last_name, display_name, rating, active) VALUES (?, ?, ?, ?, ?, ?)",
-        (1, "Juan Felipe", "Burgos", "Juan Felipe Burgos", 1500, 1),
+        "INSERT INTO players (id, first_name, last_name, rating, active) VALUES (?, ?, ?, ?, ?)",
+        (1, "Juan Felipe", "Burgos", 1500, 1),
     )
     conn.execute(
-        "INSERT INTO players (id, first_name, last_name, display_name, rating, active) VALUES (?, ?, ?, ?, ?, ?)",
-        (2, "Brandal", "Henao", "Brandal Henao", 1500, 1),
+        "INSERT INTO players (id, first_name, last_name, rating, active) VALUES (?, ?, ?, ?, ?)",
+        (2, "Brandal", "Henao", 1500, 1),
     )
     conn.execute(
-        "INSERT INTO players (id, first_name, last_name, display_name, rating, active) VALUES (?, ?, ?, ?, ?, ?)",
-        (3, "Santiago", "Espinosa", "Santiago Espinosa", 1500, 1),
+        "INSERT INTO players (id, first_name, last_name, rating, active) VALUES (?, ?, ?, ?, ?)",
+        (3, "Santiago", "Espinosa", 1500, 1),
     )
     conn.commit()
 
-    assert _suggest_player_name("Burgos Juan", conn) == "Juan Felipe Burgos"
-    assert _suggest_player_name("Henao Brandal", conn) == "Brandal Henao"
-    assert _suggest_player_name("Espinosa Santiago", conn) == "Santiago Espinosa"
+    assert _suggest_player_name("Burgos Juan", conn) == "Burgos, Juan Felipe"
+    assert _suggest_player_name("Henao Brandal", conn) == "Henao, Brandal"
+    assert _suggest_player_name("Espinosa Santiago", conn) == "Espinosa, Santiago"
 
 
 def test_acceleration_policy_uses_rating_seed_and_expires_after_opening_rounds():
@@ -204,8 +211,8 @@ def test_acceleration_policy_uses_rating_seed_and_expires_after_opening_rounds()
     ratings = (1200, 1500, 1800, 2100)
     for player_id, rating in enumerate(ratings, 1):
         conn.execute(
-            "INSERT INTO players (id, first_name, last_name, display_name, rating, active) VALUES (?, ?, ?, ?, ?, 1)",
-            (player_id, "First", str(player_id), f"First {player_id}", rating),
+            "INSERT INTO players (id, first_name, last_name, rating, active) VALUES (?, ?, ?, ?, 1)",
+            (player_id, "First", str(player_id), rating),
         )
     for player_id in reversed(range(1, 5)):
         add_participant(conn, tournament_id, player_id)
@@ -239,12 +246,12 @@ def test_participant_state_supplies_pairing_evaluation_inputs():
     conn.executemany(
         """
         INSERT INTO players
-            (id, first_name, last_name, display_name, rating, active, country, club)
-        VALUES (?, ?, ?, ?, ?, 1, ?, ?)
+            (id, first_name, last_name, rating, active, country, club)
+        VALUES (?, ?, ?, ?, 1, ?, ?)
         """,
         [
-            (1, "Low", "Player", "Low Player", 1500, "CO", "Club A"),
-            (2, "High", "Player", "High Player", 2100, "JP", "Club B"),
+            (1, "Low", "Player", 1500, "CO", "Club A"),
+            (2, "High", "Player", 2100, "JP", "Club B"),
         ],
     )
     for player_id in (1, 2):
@@ -269,7 +276,7 @@ def test_participant_state_supplies_pairing_evaluation_inputs():
 
     state = _participant_state(conn, tournament_id)
 
-    assert state[1]["name"] == "Low Player"
+    assert state[1]["name"] == "Player, Low"
     assert state[1]["country"] == "CO"
     assert state[1]["club"] == "Club A"
     assert state[2]["category_order"] < state[1]["category_order"]
@@ -286,8 +293,8 @@ def test_accelerated_standings_drop_virtual_points_after_acceleration_rounds():
     tournament_id = create_manual_tournament(conn, rounds=3, pairing_system="accelerated_swiss")
     for player_id, rating in enumerate((1200, 1500, 1800, 2100), 1):
         conn.execute(
-            "INSERT INTO players (id, first_name, last_name, display_name, rating, active) VALUES (?, ?, ?, ?, ?, 1)",
-            (player_id, "First", str(player_id), f"First {player_id}", rating),
+            "INSERT INTO players (id, first_name, last_name, rating, active) VALUES (?, ?, ?, ?, 1)",
+            (player_id, "First", str(player_id), rating),
         )
     for player_id in range(1, 5):
         add_participant(conn, tournament_id, player_id)
@@ -321,8 +328,8 @@ def test_accelerated_pairing_uses_first_round_results_for_second_round():
     ratings = (2100, 2050, 2000, 1950, 1900, 1850, 1800, 1750)
     for player_id, rating in enumerate(ratings, 1):
         conn.execute(
-            "INSERT INTO players (id, first_name, last_name, display_name, rating, active) VALUES (?, ?, ?, ?, ?, 1)",
-            (player_id, "First", str(player_id), f"First {player_id}", rating),
+            "INSERT INTO players (id, first_name, last_name, rating, active) VALUES (?, ?, ?, ?, 1)",
+            (player_id, "First", str(player_id), rating),
         )
     for player_id in range(1, 9):
         add_participant(conn, tournament_id, player_id)
@@ -358,8 +365,8 @@ def test_accelerated_pairing_uses_first_round_results_for_second_round():
 def test_opengotha_import_persists_fuzzy_player_suggestion():
     conn = create_db()
     conn.execute(
-        "INSERT INTO players (id, first_name, last_name, display_name, rating, active) VALUES (?, ?, ?, ?, ?, ?)",
-        (1, "Given Middle", "Family", "Given Middle Family", 2400, 1),
+        "INSERT INTO players (id, first_name, last_name, rating, active) VALUES (?, ?, ?, ?, ?)",
+        (1, "Given Middle", "Family", 2400, 1),
     )
     conn.commit()
 
@@ -371,15 +378,16 @@ def test_opengotha_import_persists_fuzzy_player_suggestion():
 
     pending = conn.execute(
         """
-        SELECT display_name, suggested_name
-        FROM tournament_pending_players
+        SELECT display_name, suggested_name, suggested_player_id
+        FROM tournament_pending_players_display
         WHERE tournament_id = ? AND display_name = ?
         """,
-        (tournament_id, "Given Family"),
+        (tournament_id, "Family, Given"),
     ).fetchone()
 
     assert pending is not None
-    assert pending["suggested_name"] == "Given Middle Family"
+    assert pending["suggested_name"] == "Family, Given Middle"
+    assert pending["suggested_player_id"] == 1
 
 
 def test_opengotha_import_does_not_create_missing_players_until_processing():
@@ -478,10 +486,10 @@ def test_opengotha_bye_and_absence_round_trip(tmp_path):
     def imported_connection():
         connection = create_db()
         connection.executemany(
-            "INSERT INTO players (id, first_name, last_name, display_name, rating, active) VALUES (?, ?, ?, ?, ?, 1)",
+            "INSERT INTO players (id, first_name, last_name, rating, active) VALUES (?, ?, ?, ?, 1)",
             [
-                (1, "Ana", "Alpha", "Ana Alpha", 1500),
-                (2, "Ben", "Beta", "Ben Beta", 1400),
+                (1, "Ana", "Alpha", 1500),
+                (2, "Ben", "Beta", 1400),
             ],
         )
         connection.commit()
@@ -608,7 +616,7 @@ def test_opengotha_mcmahon_mm_values_are_read_when_criteria_are_trimmed_or_force
 def test_opengotha_ratings_never_fall_below_glicko_floor():
     metadata = read_gotha_tournament(FIXTURE_DIR / "OGSTest.xml")
 
-    first_player = next(player for player in metadata["players"] if player["display_name"] == "Test Player01")
+    first_player = next(player for player in metadata["players"] if player["display_name"] == "Player01, Test")
 
     assert first_player["rating"] == GLICKO_M
     assert all(player["rating"] >= GLICKO_M for player in metadata["players"])
@@ -727,8 +735,8 @@ def test_generated_round_respects_tournament_handicap_setting(
     )
     for player_id, rating in ((1, 2500), (2, 900)):
         conn.execute(
-            "INSERT INTO players (id, first_name, last_name, display_name, rating) VALUES (?, ?, ?, ?, ?)",
-            (player_id, "Player", str(player_id), f"Player {player_id}", rating),
+            "INSERT INTO players (id, first_name, last_name, rating) VALUES (?, ?, ?, ?)",
+            (player_id, "Player", str(player_id), rating),
         )
         add_participant(conn, tournament_id, player_id)
 
@@ -759,8 +767,8 @@ def test_next_round_assigns_boards_by_pairing_leader_score_then_rating():
     }
     for player_id, rating in ratings.items():
         conn.execute(
-            "INSERT INTO players (id, first_name, last_name, display_name, rating, active) VALUES (?, ?, ?, ?, ?, 1)",
-            (player_id, "Player", str(player_id), f"Player {player_id}", rating),
+            "INSERT INTO players (id, first_name, last_name, rating, active) VALUES (?, ?, ?, ?, 1)",
+            (player_id, "Player", str(player_id), rating),
         )
         add_participant(conn, tournament_id, player_id)
 
@@ -868,11 +876,11 @@ def test_materialized_pending_mcmahon_players_keep_seed_initial_scores():
     tournament_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
 
     conn.executemany(
-        "INSERT INTO tournament_pending_players (tournament_id, display_name, suggested_name, rating, rank, category, source_key) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO tournament_pending_players (tournament_id, first_name, last_name, suggested_name, rating, rank, category, source_key) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
         [
-            (tournament_id, "Alice Alpha", None, 1500.0, 1, "3K", "ALPHAALICE"),
-            (tournament_id, "Bob Bravo", None, 1450.0, 2, "5K", "BRAVOBOB"),
-            (tournament_id, "Carla Charlie", None, 1400.0, 3, "6K", "CHARLIECARLA"),
+            (tournament_id, "Alice", "Alpha", None, 1500.0, 1, "3K", "ALPHAALICE"),
+            (tournament_id, "Bob", "Bravo", None, 1450.0, 2, "5K", "BRAVOBOB"),
+            (tournament_id, "Carla", "Charlie", None, 1400.0, 3, "6K", "CHARLIECARLA"),
         ],
     )
     conn.commit()
@@ -881,13 +889,13 @@ def test_materialized_pending_mcmahon_players_keep_seed_initial_scores():
     assert created == 3
 
     rows = conn.execute(
-        "SELECT p.display_name, tp.seed_rank, tp.initial_score FROM tournament_participants tp JOIN players p ON p.id = tp.player_id WHERE tp.tournament_id = ? ORDER BY tp.seed_rank",
+        "SELECT p.display_name, tp.seed_rank, tp.initial_score FROM players_display p JOIN tournament_participants tp ON p.id = tp.player_id WHERE tp.tournament_id = ? ORDER BY tp.seed_rank",
         (tournament_id,),
     ).fetchall()
     assert [(row["display_name"], row["seed_rank"], row["initial_score"]) for row in rows] == [
-        ("Alice Alpha", 1, 33.0),
-        ("Bob Bravo", 2, 32.0),
-        ("Carla Charlie", 3, 31.0),
+        ("Alpha, Alice", 1, 33.0),
+        ("Bravo, Bob", 2, 32.0),
+        ("Charlie, Carla", 3, 31.0),
     ]
 
 
@@ -899,10 +907,10 @@ def test_french_mcmahon_standings_assign_mms_to_pending_players():
 
     metadata = read_gotha_tournament(FRENCH_XML_PATH)
     top_player = metadata["players"][0]
-    first_name, last_name = top_player["display_name"].rsplit(" ", 1)
+    first_name, last_name = split_display_name(top_player["display_name"])
     conn.execute(
-        "INSERT INTO players (id, first_name, last_name, display_name, rating, active) VALUES (?, ?, ?, ?, ?, 1)",
-        (1, first_name, last_name, top_player["display_name"], top_player["rating"]),
+        "INSERT INTO players (id, first_name, last_name, rating, active) VALUES (?, ?, ?, ?, 1)",
+        (1, first_name, last_name, top_player["rating"]),
     )
     conn.commit()
 
@@ -930,8 +938,8 @@ def test_pending_participants_expose_null_public_id_and_stable_internal_id():
     )
     tournament_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
     conn.execute(
-        "INSERT INTO tournament_pending_players (tournament_id, display_name, suggested_name, rating, rank, category, source_key) VALUES (?, ?, ?, ?, ?, ?, ?)",
-        (tournament_id, "Pending Player", None, 1500.0, 1, "", "pending-player"),
+        "INSERT INTO tournament_pending_players (tournament_id, first_name, last_name, suggested_name, rating, rank, category, source_key) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+        (tournament_id, "Pending", "Player", None, 1500.0, 1, "", "pending-player"),
     )
     conn.commit()
 
@@ -941,14 +949,14 @@ def test_pending_participants_expose_null_public_id_and_stable_internal_id():
     assert rows[0]["is_pending"] is True
     assert rows[0]["id"] is None
     assert rows[0]["player_id"] < 0
-    assert rows[0]["display_name"] == "Pending Player"
+    assert rows[0]["display_name"] == "Player, Pending"
 
 
 def test_materialize_pending_players_uses_resolved_player_id_when_set():
     conn = create_db()
     conn.execute(
-        "INSERT INTO players (id, first_name, last_name, display_name, rating, active) VALUES (?, ?, ?, ?, ?, ?)",
-        (1, "Juan Felipe", "Burgos", "Juan Felipe Burgos", 1500, 1),
+        "INSERT INTO players (id, first_name, last_name, rating, active) VALUES (?, ?, ?, ?, ?)",
+        (1, "Juan Felipe", "Burgos", 1500, 1),
     )
     conn.execute(
         "INSERT INTO tournaments (name, rounds, pairing_system, tournament_type) VALUES (?, ?, ?, ?)",
@@ -956,8 +964,8 @@ def test_materialize_pending_players_uses_resolved_player_id_when_set():
     )
     tournament_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
     conn.execute(
-        "INSERT INTO tournament_pending_players (tournament_id, display_name, suggested_name, resolved_player_id, rating, rank, category, source_key) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-        (tournament_id, "Burgos Juan", "Juan Felipe Burgos", 1, 1500.0, 1, "", "burgosjuan"),
+        "INSERT INTO tournament_pending_players (tournament_id, first_name, last_name, suggested_name, resolved_player_id, rating, rank, category, source_key) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        (tournament_id, "Juan", "Burgos", "Juan Felipe Burgos", 1, 1500.0, 1, "", "burgosjuan"),
     )
     conn.commit()
 
@@ -972,8 +980,8 @@ def test_materialize_pending_players_uses_resolved_player_id_when_set():
 def test_unconfirmed_pending_suggestion_creates_a_separate_player():
     conn = create_db()
     conn.execute(
-        "INSERT INTO players (id, first_name, last_name, display_name, rating, active) VALUES (?, ?, ?, ?, ?, ?)",
-        (1, "Juan Felipe", "Burgos", "Juan Felipe Burgos", 1500, 1),
+        "INSERT INTO players (id, first_name, last_name, rating, active) VALUES (?, ?, ?, ?, ?)",
+        (1, "Juan Felipe", "Burgos", 1500, 1),
     )
     conn.execute(
         "INSERT INTO tournaments (name, rounds, pairing_system, tournament_type) VALUES (?, ?, ?, ?)",
@@ -981,37 +989,37 @@ def test_unconfirmed_pending_suggestion_creates_a_separate_player():
     )
     tournament_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
     pending_id = conn.execute(
-        "INSERT INTO tournament_pending_players (tournament_id, display_name, suggested_name, rating, rank, category, source_key) VALUES (?, ?, ?, ?, ?, ?, ?)",
-        (tournament_id, "Burgos Juan", "Juan Felipe Burgos", 1500.0, 1, "", "burgosjuan"),
+        "INSERT INTO tournament_pending_players (tournament_id, first_name, last_name, suggested_name, rating, rank, category, source_key) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+        (tournament_id, "Juan", "Burgos", "Juan Felipe Burgos", 1500.0, 1, "", "burgosjuan"),
     ).lastrowid
     conn.commit()
 
     _materialize_pending_players(conn, tournament_id, pending_id=pending_id)
 
     pending_row = conn.execute(
-        "SELECT display_name FROM tournament_pending_players WHERE id = ?",
+        "SELECT first_name FROM tournament_pending_players WHERE id = ?",
         (pending_id,),
     ).fetchone()
     assert pending_row is None
 
     participant_display_name = conn.execute(
-        "SELECT p.display_name FROM tournament_participants tp JOIN players p ON p.id = tp.player_id WHERE tp.tournament_id = ?",
+        "SELECT p.display_name FROM players_display p JOIN tournament_participants tp ON p.id = tp.player_id WHERE tp.tournament_id = ?",
         (tournament_id,),
     ).fetchone()[0]
-    assert participant_display_name == "Burgos Juan"
+    assert participant_display_name == "Burgos, Juan"
     assert conn.execute("SELECT COUNT(*) FROM players").fetchone()[0] == 2
 
 
 def test_pending_create_new_rejects_exact_existing_player_name():
     conn = create_db()
     conn.execute(
-        "INSERT INTO players (id, first_name, last_name, display_name, rating) VALUES (?, ?, ?, ?, ?)",
-        (1, "Burgos", "Juan", "Burgos Juan", 1500),
+        "INSERT INTO players (id, first_name, last_name, rating) VALUES (?, ?, ?, ?)",
+        (1, "Juan", "Burgos", 1500),
     )
     tournament_id = create_manual_tournament(conn)
     pending_id = conn.execute(
-        "INSERT INTO tournament_pending_players (tournament_id, display_name, rating, rank) "
-        "VALUES (?, 'Burgos Juan', 1500, 1)",
+        "INSERT INTO tournament_pending_players (tournament_id, first_name, last_name, rating, rank) "
+        "VALUES (?, 'Juan', 'Burgos', 1500, 1)",
         (tournament_id,),
     ).lastrowid
     conn.commit()
@@ -1037,10 +1045,10 @@ def test_export_tournament_results_returns_opengotha_xml():
         ("Annual club championship", tournament_id),
     )
     conn.executemany(
-        "INSERT INTO players (id, first_name, last_name, display_name, rating, active) VALUES (?, ?, ?, ?, ?, 1)",
+        "INSERT INTO players (id, first_name, last_name, rating, active) VALUES (?, ?, ?, ?, 1)",
         [
-            (1, "Fabio", "Moreno", "Fabio Moreno", 1500.6),
-            (2, "João", "Silva", "João Silva", 1450),
+            (1, "Fabio", "Moreno", 1500.6),
+            (2, "João", "Silva", 1450),
         ],
     )
     conn.execute(
@@ -1056,8 +1064,8 @@ def test_export_tournament_results_returns_opengotha_xml():
         (1, 1, 1, 2, "1-0"),
     )
     conn.execute(
-        "INSERT INTO tournament_pending_players (tournament_id, display_name, rating, rank) VALUES (?, ?, ?, ?)",
-        (tournament_id, "", 1500, 1),
+        "INSERT INTO tournament_pending_players (tournament_id, first_name, last_name, rating, rank) VALUES (?, ?, ?, ?, ?)",
+        (tournament_id, "", "", 1500, 1),
     )
     conn.execute(
         "INSERT INTO tournament_rounds (id, tournament_id, round_number, status) VALUES (?, ?, ?, 'scheduled')",
@@ -1122,9 +1130,9 @@ def test_pairing_scenario_generator_uses_current_tournament_logic():
         "ALTER TABLE tournament_participants ADD COLUMN mc_seeds_calculated INTEGER NOT NULL DEFAULT 0"
     )
     conn.executemany(
-        "INSERT INTO players (id, first_name, last_name, display_name, rating, active) VALUES (?, ?, ?, ?, ?, 1)",
+        "INSERT INTO players (id, first_name, last_name, rating, active) VALUES (?, ?, ?, ?, 1)",
         [
-            (player_id, f"Player{player_id}", "Test", f"Player{player_id} Test", 2200 - player_id * 10)
+            (player_id, f"Player{player_id}", "Test", 2200 - player_id * 10)
             for player_id in range(1, max(PLAYER_COUNTS) + 1)
         ],
     )
@@ -1198,12 +1206,12 @@ def test_mcmahon_seed_recalculation_uses_tournament_metadata_and_is_guarded():
         "ALTER TABLE tournament_participants ADD COLUMN mc_seeds_calculated INTEGER NOT NULL DEFAULT 0"
     )
     conn.execute(
-        "INSERT INTO players (id, first_name, last_name, display_name, rating, active) VALUES (?, ?, ?, ?, ?, 1)",
-        (1, "Alice", "Alpha", "Alpha, Alice", 1500.0),
+        "INSERT INTO players (id, first_name, last_name, rating, active) VALUES (?, ?, ?, ?, 1)",
+        (1, "Alice", "Alpha", 1500.0),
     )
     conn.execute(
-        "INSERT INTO players (id, first_name, last_name, display_name, rating, active) VALUES (?, ?, ?, ?, ?, 1)",
-        (2, "Bob", "Bravo", "Bravo, Bob", 1450.0),
+        "INSERT INTO players (id, first_name, last_name, rating, active) VALUES (?, ?, ?, ?, 1)",
+        (2, "Bob", "Bravo", 1450.0),
     )
     conn.execute(
         "INSERT INTO tournaments (name, rounds, pairing_system, tournament_type, mm_bar, mm_floor, mm_zero) VALUES (?, ?, ?, ?, ?, ?, ?)",
@@ -1279,12 +1287,12 @@ def test_completion_refresh_skips_already_completed_rounds(monkeypatch):
 def test_manual_mcmahon_participants_are_ranked_by_strength_not_insertion_order():
     conn = create_db()
     conn.execute(
-        "INSERT INTO players (id, first_name, last_name, display_name, rating, active) VALUES (?, ?, ?, ?, ?, 1)",
-        (1, "Leonardo", "Bravo", "Bravo, Leonardo", 1844.8),
+        "INSERT INTO players (id, first_name, last_name, rating, active) VALUES (?, ?, ?, ?, 1)",
+        (1, "Leonardo", "Bravo", 1844.8),
     )
     conn.execute(
-        "INSERT INTO players (id, first_name, last_name, display_name, rating, active) VALUES (?, ?, ?, ?, ?, 1)",
-        (2, "Farlan", "Andrade", "Andrade, Farlan", 2080.0),
+        "INSERT INTO players (id, first_name, last_name, rating, active) VALUES (?, ?, ?, ?, 1)",
+        (2, "Farlan", "Andrade", 2080.0),
     )
     conn.execute(
         "INSERT INTO tournaments (name, rounds, pairing_system, tournament_type) VALUES (?, ?, ?, ?)",
@@ -1403,10 +1411,10 @@ def test_delete_tournament_removes_all_dependent_records():
     conn.execute(
         """
         INSERT INTO tournament_pending_players
-            (tournament_id, display_name, rating, rank, category)
-        VALUES (?, ?, ?, ?, ?)
+            (tournament_id, first_name, last_name, rating, rank, category)
+        VALUES (?, ?, ?, ?, ?, ?)
         """,
-        (tournament_id, "Pending Player", 1500, 1, ""),
+        (tournament_id, "Pending", "Player", 1500, 1, ""),
     )
     for player_id in range(1, 11):
         add_participant(conn, tournament_id, player_id)

@@ -33,7 +33,7 @@ def _category_for_rating(conn, rating):
 
 def player_lookup(conn):
     rows = conn.execute(
-        "SELECT id, display_name, first_name, last_name, rating FROM players"
+        "SELECT id, display_name, first_name, last_name, rating FROM players_display"
     ).fetchall()
     lookup = {}
     for row in rows:
@@ -89,12 +89,12 @@ def name_similarity_score(target_name, candidate_name):
     ).ratio()
 
 
-def suggest_player_name(name, conn):
-    """Return a close active player name when exact lookup fails."""
+def suggest_player_match(name, conn):
+    """Return (suggested_text, player_id) for the closest active player, or None."""
     if not name:
         return None
     rows = conn.execute(
-        "SELECT display_name, first_name, last_name FROM players WHERE active = 1"
+        "SELECT id, display_name, first_name, last_name FROM players_display WHERE active = 1"
     ).fetchall()
     best_match = None
     best_score = 0.0
@@ -105,8 +105,28 @@ def suggest_player_name(name, conn):
             score = name_similarity_score(name, candidate)
             if score > best_score:
                 best_score = score
-                best_match = candidate
+                best_match = (candidate, row["id"])
     return best_match if best_score >= 0.82 else None
+
+
+def suggest_player_name(name, conn):
+    """Return a close active player name when exact lookup fails."""
+    match = suggest_player_match(name, conn)
+    return match[0] if match else None
+
+
+def pending_initial_score(tournament, rank):
+    """Return the McMahon starting score for a pending player, or 0.0 for other systems."""
+    if not tournament or tournament["pairing_system"] != "mcmahon":
+        return 0.0
+    keys = tournament.keys()
+
+    def setting(column, default):
+        return tournament[column] if column in keys and tournament[column] is not None else default
+
+    return mcmahon_score_from_rank(
+        max(1, int(rank or 1)),
+        bar=setting("mm_bar", 8), floor=setting("mm_floor", -30), zero=setting("mm_zero", 0))
 
 
 def list_pending_players(conn, tournament_id):
@@ -114,7 +134,7 @@ def list_pending_players(conn, tournament_id):
     return conn.execute(
         """
         SELECT *
-        FROM tournament_pending_players
+        FROM tournament_pending_players_display
         WHERE tournament_id = ?
         ORDER BY rank, display_name
         """,
@@ -132,18 +152,14 @@ def list_tournament_participants(conn, tournament_id):
     matched = conn.execute("""
         SELECT tp.player_id AS player_id, p.display_name AS display_name,
                tp.seed_rating, tp.seed_rank, tp.category, tp.initial_score, tp.acceleration
-        FROM tournament_participants tp JOIN players p ON p.id = tp.player_id
+        FROM tournament_participants tp JOIN players_display p ON p.id = tp.player_id
         WHERE tp.tournament_id = ?
     """, (tournament_id,)).fetchall()
     pending = list_pending_players(conn, tournament_id)
     rows = [{"id": row["player_id"], "player_id": row["player_id"], "display_name": row["display_name"], "seed_rating": row["seed_rating"], "seed_rank": row["seed_rank"],
              "category": row["category"], "initial_score": row["initial_score"], "acceleration": row["acceleration"], "is_pending": False} for row in matched]
-    pending_scores = {}
-    if tournament and tournament["pairing_system"] == "mcmahon":
-        pending_scores = {row["id"]: mcmahon_score_from_rank(max(1, int(row["rank"] or 1)), bar=tournament["mm_bar"] if "mm_bar" in tournament.keys() and tournament["mm_bar"] is not None else 8, floor=tournament["mm_floor"] if "mm_floor" in tournament.keys(
-        ) and tournament["mm_floor"] is not None else -30, zero=tournament["mm_zero"] if "mm_zero" in tournament.keys() and tournament["mm_zero"] is not None else 0) for row in pending}
     rows.extend({"id": None, "pending_id": row["id"], "player_id": -row["id"], "display_name": row["display_name"], "seed_rating": row["rating"], "seed_rank": row["rank"],
-                "category": row["category"], "initial_score": pending_scores.get(row["id"], 0.0), "acceleration": 0.0, "is_pending": True} for row in pending)
+                "category": row["category"], "initial_score": pending_initial_score(tournament, row["rank"]), "acceleration": 0.0, "is_pending": True} for row in pending)
     rows.sort(key=lambda row: (row["seed_rank"]
               or 0, str(row["display_name"] or "")))
     return rows
@@ -175,7 +191,7 @@ def recalculate_mcmahon_seeds(conn, tournament_id):
     ) and tournament["mm_floor"] is not None else -30
     mm_zero = tournament["mm_zero"] if "mm_zero" in tournament.keys(
     ) and tournament["mm_zero"] is not None else 0
-    rows = conn.execute("SELECT tp.id, tp.player_id, p.display_name, tp.seed_rating, tp.category FROM tournament_participants tp JOIN players p ON p.id = tp.player_id WHERE tp.tournament_id = ?", (tournament_id,)).fetchall()
+    rows = conn.execute("SELECT tp.id, tp.player_id, p.display_name, tp.seed_rating, tp.category FROM tournament_participants tp JOIN players_display p ON p.id = tp.player_id WHERE tp.tournament_id = ?", (tournament_id,)).fetchall()
     ordered = sorted(rows, key=lambda row: (-float(row["seed_rating"] or 0), -mcmahon_category_strength(
         row["category"]), str(row["display_name"] or "").casefold(), int(row["player_id"])))
     for seed_rank, row in enumerate(ordered, 1):
@@ -212,12 +228,12 @@ def materialize_pending_players(conn, tournament_id, pending_id=None):
         if resolved_id is not None:
             player_id = int(resolved_id)
             resolved = conn.execute(
-                "SELECT display_name FROM players WHERE id = ?", (player_id,)).fetchone()
+                "SELECT display_name, first_name, last_name FROM players_display WHERE id = ?", (player_id,)).fetchone()
             if resolved is None:
                 raise ValueError("Resolved player not found")
             display_name = resolved["display_name"]
-            conn.execute("UPDATE tournament_pending_players SET display_name = ? WHERE tournament_id = ? AND id = ?",
-                         (display_name, tournament_id, row["id"]))
+            conn.execute("UPDATE tournament_pending_players SET first_name = ?, last_name = ? WHERE tournament_id = ? AND id = ?",
+                         (resolved["first_name"], resolved["last_name"], tournament_id, row["id"]))
         else:
             lookup = build_player_lookup(conn)
             if normalize_key(display_name) in lookup:
@@ -226,8 +242,7 @@ def materialize_pending_players(conn, tournament_id, pending_id=None):
                 conn, display_name, rating=rating, initial_rating=rating, active=1, player_lookup=lookup)
         conn.execute("UPDATE tournament_pairings SET white_player_id = ?, white_player_name = NULL WHERE round_id IN (SELECT id FROM tournament_rounds WHERE tournament_id = ?) AND white_player_id IS NULL AND white_player_name = ?", (player_id, tournament_id, display_name))
         conn.execute("UPDATE tournament_pairings SET black_player_id = ?, black_player_name = NULL WHERE round_id IN (SELECT id FROM tournament_rounds WHERE tournament_id = ?) AND black_player_id IS NULL AND black_player_name = ?", (player_id, tournament_id, display_name))
-        initial_score = mcmahon_score_from_rank(max(1, int(row["rank"] or 1)), bar=tournament["mm_bar"] if "mm_bar" in tournament.keys() and tournament["mm_bar"] is not None else 8, floor=tournament["mm_floor"] if "mm_floor" in tournament.keys(
-        ) and tournament["mm_floor"] is not None else -30, zero=tournament["mm_zero"] if "mm_zero" in tournament.keys() and tournament["mm_zero"] is not None else 30) if tournament and tournament["pairing_system"] == "mcmahon" else 0.0
+        initial_score = pending_initial_score(tournament, row["rank"])
         conn.execute("INSERT OR IGNORE INTO tournament_participants (tournament_id, player_id, seed_rating, seed_rank, category, initial_score, acceleration) VALUES (?, ?, ?, ?, ?, ?, ?)",
                      (tournament_id, player_id, rating, row["rank"] or 0, row["category"] or "", initial_score, 0))
         participation = row["participating"] if "participating" in row.keys(

@@ -97,11 +97,11 @@ def update_tournament_handicaps(conn, tournament_id, handicap_enabled, apply_aut
 
 def participant_state(conn, tournament_id, acceleration_scheme=None, acceleration_active=False):
     player_columns = table_columns(conn, "players")
-    player_name = "p.display_name AS player_name" if "display_name" in player_columns else "CAST(tp.player_id AS TEXT) AS player_name"
+    player_name = "p.display_name AS player_name"
     player_country = "COALESCE(p.country, '') AS player_country" if "country" in player_columns else "'' AS player_country"
     player_club = "COALESCE(p.club, '') AS player_club" if "club" in player_columns else "'' AS player_club"
     participants = conn.execute(
-        f"SELECT tp.*, {player_name}, {player_country}, {player_club} FROM tournament_participants tp JOIN players p ON p.id = tp.player_id WHERE tp.tournament_id = ? ORDER BY tp.seed_rank, tp.id", (tournament_id,)).fetchall()
+        f"SELECT tp.*, {player_name}, {player_country}, {player_club} FROM tournament_participants tp JOIN players_display p ON p.id = tp.player_id WHERE tp.tournament_id = ? ORDER BY tp.seed_rank, tp.id", (tournament_id,)).fetchall()
     previous = conn.execute("SELECT p.white_player_id, p.black_player_id, p.result, p.is_bye, p.handicap_stones, r.round_number FROM tournament_pairings p JOIN tournament_rounds r ON r.id = p.round_id WHERE r.tournament_id = ? ORDER BY r.round_number, p.board_number", (tournament_id,)).fetchall()
     columns = table_columns(conn, "tournaments")
     settings_columns = ["bye_points", "absent_points", "pairing_system"]

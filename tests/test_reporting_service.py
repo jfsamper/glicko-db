@@ -5,11 +5,13 @@ from reportlab.graphics.shapes import Drawing
 from reportlab.lib.pagesizes import A4
 
 import services.reporting_service as reporting_service
+from services.display_name import create_display_name_views
 from services.reporting_service import (
     build_date_report,
     export_report_csv,
     resolve_report_range,
 )
+from services.settings_service import ensure_application_settings_table
 
 
 def create_report_db():
@@ -19,7 +21,9 @@ def create_report_db():
         """
         CREATE TABLE players (
             id INTEGER PRIMARY KEY,
-            display_name TEXT,
+            first_name TEXT NOT NULL DEFAULT '',
+            last_name TEXT NOT NULL DEFAULT '',
+            custom_display_name TEXT,
             initial_rating REAL,
             rating REAL,
             country TEXT,
@@ -45,7 +49,7 @@ def create_report_db():
             glicko_m REAL
         );
         INSERT INTO category_config VALUES (1, 16.6, 340.0);
-        INSERT INTO players VALUES
+        INSERT INTO players (id, first_name, initial_rating, rating, country, club) VALUES
             (1, 'Alice', 1500, 1600, 'CO', 'Club A'),
             (2, 'Bob', 1500, 1500, 'US', 'Club B');
         INSERT INTO matches (id, match_date, white_player_id, black_player_id, result, event) VALUES
@@ -59,6 +63,9 @@ def create_report_db():
             (4, 2, '2026-01-02', 1500);
         """
     )
+    ensure_application_settings_table(conn)
+    create_display_name_views(conn)
+    conn.commit()
     return conn
 
 
@@ -102,7 +109,7 @@ def test_report_uses_inclusive_range_and_precomputed_metrics():
 def test_player_selector_is_ordered_by_total_games():
     conn = create_report_db()
     conn.execute(
-        "INSERT INTO players VALUES (?, ?, ?, ?, ?, ?)",
+        "INSERT INTO players (id, first_name, initial_rating, rating, country, club) VALUES (?, ?, ?, ?, ?, ?)",
         (3, "Cara", 1500, 1500, "FR", "Club C"),
     )
     conn.execute(
@@ -120,7 +127,7 @@ def test_player_selector_is_ordered_by_total_games():
 def test_player_report_is_ordered_by_total_games():
     conn = create_report_db()
     conn.execute(
-        "INSERT INTO players VALUES (?, ?, ?, ?, ?, ?)",
+        "INSERT INTO players (id, first_name, initial_rating, rating, country, club) VALUES (?, ?, ?, ?, ?, ?)",
         (3, "Cara", 1500, 1500, "FR", "Club C"),
     )
     conn.executemany(

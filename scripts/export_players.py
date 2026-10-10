@@ -24,7 +24,7 @@ def main():
             display_name,
             games_played,
             rating
-        FROM players
+        FROM players_display
         ORDER BY rating DESC
         """
     ).fetchall()

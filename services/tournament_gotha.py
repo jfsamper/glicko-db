@@ -3,6 +3,7 @@ from pathlib import Path
 import xml.etree.ElementTree as ET
 
 from config import DEFAULT_RATING, GLICKO_M
+from services.display_name import render_display_name, split_display_name
 from services.helpers import normalize_key, normalize_text
 from services.import_gotha import GothaPlayer, GothaTournamentPayload
 from services.pairing_service import DEFAULT_ACCELERATION_SCHEME, DEFAULT_CATEGORY_ROUNDS, default_acceleration_rounds
@@ -81,7 +82,7 @@ def read_gotha_tournament(
         rating = max(rating, float(GLICKO_M))
         players.append(GothaPlayer(
             key=normalize_key(f"{last_name}{first_name}"),
-            display_name=f"{first_name} {last_name}".strip(),
+            display_name=render_display_name(first_name, last_name),
             rating=rating,
             rank=0,
             rank_value=_rank_value(player.get("rank") or player.get("grade")),
@@ -165,7 +166,7 @@ def create_tournament_from_gotha(conn, xml_path, pairing_system=None, player_dec
         normalize_tournament_rounds,
         table_columns,
     )
-    from services.tournament_participants import player_lookup, suggest_player_name
+    from services.tournament_participants import player_lookup, suggest_player_match
     from services.tournament_status import _refresh_tournament_completion_state
 
     xml_path = _resolve_gotha_path(xml_path)
@@ -246,10 +247,17 @@ def create_tournament_from_gotha(conn, xml_path, pairing_system=None, player_dec
                 player = conn.execute(
                     "SELECT id, rating FROM players WHERE id = ?", (player_id,)).fetchone()
             else:
-                pending_columns_insert = ["tournament_id", "display_name",
+                pending_first_name, pending_last_name = split_display_name(
+                    participant["display_name"])
+                suggestion = suggest_player_match(participant["display_name"], conn)
+                pending_columns_insert = ["tournament_id", "first_name", "last_name",
                                           "suggested_name", "rating", "rank", "category", "source_key"]
-                pending_values = [tournament_id, participant["display_name"], suggest_player_name(
-                    participant["display_name"], conn), participant["rating"], participant["rank"], participant["category"], source_key]
+                pending_values = [tournament_id, pending_first_name, pending_last_name,
+                                  suggestion[0] if suggestion else None, participant["rating"],
+                                  participant["rank"], participant["category"], source_key]
+                if "suggested_player_id" in pending_columns:
+                    pending_columns_insert.append("suggested_player_id")
+                    pending_values.append(suggestion[1] if suggestion else None)
                 if "participating" in pending_columns:
                     pending_columns_insert.append("participating")
                     pending_values.append(participant["participating"])
@@ -371,14 +379,14 @@ def export_tournament_results(conn, tournament_id):
         """
         SELECT tp.player_id, tp.seed_rank, tp.seed_rating, tp.category,
                player.first_name, player.last_name, player.display_name, player.rating
-        FROM tournament_participants tp JOIN players player ON player.id = tp.player_id
+        FROM tournament_participants tp JOIN players_display player ON player.id = tp.player_id
         WHERE tp.tournament_id = ? ORDER BY tp.seed_rank, tp.id
         """, (tournament_id,)
     ).fetchall()
     pending_participation = "participating" if "participating" in table_columns(
         conn, "tournament_pending_players") else "'11111111111111111111' AS participating"
     pending_rows = conn.execute(
-        f"SELECT id, display_name, rating, rank, category, {pending_participation} FROM tournament_pending_players WHERE tournament_id = ? ORDER BY rank, id", (tournament_id,)).fetchall()
+        f"SELECT id, display_name, rating, rank, category, {pending_participation} FROM tournament_pending_players_display WHERE tournament_id = ? ORDER BY rank, id", (tournament_id,)).fetchall()
     pairing_rows = conn.execute(
         """
         SELECT r.round_number, p.board_number, p.white_player_id, p.black_player_id,
@@ -386,8 +394,8 @@ def export_tournament_results(conn, tournament_id):
                COALESCE(black.display_name, p.black_player_name) AS black_name,
                p.result, p.is_bye, p.handicap_stones
         FROM tournament_pairings p JOIN tournament_rounds r ON r.id = p.round_id
-        LEFT JOIN players white ON white.id = p.white_player_id
-        LEFT JOIN players black ON black.id = p.black_player_id
+        LEFT JOIN players_display white ON white.id = p.white_player_id
+        LEFT JOIN players_display black ON black.id = p.black_player_id
         WHERE r.tournament_id = ? ORDER BY r.round_number, p.board_number
         """, (tournament_id,)
     ).fetchall()
@@ -413,9 +421,7 @@ def export_tournament_results(conn, tournament_id):
         first_name = str(first_name or "").strip()
         last_name = str(last_name or "").strip()
         if not first_name and not last_name and display_name:
-            parts = display_name.split(" ", 1)
-            first_name = parts[0]
-            last_name = parts[1] if len(parts) > 1 else ""
+            first_name, last_name = split_display_name(display_name)
         key = player_key(last_name, first_name)
         if not key:
             return None
@@ -452,7 +458,7 @@ def export_tournament_results(conn, tournament_id):
         for player_id, name in ((row["white_player_id"], row["white_name"]), (row["black_player_id"], row["black_name"])):
             if player_id is not None and player_id not in player_keys:
                 player = conn.execute(
-                    "SELECT id, first_name, last_name, display_name, rating FROM players WHERE id = ?", (player_id,)).fetchone()
+                    "SELECT id, first_name, last_name, display_name, rating FROM players_display WHERE id = ?", (player_id,)).fetchone()
                 if player:
                     add_player(player["id"], player["display_name"], player["rating"],
                                "", first_name=player["first_name"], last_name=player["last_name"])

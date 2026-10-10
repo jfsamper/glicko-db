@@ -134,10 +134,10 @@ def test_restore_backup_runs_migration_for_missing_tournament_schema(tmp_path, m
 
     conn = sqlite3.connect(current_db)
     conn.execute(
-        "CREATE TABLE players (id INTEGER PRIMARY KEY, display_name TEXT NOT NULL)"
+        "CREATE TABLE players (id INTEGER PRIMARY KEY, first_name TEXT NOT NULL DEFAULT '', last_name TEXT NOT NULL DEFAULT '')"
     )
     conn.execute(
-        "INSERT INTO players (display_name) VALUES ('Alpha')"
+        "INSERT INTO players (first_name, last_name) VALUES ('Alpha', '')"
     )
     conn.commit()
     conn.close()
@@ -146,10 +146,10 @@ def test_restore_backup_runs_migration_for_missing_tournament_schema(tmp_path, m
     backup_path = backup_dir / backup_name
     backup_conn = sqlite3.connect(backup_path)
     backup_conn.execute(
-        "CREATE TABLE players (id INTEGER PRIMARY KEY, display_name TEXT NOT NULL)"
+        "CREATE TABLE players (id INTEGER PRIMARY KEY, first_name TEXT NOT NULL DEFAULT '', last_name TEXT NOT NULL DEFAULT '')"
     )
     backup_conn.execute(
-        "INSERT INTO players (display_name) VALUES ('Old Alpha')"
+        "INSERT INTO players (first_name, last_name) VALUES ('Old Alpha', '')"
     )
     backup_conn.commit()
     backup_conn.close()
@@ -184,7 +184,7 @@ def test_restore_backup_backfills_match_round_numbers(tmp_path, monkeypatch):
     backup_conn = sqlite3.connect(backup_path)
     backup_conn.executescript(
         """
-        CREATE TABLE players (id INTEGER PRIMARY KEY, display_name TEXT NOT NULL);
+        CREATE TABLE players (id INTEGER PRIMARY KEY, first_name TEXT NOT NULL DEFAULT '', last_name TEXT NOT NULL DEFAULT '');
         CREATE TABLE matches (
             id INTEGER PRIMARY KEY,
             match_date TEXT NOT NULL,
@@ -194,7 +194,7 @@ def test_restore_backup_backfills_match_round_numbers(tmp_path, monkeypatch):
             event TEXT,
             notes TEXT
         );
-        INSERT INTO players (id, display_name) VALUES (1, 'Alice'), (2, 'Bob');
+        INSERT INTO players (id, first_name, last_name) VALUES (1, 'Alice', ''), (2, 'Bob', '');
         INSERT INTO matches
             (id, match_date, white_player_id, black_player_id, result, notes)
         VALUES (1, '2026-08-17', 1, 2, '1-0', '14:00:00');
@@ -228,8 +228,8 @@ def test_is_valid_sqlite_backup_rejects_partially_corrupted_database(tmp_path):
     db_path = tmp_path / "partially_corrupted.db"
 
     conn = sqlite3.connect(db_path)
-    conn.execute("CREATE TABLE players (id INTEGER PRIMARY KEY, display_name TEXT)")
-    conn.execute("INSERT INTO players (display_name) VALUES ('Alice')")
+    conn.execute("CREATE TABLE players (id INTEGER PRIMARY KEY, first_name TEXT)")
+    conn.execute("INSERT INTO players (first_name) VALUES ('Alice')")
     conn.commit()
     conn.close()
 
@@ -252,8 +252,8 @@ def test_get_latest_valid_backup_path_ignores_active_database_file(tmp_path, mon
 
     for path in (current_db, backup_db):
         conn = sqlite3.connect(path)
-        conn.execute("CREATE TABLE players (id INTEGER PRIMARY KEY, display_name TEXT)")
-        conn.execute("INSERT INTO players (display_name) VALUES ('Test')")
+        conn.execute("CREATE TABLE players (id INTEGER PRIMARY KEY, first_name TEXT)")
+        conn.execute("INSERT INTO players (first_name) VALUES ('Test')")
         conn.commit()
         conn.close()
 
@@ -285,8 +285,8 @@ def test_get_latest_valid_backup_path_ignores_non_backup_data_databases(tmp_path
         (debug_data_db, "Debug"),
     ):
         conn = sqlite3.connect(path)
-        conn.execute("CREATE TABLE players (id INTEGER PRIMARY KEY, display_name TEXT)")
-        conn.execute("INSERT INTO players (display_name) VALUES (?)", (name,))
+        conn.execute("CREATE TABLE players (id INTEGER PRIMARY KEY, first_name TEXT)")
+        conn.execute("INSERT INTO players (first_name) VALUES (?)", (name,))
         conn.commit()
         conn.close()
 
@@ -315,7 +315,7 @@ def test_recalculate_ratings_restores_latest_backup_after_db_error(tmp_path, mon
             id INTEGER PRIMARY KEY,
             first_name TEXT NOT NULL,
             last_name TEXT NOT NULL,
-            display_name TEXT,
+            custom_display_name TEXT,
             rating REAL,
             rd REAL,
             volatility REAL,
@@ -351,9 +351,9 @@ def test_recalculate_ratings_restores_latest_backup_after_db_error(tmp_path, mon
         INSERT INTO rating_config (id, tau, default_rating, default_rd, default_volatility)
         VALUES (1, 0.35, 1500.0, 350.0, 0.06);
         INSERT INTO rating_state (id, earliest_dirty_date) VALUES (1, NULL);
-        INSERT INTO players (id, first_name, last_name, display_name, rating, rd, volatility, initial_rating, active)
-        VALUES (1, 'Alice', 'A', 'Alice', 1500.0, 350.0, 0.06, 1500.0, 1),
-               (2, 'Bob', 'B', 'Bob', 1500.0, 350.0, 0.06, 1500.0, 1);
+        INSERT INTO players (id, first_name, last_name, rating, rd, volatility, initial_rating, active)
+        VALUES (1, 'Alice', 'A', 1500.0, 350.0, 0.06, 1500.0, 1),
+               (2, 'Bob', 'B', 1500.0, 350.0, 0.06, 1500.0, 1);
         INSERT INTO matches (match_date, white_player_id, black_player_id, result)
         VALUES ('2026-01-01', 1, 2, '1-0');
         """
@@ -380,6 +380,6 @@ def test_recalculate_ratings_restores_latest_backup_after_db_error(tmp_path, mon
         assert restored.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
         assert restored.execute("SELECT COUNT(*) FROM players").fetchone()[0] == 2
         assert restored.execute("SELECT COUNT(*) FROM matches").fetchone()[0] == 1
-        assert restored.execute("SELECT display_name FROM players ORDER BY id").fetchall() == [("Alice",), ("Bob",)]
+        assert restored.execute("SELECT first_name FROM players ORDER BY id").fetchall() == [("Alice",), ("Bob",)]
     finally:
         restored.close()

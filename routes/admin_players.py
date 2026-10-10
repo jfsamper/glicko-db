@@ -64,15 +64,20 @@ def admin_edit_player():
         return redirect(url_for("admin_players", lang=lang))
     conn = admin.get_db()
     player = conn.execute(
-        "SELECT * FROM players WHERE id = ?", (player_id,)).fetchone()
+        "SELECT * FROM players_display WHERE id = ?", (player_id,)).fetchone()
     if not player:
         conn.close()
         flash(admin.TRANSLATIONS[lang]["error"])
         return redirect(url_for("admin_players", lang=lang))
     if request.method == "POST":
-        display_name = request.form.get("display_name", "").strip()
+        custom_display_name = " ".join(
+            request.form.get("custom_display_name", "").split()) or None
         first_name = request.form.get("first_name", "").strip()
         last_name = request.form.get("last_name", "").strip()
+        if "," in first_name or "," in last_name:
+            conn.close()
+            flash(f"{admin.TRANSLATIONS[lang]['error']}: {admin.TRANSLATIONS[lang]['player_name_no_commas']}")
+            return redirect(url_for("admin_edit_player", id=player_id, lang=lang))
         slug = request.form.get("slug", "").strip()
         initial_rating = request.form.get("initial_rating")
         active = int(request.form.get("active", 1))
@@ -80,10 +85,10 @@ def admin_edit_player():
             "" if player["initial_rating"] is None else str(player["initial_rating"]))
         conn.execute(
             """
-            UPDATE players SET display_name = ?, first_name = ?, last_name = ?, slug = ?,
+            UPDATE players SET custom_display_name = ?, first_name = ?, last_name = ?, slug = ?,
                 initial_rating = ?, country = ?, club = ?, active = ? WHERE id = ?
             """,
-            (display_name, first_name, last_name, slug, initial_rating,
+            (custom_display_name, first_name, last_name, slug, initial_rating,
              request.form.get("country"), request.form.get("club"), active, player_id),
         )
         conn.commit()
@@ -193,9 +198,9 @@ def admin_categories():
             else:
                 current_k, current_m = preview_k, preview_m
     players = conn.execute(
-        "SELECT * FROM players WHERE games_played > 0 ORDER BY rating DESC LIMIT 5").fetchall()
+        "SELECT * FROM players_display WHERE games_played > 0 ORDER BY rating DESC LIMIT 5").fetchall()
     players += conn.execute(
-        "SELECT * FROM players WHERE active = 1 ORDER BY RANDOM() LIMIT 5").fetchall()
+        "SELECT * FROM players_display WHERE active = 1 ORDER BY RANDOM() LIMIT 5").fetchall()
     seen = set()
     for player in players:
         if player["id"] in seen:

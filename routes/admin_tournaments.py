@@ -7,6 +7,11 @@ from flask import Response, flash, redirect, render_template, request, url_for
 from werkzeug.utils import secure_filename
 
 from services.i18n import TRANSLATIONS
+from services.display_name import (
+    normalize_name_text,
+    read_display_name_setting,
+    render_display_name,
+)
 
 
 def _admin_routes():
@@ -419,7 +424,7 @@ def admin_resolve_pending_player(tournament_id):
             raise ValueError("Pending player not found")
         if resolved_player_id is not None:
             player_row = conn.execute(
-                "SELECT display_name FROM players WHERE id = ?", (
+                "SELECT id FROM players WHERE id = ?", (
                     resolved_player_id,)
             ).fetchone()
             if player_row is None:
@@ -427,11 +432,10 @@ def admin_resolve_pending_player(tournament_id):
             updated = conn.execute(
                 """
                 UPDATE tournament_pending_players
-                SET resolved_player_id = ?, display_name = ?
+                SET resolved_player_id = ?
                 WHERE tournament_id = ? AND id = ?
                 """,
-                (resolved_player_id,
-                 player_row["display_name"], tournament_id, pending_id),
+                (resolved_player_id, tournament_id, pending_id),
             ).rowcount
         else:
             updated = conn.execute(
@@ -513,8 +517,8 @@ def admin_tournament(tournament_id):
                COALESCE(black.display_name, p.black_player_name) AS black_name
         FROM tournament_rounds r
         JOIN tournament_pairings p ON p.round_id = r.id
-        LEFT JOIN players white ON white.id = p.white_player_id
-        LEFT JOIN players black ON black.id = p.black_player_id
+        LEFT JOIN players_display white ON white.id = p.white_player_id
+        LEFT JOIN players_display black ON black.id = p.black_player_id
         WHERE r.tournament_id = ?
         ORDER BY r.round_number DESC, p.board_number
         """,
@@ -540,7 +544,7 @@ def admin_tournament(tournament_id):
     available_players = conn.execute(
         """
         SELECT p.id, p.display_name, p.rating
-        FROM players p
+        FROM players_display p
         WHERE p.active = 1
           AND NOT EXISTS (SELECT 1 FROM tournament_participants tp
                           WHERE tp.tournament_id = ? AND tp.player_id = p.id)
@@ -560,16 +564,15 @@ def admin_tournament(tournament_id):
     absent_players = [row for row in participants if round_statuses.get(
         row["player_id"]) == "absent"]
     pending_rows = conn.execute(
-        "SELECT * FROM tournament_pending_players WHERE tournament_id = ? ORDER BY rank, display_name",
+        "SELECT * FROM tournament_pending_players_display WHERE tournament_id = ? ORDER BY rank, display_name",
         (tournament_id,),
     ).fetchall()
-    suggested_player_ids = {row["display_name"]: row["id"]
-                            for row in available_players}
+    active_player_ids = {row["id"] for row in available_players}
     pending_players = []
     for row in pending_rows:
         pending = dict(row)
-        pending["suggested_player_id"] = suggested_player_ids.get(
-            pending.get("suggested_name"))
+        if pending.get("suggested_player_id") not in active_player_ids:
+            pending["suggested_player_id"] = None
         pending_players.append(pending)
     standings = admin.get_tournament_standings(conn, tournament_id)
     conn.close()
@@ -610,7 +613,7 @@ def admin_tournament_players(tournament_id):
     available_players = conn.execute(
         """
         SELECT p.id, p.display_name, p.rating
-        FROM players p
+        FROM players_display p
         WHERE p.active = 1
           AND NOT EXISTS (
               SELECT 1 FROM tournament_participants tp
@@ -651,8 +654,11 @@ def admin_create_tournament_player(tournament_id):
         flash(
             f"{TRANSLATIONS[lang]['error']}: {TRANSLATIONS[lang]['player_name_required']}")
         return redirect(url_for("admin_tournament_players", tournament_id=tournament_id, lang=lang))
+    if "," in first_name or "," in last_name:
+        flash(
+            f"{TRANSLATIONS[lang]['error']}: {TRANSLATIONS[lang]['player_name_no_commas']}")
+        return redirect(url_for("admin_tournament_players", tournament_id=tournament_id, lang=lang))
 
-    display_name = f"{first_name} {last_name}"
     selected_glicko = request.form.get("glicko", "").strip()
     category_config = admin.get_category_config()
     valid_glickos = {
@@ -670,6 +676,9 @@ def admin_create_tournament_player(tournament_id):
         return redirect(url_for("admin_tournament_players", tournament_id=tournament_id, lang=lang))
 
     conn = admin.get_db()
+    display_format, display_template = read_display_name_setting(conn)
+    display_name = normalize_name_text(render_display_name(
+        first_name, last_name, display_format, display_template))
     try:
         existing_player = admin._player_lookup(
             conn).get(admin.normalize_key(display_name))
@@ -688,14 +697,14 @@ def admin_create_tournament_player(tournament_id):
         ).fetchone()[0]
         pending_columns = {row[1] for row in conn.execute(
             "PRAGMA table_info(tournament_pending_players)").fetchall()}
-        pending_values = (tournament_id, display_name, glicko,
+        pending_values = (tournament_id, first_name, last_name, glicko,
                           rank, f"manual:{first_name}:{last_name}")
         if "created_at" in pending_columns:
             conn.execute(
                 """
                 INSERT INTO tournament_pending_players
-                    (tournament_id, display_name, rating, rank, source_key, created_at)
-                VALUES (?, ?, ?, ?, ?, ?)
+                    (tournament_id, first_name, last_name, rating, rank, source_key, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
                 """,
                 pending_values + (admin.current_timestamp(),),
             )
@@ -703,8 +712,8 @@ def admin_create_tournament_player(tournament_id):
             conn.execute(
                 """
                 INSERT INTO tournament_pending_players
-                    (tournament_id, display_name, rating, rank, source_key)
-                VALUES (?, ?, ?, ?, ?)
+                    (tournament_id, first_name, last_name, rating, rank, source_key)
+                VALUES (?, ?, ?, ?, ?, ?)
                 """,
                 pending_values,
             )
@@ -713,7 +722,7 @@ def admin_create_tournament_player(tournament_id):
             "tournament_pending_player_created",
             "tournament_pending_player",
             {"tournament_id": tournament_id,
-                "display_name": display_name, "glicko": glicko},
+                "first_name": first_name, "last_name": last_name, "glicko": glicko},
             user_id=admin.session.get("user_id"),
         )
         flash(TRANSLATIONS[lang]["pending_player_created"])

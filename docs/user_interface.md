@@ -455,6 +455,7 @@ Permite cargar datos históricos o torneos masivos:
 - Ajusta el número máximo de intentos fallidos de inicio de sesión antes de bloquear la IP.
 - Define la ventana de tiempo para la limitación de tasa (en segundos).
 - Configura el tiempo de vida (TTL) de los enlaces de recuperación de contraseña.
+- Define el formato del nombre de los jugadores: `Apellido, Nombre` (por defecto), `Nombre Apellido` o una plantilla personalizada con `{first_name}` y `{last_name}`. Los nombres se muestran según este formato; guardar un cambio no modifica los datos almacenados. En la edición de cada jugador puedes indicar un nombre personalizado opcional. Nombre y apellido no pueden contener comas.
 - Botón de restauración para restablecer los valores por defecto definidos en `config.py`.
 
 <a href="screenshots/admin-settings.png"><img src="screenshots/admin-settings.png" alt="Configuración de seguridad" width="560" /></a>

@@ -239,8 +239,8 @@ def build_date_report(conn, start_date=None, end_date=None, selected_player_id=N
                white.display_name AS white_name, white.country AS white_country, white.club AS white_club,
                black.display_name AS black_name, black.country AS black_country, black.club AS black_club
         FROM matches m
-        JOIN players white ON white.id = m.white_player_id
-        JOIN players black ON black.id = m.black_player_id
+        JOIN players_display white ON white.id = m.white_player_id
+        JOIN players_display black ON black.id = m.black_player_id
         ORDER BY m.match_date, m.id
         """
     ).fetchall()
@@ -265,7 +265,7 @@ def build_date_report(conn, start_date=None, end_date=None, selected_player_id=N
         matches.append((row, match_date))
 
     players = conn.execute(
-        "SELECT id, display_name, initial_rating, rating FROM players"
+        "SELECT id, display_name, initial_rating, rating FROM players_display"
     ).fetchall()
     stats = {
         row["id"]: _empty_record(row["display_name"])

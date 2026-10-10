@@ -34,10 +34,10 @@ def make_moderation_app(tmp_path, monkeypatch):
                 conn.execute(
                     """
                     INSERT INTO players
-                        (first_name, last_name, display_name, slug, active, rating, rd, volatility)
-                    VALUES (?, ?, ?, ?, 1, 1500, 350, 0.06)
+                        (first_name, last_name, slug, active, rating, rd, volatility)
+                    VALUES (?, ?, ?, 1, 1500, 350, 0.06)
                     """,
-                    (first_name, last_name, name, name.lower().replace(" ", "-")),
+                    (first_name, last_name, name.lower().replace(" ", "-")),
                 ).lastrowid
             )
         conn.commit()
@@ -179,11 +179,11 @@ def test_member_can_submit_only_for_linked_player(tmp_path, monkeypatch):
     report_response = client.get("/admin/report-results?lang=en")
     assert report_response.status_code == 200
     report_body = report_response.get_data(as_text=True)
-    assert "member (Member Player)" in report_body
+    assert "member (Player, Member)" in report_body
     assert "My color" in report_body
     assert "Opponent color" not in report_body
     assert report_body.index("handicap_stones") < report_body.index('id="result"')
-    assert 'data-player-name="Opponent Player"' in report_body
+    assert 'data-player-name="Player, Opponent"' in report_body
     with sqlite3.connect(db_path) as conn:
         baseline_match_count = conn.execute("SELECT COUNT(*) FROM matches").fetchone()[0]
 

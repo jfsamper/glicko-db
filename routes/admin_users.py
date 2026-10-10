@@ -172,7 +172,7 @@ def admin_report_results():
     try:
         if user and user.get("player_id") is not None:
             linked_player = conn.execute(
-                "SELECT display_name FROM players WHERE id = ?",
+                "SELECT display_name FROM players_display WHERE id = ?",
                 (user["player_id"],),
             ).fetchone()
             user["player_name"] = linked_player["display_name"] if linked_player else ""
@@ -276,15 +276,15 @@ def admin_report_results():
         opponents = []
         if user and user.get("player_id") is not None:
             opponents = conn.execute(
-                "SELECT id, display_name FROM players WHERE id != ? ORDER BY display_name",
+                "SELECT id, display_name FROM players_display WHERE id != ? ORDER BY display_name",
                 (user["player_id"],),
             ).fetchall()
         submissions = conn.execute(
             """
             SELECT rs.*, p_white.display_name AS white_name, p_black.display_name AS black_name
             FROM result_submissions rs
-            JOIN players p_white ON p_white.id = rs.white_player_id
-            JOIN players p_black ON p_black.id = rs.black_player_id
+            JOIN players_display p_white ON p_white.id = rs.white_player_id
+            JOIN players_display p_black ON p_black.id = rs.black_player_id
             WHERE rs.submitted_by_user_id = ?
             ORDER BY rs.created_at DESC, rs.id DESC
             """,
@@ -321,8 +321,8 @@ def admin_result_submissions():
                    reviewer.username AS reviewer_username
             FROM result_submissions rs
             JOIN users submitter ON submitter.id = rs.submitted_by_user_id
-            JOIN players p_white ON p_white.id = rs.white_player_id
-            JOIN players p_black ON p_black.id = rs.black_player_id
+            JOIN players_display p_white ON p_white.id = rs.white_player_id
+            JOIN players_display p_black ON p_black.id = rs.black_player_id
             LEFT JOIN users reviewer ON reviewer.id = rs.reviewed_by_user_id
         """
         params = []
@@ -485,6 +485,10 @@ def admin_settings():
             "max_login_attempts": request.form.get("max_login_attempts"),
             "login_window_seconds": request.form.get("login_window_seconds"),
             "password_reset_ttl_seconds": request.form.get("password_reset_ttl_seconds"),
+            "display_name_format": request.form.get(
+                "display_name_format", settings["display_name_format"]),
+            "display_name_template": request.form.get(
+                "display_name_template", settings["display_name_template"]),
         }
         try:
             settings = admin.update_application_settings(values)

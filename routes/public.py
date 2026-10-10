@@ -182,7 +182,7 @@ def get_team_members(conn=None):
         rows = conn.execute(
             f"""
             SELECT *
-            FROM players
+            FROM players_display
             WHERE LOWER(display_name) IN ({placeholders})
                OR LOWER(REPLACE(display_name, ', ', ' ')) IN ({placeholders})
             """,
@@ -669,9 +669,9 @@ def matches():
             m.result,
             {sgf_select}
         FROM matches m
-        JOIN players p_white
+        JOIN players_display p_white
             ON p_white.id = m.white_player_id
-        JOIN players p_black
+        JOIN players_display p_black
             ON p_black.id = m.black_player_id
         {filter_sql}
         {order_sql}
@@ -681,7 +681,7 @@ def matches():
     ).fetchall()
 
     match_players = conn.execute(
-        "SELECT id, display_name FROM players ORDER BY display_name"
+        "SELECT id, display_name FROM players_display ORDER BY display_name"
     ).fetchall()
 
     conn.close()
@@ -715,8 +715,8 @@ def sgf_library():
                    white.display_name AS white_name,
                    black.display_name AS black_name
             FROM matches m
-            JOIN players white ON white.id = m.white_player_id
-            JOIN players black ON black.id = m.black_player_id
+            JOIN players_display white ON white.id = m.white_player_id
+            JOIN players_display black ON black.id = m.black_player_id
             WHERE m.sgf_filename IS NOT NULL
             ORDER BY m.match_date DESC, m.id DESC
             """
@@ -729,8 +729,8 @@ def sgf_library():
                white.display_name AS white_name,
                black.display_name AS black_name
         FROM matches m
-        JOIN players white ON white.id = m.white_player_id
-        JOIN players black ON black.id = m.black_player_id
+        JOIN players_display white ON white.id = m.white_player_id
+        JOIN players_display black ON black.id = m.black_player_id
         ORDER BY m.match_date DESC, m.id DESC
         """
     ).fetchall()
@@ -834,8 +834,8 @@ def match_record(match_id):
                white.display_name AS white_name,
                black.display_name AS black_name
         FROM matches m
-        JOIN players white ON white.id = m.white_player_id
-        JOIN players black ON black.id = m.black_player_id
+        JOIN players_display white ON white.id = m.white_player_id
+        JOIN players_display black ON black.id = m.black_player_id
         WHERE m.id = ?
         """,
         (match_id,),
@@ -924,7 +924,7 @@ def tournaments():
                 )
                 """.format(" OR ".join(match_conditions))
             )
-        if has_linked_match_tables and {"tournament_pairing_id"}.issubset(match_columns) and "display_name" in {
+        if has_linked_match_tables and {"tournament_pairing_id"}.issubset(match_columns) and "first_name" in {
             row[1] for row in conn.execute("PRAGMA table_info(players)").fetchall()
         }:
             search_conditions.append(
@@ -934,8 +934,8 @@ def tournaments():
                     FROM matches m
                     JOIN tournament_pairings tp ON tp.id = m.tournament_pairing_id
                     JOIN tournament_rounds tr ON tr.id = tp.round_id
-                    JOIN players p_white ON p_white.id = m.white_player_id
-                    JOIN players p_black ON p_black.id = m.black_player_id
+                    JOIN players_display p_white ON p_white.id = m.white_player_id
+                    JOIN players_display p_black ON p_black.id = m.black_player_id
                     WHERE tr.tournament_id = t.id
                       AND (LOWER(p_white.display_name) LIKE LOWER(?)
                            OR LOWER(p_black.display_name) LIKE LOWER(?))
@@ -1032,8 +1032,8 @@ def tournament_page(tournament_id):
                COALESCE(black.display_name, p.black_player_name) AS black_name
         FROM tournament_pairings p
         JOIN tournament_rounds r ON r.id = p.round_id
-        LEFT JOIN players white ON white.id = p.white_player_id
-        LEFT JOIN players black ON black.id = p.black_player_id
+        LEFT JOIN players_display white ON white.id = p.white_player_id
+        LEFT JOIN players_display black ON black.id = p.black_player_id
         WHERE r.tournament_id = ?
         ORDER BY r.round_number DESC, p.is_bye, p.board_number
         """,

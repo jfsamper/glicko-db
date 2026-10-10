@@ -125,8 +125,8 @@ def test_admin_upload_and_public_besogo_viewer(admin_client, tmp_path, monkeypat
     assert sgf_response.status_code == 200
     assert sgf_response.mimetype == "application/x-go-sgf"
     sgf_body = sgf_response.get_data(as_text=True)
-    assert "PW[Juan Samper]" in sgf_body
-    assert "PB[Camilo Acuna]" in sgf_body
+    assert "PW[Samper, Juan]" in sgf_body
+    assert "PB[Acuna, Camilo]" in sgf_body
     assert "WR[5k]" in sgf_body
     assert "BR[5k]" in sgf_body
     assert "PC[SGF test]" in sgf_body
@@ -160,8 +160,8 @@ def test_sgf_library_is_public_and_admin_can_link_or_unlink(client, admin_client
             "SELECT sgf_filename FROM matches WHERE id = 1"
         ).fetchone()[0] == stored_name
     linked_body = (upload_dir / stored_name).read_text(encoding="utf-8")
-    assert "PW[Juan Samper]" in linked_body
-    assert "PB[Camilo Acuna]" in linked_body
+    assert "PW[Samper, Juan]" in linked_body
+    assert "PB[Acuna, Camilo]" in linked_body
     assert "RE[W+R]" in linked_body
 
     response = admin_client.post(

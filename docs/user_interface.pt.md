@@ -453,7 +453,8 @@ Importe planilhas históricas, partidas ou arquivos do OpenGotha:
 
 - Ajuste o número máximo de tentativas de login falhas antes do bloqueio temporário por IP.
 - Defina a janela de tempo da limitação de taxa (em segundos).
-- Configure a duração (TTL) dos links de recuperação de senha.
+- Configura a duração (TTL) dos links de recuperação de senha.
+- Define o formato do nome dos jogadores: `Sobrenome, Nome` (padrão), `Nome Sobrenome` ou um modelo personalizado com `{first_name}` e `{last_name}`. Os nomes são exibidos conforme este formato; salvar uma mudança não altera os dados armazenados. Na edição de cada jogador, é possível informar um nome personalizado opcional. Nome e sobrenome não podem conter vírgulas.
 - Botão de restauração para restabelecer os valores padrão definidos em `config.py`.
 
 <a href="screenshots/admin-settings.png"><img src="screenshots/admin-settings.png" alt="Configurações de segurança" width="560" /></a>

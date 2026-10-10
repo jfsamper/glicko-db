@@ -8,6 +8,8 @@ from config import GLICKO_M
 import routes.public as public_routes
 import services.player_service as player_service
 from services.player_service import parse_rating_filter
+from services.display_name import create_display_name_views
+from services.settings_service import ensure_application_settings_table
 
 
 def test_parse_rating_filter_rejects_malformed_and_non_finite_values():
@@ -24,7 +26,9 @@ def test_ensure_player_accepts_lookup_cache_for_existing_players():
         """
         CREATE TABLE players (
             id INTEGER PRIMARY KEY,
-            display_name TEXT,
+            first_name TEXT,
+            last_name TEXT,
+            custom_display_name TEXT,
             slug TEXT,
             rating REAL,
             initial_rating REAL,
@@ -32,8 +36,11 @@ def test_ensure_player_accepts_lookup_cache_for_existing_players():
         )
         """
     )
+    ensure_application_settings_table(conn)
+    create_display_name_views(conn)
+    conn.commit()
     conn.execute(
-        "INSERT INTO players (display_name, slug, rating, initial_rating, active) VALUES (?, ?, ?, ?, ?)",
+        "INSERT INTO players (first_name, slug, rating, initial_rating, active) VALUES (?, ?, ?, ?, ?)",
         ("Alice", "alice", 1500.0, 1500.0, 1),
     )
     conn.commit()
@@ -51,7 +58,7 @@ def test_ensure_player_normalizes_non_positive_import_ratings():
             id INTEGER PRIMARY KEY,
             first_name TEXT,
             last_name TEXT,
-            display_name TEXT,
+            custom_display_name TEXT,
             country TEXT,
             club TEXT,
             slug TEXT,
@@ -63,6 +70,9 @@ def test_ensure_player_normalizes_non_positive_import_ratings():
         )
         """
     )
+    ensure_application_settings_table(conn)
+    create_display_name_views(conn)
+    conn.commit()
 
     player_id = player_service.ensure_player(
         conn,
@@ -99,7 +109,9 @@ def test_load_rankings_ignores_invalid_rating_bounds(monkeypatch):
         """
         CREATE TABLE players (
             id INTEGER PRIMARY KEY,
-            display_name TEXT,
+            first_name TEXT,
+            last_name TEXT,
+            custom_display_name TEXT,
             rating REAL,
             wins INTEGER,
             losses INTEGER,
@@ -109,6 +121,9 @@ def test_load_rankings_ignores_invalid_rating_bounds(monkeypatch):
         )
         """
     )
+    ensure_application_settings_table(conn)
+    create_display_name_views(conn)
+    conn.commit()
     conn.execute(
         """
         CREATE TABLE matches (
@@ -121,7 +136,7 @@ def test_load_rankings_ignores_invalid_rating_bounds(monkeypatch):
         """
     )
     conn.execute(
-        "INSERT INTO players VALUES (1, 'Alice', 1500, 2, 1, 0, 3, 1)"
+        "INSERT INTO players (id, first_name, rating, wins, losses, draws, games_played, active) VALUES (1, 'Alice', 1500, 2, 1, 0, 3, 1)"
     )
 
     monkeypatch.setattr(player_service, "get_db", lambda: conn)
@@ -153,7 +168,9 @@ def test_load_rankings_supports_name_sort(monkeypatch):
             """
             CREATE TABLE players (
                 id INTEGER PRIMARY KEY,
-                display_name TEXT,
+                first_name TEXT,
+                last_name TEXT,
+                custom_display_name TEXT,
                 rating REAL,
                 wins INTEGER,
                 losses INTEGER,
@@ -163,6 +180,9 @@ def test_load_rankings_supports_name_sort(monkeypatch):
             )
             """
         )
+        ensure_application_settings_table(conn)
+        create_display_name_views(conn)
+        conn.commit()
         conn.execute(
             """
             CREATE TABLE matches (
@@ -175,7 +195,7 @@ def test_load_rankings_supports_name_sort(monkeypatch):
             """
         )
         conn.executemany(
-            "INSERT INTO players (id, display_name, rating, wins, losses, draws, games_played, active) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            "INSERT INTO players (id, first_name, rating, wins, losses, draws, games_played, active) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
             [
                 (1, "Charlie", 1600, 5, 1, 0, 6, 1),
                 (2, "Alice", 1500, 3, 2, 1, 6, 1),
@@ -213,7 +233,9 @@ def test_recent_form_only_includes_players_with_matches_in_last_90_days(monkeypa
             """
             CREATE TABLE players (
                 id INTEGER PRIMARY KEY,
-                display_name TEXT,
+                first_name TEXT,
+                last_name TEXT,
+                custom_display_name TEXT,
                 rating REAL,
                 wins INTEGER,
                 losses INTEGER,
@@ -223,6 +245,9 @@ def test_recent_form_only_includes_players_with_matches_in_last_90_days(monkeypa
             )
             """
         )
+        ensure_application_settings_table(conn)
+        create_display_name_views(conn)
+        conn.commit()
         conn.execute(
             """
             CREATE TABLE matches (
@@ -235,7 +260,7 @@ def test_recent_form_only_includes_players_with_matches_in_last_90_days(monkeypa
             """
         )
         conn.executemany(
-            "INSERT INTO players (id, display_name, rating, wins, losses, draws, games_played, active) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            "INSERT INTO players (id, first_name, rating, wins, losses, draws, games_played, active) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
             [
                 (1, "Alice", 1500, 1, 0, 0, 1, 1),
                 (2, "Bob", 1500, 0, 1, 0, 1, 1),
@@ -281,7 +306,9 @@ def test_rankings_hides_players_without_games(monkeypatch):
             """
             CREATE TABLE players (
                 id INTEGER PRIMARY KEY,
-                display_name TEXT,
+                first_name TEXT,
+                last_name TEXT,
+                custom_display_name TEXT,
                 rating REAL,
                 wins INTEGER,
                 losses INTEGER,
@@ -291,6 +318,9 @@ def test_rankings_hides_players_without_games(monkeypatch):
             )
             """
         )
+        ensure_application_settings_table(conn)
+        create_display_name_views(conn)
+        conn.commit()
         conn.execute(
             """
             CREATE TABLE matches (
@@ -303,7 +333,7 @@ def test_rankings_hides_players_without_games(monkeypatch):
             """
         )
         conn.executemany(
-            "INSERT INTO players (id, display_name, rating, wins, losses, draws, games_played, active) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            "INSERT INTO players (id, first_name, rating, wins, losses, draws, games_played, active) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
             [
                 (1, "Alice", 1500, 1, 0, 0, 1, 1),
                 (2, "Bob", 1500, 0, 1, 0, 1, 1),
@@ -353,7 +383,9 @@ def test_load_rankings_supports_last_active_filter(monkeypatch):
             """
             CREATE TABLE players (
                 id INTEGER PRIMARY KEY,
-                display_name TEXT,
+                first_name TEXT,
+                last_name TEXT,
+                custom_display_name TEXT,
                 rating REAL,
                 wins INTEGER,
                 losses INTEGER,
@@ -363,6 +395,9 @@ def test_load_rankings_supports_last_active_filter(monkeypatch):
             )
             """
         )
+        ensure_application_settings_table(conn)
+        create_display_name_views(conn)
+        conn.commit()
         conn.execute(
             """
             CREATE TABLE matches (
@@ -375,7 +410,7 @@ def test_load_rankings_supports_last_active_filter(monkeypatch):
             """
         )
         conn.executemany(
-            "INSERT INTO players (id, display_name, rating, wins, losses, draws, games_played, active) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            "INSERT INTO players (id, first_name, rating, wins, losses, draws, games_played, active) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
             [
                 (1, "Alice", 1500, 1, 0, 0, 1, 1),
                 (2, "Bob", 1500, 0, 1, 0, 1, 1),
@@ -421,7 +456,9 @@ def test_public_matches_route_hides_pagination_for_ten_or_fewer_items(monkeypatc
             """
             CREATE TABLE players (
                 id INTEGER PRIMARY KEY,
-                display_name TEXT,
+                first_name TEXT,
+                last_name TEXT,
+                custom_display_name TEXT,
                 rating REAL,
                 wins INTEGER,
                 losses INTEGER,
@@ -431,6 +468,9 @@ def test_public_matches_route_hides_pagination_for_ten_or_fewer_items(monkeypatc
             )
             """
         )
+        ensure_application_settings_table(conn)
+        create_display_name_views(conn)
+        conn.commit()
         conn.execute(
             """
             CREATE TABLE matches (
@@ -446,7 +486,7 @@ def test_public_matches_route_hides_pagination_for_ten_or_fewer_items(monkeypatc
             """
         )
         conn.executemany(
-            "INSERT INTO players (id, display_name, rating, wins, losses, draws, games_played, active) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            "INSERT INTO players (id, first_name, rating, wins, losses, draws, games_played, active) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
             [
                 (1, "Player One", 1500, 1, 0, 0, 1, 1),
                 (2, "Player Two", 1500, 1, 0, 0, 1, 1),
@@ -531,7 +571,9 @@ def test_load_rankings_supports_fts_search_and_pagination(monkeypatch):
             """
             CREATE TABLE players (
                 id INTEGER PRIMARY KEY,
-                display_name TEXT,
+                first_name TEXT,
+                last_name TEXT,
+                custom_display_name TEXT,
                 rating REAL,
                 wins INTEGER,
                 losses INTEGER,
@@ -541,6 +583,9 @@ def test_load_rankings_supports_fts_search_and_pagination(monkeypatch):
             )
             """
         )
+        ensure_application_settings_table(conn)
+        create_display_name_views(conn)
+        conn.commit()
         conn.execute(
             """
             CREATE TABLE matches (
@@ -552,23 +597,12 @@ def test_load_rankings_supports_fts_search_and_pagination(monkeypatch):
             )
             """
         )
-        conn.execute(
-            "CREATE VIRTUAL TABLE players_fts USING fts5(id UNINDEXED, display_name, rating, wins, losses, draws, games_played, active, content='players', content_rowid='id')"
-        )
         conn.executemany(
-            "INSERT INTO players (id, display_name, rating, wins, losses, draws, games_played, active) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            "INSERT INTO players (id, first_name, last_name, rating, wins, losses, draws, games_played, active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
             [
-                (1, "Juan Samper", 1700, 10, 1, 0, 11, 1),
-                (2, "Juan Soler", 1650, 9, 2, 0, 11, 1),
-                (3, "Camilo Acuna", 1600, 5, 6, 0, 11, 1),
-            ],
-        )
-        conn.executemany(
-            "INSERT INTO players_fts (rowid, display_name, rating, wins, losses, draws, games_played, active) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-            [
-                (1, "Juan Samper", 1700, 10, 1, 0, 11, 1),
-                (2, "Juan Soler", 1650, 9, 2, 0, 11, 1),
-                (3, "Camilo Acuna", 1600, 5, 6, 0, 11, 1),
+                (1, "Juan", "Samper", 1700, 10, 1, 0, 11, 1),
+                (2, "Juan", "Soler", 1650, 9, 2, 0, 11, 1),
+                (3, "Camilo", "Acuna", 1600, 5, 6, 0, 11, 1),
             ],
         )
         conn.commit()
@@ -587,14 +621,14 @@ def test_load_rankings_supports_fts_search_and_pagination(monkeypatch):
             "page_size": 10,
         })
 
-        assert [player["display_name"] for player in rankings] == ["Juan Samper", "Juan Soler"]
+        assert [player["display_name"] for player in rankings] == ["Samper, Juan", "Soler, Juan"]
 
         second_page = player_service.load_rankings({
             "display_name": "ju",
             "page": 2,
             "page_size": 1,
         })
-        assert [player["display_name"] for player in second_page] == ["Juan Soler"]
+        assert [player["display_name"] for player in second_page] == ["Soler, Juan"]
 
 
 def test_load_player_supports_match_pagination(monkeypatch):
@@ -604,7 +638,9 @@ def test_load_player_supports_match_pagination(monkeypatch):
         """
         CREATE TABLE players (
             id INTEGER PRIMARY KEY,
-            display_name TEXT,
+            first_name TEXT,
+            last_name TEXT,
+            custom_display_name TEXT,
             rating REAL,
             wins INTEGER,
             losses INTEGER,
@@ -615,6 +651,9 @@ def test_load_player_supports_match_pagination(monkeypatch):
         )
         """
     )
+    ensure_application_settings_table(conn)
+    create_display_name_views(conn)
+    conn.commit()
     conn.execute(
         """
         CREATE TABLE matches (
@@ -639,7 +678,7 @@ def test_load_player_supports_match_pagination(monkeypatch):
         """
     )
     conn.executemany(
-        "INSERT INTO players (id, display_name, rating, wins, losses, draws, games_played, active, slug) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO players (id, first_name, rating, wins, losses, draws, games_played, active, slug) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
         [
             (1, "Alice", 1500, 1, 0, 0, 1, 1, "alice"),
             (2, "Bob", 1500, 1, 0, 0, 1, 1, "bob"),
@@ -686,7 +725,9 @@ def test_load_player_uses_sql_level_match_pagination(monkeypatch):
         """
         CREATE TABLE players (
             id INTEGER PRIMARY KEY,
-            display_name TEXT,
+            first_name TEXT,
+            last_name TEXT,
+            custom_display_name TEXT,
             rating REAL,
             wins INTEGER,
             losses INTEGER,
@@ -697,6 +738,9 @@ def test_load_player_uses_sql_level_match_pagination(monkeypatch):
         )
         """
     )
+    ensure_application_settings_table(conn)
+    create_display_name_views(conn)
+    conn.commit()
     conn.execute(
         """
         CREATE TABLE matches (
@@ -721,7 +765,7 @@ def test_load_player_uses_sql_level_match_pagination(monkeypatch):
         """
     )
     conn.executemany(
-        "INSERT INTO players (id, display_name, rating, wins, losses, draws, games_played, active, slug) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO players (id, first_name, rating, wins, losses, draws, games_played, active, slug) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
         [
             (1, "Alice", 1500, 1, 0, 0, 1, 1, "alice"),
             (2, "Bob", 1500, 1, 0, 0, 1, 1, "bob"),
@@ -771,7 +815,9 @@ def test_load_player_returns_event_for_legacy_and_current_match_schemas(monkeypa
         """
         CREATE TABLE players (
             id INTEGER PRIMARY KEY,
-            display_name TEXT,
+            first_name TEXT,
+            last_name TEXT,
+            custom_display_name TEXT,
             rating REAL,
             wins INTEGER,
             losses INTEGER,
@@ -796,11 +842,14 @@ def test_load_player_returns_event_for_legacy_and_current_match_schemas(monkeypa
             rd REAL,
             volatility REAL
         );
-        INSERT INTO players VALUES (1, 'Alice', 1500, 1, 0, 0, 1, 1, 'alice');
-        INSERT INTO players VALUES (2, 'Bob', 1500, 0, 1, 0, 1, 1, 'bob');
+        INSERT INTO players (id, first_name, rating, wins, losses, draws, games_played, active, slug) VALUES (1, 'Alice', 1500, 1, 0, 0, 1, 1, 'alice');
+        INSERT INTO players (id, first_name, rating, wins, losses, draws, games_played, active, slug) VALUES (2, 'Bob', 1500, 0, 1, 0, 1, 1, 'bob');
         INSERT INTO matches VALUES (1, '2026-01-01', 1, 2, '1-0', 'Event 1');
         """
     )
+    ensure_application_settings_table(conn)
+    create_display_name_views(conn)
+    conn.commit()
 
     monkeypatch.setattr(player_service, "get_db", lambda: conn)
     monkeypatch.setattr(player_service, "build_player_badges", lambda *args, **kwargs: [])
@@ -817,7 +866,9 @@ def test_load_player_uses_sql_for_period_stat_filters(monkeypatch):
         """
         CREATE TABLE players (
             id INTEGER PRIMARY KEY,
-            display_name TEXT,
+            first_name TEXT,
+            last_name TEXT,
+            custom_display_name TEXT,
             rating REAL,
             wins INTEGER,
             losses INTEGER,
@@ -842,13 +893,16 @@ def test_load_player_uses_sql_for_period_stat_filters(monkeypatch):
             rd REAL,
             volatility REAL
         );
-        INSERT INTO players VALUES (1, 'Alice', 1500, 1, 0, 0, 1, 1, 'alice');
-        INSERT INTO players VALUES (2, 'Bob', 1500, 0, 1, 0, 1, 1, 'bob');
+        INSERT INTO players (id, first_name, rating, wins, losses, draws, games_played, active, slug) VALUES (1, 'Alice', 1500, 1, 0, 0, 1, 1, 'alice');
+        INSERT INTO players (id, first_name, rating, wins, losses, draws, games_played, active, slug) VALUES (2, 'Bob', 1500, 0, 1, 0, 1, 1, 'bob');
         INSERT INTO matches VALUES (1, '2026-01-01', 1, 2, '1-0', 'Event 1');
         INSERT INTO matches VALUES (2, '2026-02-01', 2, 1, '0-1', 'Event 2');
         INSERT INTO matches VALUES (3, '2026-05-01', 1, 2, '1-0', 'Event 3');
         """
     )
+    ensure_application_settings_table(conn)
+    create_display_name_views(conn)
+    conn.commit()
 
     class GuardedConnection:
         def __init__(self, wrapped):
@@ -881,7 +935,9 @@ def test_load_player_opponent_records_use_full_history_not_pagination(monkeypatc
         """
         CREATE TABLE players (
             id INTEGER PRIMARY KEY,
-            display_name TEXT,
+            first_name TEXT,
+            last_name TEXT,
+            custom_display_name TEXT,
             rating REAL,
             wins INTEGER,
             losses INTEGER,
@@ -906,9 +962,9 @@ def test_load_player_opponent_records_use_full_history_not_pagination(monkeypatc
             rd REAL,
             volatility REAL
         );
-        INSERT INTO players VALUES (1, 'Alice', 1500, 0, 0, 0, 0, 1, 'alice');
-        INSERT INTO players VALUES (2, 'Bob', 1500, 0, 0, 0, 0, 1, 'bob');
-        INSERT INTO players VALUES (3, 'Carol', 1500, 0, 0, 0, 0, 1, 'carol');
+        INSERT INTO players (id, first_name, rating, wins, losses, draws, games_played, active, slug) VALUES (1, 'Alice', 1500, 0, 0, 0, 0, 1, 'alice');
+        INSERT INTO players (id, first_name, rating, wins, losses, draws, games_played, active, slug) VALUES (2, 'Bob', 1500, 0, 0, 0, 0, 1, 'bob');
+        INSERT INTO players (id, first_name, rating, wins, losses, draws, games_played, active, slug) VALUES (3, 'Carol', 1500, 0, 0, 0, 0, 1, 'carol');
         INSERT INTO matches VALUES (1, '2026-01-01', 1, 2, '1-0', 'Event A');
         INSERT INTO matches VALUES (2, '2026-01-02', 2, 1, '0-1', 'Event B');
         INSERT INTO matches VALUES (3, '2026-01-03', 1, 2, '0-1', 'Event C');
@@ -916,6 +972,9 @@ def test_load_player_opponent_records_use_full_history_not_pagination(monkeypatc
         INSERT INTO matches VALUES (5, '2026-01-05', 1, 3, '1-0', 'Event E');
         """
     )
+    ensure_application_settings_table(conn)
+    create_display_name_views(conn)
+    conn.commit()
     monkeypatch.setattr(player_service, "get_db", lambda: conn)
     monkeypatch.setattr(player_service, "build_player_badges", lambda *args, **kwargs: [])
 
@@ -961,7 +1020,9 @@ def test_get_team_members_uses_targeted_lookup_for_home_page_roles():
         """
         CREATE TABLE players (
             id INTEGER PRIMARY KEY,
-            display_name TEXT,
+            first_name TEXT,
+            last_name TEXT,
+            custom_display_name TEXT,
             rating REAL,
             slug TEXT,
             wins INTEGER,
@@ -971,13 +1032,16 @@ def test_get_team_members_uses_targeted_lookup_for_home_page_roles():
         )
         """
     )
+    ensure_application_settings_table(conn)
+    create_display_name_views(conn)
+    conn.commit()
     conn.executemany(
-        "INSERT INTO players (id, display_name, rating, slug, wins, losses, draws, games_played) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO players (id, first_name, last_name, rating, slug, wins, losses, draws, games_played) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
         [
-            (1, "Cruz, Carlos", 1600, "carlos-cruz", 5, 1, 0, 6),
-            (2, "Gaitan, Carlos", 1550, "carlos-gaitan", 4, 2, 0, 6),
-            (3, "Rivera, Juan", 1500, "juan-rivera", 3, 2, 1, 6),
-            (4, "Other Player", 1490, "other-player", 1, 2, 0, 3),
+            (1, "Carlos", "Cruz", 1600, "carlos-cruz", 5, 1, 0, 6),
+            (2, "Carlos", "Gaitan", 1550, "carlos-gaitan", 4, 2, 0, 6),
+            (3, "Juan", "Rivera", 1500, "juan-rivera", 3, 2, 1, 6),
+            (4, "Other", "Player", 1490, "other-player", 1, 2, 0, 3),
         ],
     )
 

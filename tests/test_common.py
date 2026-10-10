@@ -12,7 +12,9 @@ import services.helpers as helpers
 import services.import_gotha as import_gotha
 import services.rating_service as rating_service
 import config
+from services.display_name import create_display_name_views
 from services.player_stats import build_player_result_summary
+from services.settings_service import ensure_application_settings_table
 
 
 def test_application_clock_uses_fixed_utc_minus_five_by_default():
@@ -69,7 +71,9 @@ def test_rating_recompute_orders_same_day_matches_by_round(monkeypatch, tmp_path
         """
         CREATE TABLE players (
             id INTEGER PRIMARY KEY,
-            display_name TEXT,
+            first_name TEXT,
+            last_name TEXT,
+            custom_display_name TEXT,
             initial_rating REAL,
             rating REAL,
             rd REAL,
@@ -96,16 +100,18 @@ def test_rating_recompute_orders_same_day_matches_by_round(monkeypatch, tmp_path
             earliest_dirty_date TEXT
         );
         INSERT INTO rating_state VALUES (1, NULL);
-        INSERT INTO players VALUES
-            (1, 'Alice', 1500, 1500, 350, 0.06),
-            (2, 'Bob', 1500, 1500, 350, 0.06),
-            (3, 'Charlie', 1500, 1500, 350, 0.06);
+        INSERT INTO players (id, first_name, last_name, initial_rating, rating, rd, volatility) VALUES
+            (1, 'Alice', 'Adams', 1500, 1500, 350, 0.06),
+            (2, 'Bob', 'Brown', 1500, 1500, 350, 0.06),
+            (3, 'Charlie', 'Clark', 1500, 1500, 350, 0.06);
         INSERT INTO matches (match_date, white_player_id, black_player_id, result, round_number) VALUES
             ('2026-08-01', 1, 2, '1-0', 2),
             ('2026-08-01', 1, 3, '0-1', 1),
             ('2026-08-01', 2, 3, '1/2-1/2', 0);
         """
     )
+    ensure_application_settings_table(conn)
+    create_display_name_views(conn)
     conn.commit()
     conn.close()
 
@@ -216,11 +222,14 @@ def test_export_players_creates_missing_output_directory(tmp_path):
     database_path = tmp_path / "players.db"
     with sqlite3.connect(database_path) as conn:
         conn.execute(
-            "CREATE TABLE players (id INTEGER, display_name TEXT, games_played INTEGER, rating REAL)"
+            "CREATE TABLE players (id INTEGER, first_name TEXT, last_name TEXT, "
+            "custom_display_name TEXT, games_played INTEGER, rating REAL)"
         )
         conn.execute(
-            "INSERT INTO players VALUES (1, 'Alice Example', 4, 1500)"
+            "INSERT INTO players VALUES (1, 'Alice', 'Example', NULL, 4, 1500)"
         )
+        ensure_application_settings_table(conn)
+        create_display_name_views(conn)
 
     output_file = tmp_path / "exports" / "player_categories.csv"
     assert not output_file.parent.exists()
@@ -230,7 +239,7 @@ def test_export_players_creates_missing_output_directory(tmp_path):
     module.main()
 
     assert output_file.exists()
-    assert "Alice Example" in output_file.read_text(encoding="utf-8")
+    assert "Example, Alice" in output_file.read_text(encoding="utf-8")
 
 
 def test_import_gotha_parses_winner_metadata_for_decisive_games():
@@ -424,7 +433,7 @@ def test_update_from_latest_snapshot_matches_full_recompute_ratings(monkeypatch,
         """
         CREATE TABLE players (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            first_name TEXT, last_name TEXT, display_name TEXT,
+            first_name TEXT, last_name TEXT, custom_display_name TEXT,
             initial_rating REAL, rating REAL DEFAULT 1500, rd REAL DEFAULT 350, volatility REAL DEFAULT 0.06
         );
         CREATE TABLE matches (
@@ -453,16 +462,18 @@ def test_update_from_latest_snapshot_matches_full_recompute_ratings(monkeypatch,
         );
         INSERT INTO rating_state VALUES (1, NULL);
         INSERT INTO rating_config VALUES (1, 0.5, 1500.0, 350.0, 0.06, CURRENT_TIMESTAMP);
-        INSERT INTO players (id, display_name, initial_rating, rating, rd, volatility) VALUES
-            (1, 'Alice', 1500.0, 1500.0, 350.0, 0.06),
-            (2, 'Bob', 1500.0, 1500.0, 350.0, 0.06),
-            (3, 'Charlie', 1500.0, 1500.0, 350.0, 0.06);
+        INSERT INTO players (id, first_name, last_name, initial_rating, rating, rd, volatility) VALUES
+            (1, 'Alice', 'Adams', 1500.0, 1500.0, 350.0, 0.06),
+            (2, 'Bob', 'Brown', 1500.0, 1500.0, 350.0, 0.06),
+            (3, 'Charlie', 'Clark', 1500.0, 1500.0, 350.0, 0.06);
         INSERT INTO matches (match_date, white_player_id, black_player_id, result) VALUES
             ('2026-01-01', 1, 2, '1-0'),
             ('2026-01-02', 2, 3, '1-0'),
             ('2026-01-04', 1, 3, '1-0');
         """
     )
+    ensure_application_settings_table(conn)
+    create_display_name_views(conn)
     conn.commit()
     conn.close()
 

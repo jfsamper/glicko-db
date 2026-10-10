@@ -5,6 +5,8 @@ import conftest
 from app import app
 import config
 import services.common as common
+from services.display_name import create_display_name_views
+from services.settings_service import ensure_application_settings_table
 import routes.admin as admin_routes
 import routes.public as public_routes
 from routes.public import get_public_tournament_status
@@ -281,7 +283,16 @@ def test_public_tournament_search_matches_name_description_and_linked_match(monk
         """
         CREATE TABLE players (
             id INTEGER PRIMARY KEY,
-            display_name TEXT NOT NULL
+            first_name TEXT NOT NULL DEFAULT '',
+            last_name TEXT NOT NULL DEFAULT '',
+            custom_display_name TEXT
+        );
+        CREATE TABLE tournament_pending_players (
+            id INTEGER PRIMARY KEY,
+            tournament_id INTEGER,
+            first_name TEXT NOT NULL DEFAULT '',
+            last_name TEXT NOT NULL DEFAULT '',
+            suggested_name TEXT
         );
         CREATE TABLE tournaments (
             id INTEGER PRIMARY KEY,
@@ -316,8 +327,8 @@ def test_public_tournament_search_matches_name_description_and_linked_match(monk
             round_number INTEGER NOT NULL DEFAULT 0,
             tournament_pairing_id INTEGER
         );
-        INSERT INTO players (id, display_name) VALUES
-            (1, 'Alice Stone'), (2, 'Bob Lee');
+        INSERT INTO players (id, first_name, last_name) VALUES
+            (1, 'Alice', 'Stone'), (2, 'Bob', 'Lee');
         INSERT INTO tournaments
             (id, name, description, tournament_type, pairing_system, begin_date)
         VALUES
@@ -333,13 +344,15 @@ def test_public_tournament_search_matches_name_description_and_linked_match(monk
             (2002, '2026-06-01', 2, 1, '0-1', 'Summer Cup', 'Regional final', 202);
         """
     )
+    ensure_application_settings_table(conn)
+    create_display_name_views(conn)
     conn.commit()
     conn.close()
 
     client = app.test_client()
     for search_term, expected, absent in (
         ("Annual", "Spring Open", "Summer Cup"),
-        ("Alice Stone", "Spring Open", "Autumn League"),
+        ("Stone, Alice", "Spring Open", "Autumn League"),
         ("Regional final", "Summer Cup", "Spring Open"),
     ):
         response = client.get(f"/tournaments?lang=en&search={search_term}")
@@ -427,7 +440,19 @@ def test_public_matches_support_sort_by_white_player(monkeypatch, tmp_path):
     conn = sqlite3.connect(db_path)
     conn.executescript(
         """
-        CREATE TABLE players (id INTEGER PRIMARY KEY, display_name TEXT NOT NULL);
+        CREATE TABLE players (
+            id INTEGER PRIMARY KEY,
+            first_name TEXT NOT NULL DEFAULT '',
+            last_name TEXT NOT NULL DEFAULT '',
+            custom_display_name TEXT
+        );
+        CREATE TABLE tournament_pending_players (
+            id INTEGER PRIMARY KEY,
+            tournament_id INTEGER,
+            first_name TEXT NOT NULL DEFAULT '',
+            last_name TEXT NOT NULL DEFAULT '',
+            suggested_name TEXT
+        );
         CREATE TABLE matches (
             id INTEGER PRIMARY KEY,
             match_date TEXT NOT NULL,
@@ -438,7 +463,7 @@ def test_public_matches_support_sort_by_white_player(monkeypatch, tmp_path):
             notes TEXT,
             round_number INTEGER NOT NULL DEFAULT 0
         );
-        INSERT INTO players (id, display_name) VALUES (1, 'Charlie'), (2, 'Bob'), (3, 'Alice');
+        INSERT INTO players (id, first_name) VALUES (1, 'Charlie'), (2, 'Bob'), (3, 'Alice');
         INSERT INTO matches (id, match_date, white_player_id, black_player_id, result, event, notes, round_number)
         VALUES
             (1, '2026-08-20', 1, 2, '1-0', 'Charlie vs Bob', 'Round 1', 1),
@@ -446,6 +471,8 @@ def test_public_matches_support_sort_by_white_player(monkeypatch, tmp_path):
             (3, '2026-08-19', 3, 1, '1/2-1/2', 'Alice vs Charlie', 'Round 3', 1);
         """
     )
+    ensure_application_settings_table(conn)
+    create_display_name_views(conn)
     conn.commit()
     conn.close()
 
@@ -465,7 +492,19 @@ def test_matches_filter_by_date_range_and_player_on_public_and_admin_pages(monke
     conn = sqlite3.connect(db_path)
     conn.executescript(
         """
-        CREATE TABLE players (id INTEGER PRIMARY KEY, display_name TEXT NOT NULL);
+        CREATE TABLE players (
+            id INTEGER PRIMARY KEY,
+            first_name TEXT NOT NULL DEFAULT '',
+            last_name TEXT NOT NULL DEFAULT '',
+            custom_display_name TEXT
+        );
+        CREATE TABLE tournament_pending_players (
+            id INTEGER PRIMARY KEY,
+            tournament_id INTEGER,
+            first_name TEXT NOT NULL DEFAULT '',
+            last_name TEXT NOT NULL DEFAULT '',
+            suggested_name TEXT
+        );
         CREATE TABLE matches (
             id INTEGER PRIMARY KEY,
             match_date TEXT NOT NULL,
@@ -476,7 +515,7 @@ def test_matches_filter_by_date_range_and_player_on_public_and_admin_pages(monke
             notes TEXT,
             round_number INTEGER NOT NULL DEFAULT 0
         );
-        INSERT INTO players (id, display_name) VALUES (1, 'Alice'), (2, 'Bob'), (3, 'Carol');
+        INSERT INTO players (id, first_name) VALUES (1, 'Alice'), (2, 'Bob'), (3, 'Carol');
         INSERT INTO matches
             (id, match_date, white_player_id, black_player_id, result, event)
         VALUES
@@ -485,6 +524,8 @@ def test_matches_filter_by_date_range_and_player_on_public_and_admin_pages(monke
             (3, '2026-08-20', 1, 3, '0-1', 'after-range');
         """
     )
+    ensure_application_settings_table(conn)
+    create_display_name_views(conn)
     conn.commit()
     conn.close()
 
@@ -523,7 +564,19 @@ def test_public_matches_order_same_day_rounds_before_pagination(monkeypatch, tmp
     conn = sqlite3.connect(db_path)
     conn.executescript(
         """
-        CREATE TABLE players (id INTEGER PRIMARY KEY, display_name TEXT NOT NULL);
+        CREATE TABLE players (
+            id INTEGER PRIMARY KEY,
+            first_name TEXT NOT NULL DEFAULT '',
+            last_name TEXT NOT NULL DEFAULT '',
+            custom_display_name TEXT
+        );
+        CREATE TABLE tournament_pending_players (
+            id INTEGER PRIMARY KEY,
+            tournament_id INTEGER,
+            first_name TEXT NOT NULL DEFAULT '',
+            last_name TEXT NOT NULL DEFAULT '',
+            suggested_name TEXT
+        );
         CREATE TABLE matches (
             id INTEGER PRIMARY KEY,
             match_date TEXT NOT NULL,
@@ -534,7 +587,7 @@ def test_public_matches_order_same_day_rounds_before_pagination(monkeypatch, tmp
             notes TEXT,
             round_number INTEGER NOT NULL DEFAULT 0
         );
-        INSERT INTO players (id, display_name) VALUES (1, 'Alice'), (2, 'Bob');
+        INSERT INTO players (id, first_name) VALUES (1, 'Alice'), (2, 'Bob');
         INSERT INTO matches
             (id, match_date, white_player_id, black_player_id, result, event, notes, round_number)
         VALUES
@@ -544,6 +597,8 @@ def test_public_matches_order_same_day_rounds_before_pagination(monkeypatch, tmp
             (4, '2026-08-17', 1, 2, '1-0', 'same-day-unknown', 'Unparsed note', 0);
         """
     )
+    ensure_application_settings_table(conn)
+    create_display_name_views(conn)
     conn.commit()
     conn.close()
 
@@ -587,7 +642,19 @@ def test_admin_edit_match_preserves_string_note_when_stats_refresh_fails(monkeyp
     conn = sqlite3.connect(db_path)
     conn.executescript(
         """
-        CREATE TABLE players (id INTEGER PRIMARY KEY, display_name TEXT NOT NULL);
+        CREATE TABLE players (
+            id INTEGER PRIMARY KEY,
+            first_name TEXT NOT NULL DEFAULT '',
+            last_name TEXT NOT NULL DEFAULT '',
+            custom_display_name TEXT
+        );
+        CREATE TABLE tournament_pending_players (
+            id INTEGER PRIMARY KEY,
+            tournament_id INTEGER,
+            first_name TEXT NOT NULL DEFAULT '',
+            last_name TEXT NOT NULL DEFAULT '',
+            suggested_name TEXT
+        );
         CREATE TABLE matches (
             id INTEGER PRIMARY KEY,
             match_date TEXT NOT NULL,
@@ -599,12 +666,14 @@ def test_admin_edit_match_preserves_string_note_when_stats_refresh_fails(monkeyp
             round_number INTEGER NOT NULL DEFAULT 0,
             handicap_stones INTEGER NOT NULL DEFAULT 0
         );
-        INSERT INTO players (id, display_name) VALUES (1, 'Alice'), (2, 'Bob');
+        INSERT INTO players (id, first_name) VALUES (1, 'Alice'), (2, 'Bob');
         INSERT INTO matches
             (id, match_date, white_player_id, black_player_id, result, event, notes)
         VALUES (203768, '2026-08-17', 1, 2, '1-0', 'Test', 'Round 2');
         """
     )
+    ensure_application_settings_table(conn)
+    create_display_name_views(conn)
     conn.commit()
     conn.close()
 
@@ -658,7 +727,9 @@ def test_public_tournament_index_hides_drafts_by_default(monkeypatch, tmp_path):
         CREATE TABLE tournament_pending_players (
             id INTEGER PRIMARY KEY,
             tournament_id INTEGER,
-            display_name TEXT
+            first_name TEXT NOT NULL DEFAULT '',
+            last_name TEXT NOT NULL DEFAULT '',
+            suggested_name TEXT
         );
         INSERT INTO tournaments (id, name, status, begin_date, created_at, source_format)
         VALUES
@@ -666,6 +737,9 @@ def test_public_tournament_index_hides_drafts_by_default(monkeypatch, tmp_path):
             (2, 'Draft import preview', 'draft', '2026-03-01', '2026-03-01 00:00:00', 'OpenGotha XML');
         """
     )
+    ensure_application_settings_table(conn)
+    create_display_name_views(conn)
+    conn.commit()
     conn.close()
 
     app.testing = True
@@ -709,7 +783,9 @@ def test_public_tournament_detail_uses_public_status_helper(monkeypatch, tmp_pat
         """
         CREATE TABLE players (
             id INTEGER PRIMARY KEY,
-            display_name TEXT,
+            first_name TEXT NOT NULL DEFAULT '',
+            last_name TEXT NOT NULL DEFAULT '',
+            custom_display_name TEXT,
             rating REAL,
             slug TEXT,
             active INTEGER DEFAULT 1
@@ -765,7 +841,8 @@ def test_public_tournament_detail_uses_public_status_helper(monkeypatch, tmp_pat
         CREATE TABLE tournament_pending_players (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             tournament_id INTEGER NOT NULL,
-            display_name TEXT NOT NULL,
+            first_name TEXT NOT NULL DEFAULT '',
+            last_name TEXT NOT NULL DEFAULT '',
             suggested_name TEXT,
             rating REAL NOT NULL DEFAULT 0,
             rank INTEGER NOT NULL DEFAULT 0,
@@ -781,6 +858,8 @@ def test_public_tournament_detail_uses_public_status_helper(monkeypatch, tmp_pat
         );
         """
     )
+    ensure_application_settings_table(conn)
+    create_display_name_views(conn)
     conn.execute(
         "INSERT INTO tournaments (id, name, description, status, source_format) VALUES (?, ?, ?, ?, ?)",
         (5, "Spring Open", "Annual club championship", "draft", "OpenGotha XML"),
@@ -826,13 +905,24 @@ def test_get_team_members_uses_single_targeted_lookup(monkeypatch):
         """
         CREATE TABLE players (
             id INTEGER PRIMARY KEY,
-            display_name TEXT
+            first_name TEXT NOT NULL DEFAULT '',
+            last_name TEXT NOT NULL DEFAULT '',
+            custom_display_name TEXT
         );
-        INSERT INTO players (id, display_name) VALUES (1, 'Carlos Cruz');
-        INSERT INTO players (id, display_name) VALUES (2, 'Carlos Gaitan');
-        INSERT INTO players (id, display_name) VALUES (3, 'Juan Rivera');
+        CREATE TABLE tournament_pending_players (
+            id INTEGER PRIMARY KEY,
+            tournament_id INTEGER,
+            first_name TEXT NOT NULL DEFAULT '',
+            last_name TEXT NOT NULL DEFAULT '',
+            suggested_name TEXT
+        );
+        INSERT INTO players (id, first_name, last_name) VALUES (1, 'Carlos', 'Cruz');
+        INSERT INTO players (id, first_name, last_name) VALUES (2, 'Carlos', 'Gaitan');
+        INSERT INTO players (id, first_name, last_name) VALUES (3, 'Juan', 'Rivera');
         """
     )
+    ensure_application_settings_table(conn)
+    create_display_name_views(conn)
 
     class GuardedConnection:
         def __init__(self, wrapped):
@@ -870,7 +960,7 @@ def test_public_tournament_detail_renders_draft_round_results(monkeypatch, tmp_p
             id INTEGER PRIMARY KEY,
             first_name TEXT,
             last_name TEXT,
-            display_name TEXT,
+            custom_display_name TEXT,
             rating REAL,
             active INTEGER DEFAULT 1
         );
@@ -911,7 +1001,8 @@ def test_public_tournament_detail_renders_draft_round_results(monkeypatch, tmp_p
         CREATE TABLE tournament_pending_players (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             tournament_id INTEGER NOT NULL,
-            display_name TEXT NOT NULL,
+            first_name TEXT NOT NULL DEFAULT '',
+            last_name TEXT NOT NULL DEFAULT '',
             suggested_name TEXT,
             rating REAL NOT NULL DEFAULT 0,
             rank INTEGER NOT NULL DEFAULT 0,
@@ -933,6 +1024,8 @@ def test_public_tournament_detail_renders_draft_round_results(monkeypatch, tmp_p
         );
         """
     )
+    ensure_application_settings_table(conn)
+    create_display_name_views(conn)
     conn.execute(
         "INSERT INTO tournaments (id, name, rounds, status) VALUES (?, ?, ?, 'draft')",
         (1, "Draft import preview", 1),
@@ -966,12 +1059,12 @@ def test_public_tournament_detail_renders_draft_round_results(monkeypatch, tmp_p
         ],
     )
     conn.execute(
-        "INSERT INTO tournament_pending_players (tournament_id, display_name, rating, rank) VALUES (?, ?, ?, ?)",
-        (1, "Alice Example", 1500, 1),
+        "INSERT INTO tournament_pending_players (tournament_id, first_name, last_name, rating, rank) VALUES (?, ?, ?, ?, ?)",
+        (1, "Alice", "Example", 1500, 1),
     )
     conn.execute(
-        "INSERT INTO tournament_pending_players (tournament_id, display_name, rating, rank) VALUES (?, ?, ?, ?)",
-        (1, "Bob Example", 1400, 2),
+        "INSERT INTO tournament_pending_players (tournament_id, first_name, last_name, rating, rank) VALUES (?, ?, ?, ?, ?)",
+        (1, "Bob", "Example", 1400, 2),
     )
     conn.commit()
     conn.close()

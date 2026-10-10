@@ -38,11 +38,33 @@
             value="{{ settings.password_reset_ttl_seconds }}" required>
         </div>
       </div>
-      <div class="filter-actions">
-        <button type="submit" name="action" value="save" class="button">{{ translations.save_parameters }}</button>
-        <button type="submit" name="action" value="reset" class="button secondary">{{ translations.reset_to_default
-          }}</button>
+    </div>
+    <div class="filter-panel">
+      <div class="filter-header">
+        <h3>{{ translations.display_settings_heading }}</h3>
       </div>
+      <div class="filter-grid">
+        <div class="filter-item">
+          <label for="display_name_format">{{ translations.display_name_format_label }}</label>
+          <select id="display_name_format" name="display_name_format">
+            <option value="last-first" {% if settings.display_name_format == 'last-first' %}selected{% endif %}>{{ translations.display_name_format_last_first }}</option>
+            <option value="first-last" {% if settings.display_name_format == 'first-last' %}selected{% endif %}>{{ translations.display_name_format_first_last }}</option>
+            <option value="custom" {% if settings.display_name_format == 'custom' %}selected{% endif %}>{{ translations.display_name_format_custom }}</option>
+          </select>
+          <small>{{ translations.display_name_format_help }}</small>
+        </div>
+        <div class="filter-item">
+          <label for="display_name_template">{{ translations.display_name_template_label }}</label>
+          <input id="display_name_template" name="display_name_template" type="text" maxlength="100"
+            value="{{ settings.display_name_template }}">
+          <small>{{ translations.display_name_template_hint }}</small>
+        </div>
+      </div>
+    </div>
+    <div class="filter-actions">
+      <button type="submit" name="action" value="save" class="button">{{ translations.save_parameters }}</button>
+      <button type="submit" name="action" value="reset" class="button secondary">{{ translations.reset_to_default
+        }}</button>
     </div>
   </form>
 </section>

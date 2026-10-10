@@ -4,8 +4,10 @@ from datetime import date
 import services.home_stats as home_stats
 import services.player_service as player_service
 from services.common import TRANSLATIONS
+from services.display_name import create_display_name_views
 from services.home_stats import build_home_stats, build_player_badges
 from services.player_service import get_player_rank_badge, load_player
+from services.settings_service import ensure_application_settings_table
 
 
 def test_build_home_stats_returns_period_leaders(monkeypatch):
@@ -16,7 +18,9 @@ def test_build_home_stats_returns_period_leaders(monkeypatch):
         """
         CREATE TABLE players (
             id INTEGER PRIMARY KEY,
-            display_name TEXT,
+            first_name TEXT,
+            last_name TEXT,
+            custom_display_name TEXT,
             initial_rating REAL,
             rating REAL
         );
@@ -35,9 +39,12 @@ def test_build_home_stats_returns_period_leaders(monkeypatch):
         );
         """
     )
+    ensure_application_settings_table(conn)
+    create_display_name_views(conn)
+    conn.commit()
 
     conn.executemany(
-        "INSERT INTO players (id, display_name, initial_rating, rating) VALUES (?, ?, ?, ?)",
+        "INSERT INTO players (id, first_name, initial_rating, rating) VALUES (?, ?, ?, ?)",
         [
             (1, "Alice", 1500.0, 1700.0),
             (2, "Bob", 1500.0, 1600.0),
@@ -93,7 +100,9 @@ def test_year_stats_include_matches_with_non_iso_date_strings(monkeypatch):
         """
         CREATE TABLE players (
             id INTEGER PRIMARY KEY,
-            display_name TEXT,
+            first_name TEXT,
+            last_name TEXT,
+            custom_display_name TEXT,
             initial_rating REAL,
             rating REAL
         );
@@ -112,9 +121,12 @@ def test_year_stats_include_matches_with_non_iso_date_strings(monkeypatch):
         );
         """
     )
+    ensure_application_settings_table(conn)
+    create_display_name_views(conn)
+    conn.commit()
 
     conn.executemany(
-        "INSERT INTO players (id, display_name, initial_rating, rating) VALUES (?, ?, ?, ?)",
+        "INSERT INTO players (id, first_name, initial_rating, rating) VALUES (?, ?, ?, ?)",
         [
             (1, "Alice", 1500.0, 1500.0),
             (2, "Bob", 1500.0, 1500.0),
@@ -157,7 +169,9 @@ def test_home_stats_filters_periods_in_sql_not_python(monkeypatch):
         """
         CREATE TABLE players (
             id INTEGER PRIMARY KEY,
-            display_name TEXT,
+            first_name TEXT,
+            last_name TEXT,
+            custom_display_name TEXT,
             initial_rating REAL,
             rating REAL
         );
@@ -176,6 +190,9 @@ def test_home_stats_filters_periods_in_sql_not_python(monkeypatch):
         );
         """
     )
+    ensure_application_settings_table(conn)
+    create_display_name_views(conn)
+    conn.commit()
 
     conn.executemany(
         "INSERT INTO matches (id, match_date, white_player_id, black_player_id, result) VALUES (?, ?, ?, ?, ?)",
@@ -263,7 +280,9 @@ def test_build_player_badges_returns_ranked_achievements():
         """
         CREATE TABLE players (
             id INTEGER PRIMARY KEY,
-            display_name TEXT,
+            first_name TEXT,
+            last_name TEXT,
+            custom_display_name TEXT,
             initial_rating REAL,
             rating REAL
         );
@@ -282,9 +301,12 @@ def test_build_player_badges_returns_ranked_achievements():
         );
         """
     )
+    ensure_application_settings_table(conn)
+    create_display_name_views(conn)
+    conn.commit()
 
     conn.executemany(
-        "INSERT INTO players (id, display_name, initial_rating, rating) VALUES (?, ?, ?, ?)",
+        "INSERT INTO players (id, first_name, initial_rating, rating) VALUES (?, ?, ?, ?)",
         [
             (1, "Alice", 1500.0, 1700.0),
             (2, "Bob", 1500.0, 1600.0),
@@ -334,7 +356,9 @@ def test_build_player_badges_skips_zero_game_and_zero_win_players():
         """
         CREATE TABLE players (
             id INTEGER PRIMARY KEY,
-            display_name TEXT,
+            first_name TEXT,
+            last_name TEXT,
+            custom_display_name TEXT,
             initial_rating REAL,
             rating REAL,
             games_played INTEGER DEFAULT 0
@@ -354,9 +378,12 @@ def test_build_player_badges_skips_zero_game_and_zero_win_players():
         );
         """
     )
+    ensure_application_settings_table(conn)
+    create_display_name_views(conn)
+    conn.commit()
 
     conn.executemany(
-        "INSERT INTO players (id, display_name, initial_rating, rating, games_played) VALUES (?, ?, ?, ?, ?)",
+        "INSERT INTO players (id, first_name, initial_rating, rating, games_played) VALUES (?, ?, ?, ?, ?)",
         [
             (1, "Alice", 1500.0, 1500.0, 1),
             (2, "Bob", 1500.0, 1500.0, 0),
@@ -393,7 +420,9 @@ def test_build_player_badges_returns_empty_for_zero_game_player_even_if_top_rate
         """
         CREATE TABLE players (
             id INTEGER PRIMARY KEY,
-            display_name TEXT,
+            first_name TEXT,
+            last_name TEXT,
+            custom_display_name TEXT,
             initial_rating REAL,
             rating REAL,
             games_played INTEGER DEFAULT 0
@@ -413,9 +442,12 @@ def test_build_player_badges_returns_empty_for_zero_game_player_even_if_top_rate
         );
         """
     )
+    ensure_application_settings_table(conn)
+    create_display_name_views(conn)
+    conn.commit()
 
     conn.executemany(
-        "INSERT INTO players (id, display_name, initial_rating, rating, games_played) VALUES (?, ?, ?, ?, ?)",
+        "INSERT INTO players (id, first_name, initial_rating, rating, games_played) VALUES (?, ?, ?, ?, ?)",
         [
             (1, "Alice", 1500.0, 1700.0, 0),
             (2, "Bob", 1500.0, 1600.0, 2),
@@ -436,7 +468,9 @@ def test_build_player_badges_only_marks_the_top_rated_player():
         """
         CREATE TABLE players (
             id INTEGER PRIMARY KEY,
-            display_name TEXT,
+            first_name TEXT,
+            last_name TEXT,
+            custom_display_name TEXT,
             initial_rating REAL,
             rating REAL
         );
@@ -455,9 +489,12 @@ def test_build_player_badges_only_marks_the_top_rated_player():
         );
         """
     )
+    ensure_application_settings_table(conn)
+    create_display_name_views(conn)
+    conn.commit()
 
     conn.executemany(
-        "INSERT INTO players (id, display_name, initial_rating, rating) VALUES (?, ?, ?, ?)",
+        "INSERT INTO players (id, first_name, initial_rating, rating) VALUES (?, ?, ?, ?)",
         [
             (1, "Alice", 1500.0, 1700.0),
             (2, "Bob", 1500.0, 1600.0),
@@ -487,7 +524,9 @@ def test_build_player_badges_only_awards_the_single_top_metric_winner():
         """
         CREATE TABLE players (
             id INTEGER PRIMARY KEY,
-            display_name TEXT,
+            first_name TEXT,
+            last_name TEXT,
+            custom_display_name TEXT,
             initial_rating REAL,
             rating REAL
         );
@@ -506,9 +545,12 @@ def test_build_player_badges_only_awards_the_single_top_metric_winner():
         );
         """
     )
+    ensure_application_settings_table(conn)
+    create_display_name_views(conn)
+    conn.commit()
 
     conn.executemany(
-        "INSERT INTO players (id, display_name, initial_rating, rating) VALUES (?, ?, ?, ?)",
+        "INSERT INTO players (id, first_name, initial_rating, rating) VALUES (?, ?, ?, ?)",
         [
             (1, "Alice", 1500.0, 1600.0),
             (2, "Bob", 1500.0, 1550.0),
@@ -540,13 +582,16 @@ def test_build_player_badges_awards_translated_yearly_leaders():
     conn.row_factory = sqlite3.Row
     conn.executescript(
         """
-        CREATE TABLE players (id INTEGER PRIMARY KEY, display_name TEXT, initial_rating REAL, rating REAL);
+        CREATE TABLE players (id INTEGER PRIMARY KEY, first_name TEXT, last_name TEXT, custom_display_name TEXT, initial_rating REAL, rating REAL);
         CREATE TABLE matches (id INTEGER PRIMARY KEY, match_date TEXT, white_player_id INTEGER, black_player_id INTEGER, result TEXT);
         CREATE TABLE rating_snapshots (id INTEGER PRIMARY KEY, player_id INTEGER, snapshot_date TEXT, rating REAL);
         """
     )
+    ensure_application_settings_table(conn)
+    create_display_name_views(conn)
+    conn.commit()
     conn.executemany(
-        "INSERT INTO players VALUES (?, ?, ?, ?)",
+        "INSERT INTO players (id, first_name, initial_rating, rating) VALUES (?, ?, ?, ?)",
         [(1, "Alice", 1500, 1800), (2, "Bob", 1500, 1800), (3, "Cara", 1500, 1500)],
     )
     conn.executemany(
@@ -592,16 +637,21 @@ def test_get_player_rank_badge_returns_rank_for_top_five_with_games():
         """
         CREATE TABLE players (
             id INTEGER PRIMARY KEY,
-            display_name TEXT,
+            first_name TEXT,
+            last_name TEXT,
+            custom_display_name TEXT,
             initial_rating REAL,
             rating REAL,
             games_played INTEGER
         );
         """
     )
+    ensure_application_settings_table(conn)
+    create_display_name_views(conn)
+    conn.commit()
 
     conn.executemany(
-        "INSERT INTO players (id, display_name, initial_rating, rating, games_played) VALUES (?, ?, ?, ?, ?)",
+        "INSERT INTO players (id, first_name, initial_rating, rating, games_played) VALUES (?, ?, ?, ?, ?)",
         [
             (1, "Alice", 1500.0, 1800.0, 2),
             (2, "Bob", 1500.0, 1700.0, 1),
@@ -626,7 +676,9 @@ def test_load_player_computes_rank_badge_before_connection_closes(monkeypatch):
         """
         CREATE TABLE players (
             id INTEGER PRIMARY KEY,
-            display_name TEXT,
+            first_name TEXT,
+            last_name TEXT,
+            custom_display_name TEXT,
             slug TEXT,
             initial_rating REAL,
             rating REAL,
@@ -657,13 +709,16 @@ def test_load_player_computes_rank_badge_before_connection_closes(monkeypatch):
         );
         """
     )
+    ensure_application_settings_table(conn)
+    create_display_name_views(conn)
+    conn.commit()
 
     conn.execute(
-        "INSERT INTO players (id, display_name, slug, initial_rating, rating, games_played, wins, losses, draws, country, club, rd, volatility) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO players (id, first_name, slug, initial_rating, rating, games_played, wins, losses, draws, country, club, rd, volatility) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         (1, "Alice", "alice", 1500.0, 1800.0, 2, 2, 0, 0, "COL", "", 50.0, 0.06),
     )
     conn.execute(
-        "INSERT INTO players (id, display_name, slug, initial_rating, rating, games_played, wins, losses, draws, country, club, rd, volatility) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO players (id, first_name, slug, initial_rating, rating, games_played, wins, losses, draws, country, club, rd, volatility) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         (2, "Bob", "bob", 1500.0, 1700.0, 1, 1, 0, 0, "COL", "", 50.0, 0.06),
     )
     conn.execute(

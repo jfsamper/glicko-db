@@ -2,6 +2,8 @@ import sqlite3
 
 import config
 import services.common as common
+from services.display_name import create_display_name_views
+from services.settings_service import ensure_application_settings_table
 
 
 def create_route_report_db(path):
@@ -10,7 +12,9 @@ def create_route_report_db(path):
         """
         CREATE TABLE players (
             id INTEGER PRIMARY KEY,
-            display_name TEXT,
+            first_name TEXT,
+            last_name TEXT,
+            custom_display_name TEXT,
             initial_rating REAL,
             rating REAL,
             country TEXT,
@@ -36,12 +40,14 @@ def create_route_report_db(path):
             glicko_m REAL
         );
         INSERT INTO category_config VALUES (1, 16.6, 340.0);
-        INSERT INTO players VALUES
-            (1, 'Alice', 1500, 1600, 'CO', 'Club A'),
-            (2, 'Bob', 1500, 1500, 'US', 'Club B');
+        INSERT INTO players (id, first_name, last_name, custom_display_name, initial_rating, rating, country, club) VALUES
+            (1, 'Alice', 'Example', 'Alice', 1500, 1600, 'CO', 'Club A'),
+            (2, 'Bob', 'Brown', 'Bob', 1500, 1500, 'US', 'Club B');
         INSERT INTO matches VALUES (1, '2026-01-01', 1, 2, '1-0', NULL);
         """
     )
+    ensure_application_settings_table(conn)
+    create_display_name_views(conn)
     conn.commit()
     conn.close()
 
@@ -109,9 +115,9 @@ def test_reports_paginate_player_performance_with_default_page_size(app, monkeyp
 
     conn = sqlite3.connect(db_path)
     conn.executemany(
-        "INSERT INTO players (id, display_name, initial_rating, rating, country, club) VALUES (?, ?, ?, ?, ?, ?)",
+        "INSERT INTO players (id, first_name, last_name, custom_display_name, initial_rating, rating, country, club) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
         [
-            (player_id, f"Player {player_id:02d}", 1500, 1500, "CO", "Club A")
+            (player_id, "Player", f"{player_id:02d}", f"Player {player_id:02d}", 1500, 1500, "CO", "Club A")
             for player_id in range(3, 28)
         ],
     )

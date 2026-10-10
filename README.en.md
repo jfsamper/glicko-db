@@ -106,7 +106,7 @@ The default values are in `config.py`.
 - Pending-player suggestions link existing players only when explicitly selected. "Create new" creates another player or rejects an existing name; tournaments with handicaps disabled generate pairings with zero stones.
 - Only administrators can create, restore, or delete backups. The last active administrator cannot be deleted, deactivated, or demoted.
 - Full XLSX replacement first previews current and importable counts and requires explicit confirmation. Before replacing data, it creates an integrity-verified SQLite backup and copies available SGF files beside it; if import fails, the previous data is preserved.
-- `/admin/settings` controls login limits and recovery expiry. In production, use HTTPS, unique passwords, and keep secrets in environment variables.
+- `/admin/settings` controls login limits, recovery expiry, and the player name format (`Last name, First name` by default, `First name Last name`, or a custom template). Names are rendered on the fly from the format, so changing it never rewrites stored data. Each player can also have an optional custom name, editable by operators and admins. First and last names cannot contain commas. In production, use HTTPS, unique passwords, and keep secrets in environment variables.
 - Logged-in accounts can upload SGF files without linking them. Administrators, directors, and operators can link or unlink records; only administrators can delete files.
 
 ## Project roadmap
@@ -129,7 +129,7 @@ pytest -q
 
 ### Code organization
 
-CSV imports normalize header case and surrounding whitespace, and reject headers that become duplicates after normalization. `scripts/export_players.py` creates `exports/` when it is missing. `scripts/set_display_names.py --format {first-last,last-first,custom}` sets every player's `display_name` to `First Last`, `Last, First`, or a custom template (`--template`, with `{first_name}` and `{last_name}` placeholders); add `--dry-run` to preview the changes first.
+CSV imports normalize header case and surrounding whitespace, and reject headers that become duplicates after normalization. `scripts/export_players.py` creates `exports/` when it is missing.
 
 Administrative routes are split by domain across `routes/admin_tournaments.py`, `routes/admin_matches.py`, `routes/admin_players.py`, and `routes/admin_users.py`. Tournament logic is split by responsibility across `services/tournament_gotha.py`, `services/tournament_participants.py`, `services/tournament_pairing.py`, `services/tournament_matches.py`, and `services/tournament_standings.py`. Translations and language selection live in `services/i18n.py`, while pure rating-chart helpers live in `services/chart_service.py`; `services/common.py` retains compatibility exports for existing imports. `services/tournament_service.py` remains a compatibility facade. The anonymized OpenGotha examples used by tests are tracked under `tests/fixtures/opengotha/`; neither local `uploads/` files nor generated HTML guides are required to run `pytest -q`.
 

@@ -11,7 +11,8 @@ import services.auth_service as auth_service
 import services.common as common
 from app import create_app
 from config import DEFAULT_RATING, DEFAULT_RD, DEFAULT_VOLATILITY, GLICKO_K, GLICKO_M, TAU
-from services.settings_service import DEFAULT_APPLICATION_SETTINGS
+from services.display_name import create_display_name_views
+from services.settings_service import DEFAULT_APPLICATION_SETTINGS, ensure_application_settings_table
 
 
 def make_account_app(tmp_path, monkeypatch, role_name="operator"):
@@ -31,7 +32,10 @@ def make_account_app(tmp_path, monkeypatch, role_name="operator"):
     conn = sqlite3.connect(db_path)
     common.migrate_auth_schema(conn)
     conn.execute(
-        "CREATE TABLE players (id INTEGER PRIMARY KEY, display_name TEXT, rating REAL, games_played INTEGER, active INTEGER)"
+        "CREATE TABLE players (id INTEGER PRIMARY KEY, first_name TEXT, last_name TEXT, custom_display_name TEXT, rating REAL, games_played INTEGER, active INTEGER)"
+    )
+    conn.execute(
+        "CREATE TABLE tournament_pending_players (id INTEGER PRIMARY KEY, first_name TEXT NOT NULL DEFAULT '', last_name TEXT NOT NULL DEFAULT '', suggested_name TEXT)"
     )
     conn.execute(
         "CREATE TABLE category_config (id INTEGER PRIMARY KEY, glicko_k REAL, glicko_m REAL, updated_at TEXT)"
@@ -39,6 +43,8 @@ def make_account_app(tmp_path, monkeypatch, role_name="operator"):
     conn.execute(
         "CREATE TABLE rating_config (id INTEGER PRIMARY KEY, tau REAL, default_rating REAL, default_rd REAL, default_volatility REAL, updated_at TEXT)"
     )
+    ensure_application_settings_table(conn)
+    create_display_name_views(conn)
     conn.execute(
         "INSERT INTO users (username, password_hash, email) VALUES (?, ?, ?)",
         ("profile-user", generate_password_hash("old-password"), "user@example.com"),
@@ -53,14 +59,26 @@ def make_account_app(tmp_path, monkeypatch, role_name="operator"):
     return app, db_path, user_id
 
 
+def set_login_limits(db_path, max_attempts, window_seconds):
+    # The stored application settings override the module-level config fallbacks.
+    conn = sqlite3.connect(db_path)
+    conn.execute(
+        "UPDATE application_settings SET max_login_attempts = ?, login_window_seconds = ?",
+        (max_attempts, window_seconds),
+    )
+    conn.commit()
+    conn.close()
+
+
 def authenticate_client(client, user_id, role_name="operator"):
     conftest.set_user_session(client, user_id)
 
 
 @pytest.mark.parametrize("vary_ip", [False, True])
 def test_login_blocks_correct_guess_after_failure_limit(tmp_path, monkeypatch, vary_ip):
-    app, _db_path, _user_id = make_account_app(tmp_path, monkeypatch)
+    app, db_path, _user_id = make_account_app(tmp_path, monkeypatch)
     monkeypatch.setattr(admin_routes, "MAX_LOGIN_ATTEMPTS", 2)
+    set_login_limits(db_path, 2, admin_routes.LOGIN_WINDOW_SECONDS)
     client = app.test_client()
 
     for attempt in range(2):
@@ -105,6 +123,7 @@ def test_successful_login_clears_ip_and_account_attempts(tmp_path, monkeypatch):
 def test_expired_login_attempts_do_not_block_login(tmp_path, monkeypatch):
     app, db_path, _user_id = make_account_app(tmp_path, monkeypatch)
     monkeypatch.setattr(admin_routes, "MAX_LOGIN_ATTEMPTS", 2)
+    set_login_limits(db_path, 2, admin_routes.LOGIN_WINDOW_SECONDS)
     client = app.test_client()
     for _ in range(2):
         client.post(
@@ -281,11 +300,12 @@ def test_forgot_password_response_does_not_reveal_account_existence(tmp_path, mo
 
 
 def test_forgot_password_rate_limit_preserves_generic_response(tmp_path, monkeypatch):
-    app, _db_path, _user_id = make_account_app(tmp_path, monkeypatch)
+    app, db_path, _user_id = make_account_app(tmp_path, monkeypatch)
     client = app.test_client()
     sent = []
     monkeypatch.setattr(admin_routes, "MAX_LOGIN_ATTEMPTS", 2)
     monkeypatch.setattr(admin_routes, "LOGIN_WINDOW_SECONDS", 60)
+    set_login_limits(db_path, 2, 60)
     monkeypatch.setattr(
         admin_routes,
         "send_password_reset_email",
@@ -516,26 +536,32 @@ def test_administrator_can_update_and_reset_application_settings(tmp_path, monke
             "max_login_attempts": "12",
             "login_window_seconds": "90",
             "password_reset_ttl_seconds": "7200",
+            "display_name_format": "first-last",
+            "display_name_template": "",
         },
     )
     assert response.status_code == 302
     conn = sqlite3.connect(db_path)
     settings = conn.execute(
-        "SELECT max_login_attempts, login_window_seconds, password_reset_ttl_seconds FROM application_settings"
+        "SELECT max_login_attempts, login_window_seconds, password_reset_ttl_seconds, "
+        "display_name_format, display_name_template FROM application_settings"
     ).fetchone()
     conn.close()
-    assert settings == (12, 90, 7200)
+    assert settings == (12, 90, 7200, "first-last", "{last_name}, {first_name}")
 
     response = client.post("/admin/settings?lang=en", data={"action": "reset"})
     assert response.status_code == 302
     conn = common.get_db()
     try:
         settings = conn.execute(
-            "SELECT max_login_attempts, login_window_seconds, password_reset_ttl_seconds FROM application_settings"
+            "SELECT max_login_attempts, login_window_seconds, password_reset_ttl_seconds, "
+            "display_name_format, display_name_template FROM application_settings"
         ).fetchone()
     finally:
         conn.close()
-    assert tuple(settings) == tuple(DEFAULT_APPLICATION_SETTINGS.values())
+    assert tuple(settings) == tuple(DEFAULT_APPLICATION_SETTINGS[key] for key in (
+        "max_login_attempts", "login_window_seconds", "password_reset_ttl_seconds",
+        "display_name_format", "display_name_template"))
 
 
 def test_non_administrator_cannot_edit_application_settings(tmp_path, monkeypatch):

@@ -356,7 +356,7 @@ def admin_import():
                     conn = admin.get_db()
                     try:
                         players = conn.execute(
-                            "SELECT id, display_name FROM players").fetchall()
+                            "SELECT id, display_name FROM players_display").fetchall()
                         player_lookup = {
                             admin.normalize_key(row["display_name"]): row["id"] for row in players
                         }

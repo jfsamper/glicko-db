@@ -123,7 +123,6 @@ def create_players(conn, count, rng):
             (
                 first_name,
                 last_name,
-                f"{first_name} {last_name}",
                 rng.choice(COUNTRIES),
                 f"{PREFIX}{rng.choice(CLUBS)}",
                 f"{PREFIX.lower()}player-{index:04d}",
@@ -137,9 +136,9 @@ def create_players(conn, count, rng):
     conn.executemany(
         """
         INSERT INTO players
-            (first_name, last_name, display_name, country, club, slug, active,
+            (first_name, last_name, country, club, slug, active,
              rating, initial_rating, rd, volatility)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         rows,
     )

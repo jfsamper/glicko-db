@@ -136,7 +136,7 @@ def _period_stats(conn, period):
     start_date, end_date = _period_bounds(period)
     matches = _matches_in_period(conn, start_date, end_date)
     players = conn.execute(
-        "SELECT id AS player_id, display_name, initial_rating, rating FROM players"
+        "SELECT id AS player_id, display_name, initial_rating, rating FROM players_display"
     ).fetchall()
 
     player_rows = [dict(player) for player in players]

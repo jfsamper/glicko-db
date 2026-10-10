@@ -21,7 +21,7 @@ from services.helpers import (
 from services.player_service import build_player_lookup, ensure_player
 from services.import_gotha import GothaMatch, parse_gotha_xml as _parse_gotha_xml
 from services.rating_service import clear_dirty_date, mark_dirty
-from services.tournament_participants import suggest_player_name as _suggest_player_name
+from services.tournament_participants import suggest_player_match as _suggest_player_match
 from services.tournament_gotha import read_gotha_tournament
 
 logger = logging.getLogger(__name__)
@@ -36,7 +36,7 @@ def build_import_preview(conn, xml_path):
     """Return an actionable OpenGotha reconciliation preview before commit."""
     metadata = read_gotha_tournament(xml_path)
     player_rows = conn.execute(
-        "SELECT id, display_name, first_name, last_name FROM players WHERE active = 1"
+        "SELECT id, display_name, first_name, last_name FROM players_display WHERE active = 1"
     ).fetchall()
     lookup = {
         normalize_key(row["display_name"]): row["id"]
@@ -71,18 +71,14 @@ def build_import_preview(conn, xml_path):
             status = "exact"
             summary["exact_matches"] += 1
         else:
-            suggested_name = _suggest_player_name(display_name, conn)
-            if suggested_name:
-                suggestion_match = conn.execute(
-                    "SELECT id, display_name FROM players WHERE active = 1 AND display_name = ?",
-                    (suggested_name,),
-                ).fetchone()
-                if suggestion_match is not None:
-                    suggested_player_id = suggestion_match["id"]
-                    status = "fuzzy"
-                    summary["fuzzy_matches"] += 1
-                else:
-                    status = "new"
+            # A fuzzy suggestion is only a candidate; it links only when the admin picks it.
+            suggestion = _suggest_player_match(display_name, conn)
+            if suggestion is not None:
+                suggested_name, suggested_player_id = suggestion
+                status = "fuzzy"
+                summary["fuzzy_matches"] += 1
+            else:
+                status = "new"
             summary["new_players"] += 1 if status == "new" else 0
             summary["unresolved_players"] += 1 if status == "new" else 0
 
@@ -97,7 +93,7 @@ def build_import_preview(conn, xml_path):
                 "suggested_player_id": suggested_player_id,
                 "source_key": source_key,
                 "decision": "reject" if status == "duplicate" else (
-                    str(resolved_player_id or suggested_player_id or "new")
+                    str(resolved_player_id) if resolved_player_id is not None else "new"
                 ),
             }
         )
@@ -462,7 +458,7 @@ def _import_workbook_data(conn, workbook, reset):
         player_row = conn.execute(
             """
             SELECT id, display_name, rating
-            FROM players
+            FROM players_display
             WHERE display_name = ?
             """,
             (sheetname,),

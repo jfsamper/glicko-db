@@ -11,7 +11,9 @@ from services.timezone_service import current_date
 from services.i18n import TRANSLATIONS
 from services.home_stats import build_player_badges
 from services.player_stats import build_recent_result_summaries
-from services.helpers import normalize_key, normalize_text, slugify, split_name
+from services.display_name import (
+    read_display_name_setting, render_display_name, split_display_name)
+from services.helpers import normalize_key, normalize_text, slugify
 from services.category_service import get_category_config, glicko_to_category
 from services.sgf_service import clear_missing_sgf_links
 from services.standings_service import calculate_standings
@@ -76,7 +78,7 @@ def build_player_lookup(conn):
     if "slug" in columns:
         query_columns.append("slug")
     rows = conn.execute(
-        f"SELECT {', '.join(query_columns)} FROM players").fetchall()
+        f"SELECT {', '.join(query_columns)} FROM players_display").fetchall()
     lookup = {}
     for row in rows:
         display_name = row["display_name"]
@@ -92,6 +94,13 @@ def ensure_player(conn, display_name, rating=None, initial_rating=None, active=N
         return None
 
     display_name = normalize_text(display_name)
+    if not display_name:
+        return None
+
+    first_name, last_name = split_display_name(display_name)
+    display_format, display_template = read_display_name_setting(conn)
+    display_name = render_display_name(
+        first_name, last_name, display_format, display_template)
     if not display_name:
         return None
 
@@ -125,38 +134,33 @@ def ensure_player(conn, display_name, rating=None, initial_rating=None, active=N
         existing_id = player_lookup[key]
         row = conn.execute(
             "SELECT id, display_name" +
-            (", slug" if has_slug else "") + " FROM players WHERE id = ?",
+            (", slug" if has_slug else "") + " FROM players_display WHERE id = ?",
             (existing_id,),
         ).fetchone()
         if row is not None:
+            assignments: list[str] = []
+            params: list[object] = []
+            if (has_first_name and has_last_name
+                    and normalize_key(row["display_name"] or "") != key):
+                assignments += ["first_name = ?", "last_name = ?"]
+                params += [first_name, last_name]
+            if has_slug:
+                assignments.append("slug = ?")
+                params.append(row["slug"] or slug)
             if rating is not None and has_rating:
-                update_sql = "UPDATE players SET display_name = ?"
-                params: list[object] = [display_name]
-                if has_slug:
-                    update_sql += ", slug = ?"
-                    params.append(row["slug"] or slug)
-                if has_rating:
-                    update_sql += ", rating = ?"
-                    params.append(normalized_rating)
+                assignments.append("rating = ?")
+                params.append(normalized_rating)
                 if has_initial_rating:
-                    update_sql += ", initial_rating = COALESCE(initial_rating, ?)"
+                    assignments.append("initial_rating = COALESCE(initial_rating, ?)")
                     params.append(
                         normalized_initial_rating or normalized_rating)
                 if active is not None and has_active:
-                    update_sql += ", active = ?"
+                    assignments.append("active = ?")
                     params.append(int(active))
-                update_sql += " WHERE id = ?"
-                params.append(row["id"])
-                conn.execute(update_sql, params)
-            elif has_slug:
+            if assignments:
                 conn.execute(
-                    "UPDATE players SET display_name = ?, slug = ? WHERE id = ?",
-                    (display_name, row["slug"] or slug, row["id"]),
-                )
-            else:
-                conn.execute(
-                    "UPDATE players SET display_name = ? WHERE id = ?",
-                    (display_name, row["id"]),
+                    f"UPDATE players SET {', '.join(assignments)} WHERE id = ?",
+                    [*params, row["id"]],
                 )
 
             player_lookup[key] = row["id"]
@@ -170,43 +174,25 @@ def ensure_player(conn, display_name, rating=None, initial_rating=None, active=N
             slug = f"{base_slug}-{counter}"
             counter += 1
 
-    first_name, last_name = split_name(display_name)
-
-    if has_slug and has_first_name and has_last_name and has_country and has_club and has_initial_rating and has_rating and has_rd and has_volatility:
-        insert_sql = "INSERT INTO players (first_name, last_name, display_name, country, club, slug, initial_rating, rating, rd, volatility"
-        insert_values = [first_name, last_name, display_name, "COL", "", slug,
-                         normalized_initial_rating or normalized_rating, normalized_rating, DEFAULT_RD, DEFAULT_VOLATILITY]
-        if has_active:
-            insert_sql += ", active"
-            insert_values.append(int(active) if active is not None else 1)
-        insert_sql += ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?"
-        if has_active:
-            insert_sql += ", ?"
-        insert_sql += ")"
-        conn.execute(insert_sql, insert_values)
-    elif has_first_name and has_last_name and has_rating:
-        insert_sql = "INSERT INTO players (first_name, last_name, display_name, rating"
-        insert_values = [first_name, last_name,
-                         display_name, normalized_rating]
-        if has_active:
-            insert_sql += ", active"
-            insert_values.append(int(active) if active is not None else 1)
-        insert_sql += ") VALUES (?, ?, ?, ?"
-        if has_active:
-            insert_sql += ", ?"
-        insert_sql += ")"
-        conn.execute(insert_sql, insert_values)
-    else:
-        insert_sql = "INSERT INTO players (display_name, rating"
-        insert_values = [display_name, normalized_rating]
-        if has_active:
-            insert_sql += ", active"
-            insert_values.append(int(active) if active is not None else 1)
-        insert_sql += ") VALUES (?, ?"
-        if has_active:
-            insert_sql += ", ?"
-        insert_sql += ")"
-        conn.execute(insert_sql, insert_values)
+    insert_columns = ["first_name", "last_name"]
+    insert_values: list[object] = [first_name, last_name]
+    if has_slug and has_country and has_club and has_initial_rating and has_rating and has_rd and has_volatility:
+        insert_columns += ["country", "club", "slug", "initial_rating",
+                           "rating", "rd", "volatility"]
+        insert_values += ["COL", "", slug,
+                          normalized_initial_rating or normalized_rating,
+                          normalized_rating, DEFAULT_RD, DEFAULT_VOLATILITY]
+    elif has_rating:
+        insert_columns.append("rating")
+        insert_values.append(normalized_rating)
+    if has_active:
+        insert_columns.append("active")
+        insert_values.append(int(active) if active is not None else 1)
+    placeholders = ", ".join(["?"] * len(insert_columns))
+    conn.execute(
+        f"INSERT INTO players ({', '.join(insert_columns)}) VALUES ({placeholders})",
+        insert_values,
+    )
     new_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
     player_lookup[key] = new_id
     if has_slug:
@@ -266,7 +252,7 @@ def load_player(
     conn = get_db()
     clear_missing_sgf_links(conn)
     player = conn.execute(
-        "SELECT * FROM players WHERE id = ?", (player_id,)).fetchone()
+        "SELECT * FROM players_display WHERE id = ?", (player_id,)).fetchone()
 
     if not player:
         conn.close()
@@ -304,8 +290,8 @@ def load_player(
                p_black.slug AS black_slug,
                p_black.rating AS black_rating
         FROM matches m
-        JOIN players p_white ON p_white.id = m.white_player_id
-        JOIN players p_black ON p_black.id = m.black_player_id
+        JOIN players_display p_white ON p_white.id = m.white_player_id
+        JOIN players_display p_black ON p_black.id = m.black_player_id
         WHERE {match_condition}
         ORDER BY m.match_date DESC, m.id DESC
     """
@@ -520,7 +506,7 @@ def load_player(
                 SELECT tp.player_id AS id, p.display_name AS name, p.rating, tp.category,
                        tp.initial_score, tp.acceleration, tp.seed_rating
                 FROM tournament_participants tp
-                JOIN players p ON p.id = tp.player_id
+                JOIN players_display p ON p.id = tp.player_id
                 WHERE tp.tournament_id = ?
                 """,
                 (tournament_id,),
@@ -677,18 +663,6 @@ def _build_player_name_clause(conn, display_name):
     if not display_name:
         return "", []
 
-    table_exists = conn.execute(
-        "SELECT 1 FROM sqlite_master WHERE type='table' AND name='players_fts'"
-    ).fetchone()
-    if table_exists:
-        fts_query = f"{display_name.lower()}*"
-        rows = conn.execute(
-            "SELECT rowid FROM players_fts WHERE players_fts MATCH ?",
-            (fts_query,),
-        ).fetchall()
-        if rows:
-            return " AND id IN (SELECT rowid FROM players_fts WHERE players_fts MATCH ?)", [fts_query]
-
     return " AND LOWER(display_name) LIKE ?", [f"%{display_name.lower()}%"]
 
 
@@ -717,7 +691,7 @@ def parse_player_order(value, default="desc"):
 PLAYER_SORT_FIELDS = {
     "name": "LOWER(display_name)",
     "rating": "COALESCE(rating, 0)",
-    "activity": "COALESCE((SELECT MAX(match_date) FROM (SELECT white_player_id AS player_id, match_date FROM matches UNION ALL SELECT black_player_id AS player_id, match_date FROM matches) WHERE player_id = players.id), '1970-01-01')",
+    "activity": "COALESCE((SELECT MAX(match_date) FROM (SELECT white_player_id AS player_id, match_date FROM matches UNION ALL SELECT black_player_id AS player_id, match_date FROM matches) WHERE player_id = players_display.id), '1970-01-01')",
 }
 
 
@@ -736,7 +710,7 @@ def count_rankings(filters=None):
     conn = get_db()
     conn.row_factory = sqlite3.Row
     try:
-        query = "SELECT COUNT(*) FROM players WHERE 1=1"
+        query = "SELECT COUNT(*) FROM players_display WHERE 1=1"
         params = []
 
         if display_name:
@@ -787,7 +761,7 @@ def load_rankings(filters=None):
 
         query = """
             SELECT *
-            FROM players
+            FROM players_display
             WHERE 1=1
         """
 

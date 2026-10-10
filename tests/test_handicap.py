@@ -10,6 +10,8 @@ import pytest
 import services.category_service as category_service
 import services.rating_service as rating_service
 import services.import_service as import_service
+from services.display_name import create_display_name_views
+from services.settings_service import ensure_application_settings_table
 from services.import_gotha import parse_gotha_xml
 from services.tournament_service import (
     create_tournament_from_gotha,
@@ -125,7 +127,7 @@ def test_recompute_ratings_applies_symmetric_handicap_adjustment(tmp_path, monke
         """
         CREATE TABLE players (
             id INTEGER PRIMARY KEY,
-            display_name TEXT,
+            custom_display_name TEXT,
             first_name TEXT,
             last_name TEXT,
             initial_rating REAL,
@@ -166,12 +168,14 @@ def test_recompute_ratings_applies_symmetric_handicap_adjustment(tmp_path, monke
         INSERT INTO rating_config (id, tau, default_rating, default_rd, default_volatility) VALUES (1, 0.5, 1500.0, 200.0, 0.06);
         INSERT INTO rating_state (id, earliest_dirty_date) VALUES (1, NULL);
         INSERT INTO category_config (id, glicko_k, glicko_m, updated_at) VALUES (1, 16.6, 340.0, NULL);
-        INSERT INTO players (id, display_name, first_name, last_name, initial_rating, rating, rd, volatility, active)
-        VALUES (1, 'White Player', 'White', 'Player', 1600, 1600, 200, 0.06, 1);
-        INSERT INTO players (id, display_name, first_name, last_name, initial_rating, rating, rd, volatility, active)
-        VALUES (2, 'Black Player', 'Black', 'Player', 1400, 1400, 200, 0.06, 1);
+        INSERT INTO players (id, first_name, last_name, initial_rating, rating, rd, volatility, active)
+        VALUES (1, 'White', 'Player', 1600, 1600, 200, 0.06, 1);
+        INSERT INTO players (id, first_name, last_name, initial_rating, rating, rd, volatility, active)
+        VALUES (2, 'Black', 'Player', 1400, 1400, 200, 0.06, 1);
         """
     )
+    ensure_application_settings_table(conn)
+    create_display_name_views(conn)
     conn.commit()
     conn.close()
 
@@ -302,7 +306,7 @@ def _create_tournament_db():
             id INTEGER PRIMARY KEY,
             first_name TEXT,
             last_name TEXT,
-            display_name TEXT,
+            custom_display_name TEXT,
             rating REAL,
             active INTEGER DEFAULT 1
         );
@@ -363,7 +367,7 @@ def _create_tournament_db():
         CREATE TABLE tournament_pending_players (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             tournament_id INTEGER NOT NULL,
-            display_name TEXT NOT NULL,
+            first_name TEXT NOT NULL DEFAULT '', last_name TEXT NOT NULL DEFAULT '',
             suggested_name TEXT,
             resolved_player_id INTEGER,
             rating REAL NOT NULL DEFAULT 0,
@@ -390,13 +394,16 @@ def _create_tournament_db():
         );
         """
     )
+    ensure_application_settings_table(conn)
+    create_display_name_views(conn)
+    conn.commit()
     return conn
 
 
 def test_manual_pair_auto_suggests_handicap_from_ratings():
     conn = _create_tournament_db()
-    conn.execute("INSERT INTO players (id, display_name, rating, active) VALUES (1, 'Strong', 2700, 1)")
-    conn.execute("INSERT INTO players (id, display_name, rating, active) VALUES (2, 'Weak', 700, 1)")
+    conn.execute("INSERT INTO players (id, first_name, last_name, rating, active) VALUES (1, 'Strong', 'Player', 2700, 1)")
+    conn.execute("INSERT INTO players (id, first_name, last_name, rating, active) VALUES (2, 'Weak', 'Player', 700, 1)")
     conn.execute("INSERT INTO tournaments (id, name) VALUES (1, 'Test tournament')")
     conn.execute("INSERT INTO tournament_participants (tournament_id, player_id) VALUES (1, 1), (1, 2)")
     conn.execute("INSERT INTO tournament_rounds (id, tournament_id, round_number) VALUES (1, 1, 1)")
@@ -410,8 +417,8 @@ def test_manual_pair_auto_suggests_handicap_from_ratings():
 
 def test_manual_pair_accepts_explicit_handicap_override():
     conn = _create_tournament_db()
-    conn.execute("INSERT INTO players (id, display_name, rating, active) VALUES (1, 'A', 1600, 1)")
-    conn.execute("INSERT INTO players (id, display_name, rating, active) VALUES (2, 'B', 1400, 1)")
+    conn.execute("INSERT INTO players (id, first_name, last_name, rating, active) VALUES (1, 'A', 'Player', 1600, 1)")
+    conn.execute("INSERT INTO players (id, first_name, last_name, rating, active) VALUES (2, 'B', 'Player', 1400, 1)")
     conn.execute("INSERT INTO tournaments (id, name) VALUES (1, 'Test tournament')")
     conn.execute("INSERT INTO tournament_participants (tournament_id, player_id) VALUES (1, 1), (1, 2)")
     conn.execute("INSERT INTO tournament_rounds (id, tournament_id, round_number) VALUES (1, 1, 1)")
@@ -425,8 +432,8 @@ def test_manual_pair_accepts_explicit_handicap_override():
 
 def test_update_pairing_handicap_validates_range_and_persists():
     conn = _create_tournament_db()
-    conn.execute("INSERT INTO players (id, display_name, rating, active) VALUES (1, 'A', 1600, 1)")
-    conn.execute("INSERT INTO players (id, display_name, rating, active) VALUES (2, 'B', 1400, 1)")
+    conn.execute("INSERT INTO players (id, first_name, last_name, rating, active) VALUES (1, 'A', 'Player', 1600, 1)")
+    conn.execute("INSERT INTO players (id, first_name, last_name, rating, active) VALUES (2, 'B', 'Player', 1400, 1)")
     conn.execute("INSERT INTO tournaments (id, name) VALUES (1, 'Test tournament')")
     conn.execute("INSERT INTO tournament_participants (tournament_id, player_id) VALUES (1, 1), (1, 2)")
     conn.execute("INSERT INTO tournament_rounds (id, tournament_id, round_number) VALUES (1, 1, 1)")
@@ -449,8 +456,8 @@ def test_update_pairing_handicap_validates_range_and_persists():
 
 def test_process_tournament_round_matches_carries_handicap_into_matches_table():
     conn = _create_tournament_db()
-    conn.execute("INSERT INTO players (id, display_name, rating, active) VALUES (1, 'A', 1600, 1)")
-    conn.execute("INSERT INTO players (id, display_name, rating, active) VALUES (2, 'B', 1400, 1)")
+    conn.execute("INSERT INTO players (id, first_name, last_name, rating, active) VALUES (1, 'A', 'Player', 1600, 1)")
+    conn.execute("INSERT INTO players (id, first_name, last_name, rating, active) VALUES (2, 'B', 'Player', 1400, 1)")
     conn.execute("INSERT INTO tournaments (id, name) VALUES (1, 'Test tournament')")
     conn.execute("INSERT INTO tournament_participants (tournament_id, player_id) VALUES (1, 1), (1, 2)")
     conn.execute("INSERT INTO tournament_rounds (id, tournament_id, round_number) VALUES (1, 1, 1)")

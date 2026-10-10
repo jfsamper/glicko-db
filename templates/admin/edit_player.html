@@ -30,8 +30,10 @@
 
       <div class="filter-grid">
         <div class="filter-item wide">
-          <label for="display_name">{{ translations.display_name_label }}</label>
-          <input id="display_name" type="text" name="display_name" value="{{ player.display_name }}" required>
+          <label for="custom_display_name">{{ translations.custom_display_name_label }}</label>
+          <input id="custom_display_name" type="text" name="custom_display_name" value="{{ player.custom_display_name or '' }}">
+          <small>{{ translations.custom_display_name_help }}</small>
+          <small>{{ translations.custom_display_name_current.format(name=player.display_name) }}</small>
         </div>
 
         <div class="filter-item">

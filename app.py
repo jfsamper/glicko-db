@@ -18,7 +18,12 @@ from services.auth_service import (
     migrate_result_submissions_schema,
 )
 from services.audit_service import migrate_audit_log_schema
+from services.backup_service import (
+    ensure_players_fts_artifacts,
+    rebuild_players_fts_artifacts,
+)
 from services.db import get_db
+from services.display_name import migrate_display_name_schema
 from services.stats_service import refresh_stats
 from services.timezone_service import current_timestamp
 from services.i18n import TRANSLATIONS, get_language
@@ -125,7 +130,7 @@ def init_db():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             first_name TEXT NOT NULL,
             last_name TEXT NOT NULL,
-            display_name TEXT,
+            custom_display_name TEXT,
             country TEXT,
             club TEXT,
             slug TEXT UNIQUE,
@@ -243,8 +248,10 @@ def init_db():
         CREATE TABLE IF NOT EXISTS tournament_pending_players (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             tournament_id INTEGER NOT NULL,
-            display_name TEXT NOT NULL,
+            first_name TEXT NOT NULL DEFAULT '',
+            last_name TEXT NOT NULL DEFAULT '',
             suggested_name TEXT,
+            suggested_player_id INTEGER,
             resolved_player_id INTEGER,
             rating REAL NOT NULL DEFAULT 0,
             rank INTEGER NOT NULL DEFAULT 0,
@@ -508,17 +515,17 @@ def seed_initial_players():
         return False
 
     players = [
-        ("Juan", "Samper", "Juan Samper", "COL", "Club A", "juan-samper"),
-        ("Camilo", "Acuna", "Camilo Acuna", "COL", "Club B", "camilo-acuna"),
-        ("Fabio", "Moreno", "Fabio Moreno", "COL", "Club A", "fabio-moreno"),
-        ("Jaime", "Ramirez", "Jaime Ramirez", "COL", "Club C", "jaime-ramirez"),
-        ("Sofia", "Lopez", "Sofia Lopez", "COL", "Club B", "sofia-lopez"),
+        ("Juan", "Samper", "COL", "Club A", "juan-samper"),
+        ("Camilo", "Acuna", "COL", "Club B", "camilo-acuna"),
+        ("Fabio", "Moreno", "COL", "Club A", "fabio-moreno"),
+        ("Jaime", "Ramirez", "COL", "Club C", "jaime-ramirez"),
+        ("Sofia", "Lopez", "COL", "Club B", "sofia-lopez"),
     ]
     conn = get_db()
-    for first_name, last_name, display_name, country, club, slug in players:
+    for first_name, last_name, country, club, slug in players:
         conn.execute(
-            "INSERT INTO players (first_name, last_name, display_name, country, club, slug, rating, rd, volatility) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            (first_name, last_name, display_name, country, club,
+            "INSERT INTO players (first_name, last_name, country, club, slug, rating, rd, volatility) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            (first_name, last_name, country, club,
              slug, DEFAULT_RATING, DEFAULT_RD, DEFAULT_VOLATILITY),
         )
     conn.commit()
@@ -660,8 +667,10 @@ def migrate_tournament_schema(conn):
         CREATE TABLE IF NOT EXISTS tournament_pending_players (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             tournament_id INTEGER NOT NULL,
-            display_name TEXT NOT NULL,
+            first_name TEXT NOT NULL DEFAULT '',
+            last_name TEXT NOT NULL DEFAULT '',
             suggested_name TEXT,
+            suggested_player_id INTEGER,
             resolved_player_id INTEGER,
             rating REAL NOT NULL DEFAULT 0,
             rank INTEGER NOT NULL DEFAULT 0,
@@ -718,7 +727,8 @@ def migrate_tournament_schema(conn):
         },
         "tournament_pending_players": {
             "tournament_id": "INTEGER NOT NULL DEFAULT 0",
-            "display_name": "TEXT NOT NULL DEFAULT ''",
+            "first_name": "TEXT NOT NULL DEFAULT ''",
+            "last_name": "TEXT NOT NULL DEFAULT ''",
             "suggested_name": "TEXT",
             "resolved_player_id": "INTEGER",
             "rating": "REAL NOT NULL DEFAULT 0",
@@ -894,7 +904,7 @@ def ensure_player_schema_columns(conn):
     column_definitions = {
         "first_name": "TEXT",
         "last_name": "TEXT",
-        "display_name": "TEXT",
+        "custom_display_name": "TEXT",
         "country": "TEXT",
         "club": "TEXT",
         "slug": "TEXT",
@@ -928,6 +938,7 @@ def migrate_database_schema(conn):
     migrate_news_schema(conn)
     bootstrap_default_admin_account(conn)
     ensure_player_schema_columns(conn)
+    migrate_display_name_schema(conn)
     ensure_sgf_schema(conn)
     clear_missing_sgf_links(conn)
     migrate_matches_notes_schema(conn)
@@ -1017,56 +1028,8 @@ def initialize_app():
     )
 
     # Rebuild FTS artifacts so trigger definitions stay in sync across upgrades.
-    conn.execute("DROP TRIGGER IF EXISTS players_fts_ai")
-    conn.execute("DROP TRIGGER IF EXISTS players_fts_ad")
-    conn.execute("DROP TRIGGER IF EXISTS players_fts_au")
-    conn.execute("DROP TABLE IF EXISTS players_fts")
-
-    conn.execute(
-        """
-        CREATE VIRTUAL TABLE IF NOT EXISTS players_fts USING fts5(
-            id UNINDEXED,
-            display_name,
-            country,
-            club,
-            slug,
-            content='players',
-            content_rowid='id'
-        )
-        """
-    )
-    conn.execute(
-        """
-        CREATE TRIGGER IF NOT EXISTS players_fts_ai AFTER INSERT ON players BEGIN
-            INSERT INTO players_fts(rowid, id, display_name, country, club, slug)
-            VALUES (new.id, new.id, new.display_name, new.country, new.club, new.slug);
-        END
-        """
-    )
-    conn.execute(
-        """
-        CREATE TRIGGER IF NOT EXISTS players_fts_ad AFTER DELETE ON players BEGIN
-            INSERT INTO players_fts(players_fts, rowid, id, display_name, country, club, slug)
-            VALUES('delete', old.id, old.id, old.display_name, old.country, old.club, old.slug);
-        END
-        """
-    )
-    conn.execute(
-        """
-        CREATE TRIGGER IF NOT EXISTS players_fts_au AFTER UPDATE ON players BEGIN
-            INSERT INTO players_fts(players_fts, rowid, id, display_name, country, club, slug)
-            VALUES('delete', old.id, old.id, old.display_name, old.country, old.club, old.slug);
-            INSERT INTO players_fts(rowid, id, display_name, country, club, slug)
-            VALUES (new.id, new.id, new.display_name, new.country, new.club, new.slug);
-        END
-        """
-    )
-    conn.execute(
-        """
-        INSERT INTO players_fts(players_fts)
-        VALUES('rebuild')
-        """
-    )
+    rebuild_players_fts_artifacts(conn)
+    ensure_players_fts_artifacts(conn)
 
     # Search and filter performance indexes for public listings and admin views.
     conn.execute(
@@ -1092,12 +1055,6 @@ def initialize_app():
         """
         CREATE INDEX IF NOT EXISTS idx_players_city
         ON players (club)
-        """
-    )
-    conn.execute(
-        """
-        CREATE INDEX IF NOT EXISTS idx_players_display_name
-        ON players (display_name)
         """
     )
     conn.execute(

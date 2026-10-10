@@ -59,14 +59,14 @@ def admin_matches():
                p_white.display_name AS white_name, p_black.display_name AS black_name,
                m.result, m.sgf_filename
         FROM matches m
-        JOIN players p_white ON p_white.id = m.white_player_id
-        JOIN players p_black ON p_black.id = m.black_player_id
+        JOIN players_display p_white ON p_white.id = m.white_player_id
+        JOIN players_display p_black ON p_black.id = m.black_player_id
         {filter_sql} {order_sql} LIMIT ? OFFSET ?
         """,
         (*filter_params, page_size, (page - 1) * page_size),
     ).fetchall()
     match_players = conn.execute(
-        "SELECT id, display_name FROM players ORDER BY display_name").fetchall()
+        "SELECT id, display_name FROM players_display ORDER BY display_name").fetchall()
     conn.close()
     return render_template(
         "admin/matches.html", matches=match_rows, lang=lang, translations=admin.TRANSLATIONS[lang],
@@ -134,7 +134,7 @@ def admin_add_match():
             return redirect(url_for("admin_matches", lang=lang))
         flash(message or admin.TRANSLATIONS[lang]["error"])
     players = conn.execute(
-        "SELECT id, display_name FROM players ORDER BY display_name").fetchall()
+        "SELECT id, display_name FROM players_display ORDER BY display_name").fetchall()
     conn.close()
     return render_template("admin/match_form.html", lang=lang, translations=admin.TRANSLATIONS[lang], players=players, match=None, form_action=url_for("admin_add_match", lang=lang))
 
@@ -199,7 +199,7 @@ def admin_edit_match():
             return redirect(url_for("admin_matches", lang=lang))
         flash(message or admin.TRANSLATIONS[lang]["error"])
     players = conn.execute(
-        "SELECT id, display_name FROM players ORDER BY display_name").fetchall()
+        "SELECT id, display_name FROM players_display ORDER BY display_name").fetchall()
     conn.close()
     return render_template("admin/match_form.html", lang=lang, translations=admin.TRANSLATIONS[lang], players=players, match=match, form_action=url_for("admin_edit_match", id=match_id, lang=lang))
 

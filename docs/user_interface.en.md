@@ -454,6 +454,7 @@ Import historical workbooks, match spreadsheets, or OpenGotha files:
 - Configure maximum failed login attempts before temporary IP block.
 - Adjust rate-limiting time window (in seconds).
 - Configure password reset token lifetime (TTL).
+- Set the player name format: `Last name, First name` (default), `First name Last name`, or a custom template with `{first_name}` and `{last_name}`. Names are displayed in this format; saving a change does not modify stored data. When editing a player, you can enter an optional custom name. First and last names cannot contain commas.
 - Reset button to restore defaults from `config.py`.
 
 <a href="screenshots/admin-settings.png"><img src="screenshots/admin-settings.png" alt="Security settings" width="560" /></a>

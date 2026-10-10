@@ -106,7 +106,7 @@ Os valores padrão estão em `config.py`.
 - Sugestões de jogadores pendentes só vinculam um jogador existente após seleção explícita. "Criar novo" cria outro jogador ou rejeita um nome já existente; torneios com hándicap desativado geram emparelhamentos sem pedras.
 - Apenas administradores podem criar, restaurar ou excluir cópias de segurança. O último administrador ativo não pode ser excluído, desativado nem rebaixado.
 - A substituição completa por XLSX primeiro mostra os totais atuais e os que serão importados, e exige confirmação explícita. Antes de substituir os dados, cria um backup SQLite com integridade verificada e copia os arquivos SGF disponíveis para junto dele; se a importação falhar, os dados anteriores são preservados.
-- `/admin/settings` permite ajustar limites de login e expiração da recuperação. Em produção, use HTTPS, senhas exclusivas e segredos apenas em variáveis de ambiente.
+- `/admin/settings` permite ajustar limites de login, expiração da recuperação e o formato do nome dos jogadores (`Sobrenome, Nome` por padrão, `Nome Sobrenome` ou um modelo personalizado). Os nomes são exibidos na hora conforme o formato; os dados armazenados não mudam. Cada jogador pode ter um nome personalizado opcional, editável por operadores e administradores. Nome e sobrenome não podem conter vírgulas. Em produção, use HTTPS, senhas exclusivas e segredos apenas em variáveis de ambiente.
 - Contas autenticadas podem enviar arquivos SGF sem vinculá-los. Administradores, diretores e operadores podem vinculá-los ou desvinculá-los; apenas administradores podem excluir arquivos.
 
 ## Plano do projeto
@@ -129,7 +129,7 @@ pytest -q
 
 ### Organização do código
 
-A importação CSV normaliza maiúsculas/minúsculas e espaços externos nos cabeçalhos, e rejeita cabeçalhos que se tornam duplicados após a normalização. `scripts/export_players.py` cria `exports/` quando ela não existe. `scripts/set_display_names.py --format {first-last,last-first,custom}` define o `display_name` de todos os jogadores como `Nome Sobrenome`, `Sobrenome, Nome` ou um modelo personalizado (`--template`, com os marcadores `{first_name}` e `{last_name}`); use `--dry-run` para visualizar as alterações antes de aplicá-las.
+A importação CSV normaliza maiúsculas/minúsculas e espaços externos nos cabeçalhos, e rejeita cabeçalhos que se tornam duplicados após a normalização. `scripts/export_players.py` cria `exports/` quando ela não existe.
 
 As rotas administrativas estão separadas por domínio em `routes/admin_tournaments.py`, `routes/admin_matches.py`, `routes/admin_players.py` e `routes/admin_users.py`. A lógica de torneios está separada por responsabilidade em `services/tournament_gotha.py`, `services/tournament_participants.py`, `services/tournament_pairing.py`, `services/tournament_matches.py` e `services/tournament_standings.py`. As traduções e a seleção de idioma ficam em `services/i18n.py`, enquanto os helpers puros de gráficos de rating ficam em `services/chart_service.py`; `services/common.py` mantém exports de compatibilidade para os imports existentes. `services/tournament_service.py` permanece como fachada de compatibilidade. Os exemplos OpenGotha anonimizados usados pelos testes estão versionados em `tests/fixtures/opengotha/`; não são necessários arquivos locais em `uploads/` nem guias HTML gerados para executar `pytest -q`.
 

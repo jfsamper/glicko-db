@@ -392,8 +392,8 @@ def load_matches(conn, event_filter=None):
         f"""
         SELECT m.*, {pairing_select}, white.display_name AS white_name, black.display_name AS black_name
         FROM matches m
-        JOIN players white ON white.id = m.white_player_id
-        JOIN players black ON black.id = m.black_player_id
+        JOIN players_display white ON white.id = m.white_player_id
+        JOIN players_display black ON black.id = m.black_player_id
         WHERE {' AND '.join(where)}
         ORDER BY lower(m.event), m.match_date, m.id
         """,
@@ -412,8 +412,8 @@ def load_tracked_matches(conn):
                mtm.tournament_id AS migrated_tournament_id
         FROM match_tournament_migrations mtm
         JOIN matches m ON m.id = mtm.match_id
-        JOIN players white ON white.id = m.white_player_id
-        JOIN players black ON black.id = m.black_player_id
+        JOIN players_display white ON white.id = m.white_player_id
+        JOIN players_display black ON black.id = m.black_player_id
         ORDER BY mtm.tournament_id, m.match_date, m.id
         """
     ).fetchall()
