@@ -57,9 +57,8 @@ instance/
 .webassets-cache/
 
 # Project-specific generated or transient content
-agents/
 .github/copilot-instructions.md
-lastnotes.md
+agents/
 
 backups/*.zip
 backups/*.tar
@@ -67,12 +66,15 @@ backups/*.gz
 backups/*.bak
 backups/*.sql
 
+lastnotes.md
+
+scripts/dev_only/
+
 temp/
 tmp/
 
 # Keep source fixtures/examples tracked if needed
-# Uncomment if you want to ignore generated uploads or exports:
-uploads/
-exports/
 data/
 docs/generated/
+uploads/
+exports/
