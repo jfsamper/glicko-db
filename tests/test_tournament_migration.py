@@ -1,3 +1,4 @@
+import json
 import sqlite3
 from datetime import datetime
 from pathlib import Path
@@ -363,14 +364,39 @@ def test_recalculate_ratings_restores_latest_backup_after_db_error(tmp_path, mon
 
     current_db.write_bytes(backup_path.read_bytes())
 
+    monkeypatch.setattr(config, "DB_PATH", str(current_db))
     monkeypatch.setattr(admin_routes, "DB_PATH", str(current_db))
     monkeypatch.setattr(admin_routes, "BACKUP_DIR", str(backup_dir))
-    monkeypatch.setattr(admin_routes, "recompute_ratings", lambda: (_ for _ in ()).throw(sqlite3.DatabaseError("database disk image is malformed")))
+    monkeypatch.setattr(admin_routes, "recompute_ratings", lambda: None)
+    monkeypatch.setattr(admin_routes, "refresh_stats", lambda: None)
 
     app.testing = True
     client = app.test_client()
     conftest.set_admin_session(client, current_db)
 
+    success_response = client.post(
+        "/admin/ratings", data={"action": "recalculate"})
+    assert success_response.status_code == 302
+
+    with sqlite3.connect(current_db) as conn:
+        details = json.loads(conn.execute(
+            "SELECT details FROM audit_log WHERE action_type = 'ratings_recalculated'"
+        ).fetchone()[0])
+    assert details["players_reinitialized"] == 2
+    assert details["matches_considered"] == 1
+    assert details["rating_settings"] == {
+        "tau": 0.35,
+        "default_rating": 1500.0,
+        "default_rd": 350.0,
+        "default_volatility": 0.06,
+    }
+
+    monkeypatch.setattr(
+        admin_routes,
+        "recompute_ratings",
+        lambda: (_ for _ in ()).throw(
+            sqlite3.DatabaseError("database disk image is malformed")),
+    )
     response = client.post("/admin/ratings", data={"action": "recalculate"})
 
     assert response.status_code == 302

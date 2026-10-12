@@ -1379,8 +1379,7 @@ def admin_tournaments():
                 admin.log_admin_action(
                     "tournament_created",
                     "tournament",
-                    {"tournament_id": tournament_id, "name": name,
-                        "pairing_system": pairing_system},
+                    {"tournament_id": tournament_id},
                     user_id=admin.session.get("user_id"),
                 )
                 flash(translations["success"])

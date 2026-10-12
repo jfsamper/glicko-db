@@ -750,13 +750,17 @@ def _audit_details_summary(details):
 
     if isinstance(payload, dict):
         items = []
-        for key, value in list(payload.items())[:3]:
+        ordered_keys = sorted(
+            payload, key=lambda key: (not key.endswith("_id"), key))
+        for key in ordered_keys[:3]:
+            value = payload[key]
             if isinstance(value, (dict, list, tuple)):
                 value = json.dumps(value, ensure_ascii=False,
-                                   sort_keys=True, default=str)
+                                   sort_keys=True, default=str,
+                                   separators=(",", ":"))
             items.append(f"{key}: {value}")
         summary = ", ".join(items)
-        return summary if summary and len(summary) <= 120 else f"{summary[:117]}..."
+        return summary if summary and len(summary) <= 200 else f"{summary[:197]}..."
     if isinstance(payload, (list, tuple)):
         summary = ", ".join(str(value) for value in payload[:3])
         return summary if summary and len(summary) <= 120 else f"{summary[:117]}..."

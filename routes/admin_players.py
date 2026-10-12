@@ -240,10 +240,35 @@ def admin_ratings():
             flash(admin.TRANSLATIONS[lang]["success"])
         elif action == "recalculate":
             try:
+                conn = admin.get_db()
+                try:
+                    player_count = conn.execute(
+                        "SELECT COUNT(*) FROM players").fetchone()[0]
+                    match_count = conn.execute(
+                        "SELECT COUNT(*) FROM matches").fetchone()[0]
+                finally:
+                    conn.close()
+
                 admin.recompute_ratings()
                 admin.refresh_stats()
-                admin.log_admin_action("ratings_recalculated", "ratings", {
-                }, user_id=admin.session.get("user_id"))
+                admin.log_admin_action(
+                    "ratings_recalculated",
+                    "ratings",
+                    {
+                        "players_reinitialized": player_count,
+                        "matches_considered": match_count,
+                        "rating_settings": {
+                            key: cfg[key]
+                            for key in (
+                                "tau",
+                                "default_rating",
+                                "default_rd",
+                                "default_volatility",
+                            )
+                        },
+                    },
+                    user_id=admin.session.get("user_id"),
+                )
                 flash(admin.TRANSLATIONS[lang]["success"])
             except sqlite3.DatabaseError as exc:
                 admin.logger.exception(

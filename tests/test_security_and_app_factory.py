@@ -87,7 +87,7 @@ def test_csrf_protection_rejects_missing_token_when_active(monkeypatch, tmp_path
     assert response.status_code == 400
 
 
-def test_csrf_protection_accepts_valid_token(monkeypatch, tmp_path):
+def test_csrf_protection_accepts_valid_token_and_logs_tournament_id_only(monkeypatch, tmp_path):
     db_path = tmp_path / "csrf_valid_test.db"
     monkeypatch.setattr(config, "DB_PATH", str(db_path))
     monkeypatch.setattr(common, "DB_PATH", str(db_path))
@@ -148,6 +148,11 @@ def test_csrf_protection_accepts_valid_token(monkeypatch, tmp_path):
         },
     )
     assert response.status_code == 302
+    with sqlite3.connect(db_path) as conn:
+        details = json.loads(conn.execute(
+            "SELECT details FROM audit_log WHERE action_type = 'tournament_created'"
+        ).fetchone()[0])
+    assert set(details) == {"tournament_id"}
 
 
 def test_admin_blueprint_before_request_guards_protected_views(tmp_path):
@@ -1066,6 +1071,25 @@ def test_admin_audit_review_page_lists_and_filters_events(tmp_path, monkeypatch)
             (admin_id, "login", "auth", json.dumps({"username": "audit-review-admin"}), "2026-08-20 12:00:00"))
         conn.execute("INSERT INTO audit_log (user_id, action_type, resource_type, details, created_at) VALUES (?, ?, ?, ?, ?)",
             (operator_id, "category_config_updated", "category_config", json.dumps({"glicko_k": 20}), "2026-08-21 09:15:00"))
+        conn.execute("INSERT INTO audit_log (user_id, action_type, resource_type, details, created_at) VALUES (?, ?, ?, ?, ?)",
+            (admin_id, "user_updated", "user", json.dumps({
+                "is_active": False,
+                "password_changed": False,
+                "role": "member",
+                "target_user_id": 987,
+                "username": "target-user",
+            }), "2026-08-22 10:00:00"))
+        conn.execute("INSERT INTO audit_log (user_id, action_type, resource_type, details, created_at) VALUES (?, ?, ?, ?, ?)",
+            (admin_id, "ratings_recalculated", "ratings", json.dumps({
+                "players_reinitialized": 7,
+                "matches_considered": 19,
+                "rating_settings": {
+                    "tau": 0.5,
+                    "default_rating": 1500.0,
+                    "default_rd": 350.0,
+                    "default_volatility": 0.06,
+                },
+            }), "2026-08-23 10:00:00"))
         conn.commit()
         conn.close()
 
@@ -1078,6 +1102,10 @@ def test_admin_audit_review_page_lists_and_filters_events(tmp_path, monkeypatch)
     assert "Audit review" in body
     assert "login" in body
     assert "category_config_updated" in body
+    assert "target_user_id: 987" in body
+    assert "matches_considered: 19" in body
+    assert "players_reinitialized: 7" in body
+    assert "rating_settings:" in body
 
     filtered = client.get("/admin/audit?lang=en&user_id=%s&action_type=login" % admin_id)
     assert filtered.status_code == 200
