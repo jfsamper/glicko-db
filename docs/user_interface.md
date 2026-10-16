@@ -87,7 +87,7 @@ Las páginas aceptan `?lang=es`, `?lang=en` o `?lang=pt`; usa `AAAA-MM-DD` en lo
 
 ### Torneos públicos
 
-- **Lista de torneos (`/tournaments`)**: muestra los torneos activos y finalizados con su fecha, lugar, sistema de juego, número de rondas y estado. Los torneos en estado borrador y sus partidas permanecen ocultos para el público general. Directores, operadores y administradores ven los borradores con la opción Mostrar borradores.
+- **Lista de torneos (`/tournaments`)**: muestra los torneos activos y finalizados con su fecha, lugar, sistema de juego, número de rondas y estado. Los torneos cancelados no aparecen en esta lista. Los torneos en estado borrador y sus partidas permanecen ocultos para el público general; directores, operadores y administradores pueden incluir borradores con la opción Mostrar borradores.
 - **Detalle del torneo (`/tournaments/<id>`)**: permite consultar los emparejamientos y resultados mesa por mesa de cada ronda disputada, así como la tabla de posiciones oficial actualizada con puntuación (Pts/MMS), SOS, SOSOS y SODOS.
 
 <a href="screenshots/public-tournaments.png"><img src="screenshots/public-tournaments.png" alt="Torneos públicos" width="560" /></a>
@@ -292,7 +292,8 @@ Inicia sesión en `/admin/login` con una cuenta con rol administrativo. El menú
   - *Borrador (`draft`)*: oculto del portal público para preparación previa.
   - *Activo (`active`)*: visible en el portal público con emparejamientos y resultados en tiempo real.
   - *Completado (`completed`)*: torneo cerrado con posiciones finales oficiales.
-  - *Cancelado (`canceled`)*: cancelado sin efecto en ratings.
+  - *Cancelado (`canceled`)*: no aparece en la lista pública y sus partidas no afectan los ratings.
+- Los perfiles de jugadores muestran únicamente sus torneos completados. Las partidas de torneos activos y en borrador no afectan los ratings hasta que el torneo se complete; las partidas de torneos cancelados tampoco se incluyen.
 - **Exportación**: descarga los resultados del torneo en formatos compatibles para informes o software externo.
 
 ### Gestión de datos

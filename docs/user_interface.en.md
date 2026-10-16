@@ -87,7 +87,7 @@ Pages accept `?lang=es`, `?lang=en`, or `?lang=pt`; use `YYYY-MM-DD` in date fil
 
 ### Public tournaments
 
-- **Tournament list (`/tournaments`)**: displays active and completed tournaments with date, location, pairing system, round count, and status. Draft tournaments and their games remain hidden from the public. Directors, operators, and administrators see draft tournaments with the Show drafts option.
+- **Tournament list (`/tournaments`)**: displays active and completed tournaments with date, location, pairing system, round count, and status. Canceled tournaments are not listed. Draft tournaments and their games remain hidden from the public; directors, operators, and administrators can include drafts with the Show drafts option.
 - **Tournament details (`/tournaments/<id>`)**: view round-by-round pairings, table assignments, match results, and live standings with points (Pts/MMS), SOS, SOSOS, and SODOS tiebreaks.
 
 <a href="screenshots/public-tournaments.png"><img src="screenshots/public-tournaments.png" alt="Public tournaments" width="560" /></a>
@@ -292,7 +292,8 @@ Sign in at `/admin/login` with an administrative account. Available navigation a
   - *Draft (`draft`)*: hidden from public view during organization.
   - *Active (`active`)*: published and visible with live pairings and standings.
   - *Completed (`completed`)*: concluded tournament with locked standings.
-  - *Canceled (`canceled`)*: cancelled without rating effects.
+  - *Canceled (`canceled`)*: omitted from the public list, and its matches do not affect ratings.
+- Player profiles list completed tournaments only. Matches from active and draft tournaments do not affect ratings until the tournament is completed; matches from canceled tournaments are excluded as well.
 - **Result exports**: export tournament standings and pairings in compatible formats for external software and archives.
 
 ### Data management

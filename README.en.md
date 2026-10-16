@@ -31,7 +31,7 @@ Glicko DB is a Flask and SQLite application for managing a Go community's player
 - Admin-published news with quick links to players, tournaments, matches, and SGF records
 - Swiss, category Swiss, accelerated Swiss, and McMahon systems
 - BYE and absence handling, backups, restore safeguards, and SQLite migrations
-- Draft tournaments and their games are hidden from public pages. Directors, operators, and administrators can see draft tournaments on the tournaments pages and review draft games in the admin area.
+- Only active and completed tournaments appear in the public list; directors, operators, and administrators can show drafts. Player profiles list only completed tournaments, and only completed tournament games affect ratings.
 - Handicap games in stones (Go style), with automatic suggestion by category gap and OGS-style rating adjustment
 - Add-to-app installation from supported mobile browsers, except Safari
 
@@ -113,7 +113,7 @@ The default values are in `config.py`.
 
 ## Project roadmap
 
-The detailed roadmap is in [FUTURE_FEATURES.md](FUTURE_FEATURES.md). Import reconciliation, typed OpenGotha payloads, per-account audit filters, player profile improvements, and explicit tournament deletion are implemented. Remaining product work includes improving the BesoGo dark theme.
+The detailed roadmap is in [FUTURE_FEATURES.md](FUTURE_FEATURES.md). Import reconciliation, typed OpenGotha payloads, per-account audit filters, player profile improvements, explicit tournament deletion, and status-aware tournament listings, profiles, and ratings are implemented. Remaining work includes improving the BesoGo dark theme, adding a country selector and country, regional, and group rankings, Pairgo tournaments, and country-based permissions.
 
 ## Development
 
@@ -160,4 +160,4 @@ The consistent ordering, filtering, and search behavior is already shipped and v
 
 Glicko DB was originally developed for the Go community in Colombia by Juan Felipe Samper in 2026.
 
-The Glicko-2 system was published by Mark Glickman in 2022 into the public domain. The Python implementation is © 2009 Ryan Kirkman, and BesoGo is © 2015-2018 Ye Wang. Both are distributed under the [MIT license](static/vendor/besogo/LICENSE).
+The Glicko-2 system was published by Mark Glickman in 2022 into the public domain. The Python implementation is © 2009 Ryan Kirkman, and BesoGo is © 2015-2018 Ye Wang. Both are distributed under the [MIT license](./static/vendor/besogo/LICENSE).

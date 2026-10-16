@@ -20,6 +20,7 @@ from services.idempotency_service import (
     claim_command,
     complete_command,
 )
+from services.tournament_status import refresh_ratings_for_tournament_status
 
 
 def _admin_routes():
@@ -240,6 +241,9 @@ def admin_update_tournament_status(tournament_id):
             conn.execute(
                 "ALTER TABLE tournaments ADD COLUMN handicap_enabled INTEGER NOT NULL DEFAULT 0"
             )
+        current = conn.execute(
+            "SELECT status FROM tournaments WHERE id = ?", (tournament_id,)
+        ).fetchone()
         updated = conn.execute(
             "UPDATE tournaments SET status = ? WHERE id = ?",
             (status, tournament_id),
@@ -247,6 +251,9 @@ def admin_update_tournament_status(tournament_id):
         if not updated:
             flash(TRANSLATIONS[lang]["error"])
         else:
+            refresh_ratings_for_tournament_status(
+                conn, current["status"] if current else None, status
+            )
             conn.commit()
             admin.log_admin_action(
                 "tournament_status_updated",

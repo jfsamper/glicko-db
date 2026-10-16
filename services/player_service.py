@@ -488,7 +488,7 @@ def load_player(
                    tp.player_id
             FROM tournament_participants tp
             JOIN tournaments t ON t.id = tp.tournament_id
-            WHERE tp.player_id = ? AND t.status != 'draft'
+            WHERE tp.player_id = ? AND t.status = 'completed'
             ORDER BY t.begin_date DESC, t.id DESC
             """,
             (player["id"],),

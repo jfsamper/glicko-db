@@ -15,6 +15,7 @@ from services.category_utils import format_glicko_category
 from services.db import get_db
 from services.timezone_service import current_timestamp
 from services.glicko2 import Player
+from services.public_visibility import rating_match_condition
 
 logger = logging.getLogger(__name__)
 
@@ -182,7 +183,12 @@ def recompute_ratings(conn=None):
             for row in rows
         }
         matches = conn.execute(
-            f"SELECT * FROM matches ORDER BY match_date, {_match_order_clause(conn)}"
+            f"""
+            SELECT m.*
+            FROM matches m
+            WHERE {rating_match_condition(conn, 'm')}
+            ORDER BY m.match_date, {_match_order_clause(conn)}
+            """
         ).fetchall()
 
         for match in matches:
@@ -515,10 +521,11 @@ def glicko_to_category(glicko, decimals=0, k=None, m=None):
 def _replay_from_dirty_date(conn, dirty_date):
     matches = conn.execute(
         f"""
-        SELECT *
-        FROM matches
-        WHERE match_date >= ?
-        ORDER BY match_date, {_match_order_clause(conn)}
+        SELECT m.*
+        FROM matches m
+        WHERE m.match_date >= ?
+          AND {rating_match_condition(conn, 'm')}
+        ORDER BY m.match_date, {_match_order_clause(conn)}
         """,
         (dirty_date,),
     ).fetchall()

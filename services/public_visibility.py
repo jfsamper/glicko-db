@@ -39,6 +39,23 @@ def public_match_condition(conn, alias="m"):
     return DRAFT_GAME_EXCLUSION.format(alias=alias)
 
 
+def rating_match_condition(conn, alias="m"):
+    """SQL condition for standalone matches and games from completed tournaments."""
+    if not _has_tournament_schema(conn):
+        return "1 = 1"
+    return f"""(
+        {alias}.tournament_pairing_id IS NULL
+        OR EXISTS (
+            SELECT 1
+            FROM tournament_pairings p
+            JOIN tournament_rounds r ON r.id = p.round_id
+            JOIN tournaments t ON t.id = r.tournament_id
+            WHERE p.id = {alias}.tournament_pairing_id
+              AND t.status = 'completed'
+        )
+    )"""
+
+
 def can_view_draft_tournaments():
     """Directors, operators and administrators may see drafts; everyone else may not."""
     return user_has_permission("operator")

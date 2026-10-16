@@ -6,6 +6,7 @@ Consulte a [Ajuda da interface](user_interface.pt.md) para instruções orientad
 
 - [Estado da API](#estado-da-api)
 - [Rotas GET públicas](#rotas-get-públicas)
+- [Visibilidade e ratings dos torneios](#visibilidade-e-ratings-dos-torneios)
 - [Autenticação e rotas de membros](#autenticação-e-rotas-de-membros)
 - [Grupos de rotas administrativas](#grupos-de-rotas-administrativas)
 - [Orientações para integrações](#orientações-para-integrações)
@@ -41,6 +42,16 @@ Estas páginas podem ser abertas sem uma conta de administrador:
 | `/news/<article_id>` | Artigo de notícia publicado |
 
 A maioria das páginas aceita o parâmetro opcional `lang=es`, `lang=en` ou `lang=pt`. Os relatórios também aceitam `start_date`, `end_date` e `player_id`; consulte o guia da interface para exemplos.
+
+## Visibilidade e ratings dos torneios
+
+Comportamento atual:
+
+- `/tournaments` lista torneios ativos e concluídos. Diretores, operadores e administradores também podem incluir rascunhos com `show_drafts=1`; torneios cancelados são excluídos da lista.
+- As páginas públicas de partidas ocultam partidas vinculadas a torneios em rascunho. O histórico de torneios nos perfis de jogadores inclui apenas torneios concluídos.
+- O recálculo de ratings inclui partidas independentes e partidas vinculadas a torneios concluídos. Partidas de torneios ativos, em rascunho ou cancelados não afetam os ratings.
+
+Essas regras se aplicam às partidas vinculadas por meio de um emparelhamento do torneio; partidas independentes continuam contando para os ratings. Consulte [FUTURE_FEATURES.md](../FUTURE_FEATURES.md) para outras propostas pendentes.
 
 ## Autenticação e rotas de membros
 

@@ -9,6 +9,28 @@ VALID_TOURNAMENT_RESULTS = {"1-0", "0-1", "1/2-1/2", "!0-1", "1-!0", "!0-0"}
 PLAYED_GAME_RESULTS = {"1-0", "0-1", "1/2-1/2"}
 
 
+def refresh_ratings_for_tournament_status(conn, previous_status, status):
+    if (previous_status == "completed") != (status == "completed"):
+        tables = {
+            row[0]
+            for row in conn.execute(
+                """
+                SELECT name FROM sqlite_master
+                WHERE type = 'table'
+                  AND name IN ('players', 'matches', 'rating_snapshots',
+                               'rating_config', 'rating_state')
+                """
+            ).fetchall()
+        }
+        if tables != {
+            "players", "matches", "rating_snapshots", "rating_config", "rating_state"
+        }:
+            return
+        from services.rating_service import recompute_ratings
+
+        recompute_ratings(conn=conn)
+
+
 def _round_is_complete(conn, round_id):
     total = conn.execute(
         "SELECT COUNT(*) FROM tournament_pairings WHERE round_id = ? AND is_bye = 0",
@@ -26,7 +48,7 @@ def _round_is_complete(conn, round_id):
 
 def _refresh_tournament_completion_state(conn, tournament_id, round_id=None):
     tournament = conn.execute(
-        "SELECT rounds FROM tournaments WHERE id = ?", (tournament_id,)
+        "SELECT rounds, status FROM tournaments WHERE id = ?", (tournament_id,)
     ).fetchone()
     if tournament is None:
         return
@@ -36,10 +58,12 @@ def _refresh_tournament_completion_state(conn, tournament_id, round_id=None):
             (tournament_id,),
         ).fetchone()
         if row is None:
+            previous_status = tournament["status"]
             conn.execute(
                 "UPDATE tournaments SET status = 'draft' WHERE id = ?", (
                     tournament_id,)
             )
+            refresh_ratings_for_tournament_status(conn, previous_status, "draft")
             commit(conn)
             return
         round_id = row[0]
@@ -67,10 +91,12 @@ def _refresh_tournament_completion_state(conn, tournament_id, round_id=None):
         (tournament_id,),
     ).fetchall()
     if not rounds:
+        previous_status = tournament["status"]
         conn.execute(
             "UPDATE tournaments SET status = 'draft' WHERE id = ?", (
                 tournament_id,)
         )
+        refresh_ratings_for_tournament_status(conn, previous_status, "draft")
         commit(conn)
         return
     completed_rounds = sum(
@@ -79,13 +105,16 @@ def _refresh_tournament_completion_state(conn, tournament_id, round_id=None):
     )
     final_round = max(row["round_number"] for row in rounds)
     limit = int(tournament["rounds"] or 0)
+    status = (
+        "completed"
+        if limit and final_round >= limit and completed_rounds == len(rounds)
+        else "active"
+    )
     conn.execute(
         "UPDATE tournaments SET status = ? WHERE id = ?",
-        (
-            "completed"
-            if limit and final_round >= limit and completed_rounds == len(rounds)
-            else "active",
-            tournament_id,
-        ),
+        (status, tournament_id),
+    )
+    refresh_ratings_for_tournament_status(
+        conn, tournament["status"], status
     )
     commit(conn)

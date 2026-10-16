@@ -58,6 +58,7 @@ This document lists only unfinished product, operational, and maintainability wo
 - Standings positions remain unique and sequential with deterministic tiebreak resolution.
 - The dev-only pairing demo generator supports reproducible scenarios and includes Swiss/category variants.
 - Draft tournaments are hidden from public listings, while administrators can opt to show them in the tournament list.
+- The public tournament list includes active and completed tournaments; authorized staff can opt to include drafts. Player tournament histories show completed tournaments only, and rating calculations include standalone matches plus games linked to completed tournaments.
 - Administrators can activate or deactivate players; inactive players are excluded from rankings and tournament participant selection.
 - Application-generated dates and times use UTC-5 by default; administrators can assign valid IANA timezones to individual accounts, and unset or invalid preferences fall back safely to UTC-5. Account selectors show one common representative per current UTC offset in ascending order, with Mexico, Colombia, Venezuela, Brazil, China, and South Korea preferred; South Korea represents the shared UTC+9 offset with Japan, and labels include the current adjustment while stored values remain IANA identifiers.
 - Full rating recomputation and incremental replay process same-day matches by round, treating unknown rounds as round 1.
@@ -146,9 +147,12 @@ Confirmed in code:
 
 ## Remaining implementation backlog
 
-### P1 — None
+### P1 — High-priority product work
 
-No numbered V4 implementation findings remain open.
+1. Country selection and rankings
+   - Replace free-text country entry in the player editor with a country dropdown that displays country names while preserving ISO codes in stored and backend data.
+   - Add country rankings and profile achievements, such as "#1 · Colombia".
+   - Add regional rankings (for example, LatAm) and group rankings (for example, under-18 and women's categories), with corresponding profile achievements.
 
 ### P2 — None
 
@@ -156,33 +160,36 @@ The V4 P2 findings are resolved. The remaining operational and product work belo
 
 ### P3 — Operational enhancements
 
-1. Scheduled backups with retention policy
-   - Disabled by default to avoid unnecessary server load
-   - Only enable in production when there is a clear retention policy and maintenance schedule
-   - Prefer inexpensive cron-style jobs with bounded execution windows and full validation
-
-2. Replay and audit observability
+1. Replay and audit observability
    - Add clear operator feedback when rating replay is deferred
    - Expand operational summaries only where they support troubleshooting
 
 ### P4 — Workflow and analytics enhancements
 
-3. Tournament preflight and dry-run approval workflow
+2. Tournament preflight and dry-run approval workflow
    - Improve tournament and submission workflow
    - Evaluate need for pairings and BYE previews
 
-4. Reporting follow-ups
+3. Reporting follow-ups
    - Add custom named seasons if the organization needs them beyond calendar periods
+
+4. Pairgo
+   - Add tournament support for two-versus-two teams.
+
+5. Country-based permissions
+   - Add permission scopes associated with countries.
+
+6. Admin access module extraction (conditional)
+   - If admin functionality grows, move `ADMIN_MENU_SECTIONS`, `ADMIN_ROUTE_PERMISSIONS`, and login-attempt helpers into a Flask-independent `services/admin_access.py`; keep `routes/admin.py` focused on blueprint wiring.
 
 ## Technical implementation order
 
 Login rate-limit enforcement, typed OpenGotha payloads, explicit tournament deletion, per-account timezone preferences, account profile/recovery, date-bounded reporting, PDF reporting, result moderation, XLSX replacement safeguards, staged backup restore with a verified pre-restore snapshot, scheduled verified backups with retention, and server-side idempotency keys for round generation, round processing, pairing, participant changes, and OpenGotha imports are implemented. The next recommended sequence is:
 
-1. Consider replay observability, tournament preflight, and named seasons as needed.
+1. Consider replay observability, tournament preflight, named seasons, and the product backlog above as needed.
 
 ## Documentation rules
 
 - Keep README.md, README.en.md, and README.pt.md synchronized.
 - Link to this roadmap from each README and keep the summary brief.
 - Keep legacy session flags out of current documentation and implementation.
-

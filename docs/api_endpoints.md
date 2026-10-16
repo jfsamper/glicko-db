@@ -6,6 +6,7 @@ Consulta la [Ayuda de la interfaz](user_interface.md) para instrucciones orienta
 
 - [Estado de la API](#estado-de-la-api)
 - [Rutas GET públicas](#rutas-get-públicas)
+- [Visibilidad y ratings de torneos](#visibilidad-y-ratings-de-torneos)
 - [Autenticación y rutas de miembros](#autenticación-y-rutas-de-miembros)
 - [Grupos de rutas administrativas](#grupos-de-rutas-administrativas)
 - [Recomendaciones para integraciones](#recomendaciones-para-integraciones)
@@ -41,6 +42,17 @@ Estas páginas se pueden abrir sin una cuenta de administrador:
 | `/news/<article_id>` | Artículo de noticias publicado |
 
 La mayoría de las páginas acepta el parámetro opcional `lang=es`, `lang=en` o `lang=pt`. Los reportes también aceptan `start_date`, `end_date` y `player_id`; consulta la guía de interfaz para más detalles.
+
+## Visibilidad y ratings de torneos
+
+Comportamiento actual:
+
+- `/tournaments` muestra torneos activos, cancelados y completados. Los directores, operadores y administradores también pueden incluir borradores con `show_drafts=1`.
+- `/tournaments` muestra torneos activos y completados. Los directores, operadores y administradores también pueden incluir borradores con `show_drafts=1`; los torneos cancelados no aparecen en la lista.
+- Las páginas públicas de partidas ocultan partidas vinculadas a torneos en borrador. El historial de torneos de los perfiles de jugadores muestra únicamente torneos completados.
+- El recálculo de ratings incluye partidas independientes y partidas vinculadas a torneos completados. Las partidas de torneos activos, en borrador o cancelados no afectan a los ratings.
+
+Estas reglas se aplican a partidas vinculadas mediante el emparejamiento del torneo; las partidas independientes siguen contando para los ratings. Consulta [FUTURE_FEATURES.md](../FUTURE_FEATURES.md) para las demás propuestas pendientes.
 
 ## Autenticación y rutas de miembros
 

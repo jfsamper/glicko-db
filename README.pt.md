@@ -31,7 +31,7 @@ Glicko BD é uma aplicação Flask e SQLite para gerenciar jogadores, ratings, p
 - Notícias publicadas por administradores, com links rápidos para jogadores, torneios, partidas e registros SGF
 - Sistemas suíço, suíço por categoria, suíço acelerado e McMahon
 - Tratamento de BYE e ausências, cópias de segurança, proteções de restauração e migrações SQLite
-- Torneios em rascunho e suas partidas ocultos das páginas públicas. Diretores, operadores e administradores podem ver os torneios em rascunho nas páginas de torneios e revisar as partidas na área administrativa.
+- Apenas torneios ativos e concluídos aparecem na lista pública; diretores, operadores e administradores podem exibir rascunhos. Os perfis mostram apenas torneios concluídos, e somente partidas de torneios concluídos afetam os ratings.
 - Partidas com handicap em pedras (estilo Go), com sugestão automática pela diferença de categoria e ajuste de rating no estilo OGS
 - Instalação como aplicativo em navegadores móveis compatíveis, exceto Safari
 
@@ -113,7 +113,7 @@ Os valores padrão estão em `config.py`.
 
 ## Plano do projeto
 
-O plano está em [FUTURE_FEATURES.md](FUTURE_FEATURES.md). A reconciliação de importações, os payloads tipados do OpenGotha, os filtros de auditoria, as melhorias de perfil e a exclusão explícita de torneios já estão implementados. O trabalho restante inclui melhorar o tema escuro do BesoGo.
+O plano está em [FUTURE_FEATURES.md](FUTURE_FEATURES.md). A reconciliação de importações, os payloads tipados do OpenGotha, os filtros de auditoria, as melhorias de perfil, a exclusão explícita de torneios e o tratamento de listagens, perfis e ratings conforme o status dos torneios já estão implementados. O trabalho restante inclui melhorar o tema escuro do BesoGo, adicionar um seletor de países e classificações por país, região e grupos, torneios Pairgo e permissões por país.
 
 ## Desenvolvimento
 
@@ -160,4 +160,4 @@ A ordenação, os filtros e a busca consistentes já estão entregues e validado
 
 Glicko BD foi originalmente desenvolvido para a comunidade de Go na Colômbia por Juan Felipe Samper em 2026.
 
-O sistema [Glicko-2](https://www.glicko.net/glicko/glicko2.pdf) foi publicado por Mark Glickman em 2022 no domínio público. A implementação em Python é ©2009 Ryan Kirkman e o BesoGo é ©2015-2018 Ye Wang. Ambos são distribuídos sob a [licença MIT](static/vendor/besogo/LICENSE).
+O sistema [Glicko-2](https://www.glicko.net/glicko/glicko2.pdf) foi publicado por Mark Glickman em 2022 no domínio público. A implementação em Python é ©2009 Ryan Kirkman e o BesoGo é ©2015-2018 Ye Wang. Ambos são distribuídos sob a [licença MIT](./static/vendor/besogo/LICENSE).

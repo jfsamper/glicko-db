@@ -894,9 +894,9 @@ def tournaments():
     sort_key = parse_tournament_sort(request.args.get("sort"))
     sort_order = parse_tournament_order(request.args.get("order"))
     conn = get_db()
-    status_filter = "t.status IN ('active', 'canceled', 'completed')"
+    status_filter = "t.status IN ('active', 'completed')"
     if show_drafts:
-        status_filter = "t.status IN ('draft', 'active', 'canceled', 'completed')"
+        status_filter = "t.status IN ('draft', 'active', 'completed')"
 
     participant_tables = {
         row[0] for row in conn.execute(

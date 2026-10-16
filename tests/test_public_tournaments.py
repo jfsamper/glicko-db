@@ -743,7 +743,9 @@ def test_public_tournament_index_hides_drafts_by_default(monkeypatch, tmp_path):
         INSERT INTO tournaments (id, name, status, begin_date, created_at, source_format)
         VALUES
             (1, 'Spring Open', 'active', '2026-04-01', '2026-04-01 00:00:00', NULL),
-            (2, 'Draft import preview', 'draft', '2026-03-01', '2026-03-01 00:00:00', 'OpenGotha XML');
+            (2, 'Draft import preview', 'draft', '2026-03-01', '2026-03-01 00:00:00', 'OpenGotha XML'),
+            (3, 'Canceled cup', 'canceled', '2026-02-01', '2026-02-01 00:00:00', NULL),
+            (4, 'Completed cup', 'completed', '2026-01-01', '2026-01-01 00:00:00', NULL);
         """
     )
     ensure_application_settings_table(conn)
@@ -758,12 +760,15 @@ def test_public_tournament_index_hides_drafts_by_default(monkeypatch, tmp_path):
     assert response.status_code == 200
     body = response.get_data(as_text=True)
     assert "Spring Open" in body
+    assert "Completed cup" in body
+    assert "Canceled cup" not in body
     assert "Draft import preview" not in body
 
     response = client.get("/tournaments?lang=en&show_drafts=1")
     assert response.status_code == 200
     body = response.get_data(as_text=True)
     assert "Draft import preview" not in body
+    assert "Canceled cup" not in body
 
     staff_client = app.test_client()
     conftest.set_admin_session(staff_client, db_path)
@@ -773,6 +778,7 @@ def test_public_tournament_index_hides_drafts_by_default(monkeypatch, tmp_path):
     assert response.status_code == 200
     body = response.get_data(as_text=True)
     assert "Draft import preview" in body
+    assert "Canceled cup" not in body
 
 
 def test_public_tournament_status_maps_active_and_preserves_canceled():

@@ -6,6 +6,7 @@ See the [User Interface Help](user_interface.en.md) for task-oriented instructio
 
 - [API status](#api-status)
 - [Public GET routes](#public-get-routes)
+- [Tournament visibility and ratings](#tournament-visibility-and-ratings)
 - [Authentication and member routes](#authentication-and-member-routes)
 - [Administrative route groups](#administrative-route-groups)
 - [Integration guidance](#integration-guidance)
@@ -41,6 +42,16 @@ These pages can be opened without an administrator account:
 | `/news/<article_id>` | Published news article |
 
 Most pages accept an optional `lang=es`, `lang=en`, or `lang=pt` query parameter. Report pages also accept `start_date`, `end_date`, and `player_id` filters; see the user guide for examples.
+
+## Tournament visibility and ratings
+
+Current behavior:
+
+- `/tournaments` lists active and completed tournaments. Directors, operators, and administrators can also include drafts with `show_drafts=1`; canceled tournaments are excluded from the list.
+- Public match pages hide matches linked to draft tournaments. Player tournament histories include completed tournaments only.
+- Rating recalculation includes standalone matches and matches linked to completed tournaments. Matches from active, draft, or canceled tournaments do not affect ratings.
+
+These rules apply to games linked through a tournament pairing; standalone matches continue to count toward ratings. See [FUTURE_FEATURES.md](../FUTURE_FEATURES.md) for other remaining proposals.
 
 ## Authentication and member routes
 
