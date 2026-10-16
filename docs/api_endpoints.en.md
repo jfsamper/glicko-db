@@ -41,7 +41,7 @@ These pages can be opened without an administrator account:
 | `/matches/<match_id>/sgf` | Download the SGF record linked to a match |
 | `/news/<article_id>` | Published news article |
 
-Most pages accept an optional `lang=es`, `lang=en`, or `lang=pt` query parameter. Report pages also accept `start_date`, `end_date`, and `player_id` filters; see the user guide for examples.
+Most pages accept an optional `lang=es`, `lang=en`, or `lang=pt` query parameter. `/rankings` accepts `country` (ISO 3166-1 alpha-3; legacy alpha-2 codes are also recognized), `region=latin-america-caribbean`, and `group=u18|women`; these filters can be combined. Report pages also accept `start_date`, `end_date`, and `player_id` filters; see the user guide for examples.
 
 ## Tournament visibility and ratings
 

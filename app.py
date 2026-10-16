@@ -134,6 +134,8 @@ def init_db():
             last_name TEXT NOT NULL,
             custom_display_name TEXT,
             country TEXT,
+            birth_year INTEGER,
+            gender TEXT,
             club TEXT,
             slug TEXT UNIQUE,
             active INTEGER DEFAULT 1,
@@ -908,6 +910,8 @@ def ensure_player_schema_columns(conn):
         "last_name": "TEXT",
         "custom_display_name": "TEXT",
         "country": "TEXT",
+        "birth_year": "INTEGER",
+        "gender": "TEXT",
         "club": "TEXT",
         "slug": "TEXT",
         "active": "INTEGER DEFAULT 1",
@@ -927,6 +931,8 @@ def ensure_player_schema_columns(conn):
             conn.execute(
                 f"ALTER TABLE players ADD COLUMN {column_name} {definition}")
 
+    from services.country_service import migrate_player_country_codes
+    migrate_player_country_codes(conn)
     conn.commit()
 
 

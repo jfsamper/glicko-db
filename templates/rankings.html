@@ -11,6 +11,41 @@
     </div>
   </div>
 
+  <form method="get" class="filter-form">
+    <input type="hidden" name="lang" value="{{ lang }}">
+    <div class="filter-grid">
+      <div class="filter-item">
+        <label for="ranking-country">{{ translations.rankings_country_filter }}</label>
+        <select id="ranking-country" name="country">
+          <option value="">{{ translations.rankings_all_countries }}</option>
+          {% for option in country_options %}
+          <option value="{{ option.code }}" {% if selected_country==option.code %}selected{% endif %}>{{ option.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="filter-item">
+        <label for="ranking-region">{{ translations.rankings_region_filter }}</label>
+        <select id="ranking-region" name="region">
+          <option value="">{{ translations.rankings_all_regions }}</option>
+          <option value="latin-america-caribbean" {% if selected_region=='latin-america-caribbean' %}selected{% endif %}>
+            {{ translations.rankings_region_lac }}
+          </option>
+        </select>
+      </div>
+      <div class="filter-item">
+        <label for="ranking-group">{{ translations.rankings_group_filter }}</label>
+        <select id="ranking-group" name="group">
+          <option value="">{{ translations.rankings_all_groups }}</option>
+          <option value="u18" {% if selected_group=='u18' %}selected{% endif %}>{{ translations.ranking_u18_scope }}</option>
+          <option value="women" {% if selected_group=='women' %}selected{% endif %}>{{ translations.ranking_women_scope }}</option>
+        </select>
+      </div>
+    </div>
+    <div class="filter-actions">
+      <button type="submit" class="button">{{ translations.rankings_filter_apply }}</button>
+    </div>
+  </form>
+
 
   <article class="card rankings-table-card">
     <h3>{{ translations.table_heading }}</h3>
@@ -21,6 +56,7 @@
           <tr>
             <th>{{ translations.position }}</th>
             <th>{{ translations.player }}</th>
+            <th>{{ translations.country }}</th>
             <th>{{ translations.rating }}</th>
             <th>{{ translations.category }}</th>
             <th>{{ translations.games }}</th>
@@ -34,6 +70,7 @@
           <tr>
             <td>{{ ns.n }}</td>
             <td><a href="{{ url_for('player_profile', id=player.id, lang=lang) }}">{{ player.display_name }}</a></td>
+            <td>{{ player.country_name or '—' }}</td>
             <td>{{ player.rating | round(1) }}</td>
             <td>{{ player.category }}</td>
             <td>{{ player.games_played }}</td>
@@ -53,18 +90,18 @@
       <label for="rankings-page-size">{{ translations.page_size_label }}</label>
       <select id="rankings-page-size" onchange="window.location.href = this.value">
         {% for option in [10, 25, 50, 100] %}
-        <option value="{{ url_for('rankings', lang=lang, page=1, page_size=option) }}" {% if page_size==option
+        <option value="{{ url_for('rankings', lang=lang, page=1, page_size=option, country=selected_country, region=selected_region, group=selected_group) }}" {% if page_size==option
           %}selected{% endif %}>{{ option }}</option>
         {% endfor %}
       </select>
       {% if page > 1 %}
-      <a class="button secondary" href="{{ url_for('rankings', lang=lang, page=page - 1, page_size=page_size) }}">{{
+      <a class="button secondary" href="{{ url_for('rankings', lang=lang, page=page - 1, page_size=page_size, country=selected_country, region=selected_region, group=selected_group) }}">{{
         translations.prev_page }}</a>
       {% endif %}
       <span aria-label="{{ translations.page_label }} {{ page }}">{{ translations.page_label }} {{ page }} {{
         translations.of_label }} {{ total_pages }}</span>
       {% if page * page_size < total_count %} <a class="button"
-        href="{{ url_for('rankings', lang=lang, page=page + 1, page_size=page_size) }}">{{ translations.next_page }}</a>
+        href="{{ url_for('rankings', lang=lang, page=page + 1, page_size=page_size, country=selected_country, region=selected_region, group=selected_group) }}">{{ translations.next_page }}</a>
         {% endif %}
     </div>
     {% endif %}

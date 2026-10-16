@@ -20,6 +20,7 @@ Glicko DB is a Flask and SQLite application for managing a Go community's player
 ## Features
 
 - Public rankings, player search, profiles, match history, rating charts, and category conversion
+- Country, Latin America and Caribbean, under-18, and women's rankings; profiles publish country, birth year, and self-identified Woman designation
 - Glicko-2 rating calculation with configurable rating and category parameters
 - Public interface in Spanish, English, and Portuguese
 - Player and match administration with pagination, filters, and consistent ordering
@@ -113,7 +114,7 @@ The default values are in `config.py`.
 
 ## Project roadmap
 
-The detailed roadmap is in [FUTURE_FEATURES.md](FUTURE_FEATURES.md). Import reconciliation, typed OpenGotha payloads, per-account audit filters, player profile improvements, explicit tournament deletion, and status-aware tournament listings, profiles, and ratings are implemented. Remaining work includes improving the BesoGo dark theme, adding a country selector and country, regional, and group rankings, Pairgo tournaments, and country-based permissions.
+The detailed roadmap is in [FUTURE_FEATURES.md](FUTURE_FEATURES.md). Import reconciliation, typed OpenGotha payloads, per-account audit filters, player profile improvements, explicit tournament deletion, status-aware tournament listings, profiles and ratings, and country, regional, and group rankings are implemented. Remaining work includes improving the BesoGo dark theme, Pairgo tournaments, and country-based permissions.
 
 ## Development
 

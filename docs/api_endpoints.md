@@ -41,7 +41,7 @@ Estas páginas se pueden abrir sin una cuenta de administrador:
 | `/matches/<match_id>/sgf` | Descarga del SGF vinculado a una partida |
 | `/news/<article_id>` | Artículo de noticias publicado |
 
-La mayoría de las páginas acepta el parámetro opcional `lang=es`, `lang=en` o `lang=pt`. Los reportes también aceptan `start_date`, `end_date` y `player_id`; consulta la guía de interfaz para más detalles.
+La mayoría de las páginas acepta el parámetro opcional `lang=es`, `lang=en` o `lang=pt`. `/rankings` acepta `country` (ISO 3166-1 alpha-3; también se reconocen códigos alpha-2 heredados), `region=latin-america-caribbean` y `group=u18|women`; los filtros se pueden combinar. Los reportes también aceptan `start_date`, `end_date` y `player_id`; consulta la guía de interfaz para más detalles.
 
 ## Visibilidad y ratings de torneos
 

@@ -54,11 +54,13 @@ As páginas aceitam `?lang=es`, `?lang=en` ou `?lang=pt`; use `AAAA-MM-DD` nos f
 
 ### Ranking e diretório de jogadores
 
-- **Ranking (`/rankings`)**: exibe a tabela oficial com rating Glicko-2, desvio de rating (RD), categoria Dan/Kyu calculada, partidas jogadas, porcentagem de vitórias, sequência recente e data da última atividade. Apenas jogadores ativos são listados.
+- **Ranking (`/rankings`)**: permite filtrar por país, América Latina e Caribe, sub-18 e mulheres; os filtros podem ser combinados. Os países são armazenados em ISO 3166-1 alpha-3 e códigos alpha-2 antigos são normalizados.
 - **Diretório de jogadores (`/players`)**: busca por nome ou sobrenome, filtros por intervalo de rating mínimo e máximo, data da última atividade e ordenação por qualquer coluna com paginação configurável.
 - **Perfil do jogador (`/player/view?id=<id>`)**:
   - Resumo de rating atual, RD, volatilidade e categoria.
   - Conquistas na carreira: melhor rating histórico, maior sequência de vitórias, vitórias como brancas e como pretas.
+  - País, ano de nascimento e identificação como Mulher são públicos; perfis também mostram conquistas das cinco primeiras posições globais, nacionais, regionais, sub-18 e femininas quando aplicável.
+  - A elegibilidade sub-18 usa uma aproximação por ano calendário: `birth_year >= ranking_year - 18` (por exemplo, ano de nascimento 2008 ou posterior em 2026).
   - Histórico completo de partidas com data, cor, oponente, resultado, evento e link para o visualizador SGF quando disponível.
   - Gráfico interativo de evolução do rating ao longo do tempo.
   - Histórico de torneios com posição inicial e final.
@@ -323,7 +325,7 @@ Importe planilhas históricas, partidas ou arquivos do OpenGotha:
 #### 2. Administração de jogadores (`/admin/players`)
 
 - Filtre jogadores por nome, faixa de rating e status ativo/inativo.
-- **Editar jogador (`/admin/players/edit?id=<id>`)**: atualize nome, sobrenome, nome de exibição, rating inicial, RD inicial e ative ou desative o jogador. Jogadores inativos são excluídos automaticamente de rankings e emparelhamentos.
+- **Editar jogador (`/admin/players/edit?id=<id>`)**: atualize nome, nome de exibição, rating inicial, país, ano de nascimento opcional, identificação opcional como Mulher e status ativo. Os dados demográficos são públicos; o ano de nascimento é usado no ranking sub-18.
 - **Excluir jogador**: modal de confirmação seguro que avisa sobre a exclusão do histórico e partidas associadas.
 
 <a href="screenshots/admin-players.png"><img src="screenshots/admin-players.png" alt="Lista administrativa de jogadores" width="560" /></a>

@@ -226,7 +226,7 @@
             </tr>
           </thead>
           <tbody>{% for group in report[key] %}<tr>
-              <td>{{ group.display_name }}</td>
+              <td>{{ country_labels.get(group.display_name, group.display_name) if key == 'countries' else group.display_name }}</td>
               <td>{{ group.games }}</td>
               <td>{{ group.wins }}</td>
               <td>{{ group.win_percentage }}%</td>

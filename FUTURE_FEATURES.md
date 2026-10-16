@@ -65,6 +65,8 @@ This document lists only unfinished product, operational, and maintainability wo
 - Login rate-limit thresholds are environment-configurable through `config.py`, with defaults of five attempts in sixty seconds; login enforces IP and normalized-username windows before checking passwords.
 - Account profile and password recovery are available: users can save email, language, theme, timezone, and password at `/admin/profile`; recovery uses configurable SMTP, hashed expiring tokens, single-use consumption, and generic responses.
 - Public reporting is available at `/reports` with inclusive calendar periods, All time defaults, player filtering, games-based selector ordering, opponent/country/club aggregates, shared server-side totals, and rating-change baselines from before the selected period.
+- Player country and demographic data use ISO 3166-1 alpha-3 country codes, with legacy alpha-2 values migrated; public rankings support country, Latin America and Caribbean, under-18, and women's scopes, and profiles show public demographics and top-five scope achievements.
+- The player editor provides localized country selection and optional birth year and self-identified Woman fields. Under-18 ranking uses the documented calendar-year approximation (`birth_year >= ranking_year - 18`); demographic values are public by design.
 - Reports can be exported as CSV or localized PDF; PDF exports include centered headings, the selected player and period in the filename, and preserve the active filters.
 - Admin tournament actions support asynchronous panel refresh with redirect fallback for non-AJAX clients.
 - Result moderation is available: members submit only for their linked player, and staff approve or reject before publication; hashed expiring approval-code helpers scaffold the future email flow.
@@ -147,12 +149,7 @@ Confirmed in code:
 
 ## Remaining implementation backlog
 
-### P1 — High-priority product work
-
-1. Country selection and rankings
-   - Replace free-text country entry in the player editor with a country dropdown that displays country names while preserving ISO codes in stored and backend data.
-   - Add country rankings and profile achievements, such as "#1 · Colombia".
-   - Add regional rankings (for example, LatAm) and group rankings (for example, under-18 and women's categories), with corresponding profile achievements.
+### P1 — None
 
 ### P2 — None
 
@@ -164,22 +161,28 @@ The V4 P2 findings are resolved. The remaining operational and product work belo
    - Add clear operator feedback when rating replay is deferred
    - Expand operational summaries only where they support troubleshooting
 
+2. Improve logging and monitoring
+   - Implement structured logging for key operational events.
+   - Set up alerts for critical failures and unusual activity patterns.
+
+3. Non-rated tournaments
+   - Add tournament support for two-versus-two teams (PairGo).
+
+Non-rated tournaments in general should be possible (e.g., two-versus-two teams). These do not affect ratings but (as opposed to canceled tournaments) are still displayed in the tournament listings and player profiles. The matches for these tournaments can be displayed like normal.
+
+4. Country-based permissions
+   - Add permission scopes associated with countries and regions (country_manager, region_manager, then operator/admin have global access).
+
 ### P4 — Workflow and analytics enhancements
 
-2. Tournament preflight and dry-run approval workflow
+6. Tournament preflight and dry-run approval workflow
    - Improve tournament and submission workflow
    - Evaluate need for pairings and BYE previews
 
-3. Reporting follow-ups
+7. Reporting follow-ups
    - Add custom named seasons if the organization needs them beyond calendar periods
 
-4. Pairgo
-   - Add tournament support for two-versus-two teams.
-
-5. Country-based permissions
-   - Add permission scopes associated with countries.
-
-6. Admin access module extraction (conditional)
+8. Admin access module extraction (conditional)
    - If admin functionality grows, move `ADMIN_MENU_SECTIONS`, `ADMIN_ROUTE_PERMISSIONS`, and login-attempt helpers into a Flask-independent `services/admin_access.py`; keep `routes/admin.py` focused on blueprint wiring.
 
 ## Technical implementation order

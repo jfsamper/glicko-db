@@ -18,6 +18,13 @@ from services.helpers import normalize_key, normalize_text, slugify
 from services.category_service import get_category_config, glicko_to_category
 from services.sgf_service import clear_missing_sgf_links
 from services.standings_service import calculate_standings
+from services.country_service import (
+    LATIN_AMERICA_AND_CARIBBEAN_COUNTRIES,
+    REGIONS,
+    SUPPORTED_GROUPS,
+    country_name,
+    normalize_country_code,
+)
 
 
 def get_player_rank_badge(conn, player_id):
@@ -47,6 +54,132 @@ def get_player_rank_badge(conn, player_id):
     if ranked_player is None or ranked_player["player_rank"] > 5:
         return None
     return ranked_player["player_rank"]
+
+
+def get_player_scope_rank_badges(conn, player, translations, lang="es"):
+    """Return top-five ranking badges for the player's applicable scopes."""
+    columns = {
+        row[1] for row in conn.execute("PRAGMA table_info(players)").fetchall()
+    }
+    if "country" not in columns:
+        return []
+
+    player_id = player["id"]
+    scopes = []
+    country = player["country"] if "country" in player.keys() else None
+    try:
+        country = normalize_country_code(country)
+    except ValueError:
+        country = None
+    if country:
+        scopes.append((
+            "country",
+            translations["ranking_country_scope"].format(
+                country=country_name(country, lang)
+            ),
+            "country = ?",
+            (country,),
+        ))
+        if country in LATIN_AMERICA_AND_CARIBBEAN_COUNTRIES:
+            scopes.append((
+                "region",
+                translations["ranking_region_scope"],
+                "country IN (" + ",".join("?" for _ in LATIN_AMERICA_AND_CARIBBEAN_COUNTRIES) + ")",
+                tuple(sorted(LATIN_AMERICA_AND_CARIBBEAN_COUNTRIES)),
+            ))
+
+    ranking_year = current_date().year
+    birth_year = player["birth_year"] if (
+        "birth_year" in columns and "birth_year" in player.keys()) else None
+    try:
+        birth_year = int(birth_year) if birth_year is not None else None
+    except (TypeError, ValueError):
+        birth_year = None
+    gender = player["gender"] if (
+        "gender" in columns and "gender" in player.keys()) else None
+    if birth_year and birth_year >= ranking_year - 18 and birth_year <= ranking_year:
+        scopes.append((
+            "u18",
+            translations["ranking_u18_scope"],
+            "birth_year >= ? AND birth_year <= ?",
+            (ranking_year - 18, ranking_year),
+        ))
+    if gender == "woman":
+        scopes.append((
+            "women",
+            translations["ranking_women_scope"],
+            "gender = ?",
+            ("woman",),
+        ))
+
+    badges = []
+    for scope, label, where_clause, params in scopes:
+        ranked_player = conn.execute(
+            f"""
+            SELECT player_rank
+            FROM (
+                SELECT id,
+                       ROW_NUMBER() OVER (
+                           ORDER BY COALESCE(rating, 0) DESC, id ASC
+                       ) AS player_rank
+                FROM players
+                WHERE COALESCE(games_played, 0) >= 1 AND {where_clause}
+            )
+            WHERE id = ?
+            """,
+            (*params, player_id),
+        ).fetchone()
+        if ranked_player is not None and ranked_player["player_rank"] <= 5:
+            badges.append({
+                "label": f"#{ranked_player['player_rank']}",
+                "value": None,
+                "period": [translations["period_current"]],
+                "is_rank_badge": True,
+                "scope_label": label,
+            })
+    return badges
+
+
+def _ranking_scope_sql(filters, columns):
+    clauses = []
+    params = []
+
+    country_value = (filters.get("country") or "").strip()
+    if country_value:
+        if "country" not in columns:
+            raise ValueError("Country rankings are unavailable")
+        try:
+            country = normalize_country_code(country_value)
+        except ValueError as exc:
+            raise ValueError("Invalid country ranking filter") from exc
+        clauses.append("country = ?")
+        params.append(country)
+
+    region = (filters.get("region") or "").strip()
+    if region:
+        if region not in REGIONS:
+            raise ValueError("Invalid region ranking filter")
+        if "country" not in columns:
+            raise ValueError("Regional rankings are unavailable")
+        codes = sorted(REGIONS[region])
+        clauses.append("country IN (" + ",".join("?" for _ in codes) + ")")
+        params.extend(codes)
+
+    group = (filters.get("group") or "").strip()
+    if group:
+        if group not in SUPPORTED_GROUPS:
+            raise ValueError("Invalid group ranking filter")
+        column = "birth_year" if group == "u18" else "gender"
+        if column not in columns:
+            raise ValueError("Group rankings are unavailable")
+        if group == "u18":
+            ranking_year = current_date().year
+            clauses.append("birth_year >= ? AND birth_year <= ?")
+            params.extend([ranking_year - 18, ranking_year])
+        else:
+            clauses.append("gender = ?")
+            params.append("woman")
+    return "".join(f" AND ({clause})" for clause in clauses), params
 
 
 def parse_rating_filter(value):
@@ -384,7 +517,10 @@ def load_player(
             "value": None,
             "period": [translations["period_current"]],
             "is_rank_badge": True,
+            "scope_label": translations["ranking_global_scope"],
         })
+    badges.extend(get_player_scope_rank_badges(
+        conn, player, translations, lang=lang))
 
     today = current_date()
     yearly_start = date(today.year, 1, 1)
@@ -574,8 +710,17 @@ def load_player(
         reverse=True
     )
 
+    player_details = dict(player)
+    player_details["country_name"] = country_name(
+        player_details.get("country"), lang)
+    player_details["gender_label"] = (
+        translations["gender_woman"]
+        if player_details.get("gender") == "woman"
+        else ""
+    )
+
     return {
-        "player": dict(player),
+        "player": player_details,
         "matches": [dict(match) for match in matches],
         "all_matches": [dict(match) for match in all_matches],
         "page": page,
@@ -714,6 +859,13 @@ def count_rankings(filters=None):
     try:
         query = "SELECT COUNT(*) FROM players_display WHERE 1=1"
         params = []
+        scope_columns = {
+            row[1] for row in conn.execute(
+                "PRAGMA table_info(players_display)").fetchall()
+        }
+        scope_sql, scope_params = _ranking_scope_sql(filters, scope_columns)
+        query += scope_sql
+        params.extend(scope_params)
 
         if display_name:
             name_clause, name_params = _build_player_name_clause(
@@ -768,6 +920,13 @@ def load_rankings(filters=None):
         """
 
         params = []
+        scope_columns = {
+            row[1] for row in conn.execute(
+                "PRAGMA table_info(players_display)").fetchall()
+        }
+        scope_sql, scope_params = _ranking_scope_sql(filters, scope_columns)
+        query += scope_sql
+        params.extend(scope_params)
 
         if display_name:
             name_clause, name_params = _build_player_name_clause(

@@ -37,6 +37,7 @@ from services.reporting_service import (
     list_report_seasons,
     resolve_report_range,
 )
+from services.country_service import country_name, country_options, normalize_country_code
 from scripts import build_help_html
 from services.news_service import get_article, list_articles, resolve_news_tags
 from services.player_service import (
@@ -401,6 +402,10 @@ def reports():
     except ValueError as exc:
         return Response(str(exc), status=400)
     total_count = len(report["players"])
+    country_labels = {
+        group["display_name"]: country_name(group["display_name"], lang)
+        for group in report.get("countries", [])
+    }
     all_report_players = report["players"]
     page_details = pagination_details(total_count, page, page_size)
     report["players"] = report["players"][(
@@ -410,6 +415,7 @@ def reports():
         lang=lang,
         translations=TRANSLATIONS[lang],
         report=report,
+        country_labels=country_labels,
         all_report_players=all_report_players,
         period=period,
         season=season,
@@ -522,14 +528,38 @@ def rankings():
     lang = get_language(request.args.get("lang"))
     page = parse_page_number(request.args.get("page"), default=1)
     page_size = parse_page_size(request.args.get("page_size"), default=50)
-    filters = {"page": page, "page_size": page_size, "games_played_min": 1}
-    rankings = load_rankings(filters)
-    total_count = count_rankings({"games_played_min": 1})
+    selected_country = request.args.get("country", "").strip()
+    if selected_country:
+        try:
+            selected_country = normalize_country_code(selected_country)
+        except ValueError:
+            abort(400)
+    selected_region = request.args.get("region", "").strip()
+    selected_group = request.args.get("group", "").strip()
+    filters = {
+        "page": page,
+        "page_size": page_size,
+        "games_played_min": 1,
+        "country": selected_country,
+        "region": selected_region,
+        "group": selected_group,
+    }
+    try:
+        rankings = load_rankings(filters)
+        total_count = count_rankings(filters)
+    except ValueError:
+        abort(400)
+    for player in rankings:
+        player["country_name"] = country_name(player.get("country"), lang)
     return render_template(
         "rankings.html",
         lang=lang,
         translations=TRANSLATIONS[lang],
         rankings=rankings,
+        country_options=country_options(lang),
+        selected_country=selected_country,
+        selected_region=selected_region,
+        selected_group=selected_group,
         total_count=total_count,
         **pagination_details(total_count, page, page_size),
     )
@@ -593,7 +623,7 @@ def player_profile():
         request.args.get("tournament_page"), default=1)
 
     data = load_player(
-        player_id, page=page, page_size=page_size, season=season,
+        player_id, lang=lang, page=page, page_size=page_size, season=season,
         tournament_page=tournament_page,
     )
     if not data:

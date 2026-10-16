@@ -54,11 +54,13 @@ Pages accept `?lang=es`, `?lang=en`, or `?lang=pt`; use `YYYY-MM-DD` in date fil
 
 ### Rankings and player directory
 
-- **Rankings (`/rankings`)**: displays the official leaderboard with Glicko-2 rating, rating deviation (RD), calculated Dan/Kyu category, games played, win percentage, recent streak, and last activity date. Only active players appear.
+- **Rankings (`/rankings`)**: displays the leaderboard with filters for country, Latin America and the Caribbean, under-18, and women's rankings. Filters can be combined. Country values are stored as ISO 3166-1 alpha-3; legacy alpha-2 values are normalized.
 - **Player directory (`/players`)**: search by first or last name, filter by minimum and maximum rating range, filter by last active date, and sort by any column with configurable pagination.
 - **Player profile (`/player/view?id=<id>`)**:
   - Summary of current rating, RD, volatility, and category.
   - Career milestones: peak historical rating, longest winning streak, wins as White, and wins as Black.
+  - Public country, birth year, and self-identified Woman information, plus top-five global, country, regional, under-18, and women's ranking achievements when eligible.
+  - Under-18 eligibility uses a calendar-year approximation: `birth_year >= ranking_year - 18` (for example, birth year 2008 or later during 2026).
   - Complete match history with date, color, opponent, result, event, and link to the SGF viewer if available.
   - Interactive rating evolution chart over time.
   - Tournament history with initial seed rank and final standing position.
@@ -323,7 +325,7 @@ Import historical workbooks, match spreadsheets, or OpenGotha files:
 #### 2. Player administration (`/admin/players`)
 
 - Filter players by name, rating range, and active status.
-- **Edit player (`/admin/players/edit?id=<id>`)**: update first name, last name, display name, initial rating, initial RD, and active status. Inactive players are excluded from rankings and tournament selection.
+- **Edit player (`/admin/players/edit?id=<id>`)**: update name, display name, initial rating, country, optional birth year, optional self-identified Woman designation, and active status. Demographic values are public; birth year is used for the under-18 ranking.
 - **Delete player**: safe confirmation modal warning about cascade deletion of associated match history.
 
 <a href="screenshots/admin-players.png"><img src="screenshots/admin-players.png" alt="Administrative player list" width="560" /></a>

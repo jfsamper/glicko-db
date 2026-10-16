@@ -57,8 +57,32 @@
         </div>
 
         <div class="filter-item">
-          <label for="country">Country</label>
-          <input id="country" type="text" name="country" value="{{ player.country or '' }}">
+          <label for="country">{{ translations.country }}</label>
+          <select id="country" name="country">
+            <option value="">{{ translations.country_unassigned }}</option>
+            {% if selected_country and selected_country not in country_options|map(attribute='code')|list %}
+            <option value="{{ selected_country }}" selected>{{ translations.unknown_country_value }}: {{ selected_country }}</option>
+            {% endif %}
+            {% for option in country_options %}
+            <option value="{{ option.code }}" {% if selected_country==option.code %}selected{% endif %}>{{ option.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="filter-item">
+          <label for="birth_year">{{ translations.birth_year_label }}</label>
+          <input id="birth_year" type="number" name="birth_year" min="1900" max="{{ current_year }}"
+            value="{{ player.birth_year or '' }}">
+          <small>{{ translations.birth_year_help }}</small>
+        </div>
+
+        <div class="filter-item">
+          <label for="gender">{{ translations.gender_label }}</label>
+          <select id="gender" name="gender">
+            <option value="" {% if player.gender != 'woman' %}selected{% endif %}>{{ translations.gender_none }}</option>
+            <option value="woman" {% if player.gender == 'woman' %}selected{% endif %}>{{ translations.gender_woman }}</option>
+          </select>
+          <small>{{ translations.gender_help }}</small>
         </div>
 
         <div class="filter-item wide">

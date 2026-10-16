@@ -4,6 +4,8 @@ import math
 import sqlite3
 
 from flask import flash, redirect, render_template, request, url_for
+from services.country_service import country_options, normalize_country_code
+from services.timezone_service import current_date
 
 
 def _admin_routes():
@@ -81,15 +83,44 @@ def admin_edit_player():
         slug = request.form.get("slug", "").strip()
         initial_rating = request.form.get("initial_rating")
         active = int(request.form.get("active", 1))
+        raw_country = request.form.get("country", "").strip()
+        try:
+            country = normalize_country_code(raw_country) if raw_country else None
+        except ValueError:
+            existing_country = (player["country"] or "").strip()
+            if raw_country == existing_country:
+                country = existing_country
+            else:
+                conn.close()
+                flash(admin.TRANSLATIONS[lang]["invalid_country"])
+                return redirect(url_for("admin_edit_player", id=player_id, lang=lang))
+        raw_birth_year = request.form.get("birth_year", "").strip()
+        if raw_birth_year:
+            try:
+                birth_year = int(raw_birth_year)
+            except ValueError:
+                birth_year = None
+            if birth_year is None or not 1900 <= birth_year <= current_date().year:
+                conn.close()
+                flash(admin.TRANSLATIONS[lang]["invalid_birth_year"])
+                return redirect(url_for("admin_edit_player", id=player_id, lang=lang))
+        else:
+            birth_year = None
+        gender = request.form.get("gender", "").strip()
+        if gender not in {"", "woman"}:
+            conn.close()
+            flash(admin.TRANSLATIONS[lang]["invalid_gender"])
+            return redirect(url_for("admin_edit_player", id=player_id, lang=lang))
         initial_rating_changed = initial_rating != (
             "" if player["initial_rating"] is None else str(player["initial_rating"]))
         conn.execute(
             """
             UPDATE players SET custom_display_name = ?, first_name = ?, last_name = ?, slug = ?,
-                initial_rating = ?, country = ?, club = ?, active = ? WHERE id = ?
+                initial_rating = ?, country = ?, birth_year = ?, gender = ?,
+                club = ?, active = ? WHERE id = ?
             """,
             (custom_display_name, first_name, last_name, slug, initial_rating,
-             request.form.get("country"), request.form.get("club"), active, player_id),
+             country, birth_year, gender or None, request.form.get("club"), active, player_id),
         )
         conn.commit()
         earliest_match_date = None
@@ -107,7 +138,20 @@ def admin_edit_player():
         flash(admin.TRANSLATIONS[lang]["success"])
         return redirect(url_for("admin_players", lang=lang))
     conn.close()
-    return render_template("admin/edit_player.html", player=player, lang=lang, translations=admin.TRANSLATIONS[lang])
+    selected_country = player["country"] or ""
+    try:
+        selected_country = normalize_country_code(selected_country) or ""
+    except ValueError:
+        pass
+    return render_template(
+        "admin/edit_player.html",
+        player=player,
+        lang=lang,
+        translations=admin.TRANSLATIONS[lang],
+        country_options=country_options(lang),
+        selected_country=selected_country,
+        current_year=current_date().year,
+    )
 
 
 def admin_delete_player():

@@ -20,6 +20,7 @@ Glicko BD é uma aplicação Flask e SQLite para gerenciar jogadores, ratings, p
 ## Recursos
 
 - Classificações públicas, busca de jogadores, perfis, histórico de partidas, gráficos de rating e conversão de categoria
+- Classificações por país, região da América Latina e Caribe, sub-18 e mulheres; os perfis publicam país, ano de nascimento e identificação como Mulher
 - Cálculo Glicko-2 com parâmetros configuráveis de rating e categoria
 - Interface pública em espanhol, inglês e português
 - Administração de jogadores e partidas com paginação, filtros e ordenação consistente
@@ -113,7 +114,7 @@ Os valores padrão estão em `config.py`.
 
 ## Plano do projeto
 
-O plano está em [FUTURE_FEATURES.md](FUTURE_FEATURES.md). A reconciliação de importações, os payloads tipados do OpenGotha, os filtros de auditoria, as melhorias de perfil, a exclusão explícita de torneios e o tratamento de listagens, perfis e ratings conforme o status dos torneios já estão implementados. O trabalho restante inclui melhorar o tema escuro do BesoGo, adicionar um seletor de países e classificações por país, região e grupos, torneios Pairgo e permissões por país.
+O plano está em [FUTURE_FEATURES.md](FUTURE_FEATURES.md). A reconciliação de importações, os payloads tipados do OpenGotha, os filtros de auditoria, as melhorias de perfil, a exclusão explícita de torneios, o tratamento de listagens, perfis e ratings conforme o status dos torneios e as classificações por país, região e grupos já estão implementados. O trabalho restante inclui melhorar o tema escuro do BesoGo, torneios Pairgo e permissões por país.
 
 ## Desenvolvimento
 
