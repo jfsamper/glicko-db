@@ -313,6 +313,7 @@ Permite cargar datos históricos o torneos masivos:
   - El operador puede decidir por cada jugador: vincular al existente, crear nuevo o rechazar la fila.
   - Permite editar metadatos del torneo antes de confirmar la importación.
   - Un error de validación en CSV cancela toda la operación sin dejar cambios parciales.
+- Si `DEFER_RATING_REPLAY_ON_IMPORT` está activado, la importación se completa, pero se muestra un aviso de que los ratings pueden quedar desactualizados hasta ejecutar el recálculo aplazado.
 
 <a href="screenshots/admin-import.png"><img src="screenshots/admin-import.png" alt="Controles de importación" width="560" /></a>
 

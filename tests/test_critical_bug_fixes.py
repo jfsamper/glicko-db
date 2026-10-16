@@ -1,6 +1,7 @@
 """Tests for critical bug fixes related to match management and validation."""
 
 from concurrent.futures import ThreadPoolExecutor
+import csv
 import sqlite3
 import conftest
 from datetime import datetime, time
@@ -394,9 +395,12 @@ def _replacement_workbook_bytes():
     return buffer
 
 
-@pytest.mark.parametrize("postprocess_fails", [False, True])
+@pytest.mark.parametrize(
+    ("postprocess_fails", "replay_deferred"),
+    [(False, False), (True, False), (False, True)],
+)
 def test_xlsx_replacement_requires_confirmation_and_verified_backup(
-    monkeypatch, tmp_path, isolate_test_database, postprocess_fails
+    monkeypatch, tmp_path, isolate_test_database, postprocess_fails, replay_deferred
 ):
     db_path = isolate_test_database
     backup_dir = tmp_path / "backups"
@@ -405,6 +409,7 @@ def test_xlsx_replacement_requires_confirmation_and_verified_backup(
     def run_replay():
         if postprocess_fails:
             raise RuntimeError("rating replay unavailable")
+        return False if replay_deferred else True
 
     monkeypatch.setattr(admin_routes, "run_post_import_replay", run_replay)
     with sqlite3.connect(db_path) as conn:
@@ -455,6 +460,8 @@ def test_xlsx_replacement_requires_confirmation_and_verified_backup(
     assert "Verified backup:" in confirmed_response.get_data(as_text=True)
     if postprocess_fails:
         assert "Data replacement committed, but post-import processing failed" in confirmed_response.get_data(as_text=True)
+    if replay_deferred:
+        assert "rating replay was deferred" in confirmed_response.get_data(as_text=True)
     with client.session_transaction() as session:
         assert "workbook_import_preview" not in session
     with sqlite3.connect(db_path) as conn:
@@ -467,6 +474,37 @@ def test_xlsx_replacement_requires_confirmation_and_verified_backup(
     with sqlite3.connect(backups[0]) as conn:
         assert conn.execute("SELECT COUNT(*) FROM players").fetchone()[0] == before[0]
         assert conn.execute("SELECT COUNT(*) FROM matches").fetchone()[0] == before[1]
+
+
+def test_csv_import_shows_notice_when_rating_replay_is_deferred(
+    monkeypatch, isolate_test_database
+):
+    db_path = isolate_test_database
+    monkeypatch.setattr(admin_routes, "run_post_import_replay", lambda: False)
+    with sqlite3.connect(db_path) as conn:
+        white_name, black_name = conn.execute(
+            "SELECT display_name FROM players_display ORDER BY id LIMIT 2"
+        ).fetchall()
+
+    csv_content = StringIO()
+    csv_writer = csv.writer(csv_content)
+    csv_writer.writerow(["date", "white", "black", "result"])
+    csv_writer.writerow(["2026-10-15", white_name[0], black_name[0], "1-0"])
+    csv_bytes = csv_content.getvalue().encode("utf-8")
+    app.testing = True
+    client = app.test_client()
+    conftest.set_admin_session(client, db_path)
+    response = client.post(
+        "/admin/import?lang=en",
+        data={"file": (BytesIO(csv_bytes), "matches.csv")},
+        content_type="multipart/form-data",
+        follow_redirects=True,
+    )
+
+    assert response.status_code == 200
+    body = response.get_data(as_text=True)
+    flash_start = body.find('<div class="flash">')
+    assert "rating replay was deferred" in body, body[flash_start:flash_start + 500]
 
 
 def test_xlsx_replacement_aborts_when_backup_verification_fails(

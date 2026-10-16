@@ -47,6 +47,7 @@ This document lists only unfinished product, operational, and maintainability wo
 - The app enforces named-account authorization for admin routes.
 - Only `administrator` and `operator` roles can modify players, ratings, and categories; `tournament_director` is limited to tournament operations for those areas.
 - The regression suite covers import correctness, rating replay safety, player filters, public-tournament routes, and the main tournament service paths.
+- CSV imports and full workbook replacements display a localized notice when `DEFER_RATING_REPLAY_ON_IMPORT` postpones rating replay; the pending dirty date remains available for a later replay.
 - Admin tournament dashboard actions support progressive async panel refresh with redirect fallback.
 - Tournament deletion uses an explicit confirmation modal instead of the browser `confirm()` dialog.
 - Browser compatibility for older clients without `requestSubmit` is preserved.
@@ -158,7 +159,6 @@ The V4 P2 findings are resolved. The remaining operational and product work belo
 ### P3 — Operational enhancements
 
 1. Replay and audit observability
-   - Add clear operator feedback when rating replay is deferred
    - Expand operational summaries only where they support troubleshooting
 
 2. Improve logging and monitoring
@@ -187,9 +187,9 @@ Non-rated tournaments in general should be possible (e.g., two-versus-two teams)
 
 ## Technical implementation order
 
-Login rate-limit enforcement, typed OpenGotha payloads, explicit tournament deletion, per-account timezone preferences, account profile/recovery, date-bounded reporting, PDF reporting, result moderation, XLSX replacement safeguards, staged backup restore with a verified pre-restore snapshot, scheduled verified backups with retention, and server-side idempotency keys for round generation, round processing, pairing, participant changes, and OpenGotha imports are implemented. The next recommended sequence is:
+Login rate-limit enforcement, typed OpenGotha payloads, explicit tournament deletion, per-account timezone preferences, account profile/recovery, date-bounded reporting, PDF reporting, result moderation, XLSX replacement safeguards, deferred-replay operator notices, staged backup restore with a verified pre-restore snapshot, scheduled verified backups with retention, and server-side idempotency keys for round generation, round processing, pairing, participant changes, and OpenGotha imports are implemented. The next recommended sequence is:
 
-1. Consider replay observability, tournament preflight, named seasons, and the product backlog above as needed.
+1. Consider remaining replay and audit summaries, tournament preflight, named seasons, and the product backlog above as needed.
 
 ## Documentation rules
 

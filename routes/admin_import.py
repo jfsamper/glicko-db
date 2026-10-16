@@ -184,6 +184,7 @@ def admin_import():
                 )
 
             _discard_workbook_preview(admin)
+            replay_deferred = False
             try:
                 admin.log_admin_action(
                     "workbook_replaced",
@@ -195,7 +196,7 @@ def admin_import():
                     },
                     user_id=session.get("user_id"),
                 )
-                admin.run_post_import_replay()
+                replay_deferred = admin.run_post_import_replay() is False
             except Exception as exc:
                 flash(
                     TRANSLATIONS[lang]["workbook_replacement_postprocess_warning"].format(
@@ -211,6 +212,8 @@ def admin_import():
                     backup=backup_name,
                 )
             )
+            if replay_deferred:
+                flash(TRANSLATIONS[lang]["rating_replay_deferred"])
             return redirect(url_for("import_matches", lang=lang))
 
         if action == "commit_preview" and preview_file:
@@ -389,11 +392,14 @@ def admin_import():
 
                 if earliest_match_date:
                     admin.mark_dirty(earliest_match_date)
-                    admin.run_post_import_replay()
+                    replay_deferred = admin.run_post_import_replay() is False
                 else:
                     admin.refresh_stats()
+                    replay_deferred = False
                 flash(
                     f"{TRANSLATIONS[lang]['success']} ({imported_matches} matches)")
+                if replay_deferred:
+                    flash(TRANSLATIONS[lang]["rating_replay_deferred"])
                 return redirect(url_for("import_matches", lang=lang))
 
             raise ValueError(TRANSLATIONS[lang]["unsupported_file_format"])

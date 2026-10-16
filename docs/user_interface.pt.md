@@ -313,6 +313,7 @@ Importe planilhas históricas, partidas ou arquivos do OpenGotha:
   - O operador decide para cada jogador: vincular ao existente, criar novo ou rejeitar a linha.
   - Metadados do torneio podem ser revisados e editados antes da confirmação.
   - Erros de validação em arquivos CSV cancelam toda a operação sem efetuar alterações parciais no banco.
+- Se `DEFER_RATING_REPLAY_ON_IMPORT` estiver ativado, a importação será concluída, mas um aviso informará que os ratings podem ficar desatualizados até a execução do recálculo adiado.
 
 <a href="screenshots/admin-import.png"><img src="screenshots/admin-import.png" alt="Controles de importação" width="560" /></a>
 

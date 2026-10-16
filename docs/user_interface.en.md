@@ -313,6 +313,7 @@ Import historical workbooks, match spreadsheets, or OpenGotha files:
   - Operators choose to link to existing players, create new players, or reject rows.
   - Metadata can be reviewed and edited before committing.
   - CSV validation errors abort the import cleanly without partial database commits.
+- If `DEFER_RATING_REPLAY_ON_IMPORT` is enabled, imports still complete but show a notice that ratings may remain stale until the deferred replay is run.
 
 <a href="screenshots/admin-import.png"><img src="screenshots/admin-import.png" alt="Import controls" width="560" /></a>
 
