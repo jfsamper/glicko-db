@@ -42,6 +42,8 @@ Você também pode abrir este guia pelo botão `?` na barra superior ou em `/hel
 
 Não é necessária uma conta para `/`, `/rankings`, `/players`, `/player/view?id=<player_id>`, `/matches`, `/tournaments`, `/tournaments/<tournament_id>`, `/reports`, `/category` e `/sgf-library`. Essas páginas oferecem ranking, perfis, histórico de partidas, torneios públicos, classificações, informações de rating, relatórios e visualização ou download de SGF.
 
+Clique em qualquer captura para ampliá-la sem sair deste guia. Feche a visualização com **Esc**, pelo botão de fechar ou clicando fora da imagem.
+
 <a href="screenshots/public-home.png"><img src="screenshots/public-home.png" alt="Página inicial pública" width="560" /></a>
 
 *A página pública oferece navegação, controles de idioma e tema, ranking, estatísticas e links para o conteúdo público.*

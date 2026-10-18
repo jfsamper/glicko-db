@@ -42,6 +42,8 @@ You can also open this guide from the `?` button in the top navigation or at `/h
 
 No account is required for `/`, `/rankings`, `/players`, `/player/view?id=<player_id>`, `/matches`, `/tournaments`, `/tournaments/<tournament_id>`, `/reports`, `/category`, and `/sgf-library`. These pages provide rankings, player profiles, match history, public tournaments, standings, rating information, reports, and SGF viewing or downloads.
 
+Click any screenshot to enlarge it without leaving this guide. Close the preview with **Esc**, the close button, or by clicking outside the image.
+
 <a href="screenshots/public-home.png"><img src="screenshots/public-home.png" alt="Public home page" width="560" /></a>
 
 *The public home page provides navigation, language and theme controls, rankings, statistics, and links to public content.*

@@ -138,6 +138,11 @@ def test_help_route_serves_the_localized_interface_guide():
         "en": "User Interface Help",
         "pt": "Ajuda da interface",
     }
+    expected_preview_labels = {
+        "es": "Vista previa de imagen",
+        "en": "Image preview",
+        "pt": "Pré-visualização da imagem",
+    }
     for language, heading in expected_headings.items():
         response = client.get(f"/help?lang={language}")
         assert response.status_code == 200
@@ -147,6 +152,13 @@ def test_help_route_serves_the_localized_interface_guide():
         assert body.startswith("<!doctype html>")
         assert f">{heading}</h1>" in body
         assert "/help-assets/screenshots/public-home.png" in body
+        assert body.count('data-screenshot-preview><img') == 43
+        assert body.count('loading="lazy" decoding="async"') == 43
+        assert "imageDialog.showModal()" in body
+        assert (
+            f'imageDialog.setAttribute("aria-label", '
+            f'"{expected_preview_labels[language]}")'
+        ) in body
         assert f'href="/help/readme?lang={language}"' in body
 
     fallback = client.get("/help?lang=fr")

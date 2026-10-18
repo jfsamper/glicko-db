@@ -42,6 +42,8 @@ También puedes abrir esta guía desde el botón `?` de la barra superior o en `
 
 No se requiere una cuenta para `/`, `/rankings`, `/players`, `/player/view?id=<player_id>`, `/matches`, `/tournaments`, `/tournaments/<tournament_id>`, `/reports`, `/category` y `/sgf-library`. Estas páginas ofrecen posiciones, perfiles, historial de partidas, torneos públicos, clasificaciones, información de ratings, reportes y visualización o descarga de SGF.
 
+Haz clic en cualquier captura para ampliarla sin salir de esta guía. Cierra la vista con **Esc**, el botón de cierre o haciendo clic fuera de la imagen.
+
 <a href="screenshots/public-home.png"><img src="screenshots/public-home.png" alt="Página pública de inicio" width="560" /></a>
 
 *La página pública ofrece navegación, controles de idioma y tema, posiciones, estadísticas y enlaces al contenido público.*

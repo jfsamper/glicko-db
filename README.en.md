@@ -19,23 +19,15 @@ Glicko DB is a Flask and SQLite application for managing a Go community's player
 
 ## Features
 
-- Public rankings, player search, profiles, match history, rating charts, and category conversion
-- Country, Latin America and Caribbean, Sub-18, and female rankings, with checkbox group filters; profiles show country, birth year, and a female-player checkmark
-- Glicko-2 rating calculation with configurable rating and category parameters
-- Public interface in Spanish, English, and Portuguese
-- Player and match administration with pagination, filters, and consistent ordering
-- Public SGF record library; logged-in accounts can upload unlinked files, while tournament directors, operators, and administrators can link or unlink them
-- Import of Excel workbooks (XLSX), OpenGotha XML, and match CSV files
-- Tournament creation and editing, OpenGotha import, pairings, result entry, standings, and export
-- Member account registration and individual result submission for administrative approval
-- Public reports by period (default: all time) with player filters, localized CSV/PDF export, rating changes, and opponent, country, and club performance
-- Admin-published news with quick links to players, tournaments, matches, and SGF records
-- Swiss, category Swiss, accelerated Swiss, and McMahon systems
-- BYE and absence handling, backups, restore safeguards, and SQLite migrations
-- Email alerts to active administrators for critical database, rating replay, and backup/restore failures, and for login limits reached repeatedly within 30 days
-- Only active and completed tournaments appear in the public list; directors, operators, and administrators can show drafts. Player profiles list only completed tournaments, and only completed tournament games affect ratings.
-- Handicap games in stones (Go style), with automatic suggestion by category gap and OGS-style rating adjustment
-- Add-to-app installation from supported mobile browsers, except Safari
+- Public rankings, player search, profiles, match history, and rating charts
+- Configurable Glicko-2 ratings and an interface in Spanish, English, and Portuguese
+- Excel, CSV, and OpenGotha imports; player, match, and tournament administration
+- Swiss, category Swiss, accelerated Swiss, and McMahon tournament systems
+- Member registration and result submissions for administrative approval
+- Filterable reports with CSV/PDF export, news, and a public SGF library
+- Backups, protected restores, and SQLite migrations
+- Country, regional, age, and female-player rankings
+- Handicap games, BYEs, and absences
 
 ## User help
 
@@ -88,45 +80,31 @@ Only for local sample data, define `LOAD_SAMPLE_DATA=1` before startup. Do not u
 
 ## Configuration
 
-The default values are in `config.py`.
+Set required environment variables as needed; defaults are in `config.py`.
 
-- `APP_SECRET_KEY`: Flask session-signing key. It must be set in production.
-- `ADMIN_PASSWORD`: one-time password for creating the initial administrator account; named accounts handle subsequent sign-in.
-- `APP_PUBLIC_ORIGIN`: public HTTPS origin, such as `https://colombiago.org`, for recovery links without trusting the request Host header. Do not include a path or query string. When unset, recovery emails and tokens are not issued.
-- `LOAD_SAMPLE_DATA=1`: imports `rank-final.xlsx` if present and replaces the current dataset; intended only for local development.
-- `DB_PATH`: SQLite database path, defined in `config.py`.
-- By default, application operational events are emitted as JSON lines to stderr; Werkzeug development-server and HTTP request messages remain plain console text, preserving their usual layout and terminal colors. Host-configured logging handlers retain their own formatting.
-- `AUDIT_RETENTION_DAYS`: number of days to keep audit events; default is `730`.
-- `SCHEDULED_BACKUP_KEEP`: number of scheduled backups to keep; default is `14`, minimum `1`.
-- `MAIL_SERVER`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_USE_TLS`, and `MAIL_FROM`: SMTP settings for password recovery and operational alerts to active administrators with email addresses; `PASSWORD_RESET_TTL_SECONDS` controls link expiry and defaults to 3600 seconds. Login alerts are sent when the same IP source or account name reaches the limit more than once in 30 days; alerts have no cooldown.
-- `RECAPTCHA_SITE_KEY` and `RECAPTCHA_SECRET_KEY`: Google reCAPTCHA v3 keys for the member registration form. The secret key is verified on the server and must never be exposed to the browser.
-- `RECAPTCHA_MIN_SCORE`: minimum accepted v3 score for registration; default is `0.5`.
-- `RECAPTCHA_EXPECTED_HOSTNAME`: optional hostname check in the verification response; leave it empty if the key serves multiple configured hostnames.
+- `APP_SECRET_KEY` and `ADMIN_PASSWORD`: session key and one-time password for creating the initial administrator account. Use secure values in production.
+- `APP_PUBLIC_ORIGIN`: public HTTPS origin for password-recovery links.
+- `DB_PATH`: optional SQLite database path.
+- `MAIL_SERVER`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_USE_TLS`, and `MAIL_FROM`: SMTP settings for recovery and alerts.
+- `RECAPTCHA_SITE_KEY` and `RECAPTCHA_SECRET_KEY`: reCAPTCHA v3 keys for member registration.
+- `LOAD_SAMPLE_DATA=1`: loads local sample data; do not use in production.
+- `AUDIT_RETENTION_DAYS` and `SCHEDULED_BACKUP_KEEP`: audit and scheduled-backup retention.
 
-- The default timezone is UTC-5. Each account can choose an IANA timezone; matches on the same day are processed by round number and then insertion order.
-- `/reports` uses inclusive `start_date` and `end_date` ranges in the fixed server timezone. The page and CSV/PDF exports reuse the same filters and totals. Rating change compares the last snapshot before the start with the last snapshot through the end, including the first selected day.
-- Accounts use the roles `administrator`, `tournament_director`, `operator`, and `member`. An account may hold several roles and gets the permissions of all of them. Members submit results only for their linked player; the other roles review the approval queue.
-- Login limits attempts by IP and username before checking the password; configure the limits in `/admin/settings`.
-- Pending-player suggestions link existing players only when explicitly selected. When creating one, a similar name prompts "Did you mean...?" and still allows the distinct player to be created; an exact existing name is rejected. Tournaments with handicaps disabled generate pairings with zero stones.
-- Only administrators can create, restore, or delete backups. The last active administrator cannot be deleted, deactivated, or demoted.
-- Scheduled backups: run `python scripts/scheduled_backup.py` from Windows Task Scheduler or cron, for example once a day. Each run creates a backup, verifies that a scratch copy can be migrated and restored, and only then deletes scheduled backups beyond `SCHEDULED_BACKUP_KEEP`. Manual, pre-import, and pre-restore backups are never deleted by this job. The script exits with status 1 when verification fails.
-- Full XLSX replacement first previews current and importable counts and requires explicit confirmation. Before replacing data, it creates an integrity-verified SQLite backup; if import fails, the previous data is preserved.
-- `/admin/settings` controls login limits, recovery expiry, and the player name format (`Last name, First name` by default, `First name Last name`, or a custom template). Names are rendered on the fly from the format, so changing it never rewrites stored data. Each player can also have an optional custom name, editable by operators and admins. First and last names cannot contain commas. In production, use HTTPS, unique passwords, and keep secrets in environment variables.
-- Logged-in accounts can upload SGF files without linking them. Administrators, directors, and operators can link or unlink records; only administrators can delete files.
+The default timezone is UTC-5. Use HTTPS in production and keep secrets out of source control.
 
 ## Project roadmap
 
-The detailed roadmap is in [FUTURE_FEATURES.md](FUTURE_FEATURES.md). Import reconciliation, typed OpenGotha payloads, per-account audit filters, player profile improvements, explicit tournament deletion, status-aware tournament listings, profiles and ratings, and country, regional, and group rankings are implemented. Remaining work includes improving the BesoGo dark theme, Pairgo tournaments, and country-based permissions.
+See the [remaining work](FUTURE_FEATURES.md).
 
 ## Development
 
-The app renders help pages from Markdown when requested; generated HTML is not required to run the app or its tests. To export static HTML copies after changing the sources:
+Help pages are rendered from Markdown. To export static HTML copies:
 
 ```powershell
 python scripts/build_help_html.py
 ```
 
-Run the regression suite from the project root:
+Run tests from the project root:
 
 ```powershell
 pytest -q
@@ -134,88 +112,19 @@ pytest -q
 
 ### Code organization
 
-CSV imports normalize header case and surrounding whitespace, and reject headers that become duplicates after normalization. `scripts/export_players.py` creates `exports/` when it is missing.
-
-Administrative routes are split by domain across `routes/admin_tournaments.py`, `routes/admin_matches.py`, `routes/admin_players.py`, and `routes/admin_users.py`. Tournament logic is split by responsibility across `services/tournament_gotha.py`, `services/tournament_participants.py`, `services/tournament_pairing.py`, `services/tournament_matches.py`, and `services/tournament_standings.py`. Translations and language selection live in `services/i18n.py`, while pure rating-chart helpers live in `services/chart_service.py`; `services/common.py` retains compatibility exports for existing imports. `services/tournament_service.py` remains a compatibility facade. The anonymized OpenGotha examples used by tests are tracked under `tests/fixtures/opengotha/`; neither local `uploads/` files nor generated HTML guides are required to run `pytest -q`.
+Application routes are in `routes/`, shared logic in `services/`, and tests in `tests/`. Test fixtures are versioned with the project.
 
 ### Linux hosting installation
 
-Use Python 3.10 or later and create a new virtual environment before installing:
+Use Python 3.10 or later, create a virtual environment, and install dependencies:
 
 ```bash
-python3.11 -m venv .venv
+python3 -m venv .venv
 .venv/bin/python -m pip install --upgrade pip
 .venv/bin/python -m pip install --only-binary=Pillow -r requirements.txt
 ```
 
-If this command reports that no compatible Pillow wheel exists, the Python version,
-architecture, or Linux distribution selected by the host is unsupported. Select Python
-3.10+ x86_64 in the hosting panel; do not compile Pillow without the system development
-libraries for Python, JPEG, zlib, and freetype.
-
-Babel and pycountry wheels (pure Python, valid on Linux and Windows) are bundled in
-`vendor/wheels/`. If the host cannot download them from PyPI, unzip each `.whl` (it is a zip
-archive) into the virtual environment's `site-packages` directory so both the package folder and
-its `*.dist-info` folder are present; `pip install -r requirements.txt` then treats them as installed.
-
-For a deployment 404 without SSH, run `scripts/dev_only/diagnose_hosting.py` from
-cPanel's Python script runner using the application's virtual environment. Download
-`temp/deployment-diagnostic.json` through File Manager, then delete the report from
-the server. It records actual dependency imports, the interpreter, selected `.htaccess`
-routing/error-handler directives, filesystem permissions and symlinks, startup-file syntax,
-and a `/glicko` static-route check without running database migrations.
-It does not include environment-variable values; still keep the report private.
-A script runner may have a different environment from Passenger, so compare its executable
-with `PassengerPython` and check cPanel's application URL and document root separately.
-A Joomla/PHP 404 at the app URL points to the parent site's routing, not a Flask route;
-check the domain mapping, Passenger registration, and parent rewrite rules before changing
-application routes or repeatedly clearing caches.
-For a dependency-free Passenger test, temporarily upload
-`scripts/dev_only/passenger_probe.py` into the server app root and select
-`passenger_probe.py` as the startup file, with entry point `application`.
-After saving and restarting, the app URL must return `GLICKO-PASSENGER-PROBE-20261018`.
-If it still returns Joomla, ask the host to inspect the active nginx/Apache mapping
-and Passenger mount. Restore `passenger_wsgi.py`, save, restart, and remove the
-uploaded probe afterwards; do not leave the probe as the production application.
-To test real initialization separately, first back up the production database, then run
-`scripts/dev_only/check_passenger_startup.py` through cPanel. Keep
-`diagnose_hosting.py` alongside it. Unlike the read-only diagnostic, this executes
-`passenger_wsgi.py`, including normal migrations and initialization, and requests
-the home page internally. Download the private `temp/passenger-startup-check.json`
-report and delete it from the server. A successful check does not verify the web-server mapping.
-The deployed `passenger_wsgi.py` must import `create_app` from `app` and expose
-`application = create_app(auto_init=True)`. A generated wrapper that calls
-`imp.load_source('wsgi', 'passenger_wsgi.py')` from that same file loads itself
-recursively and cannot start. After changing cPanel startup settings, verify that
-the deployed entry point still matches the repository; Python syntax checks alone
-do not detect this recursion. Use the interpreter configured by cPanel rather than
-adding a Windows virtualenv path on Linux.
-
-The deployed application currently uses Passenger. The hosting provider restored
-`mod_passenger`; do not use the CGI fallback while Passenger is working.
-
-#### Emergency CGI fallback
-
-Only if the provider confirms Apache has stopped loading `mod_passenger` and a routing
-probe confirms Passenger is not handling the app, use the temporary CGI bridge in
-`scripts/dev_only/`. First back up the database and the app's `.htaccess`. Copy
-`scripts/dev_only/glicko.cgi` and `scripts/dev_only/cgi_bridge.py` to the server app
-root, preserve LF line endings, point the `glicko.cgi` shebang to the cPanel virtualenv
-Python, and set its permissions to 755. Stop the app in the Python selector, remove
-its Passenger directives from `.htaccess`, and add the rules in
-`scripts/dev_only/cgi_fallback.htaccess`. Verify the home page, an internal route, and
-static files; also confirm private files return 404. CGI starts Python for every
-request and is slower than Passenger.
-
-After Passenger is restored, remove the CGI rules and the two copied files from the
-server, start the app in the selector again, and verify the public URL. The files in
-`scripts/dev_only/` are recovery material and must not be deployed with the normal app.
-
-The tests cover ratings and charts, player filters, language support, backups, tournament migrations, pairing, standings, OpenGotha compatibility, result moderation, and public tournament pages.
-
-SGF coverage includes metadata synchronization, missing-link repair, role permissions, deletion behavior, and backup restoration.
-
-The consistent ordering, filtering, and search behavior is already shipped and validated across player, match, and tournament pages.
+If Pillow has no compatible wheel, check that the host's Python version and platform are supported. For common deployment issues, check server logs, the Python environment, dependencies, WSGI entry point, permissions, and routing. Optional diagnostic tools are in `scripts/dev_only/`; do not include them in normal deployments.
 
 ## License and attribution
 

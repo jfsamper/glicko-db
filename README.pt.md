@@ -19,23 +19,15 @@ Glicko BD é uma aplicação Flask e SQLite para gerenciar jogadores, ratings, p
 
 ## Recursos
 
-- Classificações públicas, busca de jogadores, perfis, histórico de partidas, gráficos de rating e conversão de categoria
-- Classificações por país, região da América Latina e Caribe, sub-18 e categoria feminina, com filtros de grupo por caixas de seleção; os perfis mostram país, ano de nascimento e uma marca para jogadoras
-- Cálculo Glicko-2 com parâmetros configuráveis de rating e categoria
-- Interface pública em espanhol, inglês e português
-- Administração de jogadores e partidas com paginação, filtros e ordenação consistente
-- Biblioteca pública de registros SGF; contas autenticadas podem enviar arquivos sem vinculá-los, enquanto diretores de torneio, operadores e administradores podem vinculá-los ou desvinculá-los
-- Importação de livros Excel (XLSX), OpenGotha XML e arquivos de partidas em CSV
-- Criação e edição de torneios, importação de OpenGotha, emparelhamentos, registro de resultados, classificação e exportação
-- Registro de contas de membros e envio de resultados individuais para aprovação administrativa
-- Relatórios públicos por período (por padrão, todo o tempo) com filtros por jogador, exportação CSV/PDF localizada, mudanças de rating e desempenho por oponente, país e clube
-- Notícias publicadas por administradores, com links rápidos para jogadores, torneios, partidas e registros SGF
+- Classificações públicas, busca, perfis, histórico de partidas e gráficos de rating
+- Cálculo Glicko-2 configurável e interface em espanhol, inglês e português
+- Importação de Excel, CSV e OpenGotha; administração de jogadores, partidas e torneios
 - Sistemas suíço, suíço por categoria, suíço acelerado e McMahon
-- Tratamento de BYE e ausências, cópias de segurança, proteções de restauração e migrações SQLite
-- Alertas por e-mail para administradores ativos sobre falhas críticas no banco de dados, na reprodução de ratings e na criação/restauração de cópias, além de limites de login atingidos repetidamente em 30 dias
-- Apenas torneios ativos e concluídos aparecem na lista pública; diretores, operadores e administradores podem exibir rascunhos. Os perfis mostram apenas torneios concluídos, e somente partidas de torneios concluídos afetam os ratings.
-- Partidas com handicap em pedras (estilo Go), com sugestão automática pela diferença de categoria e ajuste de rating no estilo OGS
-- Instalação como aplicativo em navegadores móveis compatíveis, exceto Safari
+- Registro de membros e envio de resultados para aprovação administrativa
+- Relatórios filtráveis com exportação CSV/PDF, notícias e biblioteca pública de SGF
+- Cópias de segurança, restauração protegida e migrações SQLite
+- Classificações por país, região, idade e categoria feminina
+- Partidas com handicap, BYE e ausências
 
 ## Ajuda do usuário
 
@@ -88,45 +80,31 @@ Apenas para dados de exemplo locais, defina `LOAD_SAMPLE_DATA=1` antes de inicia
 
 ## Configuração
 
-Os valores padrão estão em `config.py`.
+Configure as variáveis de ambiente necessárias; os valores padrão estão em `config.py`.
 
-- `APP_SECRET_KEY`: chave de assinatura da sessão Flask. Deve ser configurada em produção.
-- `ADMIN_PASSWORD`: senha usada uma vez para criar a conta administrativa inicial; depois, o acesso usa contas pessoais.
-- `APP_PUBLIC_ORIGIN`: origem HTTPS pública, por exemplo `https://colombiago.org`, para criar links de recuperação sem confiar no cabeçalho Host. Não inclua caminho nem parâmetros. Sem essa configuração, não são enviados e-mails nem criados tokens de recuperação.
-- `LOAD_SAMPLE_DATA=1`: importa `rank-final.xlsx` se existir e substitui o conjunto de dados atual; serve apenas para desenvolvimento local.
-- `DB_PATH`: local do banco SQLite, definido em `config.py`.
-- Por padrão, os eventos operacionais da aplicação são emitidos como linhas JSON em stderr; as mensagens do servidor de desenvolvimento e das solicitações HTTP do Werkzeug permanecem como texto normal, preservando o formato e as cores do terminal. Formatos definidos pelo servidor hospedeiro são preservados.
-- `AUDIT_RETENTION_DAYS`: número de dias para manter eventos de auditoria; o padrão é `730`.
-- `SCHEDULED_BACKUP_KEEP`: número de backups agendados a manter; o padrão é `14`, com mínimo `1`.
-- `MAIL_SERVER`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_USE_TLS` e `MAIL_FROM`: configurações SMTP para recuperação de senha e alertas operacionais enviados a administradores ativos com e-mail; `PASSWORD_RESET_TTL_SECONDS` controla a expiração do link e usa 3600 segundos por padrão. Alertas de login são enviados quando a mesma origem IP ou conta atinge o limite mais de uma vez em 30 dias; não há período de espera entre alertas.
-- `RECAPTCHA_SITE_KEY` e `RECAPTCHA_SECRET_KEY`: chaves do Google reCAPTCHA v3 para o formulário de registro de membros. A chave secreta é verificada no servidor e nunca deve ser exposta ao navegador.
-- `RECAPTCHA_MIN_SCORE`: pontuação v3 mínima aceita para o registro; o padrão é `0.5`.
-- `RECAPTCHA_EXPECTED_HOSTNAME`: verificação opcional do hostname na resposta; deixe vazio se a chave servir para vários hostnames configurados.
+- `APP_SECRET_KEY` e `ADMIN_PASSWORD`: chave de sessão e senha de uso único para criar a conta administradora inicial. Use valores seguros em produção.
+- `APP_PUBLIC_ORIGIN`: origem HTTPS pública para links de recuperação de senha.
+- `DB_PATH`: caminho opcional do banco SQLite.
+- `MAIL_SERVER`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_USE_TLS` e `MAIL_FROM`: configuração SMTP para recuperação e alertas.
+- `RECAPTCHA_SITE_KEY` e `RECAPTCHA_SECRET_KEY`: chaves reCAPTCHA v3 para o registro de membros.
+- `LOAD_SAMPLE_DATA=1`: carrega dados de exemplo locais; não use em produção.
+- `AUDIT_RETENTION_DAYS` e `SCHEDULED_BACKUP_KEEP`: retenção de auditoria e cópias agendadas.
 
-- O fuso padrão é UTC-5. Cada conta pode escolher um fuso IANA; partidas do mesmo dia são processadas por rodada e depois pela ordem de inserção.
-- `/reports` usa intervalos inclusivos `start_date` e `end_date` no fuso fixo do servidor. A tela e as exportações CSV/PDF usam os mesmos filtros e totais. A mudança de rating compara a última captura antes do início com a última até o fim, incluindo o primeiro dia selecionado.
-- As contas têm as funções `administrator`, `tournament_director`, `operator` e `member`. Uma conta pode ter várias funções e recebe as permissões de todas elas. Membros enviam apenas resultados do jogador vinculado; as outras funções revisam a fila de aprovação.
-- O login limita tentativas por IP e nome de usuário antes de verificar a senha; configure os limites em `/admin/settings`.
-- Sugestões de jogadores pendentes só vinculam um jogador existente após seleção explícita. Ao criar, um nome semelhante pergunta "Você quis dizer...?" e ainda permite criar o jogador distinto; um nome exato existente é rejeitado. Torneios com hándicap desativado geram emparelhamentos sem pedras.
-- Apenas administradores podem criar, restaurar ou excluir cópias de segurança. O último administrador ativo não pode ser excluído, desativado nem rebaixado.
-- Backups agendados: execute `python scripts/scheduled_backup.py` pelo Agendador de Tarefas do Windows ou pelo cron, por exemplo uma vez por dia. Cada execução cria um backup, verifica se uma cópia de trabalho pode ser migrada e restaurada e somente então exclui os backups agendados além de `SCHEDULED_BACKUP_KEEP`. Esta tarefa nunca exclui backups manuais, anteriores a importações ou anteriores a restaurações. O script termina com status 1 quando a verificação falha.
-- A substituição completa por XLSX primeiro mostra os totais atuais e os que serão importados, e exige confirmação explícita. Antes de substituir os dados, cria um backup SQLite com integridade verificada; se a importação falhar, os dados anteriores são preservados.
-- `/admin/settings` permite ajustar limites de login, expiração da recuperação e o formato do nome dos jogadores (`Sobrenome, Nome` por padrão, `Nome Sobrenome` ou um modelo personalizado). Os nomes são exibidos na hora conforme o formato; os dados armazenados não mudam. Cada jogador pode ter um nome personalizado opcional, editável por operadores e administradores. Nome e sobrenome não podem conter vírgulas. Em produção, use HTTPS, senhas exclusivas e segredos apenas em variáveis de ambiente.
-- Contas autenticadas podem enviar arquivos SGF sem vinculá-los. Administradores, diretores e operadores podem vinculá-los ou desvinculá-los; apenas administradores podem excluir arquivos.
+O fuso padrão é UTC-5. Em produção, use HTTPS e mantenha os segredos fora do código-fonte.
 
 ## Plano do projeto
 
-O plano está em [FUTURE_FEATURES.md](FUTURE_FEATURES.md). A reconciliação de importações, os payloads tipados do OpenGotha, os filtros de auditoria, as melhorias de perfil, a exclusão explícita de torneios, o tratamento de listagens, perfis e ratings conforme o status dos torneios e as classificações por país, região e grupos já estão implementados. O trabalho restante inclui melhorar o tema escuro do BesoGo, torneios Pairgo e permissões por país.
+Consulte o [trabalho pendente](FUTURE_FEATURES.md).
 
 ## Desenvolvimento
 
-A aplicação renderiza as páginas de ajuda a partir do Markdown quando solicitadas; não é necessário gerar HTML para executá-la nem para testar. Para exportar cópias HTML estáticas depois de alterar as fontes:
+As páginas de ajuda são renderizadas a partir do Markdown. Para exportar cópias HTML estáticas:
 
 ```powershell
 python scripts/build_help_html.py
 ```
 
-Execute a suíte de regressão a partir da raiz do projeto:
+Execute os testes a partir da raiz:
 
 ```powershell
 pytest -q
@@ -134,91 +112,19 @@ pytest -q
 
 ### Organização do código
 
-A importação CSV normaliza maiúsculas/minúsculas e espaços externos nos cabeçalhos, e rejeita cabeçalhos que se tornam duplicados após a normalização. `scripts/export_players.py` cria `exports/` quando ela não existe.
-
-As rotas administrativas estão separadas por domínio em `routes/admin_tournaments.py`, `routes/admin_matches.py`, `routes/admin_players.py` e `routes/admin_users.py`. A lógica de torneios está separada por responsabilidade em `services/tournament_gotha.py`, `services/tournament_participants.py`, `services/tournament_pairing.py`, `services/tournament_matches.py` e `services/tournament_standings.py`. As traduções e a seleção de idioma ficam em `services/i18n.py`, enquanto os helpers puros de gráficos de rating ficam em `services/chart_service.py`; `services/common.py` mantém exports de compatibilidade para os imports existentes. `services/tournament_service.py` permanece como fachada de compatibilidade. Os exemplos OpenGotha anonimizados usados pelos testes estão versionados em `tests/fixtures/opengotha/`; não são necessários arquivos locais em `uploads/` nem guias HTML gerados para executar `pytest -q`.
+As rotas ficam em `routes/`, a lógica compartilhada em `services/` e os testes em `tests/`. Os arquivos de exemplo dos testes estão versionados.
 
 ### Instalação em hospedagem Linux
 
-Use Python 3.10 ou posterior e crie um ambiente virtual novo antes da instalação:
+Use Python 3.10 ou posterior, crie um ambiente virtual e instale as dependências:
 
 ```bash
-python3.11 -m venv .venv
+python3 -m venv .venv
 .venv/bin/python -m pip install --upgrade pip
 .venv/bin/python -m pip install --only-binary=Pillow -r requirements.txt
 ```
 
-Se esse comando indicar que não existe uma wheel compatível do Pillow, a versão do
-Python, a arquitetura ou a distribuição Linux escolhida pela hospedagem não é compatível.
-Selecione Python 3.10+ x86_64 no painel da hospedagem; não compile o Pillow sem as
-bibliotecas de desenvolvimento do sistema para Python, JPEG, zlib e freetype.
-
-As wheels do Babel e do pycountry (Python puro, válidas para Linux e Windows) estão incluídas em
-`vendor/wheels/`. Se a hospedagem não puder baixá-las do PyPI, descompacte cada `.whl` (é um
-arquivo zip) no diretório `site-packages` do ambiente virtual, de modo que fiquem a pasta do pacote
-e sua `*.dist-info`; depois o `pip install -r requirements.txt` as reconhece como instaladas.
-
-Para investigar um 404 sem SSH, execute `scripts/dev_only/diagnose_hosting.py` pelo
-executor de scripts Python do cPanel com o ambiente virtual da aplicação. Baixe
-`temp/deployment-diagnostic.json` pelo gerenciador de arquivos e exclua o relatório do
-servidor. Ele registra imports reais, o interpretador, diretivas de rotas e erros do `.htaccess`,
-permissões e links simbólicos, a sintaxe do arquivo de inicialização e uma verificação da rota
-estática sob `/glicko`, sem executar migrações do banco de dados.
-Não inclui valores de variáveis de ambiente; mesmo assim, mantenha o relatório privado.
-O executor pode ter um ambiente diferente do Passenger: compare seu executável com
-`PassengerPython` e confira separadamente a URL da aplicação e a raiz documental no cPanel.
-Um 404 do Joomla/PHP na URL da aplicação aponta para o roteamento do site principal,
-não para uma rota Flask; verifique o domínio, o registro do Passenger e as regras de
-reescrita do site principal antes de mudar rotas ou limpar repetidamente os caches.
-Para testar o Passenger sem dependências, envie temporariamente
-`scripts/dev_only/passenger_probe.py` para a raiz da aplicação no servidor e selecione
-`passenger_probe.py` como arquivo de inicialização, com ponto de entrada `application`.
-Após salvar e reiniciar, a URL deve retornar `GLICKO-PASSENGER-PROBE-20261018`.
-Se ainda retornar Joomla, solicite à hospedagem que verifique o mapeamento ativo do nginx/Apache
-e a montagem do Passenger. Depois restaure `passenger_wsgi.py`, salve, reinicie e remova
-o arquivo de teste enviado; não o deixe como aplicação de produção.
-Para testar a inicialização real, faça primeiro um backup do banco de produção e execute
-`scripts/dev_only/check_passenger_startup.py` pelo cPanel. Mantenha
-`diagnose_hosting.py` ao lado do script. Diferentemente do diagnóstico somente de leitura,
-ele executa `passenger_wsgi.py`, incluindo as migrações e a inicialização normais,
-e solicita a página inicial internamente. Baixe o relatório privado
-`temp/passenger-startup-check.json` e exclua-o do servidor. Um resultado bem-sucedido
-não verifica o mapeamento do servidor web.
-O `passenger_wsgi.py` implantado deve importar `create_app` de `app` e expor
-`application = create_app(auto_init=True)`. Um wrapper gerado que chama
-`imp.load_source('wsgi', 'passenger_wsgi.py')` a partir desse mesmo arquivo carrega
-a si próprio recursivamente e não pode iniciar. Após alterar as configurações de
-inicialização no cPanel, confira se o arquivo implantado corresponde ao repositório;
-uma verificação de sintaxe não detecta essa recursão. Use o interpretador configurado
-no cPanel em vez de adicionar um caminho de ambiente virtual do Windows no Linux.
-
-A aplicação implantada atualmente usa Passenger. O provedor restaurou o
-`mod_passenger`; não use o fallback CGI enquanto o Passenger estiver funcionando.
-
-#### Fallback CGI de emergência
-
-Somente se o provedor confirmar que o Apache deixou de carregar o `mod_passenger` e
-um teste de roteamento confirmar que o Passenger não está atendendo a aplicação, use
-a ponte CGI temporária em `scripts/dev_only/`. Primeiro faça backup do banco de dados
-e do `.htaccess` da aplicação. Copie `scripts/dev_only/glicko.cgi` e
-`scripts/dev_only/cgi_bridge.py` para a raiz da aplicação no servidor, preserve os
-finais de linha LF, ajuste o shebang do `glicko.cgi` para o Python do ambiente virtual
-do cPanel e defina a permissão 755. Pare a aplicação no seletor de Python, remova as
-diretivas Passenger do `.htaccess` e adicione as regras de
-`scripts/dev_only/cgi_fallback.htaccess`. Verifique a página inicial, uma rota interna
-e os arquivos estáticos; confirme também que os arquivos privados retornam 404. O CGI
-inicia o Python a cada requisição e é mais lento que o Passenger.
-
-Depois que o Passenger for restaurado, remova as regras CGI e os dois arquivos
-copiados do servidor, inicie novamente a aplicação no seletor e verifique a URL
-pública. Os arquivos em `scripts/dev_only/` são material de recuperação e não devem
-ser implantados com a aplicação normal.
-
-Os testes cobrem ratings e gráficos, filtros de jogadores, suporte a idiomas, backups, migrações de torneios, emparelhamento, classificação, compatibilidade com OpenGotha, moderação de resultados e páginas públicas de torneios.
-
-A cobertura de testes também inclui a biblioteca SGF, a sincronização de seus metadados, a reparação de vínculos ausentes, suas permissões e a restauração a partir de cópias de segurança.
-
-A ordenação, os filtros e a busca consistentes já estão entregues e validados nas páginas de jogadores, partidas e torneios.
+Se o Pillow não tiver um wheel compatível, verifique se a versão do Python e a plataforma da hospedagem são compatíveis. Para problemas comuns, consulte os logs do servidor, o ambiente Python, as dependências, o ponto de entrada WSGI, as permissões e o roteamento. Há ferramentas opcionais de diagnóstico em `scripts/dev_only/`; não as inclua na implantação normal.
 
 ## Licença e atribuição
 

@@ -65,6 +65,11 @@ BACK_TO_TOP_LABELS = {
   "en": "Back to top",
   "pt": "Voltar ao topo",
 }
+IMAGE_PREVIEW_LABELS = {
+    "es": ("Vista previa de imagen", "Cerrar vista previa de imagen"),
+    "en": ("Image preview", "Close image preview"),
+    "pt": ("Pré-visualização da imagem", "Fechar pré-visualização da imagem"),
+}
 
 PAGE_STYLE = """
 :root {
@@ -186,6 +191,46 @@ html {
   margin: 1rem 0;
   border: 1px solid var(--help-border);
   border-radius: 4px;
+}
+.help-document a[data-screenshot-preview] {
+  display: inline-block;
+  cursor: zoom-in;
+}
+.help-document a[data-screenshot-preview]:focus-visible {
+  outline: 3px solid var(--help-link);
+  outline-offset: 4px;
+}
+.help-image-dialog {
+  box-sizing: border-box;
+  max-width: 96vw;
+  max-height: 96vh;
+  padding: 0.5rem;
+  color: var(--help-text);
+  background: var(--help-panel);
+  border: 1px solid var(--help-border);
+  border-radius: 8px;
+  box-shadow: 0 12px 40px var(--help-shadow);
+}
+.help-image-dialog::backdrop {
+  background: rgb(0 0 0 / 0.82);
+}
+.help-image-dialog img {
+  display: block;
+  width: auto;
+  max-width: min(92vw, 1920px);
+  max-height: 88vh;
+  margin: 0 auto;
+  object-fit: contain;
+}
+.help-image-dialog button {
+  display: block;
+  margin: 0 0 0.5rem auto;
+  padding: 0.4rem 0.75rem;
+  color: var(--help-text);
+  background: var(--help-panel);
+  border: 1px solid var(--help-border);
+  border-radius: 4px;
+  cursor: pointer;
 }
 .help-document pre {
   overflow-x: auto;
@@ -336,9 +381,19 @@ def site_path(url_prefix, path):
 
 
 def rewrite_screenshot_urls(rendered_html, url_prefix=""):
-    return re.sub(
+    rendered_html = re.sub(
         r'((?:href|src)=["\'])screenshots/',
-    rf"\1{site_path(url_prefix, '/help-assets/screenshots/')}",
+        rf"\1{site_path(url_prefix, '/help-assets/screenshots/')}",
+        rendered_html,
+    )
+    rendered_html = re.sub(
+        r'(<img\b[^>]*?\bsrc="[^"]*/help-assets/screenshots/[^"]+\.png")',
+        r'\1 loading="lazy" decoding="async"',
+        rendered_html,
+    )
+    return re.sub(
+        r'(<a\b[^>]*?\bhref="[^"]*/help-assets/screenshots/[^"]+\.png")',
+        r"\1 data-screenshot-preview",
         rendered_html,
     )
 
@@ -408,6 +463,7 @@ def render_document(language, source_path, title, document_type, url_prefix=""):
     language_control_label = LANGUAGE_CONTROL_LABELS[language]
     dark_theme_label, light_theme_label = THEME_BUTTON_LABELS[language]
     back_to_top_label = BACK_TO_TOP_LABELS[language]
+    image_preview_label, image_preview_close_label = IMAGE_PREVIEW_LABELS[language]
     return f"""<!doctype html>
 <html lang="{language}">
 <head>
@@ -499,6 +555,32 @@ def render_document(language, source_path, title, document_type, url_prefix=""):
     const url = new URL(window.location.href);
     url.searchParams.set("lang", languageSelect.value);
     window.location.href = url.toString();
+  }});
+
+  const imageDialog = document.createElement("dialog");
+  imageDialog.className = "help-image-dialog";
+  imageDialog.setAttribute("aria-label", "{html.escape(image_preview_label)}");
+  const imageCloseButton = document.createElement("button");
+  imageCloseButton.type = "button";
+  imageCloseButton.textContent = "{html.escape(image_preview_close_label)}";
+  const previewImage = document.createElement("img");
+  imageDialog.append(imageCloseButton, previewImage);
+  document.body.append(imageDialog);
+
+  document.addEventListener("click", (event) => {{
+    if (!(event.target instanceof Element)) return;
+    const link = event.target.closest("a[data-screenshot-preview]");
+    if (!link || event.button !== 0
+      || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+    event.preventDefault();
+    previewImage.src = link.href;
+    previewImage.alt = link.querySelector("img")?.alt || "";
+    imageDialog.showModal();
+  }});
+
+  imageCloseButton.addEventListener("click", () => imageDialog.close());
+  imageDialog.addEventListener("click", (event) => {{
+    if (event.target === imageDialog) imageDialog.close();
   }});
 </script>
 </body>
