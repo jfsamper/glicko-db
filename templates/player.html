@@ -16,13 +16,13 @@
     </article>
   </div>
 
-  {% if player.country_name or player.birth_year or player.gender_label %}
+  {% if player.country_name or player.birth_year or player.is_female %}
   <article class="card player-demographics-card">
     <h3>{{ translations.profile_demographics }}</h3>
     <div class="player-profile-details">
       {% if player.country_name %}<div><strong>{{ translations.country }}</strong>: {{ player.country_name }}</div>{% endif %}
       {% if player.birth_year %}<div><strong>{{ translations.birth_year_label }}</strong>: {{ player.birth_year }}</div>{% endif %}
-      {% if player.gender_label %}<div><strong>{{ translations.gender_label }}</strong>: {{ player.gender_label }}</div>{% endif %}
+      {% if player.is_female %}<div><strong>✓ {{ translations.female_player }}</strong></div>{% endif %}
     </div>
   </article>
   {% endif %}

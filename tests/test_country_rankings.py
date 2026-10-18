@@ -1,3 +1,4 @@
+import re
 import sqlite3
 
 import pytest
@@ -156,6 +157,7 @@ def test_rankings_filter_by_country_region_and_demographic_group(monkeypatch, tm
         "region": "latin-america-caribbean",
         "group": "women",
     }) == [1]
+    assert ids({"group": ["u18", "women"]}) == [1, 4]
     with pytest.raises(ValueError):
         player_service.count_rankings({"group": "unsupported"})
 
@@ -196,8 +198,8 @@ def test_profile_awards_country_region_u18_and_women_rank_badges():
     } == {
         ("Colombia", "#2"),
         ("Latin America and the Caribbean", "#2"),
-        ("Under 18", "#2"),
-        ("Women", "#2"),
+        ("Sub-18", "#2"),
+        ("Female", "#2"),
     }
     conn.close()
 
@@ -221,7 +223,9 @@ def test_admin_player_form_saves_canonical_country_and_public_demographics(
     page = client.get("/admin/players/edit?id=9101&lang=en")
     assert page.status_code == 200
     assert b'name="birth_year"' in page.data
-    assert b'name="gender"' in page.data
+    assert b'name="gender" value="woman"' in page.data
+    assert b'type="checkbox"' in page.data
+    assert b"Gender identity" not in page.data
     year = current_date().year
 
     response = client.post(
@@ -251,15 +255,64 @@ def test_admin_player_form_saves_canonical_country_and_public_demographics(
     assert profile.status_code == 200
     assert b"Colombia" in profile.data
     assert str(year - 18).encode() in profile.data
-    assert b"Woman" in profile.data
+    assert b"Female" in profile.data
+    assert b"Gender identity" not in profile.data
+
+    edited_player = client.get("/admin/players/edit?id=9101&lang=en")
+    assert re.search(rb'name="gender" value="woman"\s+checked', edited_player.data)
+
+    response = client.post(
+        "/admin/players/edit?id=9101&lang=en",
+        data={
+            "first_name": "Test",
+            "last_name": "Player",
+            "slug": "country-test-player",
+            "initial_rating": "1500",
+            "active": "1",
+            "country": "CO",
+            "birth_year": str(year - 18),
+            "club": "",
+        },
+    )
+    assert response.status_code == 302
+    conn = sqlite3.connect(db_path)
+    saved_gender = conn.execute(
+        "SELECT gender FROM players WHERE id = 9101"
+    ).fetchone()[0]
+    conn.close()
+    assert saved_gender is None
 
 
 def test_public_rankings_render_scopes_and_reject_invalid_values(app):
     client = app.test_client()
     response = client.get(
-        "/rankings?lang=en&country=CO&region=latin-america-caribbean&group=women"
+        "/rankings?lang=en&country=CO&region=latin-america-caribbean&group=u18&group=women"
     )
     assert response.status_code == 200
     assert b"Latin America and the Caribbean" in response.data
     assert b'name="country"' in response.data
+    assert b'name="group" value="u18"' in response.data
+    assert b'name="group" value="women"' in response.data
+    assert re.search(rb'name="group" value="u18"\s+checked', response.data)
+    assert re.search(rb'name="group" value="women"\s+checked', response.data)
     assert client.get("/rankings?lang=en&region=unknown").status_code == 400
+
+
+def test_public_rankings_country_filter_only_lists_countries_in_database(
+        app, isolate_test_database):
+    conn = sqlite3.connect(isolate_test_database)
+    conn.execute(
+        """
+        INSERT INTO players
+            (first_name, last_name, slug, country, active, rating, games_played)
+        VALUES ('Country', 'Filter', 'country-filter-test', 'COL', 1, 1500, 0)
+        """
+    )
+    conn.commit()
+    conn.close()
+
+    response = app.test_client().get("/rankings?lang=en")
+
+    assert response.status_code == 200
+    assert re.search(rb'<option value="COL"[^>]*>Colombia</option>', response.data)
+    assert not re.search(rb'<option value="USA"[^>]*>United States</option>', response.data)

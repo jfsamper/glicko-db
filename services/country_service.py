@@ -105,6 +105,28 @@ def country_options(language="en"):
     return tuple(sorted(options, key=lambda option: option["name"].casefold()))
 
 
+def available_country_options(conn, language="en"):
+    """Return localized country filters for country values present on players."""
+    country_codes = set()
+    rows = conn.execute(
+        """
+        SELECT DISTINCT country
+        FROM players
+        WHERE country IS NOT NULL AND TRIM(country) <> ''
+        """
+    ).fetchall()
+    for row in rows:
+        try:
+            country_codes.add(normalize_country_code(row[0]))
+        except ValueError:
+            continue
+    options = [
+        {"code": code, "name": country_name(code, language)}
+        for code in country_codes
+    ]
+    return tuple(sorted(options, key=lambda option: option["name"].casefold()))
+
+
 def country_name_map(language="en"):
     return {
         option["code"]: option["name"]

@@ -37,7 +37,12 @@ from services.reporting_service import (
     list_report_seasons,
     resolve_report_range,
 )
-from services.country_service import country_name, country_options, normalize_country_code
+from services.country_service import (
+    available_country_options,
+    country_name,
+    country_options,
+    normalize_country_code,
+)
 from scripts import build_help_html
 from services.news_service import get_article, list_articles, resolve_news_tags
 from services.player_service import (
@@ -535,20 +540,27 @@ def rankings():
         except ValueError:
             abort(400)
     selected_region = request.args.get("region", "").strip()
-    selected_group = request.args.get("group", "").strip()
+    selected_groups = [
+        group.strip() for group in request.args.getlist("group") if group.strip()
+    ]
     filters = {
         "page": page,
         "page_size": page_size,
         "games_played_min": 1,
         "country": selected_country,
         "region": selected_region,
-        "group": selected_group,
+        "group": selected_groups,
     }
     try:
         rankings = load_rankings(filters)
         total_count = count_rankings(filters)
     except ValueError:
         abort(400)
+    conn = get_db()
+    try:
+        ranking_country_options = available_country_options(conn, lang)
+    finally:
+        conn.close()
     for player in rankings:
         player["country_name"] = country_name(player.get("country"), lang)
     return render_template(
@@ -556,10 +568,10 @@ def rankings():
         lang=lang,
         translations=TRANSLATIONS[lang],
         rankings=rankings,
-        country_options=country_options(lang),
+        country_options=ranking_country_options,
         selected_country=selected_country,
         selected_region=selected_region,
-        selected_group=selected_group,
+        selected_groups=selected_groups,
         total_count=total_count,
         **pagination_details(total_count, page, page_size),
     )

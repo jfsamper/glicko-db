@@ -32,14 +32,19 @@
           </option>
         </select>
       </div>
-      <div class="filter-item">
-        <label for="ranking-group">{{ translations.rankings_group_filter }}</label>
-        <select id="ranking-group" name="group">
-          <option value="">{{ translations.rankings_all_groups }}</option>
-          <option value="u18" {% if selected_group=='u18' %}selected{% endif %}>{{ translations.ranking_u18_scope }}</option>
-          <option value="women" {% if selected_group=='women' %}selected{% endif %}>{{ translations.ranking_women_scope }}</option>
-        </select>
-      </div>
+      <fieldset class="filter-item ranking-group-filters">
+        <legend>{{ translations.rankings_group_filter }}</legend>
+        <label class="checkbox-option" for="ranking-group-u18">
+          <input id="ranking-group-u18" type="checkbox" name="group" value="u18"
+            {% if 'u18' in selected_groups %}checked{% endif %}>
+          {{ translations.ranking_u18_scope }}
+        </label>
+        <label class="checkbox-option" for="ranking-group-women">
+          <input id="ranking-group-women" type="checkbox" name="group" value="women"
+            {% if 'women' in selected_groups %}checked{% endif %}>
+          {{ translations.ranking_women_scope }}
+        </label>
+      </fieldset>
     </div>
     <div class="filter-actions">
       <button type="submit" class="button">{{ translations.rankings_filter_apply }}</button>
@@ -90,18 +95,18 @@
       <label for="rankings-page-size">{{ translations.page_size_label }}</label>
       <select id="rankings-page-size" onchange="window.location.href = this.value">
         {% for option in [10, 25, 50, 100] %}
-        <option value="{{ url_for('rankings', lang=lang, page=1, page_size=option, country=selected_country, region=selected_region, group=selected_group) }}" {% if page_size==option
+        <option value="{{ url_for('rankings', lang=lang, page=1, page_size=option, country=selected_country, region=selected_region, group=selected_groups) }}" {% if page_size==option
           %}selected{% endif %}>{{ option }}</option>
         {% endfor %}
       </select>
       {% if page > 1 %}
-      <a class="button secondary" href="{{ url_for('rankings', lang=lang, page=page - 1, page_size=page_size, country=selected_country, region=selected_region, group=selected_group) }}">{{
+      <a class="button secondary" href="{{ url_for('rankings', lang=lang, page=page - 1, page_size=page_size, country=selected_country, region=selected_region, group=selected_groups) }}">{{
         translations.prev_page }}</a>
       {% endif %}
       <span aria-label="{{ translations.page_label }} {{ page }}">{{ translations.page_label }} {{ page }} {{
         translations.of_label }} {{ total_pages }}</span>
       {% if page * page_size < total_count %} <a class="button"
-        href="{{ url_for('rankings', lang=lang, page=page + 1, page_size=page_size, country=selected_country, region=selected_region, group=selected_group) }}">{{ translations.next_page }}</a>
+        href="{{ url_for('rankings', lang=lang, page=page + 1, page_size=page_size, country=selected_country, region=selected_region, group=selected_groups) }}">{{ translations.next_page }}</a>
         {% endif %}
     </div>
     {% endif %}

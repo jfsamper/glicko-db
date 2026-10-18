@@ -54,12 +54,12 @@ Las páginas aceptan `?lang=es`, `?lang=en` o `?lang=pt`; usa `AAAA-MM-DD` en lo
 
 ### Posiciones y directorio de jugadores
 
-- **Posiciones (`/rankings`)**: permite filtrar la clasificación por país, América Latina y el Caribe, sub-18 y mujeres; los filtros se pueden combinar. Los países se guardan con códigos ISO 3166-1 alpha-3 y los códigos alpha-2 heredados se normalizan.
+- **Posiciones (`/rankings`)**: permite filtrar la clasificación por país, América Latina y el Caribe, sub-18 y categoría femenina. El selector de país solo muestra países asignados actualmente a jugadores. Los grupos sub-18 y femenino usan casillas que se pueden seleccionar juntas. Los países se guardan con códigos ISO 3166-1 alpha-3 y los códigos alpha-2 heredados se normalizan.
 - **Directorio de jugadores (`/players`)**: permite buscar por nombre o apellido, filtrar por rango de rating mínimo y máximo, filtrar por fecha de última actividad y ordenar por cualquier columna con paginación configurable.
 - **Perfil del jugador (`/player/view?id=<id>`)**:
   - Resumen de rating actual, RD, volatilidad y categoría.
   - Hitos de carrera: mejor rating histórico, racha más larga, victorias con blancas y con negras.
-  - País, año de nacimiento e identificación como Mujer visibles públicamente, además de logros para las cinco primeras posiciones globales, nacionales, regionales, sub-18 y femeninas cuando corresponda.
+  - País, año de nacimiento y una marca para jugadoras visibles públicamente, además de logros para las cinco primeras posiciones globales, nacionales, regionales, sub-18 y de la clasificación femenina cuando corresponda.
   - La elegibilidad sub-18 usa una aproximación por año calendario: `birth_year >= ranking_year - 18` (por ejemplo, año de nacimiento 2008 o posterior durante 2026).
   - Historial de partidas completo con fecha, color, oponente, resultado, evento y enlace al visor SGF si está disponible.
   - Gráfico interactivo de evolución de rating en el tiempo.
@@ -326,7 +326,7 @@ Permite cargar datos históricos o torneos masivos:
 #### 2. Administración de jugadores (`/admin/players`)
 
 - Filtra por nombre, rango de rating y estado.
-- **Edición (`/admin/players/edit?id=<id>`)**: modifica nombre, nombre para mostrar, rating inicial, país, año de nacimiento opcional, identificación opcional como Mujer y estado activo. Los datos demográficos son públicos; el año de nacimiento se usa para la clasificación sub-18.
+- **Edición (`/admin/players/edit?id=<id>`)**: modifica nombre, nombre para mostrar, rating inicial, país, año de nacimiento opcional, una casilla para indicar si es mujer y estado activo. Los datos demográficos son públicos; el año de nacimiento se usa para la clasificación sub-18.
 - **Eliminación**: modal de confirmación seguro que advierte sobre la eliminación del historial y partidas vinculadas.
 
 <a href="screenshots/admin-players.png"><img src="screenshots/admin-players.png" alt="Lista administrativa de jugadores" width="560" /></a>

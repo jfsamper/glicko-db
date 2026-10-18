@@ -77,12 +77,11 @@
         </div>
 
         <div class="filter-item">
-          <label for="gender">{{ translations.gender_label }}</label>
-          <select id="gender" name="gender">
-            <option value="" {% if player.gender != 'woman' %}selected{% endif %}>{{ translations.gender_none }}</option>
-            <option value="woman" {% if player.gender == 'woman' %}selected{% endif %}>{{ translations.gender_woman }}</option>
-          </select>
-          <small>{{ translations.gender_help }}</small>
+          <label class="checkbox-option" for="gender">
+            <input id="gender" type="checkbox" name="gender" value="woman"
+              {% if player.gender == 'woman' %}checked{% endif %}>
+            {{ translations.female_player }}
+          </label>
         </div>
 
         <div class="filter-item wide">

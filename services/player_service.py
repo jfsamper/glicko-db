@@ -165,20 +165,25 @@ def _ranking_scope_sql(filters, columns):
         clauses.append("country IN (" + ",".join("?" for _ in codes) + ")")
         params.extend(codes)
 
-    group = (filters.get("group") or "").strip()
-    if group:
-        if group not in SUPPORTED_GROUPS:
+    raw_groups = filters.get("group") or []
+    if isinstance(raw_groups, str):
+        groups = [raw_groups.strip()] if raw_groups.strip() else []
+    else:
+        groups = [group.strip() for group in raw_groups if group and group.strip()]
+    if groups:
+        if any(group not in SUPPORTED_GROUPS for group in groups):
             raise ValueError("Invalid group ranking filter")
-        column = "birth_year" if group == "u18" else "gender"
-        if column not in columns:
-            raise ValueError("Group rankings are unavailable")
-        if group == "u18":
-            ranking_year = current_date().year
-            clauses.append("birth_year >= ? AND birth_year <= ?")
-            params.extend([ranking_year - 18, ranking_year])
-        else:
-            clauses.append("gender = ?")
-            params.append("woman")
+        for group in dict.fromkeys(groups):
+            column = "birth_year" if group == "u18" else "gender"
+            if column not in columns:
+                raise ValueError("Group rankings are unavailable")
+            if group == "u18":
+                ranking_year = current_date().year
+                clauses.append("birth_year >= ? AND birth_year <= ?")
+                params.extend([ranking_year - 18, ranking_year])
+            else:
+                clauses.append("gender = ?")
+                params.append("woman")
     return "".join(f" AND ({clause})" for clause in clauses), params
 
 
@@ -713,11 +718,7 @@ def load_player(
     player_details = dict(player)
     player_details["country_name"] = country_name(
         player_details.get("country"), lang)
-    player_details["gender_label"] = (
-        translations["gender_woman"]
-        if player_details.get("gender") == "woman"
-        else ""
-    )
+    player_details["is_female"] = player_details.get("gender") == "woman"
 
     return {
         "player": player_details,

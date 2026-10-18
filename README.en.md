@@ -20,7 +20,7 @@ Glicko DB is a Flask and SQLite application for managing a Go community's player
 ## Features
 
 - Public rankings, player search, profiles, match history, rating charts, and category conversion
-- Country, Latin America and Caribbean, under-18, and women's rankings; profiles publish country, birth year, and self-identified Woman designation
+- Country, Latin America and Caribbean, Sub-18, and female rankings, with checkbox group filters; profiles show country, birth year, and a female-player checkmark
 - Glicko-2 rating calculation with configurable rating and category parameters
 - Public interface in Spanish, English, and Portuguese
 - Player and match administration with pagination, filters, and consistent ordering
