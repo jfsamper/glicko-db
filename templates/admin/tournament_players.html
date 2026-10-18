@@ -86,6 +86,20 @@
       </form>
 
       <hr>
+      {% if similar_player_confirmation %}
+      <div class="notice" role="alert">
+        <p>{{ similar_player_confirmation }}</p>
+        <form method="post"
+          action="{{ url_for('admin_create_tournament_player', tournament_id=tournament.id, lang=lang) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+          <input type="hidden" name="first_name" value="{{ pending_player_draft.first_name }}">
+          <input type="hidden" name="last_name" value="{{ pending_player_draft.last_name }}">
+          <input type="hidden" name="glicko" value="{{ pending_player_draft.glicko }}">
+          <input type="hidden" name="allow_similar" value="1">
+          <button type="submit" class="button">{{ translations.create_player_anyway }}</button>
+        </form>
+      </div>
+      {% endif %}
       <form method="post"
         action="{{ url_for('admin_create_tournament_player', tournament_id=tournament.id, lang=lang) }}"
         class="filter-form">
@@ -97,18 +111,23 @@
           <div class="filter-grid">
             <div class="filter-item">
               <label for="new_last_name">{{ translations.last_name_label }}</label>
-              <input id="new_last_name" type="text" name="last_name" required>
+              <input id="new_last_name" type="text" name="last_name"
+                value="{{ pending_player_draft.get('last_name', '') }}" required>
             </div>
             <div class="filter-item">
               <label for="new_first_name">{{ translations.first_name_label }}</label>
-              <input id="new_first_name" type="text" name="first_name" required>
+              <input id="new_first_name" type="text" name="first_name"
+                value="{{ pending_player_draft.get('first_name', '') }}" required>
             </div>
             <div class="filter-item">
               <label for="new_rank">{{ translations.rank_label }}</label>
               <select id="new_rank" name="glicko" required>
-                <option value="" disabled selected>{{ translations.rank_label }}</option>
+                <option value="" disabled {% if not pending_player_draft.get('glicko') %}selected{% endif %}>
+                  {{ translations.rank_label }}</option>
                 {% for option in rank_options %}
-                <option value="{{ option.glicko }}">{{ option.label }}</option>
+                <option value="{{ option.glicko }}"
+                  {% if pending_player_draft.get('glicko')|float == option.glicko %}selected{% endif %}>
+                  {{ option.label }}</option>
                 {% endfor %}
               </select>
             </div>

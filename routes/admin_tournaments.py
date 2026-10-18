@@ -716,11 +716,8 @@ def admin_tournament(tournament_id):
     )
 
 
-def admin_tournament_players(tournament_id):
-    admin = _admin_routes()
-    if not admin.admin_required():
-        return redirect(url_for("admin_login", lang=admin.get_language(request.args.get("lang"))))
-    lang = admin.get_language(request.args.get("lang"))
+def _render_admin_tournament_players(
+        admin, tournament_id, lang, similar_player_confirmation=None, pending_player_draft=None):
     conn = admin.get_db()
     tournament = conn.execute(
         "SELECT id, name FROM tournaments WHERE id = ?", (tournament_id,)
@@ -760,7 +757,17 @@ def admin_tournament_players(tournament_id):
         rank_options=rank_options,
         lang=lang,
         translations=TRANSLATIONS[lang],
+        similar_player_confirmation=similar_player_confirmation,
+        pending_player_draft=pending_player_draft or {},
     )
+
+
+def admin_tournament_players(tournament_id):
+    admin = _admin_routes()
+    if not admin.admin_required():
+        return redirect(url_for("admin_login", lang=admin.get_language(request.args.get("lang"))))
+    lang = admin.get_language(request.args.get("lang"))
+    return _render_admin_tournament_players(admin, tournament_id, lang)
 
 
 def admin_create_tournament_player(tournament_id):
@@ -806,9 +813,20 @@ def admin_create_tournament_player(tournament_id):
             raise ValueError(TRANSLATIONS[lang]["player_already_exists"].format(
                 name=existing_player["display_name"]))
         similar_player = admin._suggest_player_name(display_name, conn)
-        if similar_player:
-            raise ValueError(
-                TRANSLATIONS[lang]["similar_player_exists"].format(name=similar_player))
+        if similar_player and request.form.get("allow_similar") != "1":
+            conn.rollback()
+            return _render_admin_tournament_players(
+                admin,
+                tournament_id,
+                lang,
+                similar_player_confirmation=TRANSLATIONS[lang]["similar_player_exists"].format(
+                    name=similar_player),
+                pending_player_draft={
+                    "first_name": first_name,
+                    "last_name": last_name,
+                    "glicko": selected_glicko,
+                },
+            )
         if conn.execute("SELECT 1 FROM tournaments WHERE id = ?", (tournament_id,)).fetchone() is None:
             raise ValueError("Tournament not found")
         rank = conn.execute(

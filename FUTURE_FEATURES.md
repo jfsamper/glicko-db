@@ -8,7 +8,7 @@ This document lists only unfinished product, operational, and maintainability wo
 - V4-02: recovery links use validated `APP_PUBLIC_ORIGIN`; email/token issuance is disabled until a public HTTPS origin is configured.
 - V4-03: XLSX replacement previews current/importable counts, requires explicit confirmation, creates and verifies a SQLite backup, and rolls back failures.
 - V4-04: user edits/deletions cannot remove the last active administrator, including when another administrator is inactive.
-- V4-05: an unconfirmed pending-player suggestion no longer links automatically; create-new rejects exact-name collisions instead of silently reusing an ID.
+- V4-05: pending-player suggestions never link automatically; creation asks "Did you mean?" for similar names, allows an explicit distinct-player override, and rejects exact-name collisions.
 - V4-06: generated round handicaps now respect the tournament's enabled setting.
 - V4-07: login attempts are checked before authentication using atomic per-IP and per-username windows; password recovery keeps its existing rate limit.
 - V4-08: startup and restore use the same complete schema-migration sequence; legacy-backup coverage checks moderation and audit schema recreation.
