@@ -153,6 +153,55 @@ architecture, or Linux distribution selected by the host is unsupported. Select 
 3.10+ x86_64 in the hosting panel; do not compile Pillow without the system development
 libraries for Python, JPEG, zlib, and freetype.
 
+Babel and pycountry wheels (pure Python, valid on Linux and Windows) are bundled in
+`vendor/wheels/`. If the host cannot download them from PyPI, unzip each `.whl` (it is a zip
+archive) into the virtual environment's `site-packages` directory so both the package folder and
+its `*.dist-info` folder are present; `pip install -r requirements.txt` then treats them as installed.
+
+For a deployment 404 without SSH, run `scripts/dev_only/diagnose_hosting.py` from
+cPanel's Python script runner using the application's virtual environment. Download
+`temp/deployment-diagnostic.json` through File Manager, then delete the report from
+the server. It records actual dependency imports, the interpreter, selected `.htaccess`
+routing/error-handler directives, filesystem permissions and symlinks, startup-file syntax,
+and a `/glicko` static-route check without running database migrations.
+It does not include environment-variable values; still keep the report private.
+A script runner may have a different environment from Passenger, so compare its executable
+with `PassengerPython` and check cPanel's application URL and document root separately.
+A Joomla/PHP 404 at the app URL points to the parent site's routing, not a Flask route;
+check the domain mapping, Passenger registration, and parent rewrite rules before changing
+application routes or repeatedly clearing caches.
+For a dependency-free Passenger test, temporarily upload
+`scripts/dev_only/passenger_probe.py` into the server app root and select
+`passenger_probe.py` as the startup file, with entry point `application`.
+After saving and restarting, the app URL must return `GLICKO-PASSENGER-PROBE-20261018`.
+If it still returns Joomla, ask the host to inspect the active nginx/Apache mapping
+and Passenger mount. Restore `passenger_wsgi.py`, save, restart, and remove the
+uploaded probe afterwards; do not leave the probe as the production application.
+To test real initialization separately, first back up the production database, then run
+`scripts/dev_only/check_passenger_startup.py` through cPanel. Keep
+`diagnose_hosting.py` alongside it. Unlike the read-only diagnostic, this executes
+`passenger_wsgi.py`, including normal migrations and initialization, and requests
+the home page internally. Download the private `temp/passenger-startup-check.json`
+report and delete it from the server. A successful check does not verify the web-server mapping.
+The deployed `passenger_wsgi.py` must import `create_app` from `app` and expose
+`application = create_app(auto_init=True)`. A generated wrapper that calls
+`imp.load_source('wsgi', 'passenger_wsgi.py')` from that same file loads itself
+recursively and cannot start. After changing cPanel startup settings, verify that
+the deployed entry point still matches the repository; Python syntax checks alone
+do not detect this recursion. Use the interpreter configured by cPanel rather than
+adding a Windows virtualenv path on Linux.
+
+If Apache does not load `mod_passenger`, any `Passenger*` directive in `.htaccess`
+causes a 500 error that the parent site may render as a Joomla 404. As a temporary
+workaround that keeps the same URL, upload `glicko.cgi` and `cgi_bridge.py` to the app
+root with LF line endings, give `glicko.cgi` permission 755, and point its first line to the cPanel
+virtualenv Python. Stop the app in the Python selector so cPanel removes the Passenger
+block, then append the contents of `cgi_fallback.htaccess` to the app's `.htaccess`.
+The bridge reads the environment variables configured in the selector, runs migrations
+once per deployed `app.py`, and serves each request in a new process, so it is slower
+than Passenger. When Passenger works again, remove that block and `glicko.cgi`, then
+start the app again.
+
 The tests cover ratings and charts, player filters, language support, backups, tournament migrations, pairing, standings, OpenGotha compatibility, result moderation, and public tournament pages.
 
 SGF coverage includes metadata synchronization, missing-link repair, role permissions, deletion behavior, and backup restoration.

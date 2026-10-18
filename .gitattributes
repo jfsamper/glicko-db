@@ -1,0 +1,3 @@
+*.cgi text eol=lf
+cgi_bridge.py text eol=lf
+*.htaccess text eol=lf

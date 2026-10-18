@@ -68,7 +68,10 @@ backups/*.sql
 
 lastnotes.md
 
-scripts/dev_only/
+scripts/dev_only/*
+!scripts/dev_only/diagnose_hosting.py
+!scripts/dev_only/passenger_probe.py
+!scripts/dev_only/check_passenger_startup.py
 
 temp/
 tmp/

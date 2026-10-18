@@ -1,0 +1,11 @@
+# BEGIN glicko CGI fallback (temporary: remove when Passenger works again)
+Options +ExecCGI -Indexes
+AddHandler cgi-script .cgi
+DirectoryIndex disabled
+RewriteEngine On
+RewriteBase /glicko/
+RewriteRule ^glicko\.cgi$ - [END]
+RewriteCond %{REQUEST_FILENAME} -f
+RewriteRule ^static/ - [END]
+RewriteRule ^ glicko.cgi [END]
+# END glicko CGI fallback

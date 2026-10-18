@@ -160,31 +160,36 @@ The V4 P2 findings are resolved. The remaining operational and product work belo
 
 ### P3 — Operational enhancements
 
-2. Non-rated tournaments
+1. Non-rated tournaments
    - Add tournament support for two-versus-two teams (PairGo).
 
    Non-rated tournaments in general should be possible (e.g., two-versus-two teams). These do not affect ratings but (as opposed to canceled tournaments) are still displayed in the tournament listings and player profiles. The matches for these tournaments can be displayed like normal.
 
-3. Country-based permissions
+2. Country-based permissions
    - Add permission scopes associated with countries and regions (country_manager, region_manager, then operator/admin have global access).
 
 ### P4 — Workflow and analytics enhancements
 
-6. Tournament preflight and dry-run approval workflow
+3. Tournament preflight and dry-run approval workflow
    - Improve tournament and submission workflow
    - Evaluate need for pairings and BYE previews
 
-7. Reporting follow-ups
+4. Reporting follow-ups
    - Add custom named seasons if the organization needs them beyond calendar periods
 
-8. Admin access module extraction (conditional)
+5. Admin access module extraction (conditional)
    - If admin functionality grows, move `ADMIN_MENU_SECTIONS`, `ADMIN_ROUTE_PERMISSIONS`, and login-attempt helpers into a Flask-independent `services/admin_access.py`; keep `routes/admin.py` focused on blueprint wiring.
 
 ## Technical implementation order
 
 Login rate-limit enforcement, typed OpenGotha payloads, explicit tournament deletion, per-account timezone preferences, account profile/recovery, date-bounded reporting, PDF reporting, result moderation, XLSX replacement safeguards, deferred-replay operator notices, staged backup restore with a verified pre-restore snapshot, scheduled verified backups with retention, and server-side idempotency keys for round generation, round processing, pairing, participant changes, and OpenGotha imports are implemented. The next recommended sequence is:
 
-1. Consider tournament preflight, named seasons, and the product backlog above as needed.
+1. Non-rated tournaments
+2. Country-based permissions
+3. Tournament preflight and dry-run approval workflow
+4. Reporting follow-ups
+5. Admin access module extraction (conditional)
+
 
 ## Documentation rules
 

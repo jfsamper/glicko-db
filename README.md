@@ -153,6 +153,56 @@ la arquitectura o la distribución Linux seleccionada por el hosting no es compa
 Selecciona Python 3.10+ x86_64 en el panel del hosting; no intentes compilar Pillow sin
 las bibliotecas de desarrollo de Python, JPEG, zlib y freetype del sistema.
 
+Las ruedas de Babel y pycountry (Python puro, válidas para Linux y Windows) se incluyen en
+`vendor/wheels/`. Si el hosting no puede descargarlas de PyPI, descomprime cada `.whl` (es un
+archivo zip) en el directorio `site-packages` del entorno virtual, de modo que queden las carpetas
+del paquete y su `*.dist-info`; después `pip install -r requirements.txt` las reconoce como instaladas.
+
+Para investigar un 404 sin SSH, ejecuta `scripts/dev_only/diagnose_hosting.py` desde
+el ejecutor de scripts Python de cPanel con el entorno virtual de la aplicación. Descarga
+`temp/deployment-diagnostic.json` mediante el administrador de archivos y elimina el informe
+del servidor. Registra imports reales, el intérprete, directivas de rutas y errores de `.htaccess`,
+permisos y enlaces simbólicos, la sintaxis del archivo de inicio y una prueba de la ruta estática
+bajo `/glicko`, sin ejecutar migraciones de la base de datos.
+No incluye valores de variables de entorno; aun así, mantén el informe privado.
+El ejecutor puede tener un entorno distinto al de Passenger: compara su ejecutable con
+`PassengerPython` y revisa por separado la URL de la aplicación y la raíz documental en cPanel.
+Un 404 de Joomla/PHP en la URL de la aplicación apunta al enrutamiento del sitio principal,
+no a una ruta Flask; revisa el dominio, el registro de Passenger y las reglas de reescritura
+del sitio principal antes de cambiar rutas o limpiar repetidamente las cachés.
+Para probar Passenger sin dependencias, sube temporalmente
+`scripts/dev_only/passenger_probe.py` a la raíz de la aplicación en el servidor y selecciona
+`passenger_probe.py` como archivo de inicio, con punto de entrada `application`.
+Tras guardar y reiniciar, la URL debe devolver `GLICKO-PASSENGER-PROBE-20261018`.
+Si sigue devolviendo Joomla, solicita al hosting que revise el mapeo activo de nginx/Apache
+y el montaje de Passenger. Después restaura `passenger_wsgi.py`, guarda, reinicia y elimina
+el archivo de prueba subido; no lo dejes como aplicación de producción.
+Para probar la inicialización real, respalda primero la base de datos de producción y ejecuta
+`scripts/dev_only/check_passenger_startup.py` desde cPanel. Conserva
+`diagnose_hosting.py` junto al script. A diferencia del diagnóstico de solo lectura,
+ejecuta `passenger_wsgi.py`, incluidas las migraciones y la inicialización normales,
+y solicita la página principal internamente. Descarga el informe privado
+`temp/passenger-startup-check.json` y elimínalo del servidor. Un resultado exitoso
+no verifica el mapeo del servidor web.
+El `passenger_wsgi.py` desplegado debe importar `create_app` de `app` y exponer
+`application = create_app(auto_init=True)`. Un wrapper generado que llama
+`imp.load_source('wsgi', 'passenger_wsgi.py')` desde ese mismo archivo se carga
+recursivamente y no puede iniciar. Tras cambiar los ajustes de inicio en cPanel,
+comprueba que el archivo desplegado coincida con el repositorio; una prueba de sintaxis
+no detecta esta recursión. Usa el intérprete configurado en cPanel en lugar de
+añadir una ruta de entorno virtual de Windows en Linux.
+
+Si Apache no carga `mod_passenger`, cualquier directiva `Passenger*` en `.htaccess`
+provoca un error 500 que el sitio padre puede mostrar como un 404 de Joomla. Como
+solución temporal con la misma URL, sube `glicko.cgi` y `cgi_bridge.py` a la raíz de
+la aplicación (con finales de línea LF), da permisos 755 a `glicko.cgi` y ajusta su primera línea al Python del
+entorno virtual de cPanel. Detén la aplicación en el selector de Python para que cPanel
+retire el bloque de Passenger y añade el contenido de `cgi_fallback.htaccess` al
+`.htaccess` de la aplicación. El puente lee las variables de entorno configuradas en el
+selector, ejecuta las migraciones una vez por cada `app.py` desplegado y sirve cada
+petición en un proceso nuevo, por lo que es más lento que Passenger. Cuando Passenger
+vuelva a funcionar, elimina ese bloque y `glicko.cgi`, e inicia de nuevo la aplicación.
+
 Las pruebas cubren ratings y gráficos, filtros de jugadores, soporte de idiomas, respaldos, migraciones de torneos, emparejamientos, clasificación, compatibilidad con OpenGotha, moderación de resultados y páginas públicas de torneos.
 
 La cobertura de pruebas también incluye la biblioteca SGF, la sincronización de sus metadatos, la reparación de enlaces faltantes, sus permisos y la restauración desde copias de seguridad.
