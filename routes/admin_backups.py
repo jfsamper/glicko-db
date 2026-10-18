@@ -122,6 +122,11 @@ def admin_restore_backup():
     if not admin.is_valid_sqlite_backup(path):
         admin.logger.warning(
             "Backup restore rejected: invalid SQLite backup %s", path)
+        admin.send_admin_alert(
+            "backup_restore_validation_failure",
+            "A selected backup failed SQLite integrity validation.",
+            f"Backup filename: {path.name}",
+        )
         flash(TRANSLATIONS[lang]["error"])
         return redirect(url_for("admin_backups", lang=lang))
 

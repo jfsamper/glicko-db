@@ -14,6 +14,7 @@ This document lists only unfinished product, operational, and maintainability wo
 - V4-08: startup and restore use the same complete schema-migration sequence; legacy-backup coverage checks moderation and audit schema recreation.
 - V4-09: failed async POSTs no longer trigger native resubmission; the dashboard offers a translated reload action. Server-side idempotency remains separate hardening for non-repeatable commands.
 - V4-10: database-backed auth versions invalidate stale sessions after password or authorization changes and backup restore.
+- P3-01: structured operational logs and email alerts to active administrators for rating replay and backup/restore failures, plus repeated login rate-limit threshold events.
 - V4-11: help pages render from Markdown with the active mount prefix, and tests use tracked anonymized OpenGotha fixtures; no ignored generated pages or upload samples are required.
 - Report and home statistics read rating snapshots in one query per page instead of one per player; `scripts/dev_only/benchmark_public_pages.py` times public pages and counts SQL statements against a generated dataset.
 - V4-12: CSV headers are normalized before row import, and ambiguous duplicate headers are rejected.
@@ -48,6 +49,7 @@ This document lists only unfinished product, operational, and maintainability wo
 - Only `administrator` and `operator` roles can modify players, ratings, and categories; `tournament_director` is limited to tournament operations for those areas.
 - The regression suite covers import correctness, rating replay safety, player filters, public-tournament routes, and the main tournament service paths.
 - CSV imports and full workbook replacements display a localized notice when `DEFER_RATING_REPLAY_ON_IMPORT` postpones rating replay; the pending dirty date remains available for a later replay.
+- Incremental and full rating replay operations emit structured JSON log records with event names, relevant date/count context, and exception details on failures. The ratings admin page already shows pending replay status and the action to process it.
 - Admin tournament dashboard actions support progressive async panel refresh with redirect fallback.
 - Tournament deletion uses an explicit confirmation modal instead of the browser `confirm()` dialog.
 - Browser compatibility for older clients without `requestSubmit` is preserved.
@@ -158,19 +160,12 @@ The V4 P2 findings are resolved. The remaining operational and product work belo
 
 ### P3 — Operational enhancements
 
-1. Replay and audit observability
-   - Expand operational summaries only where they support troubleshooting
-
-2. Improve logging and monitoring
-   - Implement structured logging for key operational events.
-   - Set up alerts for critical failures and unusual activity patterns.
-
-3. Non-rated tournaments
+2. Non-rated tournaments
    - Add tournament support for two-versus-two teams (PairGo).
 
-Non-rated tournaments in general should be possible (e.g., two-versus-two teams). These do not affect ratings but (as opposed to canceled tournaments) are still displayed in the tournament listings and player profiles. The matches for these tournaments can be displayed like normal.
+   Non-rated tournaments in general should be possible (e.g., two-versus-two teams). These do not affect ratings but (as opposed to canceled tournaments) are still displayed in the tournament listings and player profiles. The matches for these tournaments can be displayed like normal.
 
-4. Country-based permissions
+3. Country-based permissions
    - Add permission scopes associated with countries and regions (country_manager, region_manager, then operator/admin have global access).
 
 ### P4 — Workflow and analytics enhancements
@@ -189,7 +184,7 @@ Non-rated tournaments in general should be possible (e.g., two-versus-two teams)
 
 Login rate-limit enforcement, typed OpenGotha payloads, explicit tournament deletion, per-account timezone preferences, account profile/recovery, date-bounded reporting, PDF reporting, result moderation, XLSX replacement safeguards, deferred-replay operator notices, staged backup restore with a verified pre-restore snapshot, scheduled verified backups with retention, and server-side idempotency keys for round generation, round processing, pairing, participant changes, and OpenGotha imports are implemented. The next recommended sequence is:
 
-1. Consider remaining replay and audit summaries, tournament preflight, named seasons, and the product backlog above as needed.
+1. Consider tournament preflight, named seasons, and the product backlog above as needed.
 
 ## Documentation rules
 

@@ -57,6 +57,12 @@ from services.auth_service import (
 )
 from services.audit_service import log_admin_action
 from services.db import get_db
+from services.alert_service import (
+    ensure_login_alert_events_table,
+    record_login_threshold_events,
+    send_admin_alert,
+)
+from services.operational_logging import log_operational_event
 from services.stats_service import refresh_stats
 from services.timezone_service import (
     current_datetime,
@@ -316,6 +322,7 @@ def _ensure_login_attempts_table(conn):
         "CREATE INDEX IF NOT EXISTS idx_login_attempts_username_time "
         "ON login_attempts (username_hash, attempted_at)"
     )
+    ensure_login_alert_events_table(conn)
 
 
 def _login_attempt_settings(conn):
@@ -334,6 +341,8 @@ def _username_attempt_hash(username):
 
 def reserve_login_attempt(ip_address, username):
     conn = get_db()
+    repeated_sources = []
+    username_hash = None
     try:
         settings = _login_attempt_settings(conn)
         conn.execute("BEGIN IMMEDIATE")
@@ -354,13 +363,42 @@ def reserve_login_attempt(ip_address, username):
                 "INSERT INTO login_attempts (ip_address, attempted_at, username_hash) VALUES (?, ?, ?)",
                 (ip_address, now, username_hash),
             )
+        else:
+            threshold_sources = []
+            if ip_count >= settings["max_login_attempts"] and ip_address not in ("", "unknown"):
+                threshold_sources.append(("ip", ip_address))
+            if username_hash and username_count >= settings["max_login_attempts"]:
+                threshold_sources.append(("username", username_hash))
+            repeated_sources = record_login_threshold_events(
+                conn,
+                threshold_sources,
+                now,
+                settings["login_window_seconds"],
+            )
         conn.commit()
-        return allowed
     except Exception:
         conn.rollback()
         raise
     finally:
         conn.close()
+
+    if repeated_sources:
+        source_types = sorted({
+            source["source_type"] for source in repeated_sources
+        })
+        max_occurrences = max(
+            source["occurrences_in_30_days"] for source in repeated_sources
+        )
+        send_admin_alert(
+            "login_rate_limit_repeated",
+            "The login rate limit was reached more than once within 30 days.",
+            (
+                f"Current remote address: {ip_address}\n"
+                f"Repeated limit factors: {', '.join(source_types)}\n"
+                f"Threshold events in 30 days: {max_occurrences}"
+            ),
+        )
+    return allowed
 
 
 def record_failed_login_attempt(ip_address):
@@ -480,9 +518,12 @@ def defer_import_replay_enabled():
 
 def run_post_import_replay():
     if defer_import_replay_enabled():
-        logger.info(
-            "Skipping immediate rating replay after import because %s is enabled.",
-            DEFER_IMPORT_REPLAY_ENV,
+        log_operational_event(
+            logger,
+            logging.INFO,
+            "ratings.replay.deferred",
+            "Immediate rating replay after import was deferred.",
+            environment_variable=DEFER_IMPORT_REPLAY_ENV,
         )
         refresh_stats()
         return False
@@ -536,12 +577,19 @@ def create_verified_backup(filename):
 
 def create_checked_backup(filename):
     """Create a verified database backup, removing it again if the final check fails."""
-    backup_path = create_verified_backup(filename)
+    backup_path = None
     try:
+        backup_path = create_verified_backup(filename)
         if not is_valid_sqlite_backup(backup_path):
             raise sqlite3.DatabaseError("Backup integrity verification failed")
-    except Exception:
-        remove_backup(backup_path)
+    except Exception as exc:
+        if backup_path is not None:
+            remove_backup(backup_path)
+        send_admin_alert(
+            "backup_creation_failure",
+            "A database backup could not be created and verified.",
+            f"Failure type: {type(exc).__name__}",
+        )
         raise
     return backup_path
 

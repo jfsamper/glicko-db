@@ -1,5 +1,4 @@
 """Main application module for the Glicko rating system web service."""
-import logging
 import os
 import sqlite3
 import re
@@ -9,7 +8,16 @@ from urllib.parse import urlsplit
 from flask import Flask, request, url_for
 from flask_wtf.csrf import CSRFProtect
 
-from config import BASE_DIR, DB_PATH, DEFAULT_RATING, DEFAULT_RD, DEFAULT_VOLATILITY, GLICKO_K, GLICKO_M, TAU
+from config import (
+    BASE_DIR,
+    DB_PATH,
+    DEFAULT_RATING,
+    DEFAULT_RD,
+    DEFAULT_VOLATILITY,
+    GLICKO_K,
+    GLICKO_M,
+    TAU,
+)
 
 from services.auth_service import (
     bootstrap_default_admin_account,
@@ -35,6 +43,11 @@ from services.rating_service import recompute_ratings
 from services.settings_service import migrate_application_settings_schema
 from services.news_service import migrate_news_schema
 from services.sgf_service import clear_missing_sgf_links, ensure_sgf_schema
+from services.operational_logging import configure_application_logging
+from services.alert_service import (
+    prime_admin_alert_recipients,
+    send_admin_alert,
+)
 from routes.public import glicko_to_category, register_public_routes
 from routes.admin import register_admin_routes
 from services.pairing_service import DEFAULT_ACCELERATION_SCHEME, format_rank_category
@@ -43,11 +56,7 @@ csrf = CSRFProtect()
 
 
 def create_app(test_config=None, auto_init=True):
-    if not logging.getLogger().handlers:
-        logging.basicConfig(
-            level=logging.INFO,
-            format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-        )
+    configure_application_logging()
 
     app_instance = Flask(__name__)
     app_instance.config.update(
@@ -292,7 +301,15 @@ def format_match_result(result, lang="es", player_id=None, white_player_id=None,
 def refresh_startup_stats(seeded):
     """Refresh per-startup caches after seeding data or explicit refresh requests."""
     if seeded:
-        recompute_ratings()
+        try:
+            recompute_ratings()
+        except Exception as exc:
+            send_admin_alert(
+                "startup_rating_recomputation_failure",
+                "Rating recomputation failed during application startup.",
+                f"Failure type: {type(exc).__name__}",
+            )
+            raise
     if seeded or os.getenv("REFRESH_STATS_ON_STARTUP") == "1":
         refresh_stats()
 
@@ -1123,6 +1140,7 @@ def initialize_app():
     conn.close()
     # end migrations
 
+    prime_admin_alert_recipients()
     seeded = seed_data()
     refresh_startup_stats(seeded)
 

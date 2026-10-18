@@ -317,6 +317,11 @@ def admin_ratings():
             except sqlite3.DatabaseError as exc:
                 admin.logger.exception(
                     "Ratings recomputation failed because the SQLite database is malformed. Restoring the newest valid backup.")
+                admin.send_admin_alert(
+                    "rating_recomputation_database_failure",
+                    "Full rating recomputation failed because of a database error.",
+                    f"Failure type: {type(exc).__name__}",
+                )
                 backup_path = admin.get_latest_valid_backup_path()
                 if backup_path is not None and admin.restore_db_from_backup(backup_path):
                     restored_conn = sqlite3.connect(admin.DB_PATH)

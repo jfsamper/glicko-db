@@ -32,6 +32,7 @@ Glicko DB is a Flask and SQLite application for managing a Go community's player
 - Admin-published news with quick links to players, tournaments, matches, and SGF records
 - Swiss, category Swiss, accelerated Swiss, and McMahon systems
 - BYE and absence handling, backups, restore safeguards, and SQLite migrations
+- Email alerts to active administrators for critical database, rating replay, and backup/restore failures, and for login limits reached repeatedly within 30 days
 - Only active and completed tournaments appear in the public list; directors, operators, and administrators can show drafts. Player profiles list only completed tournaments, and only completed tournament games affect ratings.
 - Handicap games in stones (Go style), with automatic suggestion by category gap and OGS-style rating adjustment
 - Add-to-app installation from supported mobile browsers, except Safari
@@ -94,9 +95,10 @@ The default values are in `config.py`.
 - `APP_PUBLIC_ORIGIN`: public HTTPS origin, such as `https://colombiago.org`, for recovery links without trusting the request Host header. Do not include a path or query string. When unset, recovery emails and tokens are not issued.
 - `LOAD_SAMPLE_DATA=1`: imports `rank-final.xlsx` if present and replaces the current dataset; intended only for local development.
 - `DB_PATH`: SQLite database path, defined in `config.py`.
+- By default, application operational events are emitted as JSON lines to stderr; Werkzeug development-server and HTTP request messages remain plain console text, preserving their usual layout and terminal colors. Host-configured logging handlers retain their own formatting.
 - `AUDIT_RETENTION_DAYS`: number of days to keep audit events; default is `730`.
 - `SCHEDULED_BACKUP_KEEP`: number of scheduled backups to keep; default is `14`, minimum `1`.
-- `MAIL_SERVER`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_USE_TLS`, and `MAIL_FROM`: SMTP settings for password recovery; `PASSWORD_RESET_TTL_SECONDS` controls link expiry and defaults to 3600 seconds.
+- `MAIL_SERVER`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_USE_TLS`, and `MAIL_FROM`: SMTP settings for password recovery and operational alerts to active administrators with email addresses; `PASSWORD_RESET_TTL_SECONDS` controls link expiry and defaults to 3600 seconds. Login alerts are sent when the same IP source or account name reaches the limit more than once in 30 days; alerts have no cooldown.
 - `RECAPTCHA_SITE_KEY` and `RECAPTCHA_SECRET_KEY`: Google reCAPTCHA v3 keys for the member registration form. The secret key is verified on the server and must never be exposed to the browser.
 - `RECAPTCHA_MIN_SCORE`: minimum accepted v3 score for registration; default is `0.5`.
 - `RECAPTCHA_EXPECTED_HOSTNAME`: optional hostname check in the verification response; leave it empty if the key serves multiple configured hostnames.

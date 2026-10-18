@@ -13,9 +13,11 @@ from services.category_service import (
 )
 from services.category_utils import format_glicko_category
 from services.db import get_db
+from services.alert_service import send_admin_alert
 from services.timezone_service import current_timestamp
 from services.glicko2 import Player
 from services.public_visibility import rating_match_condition
+from services.operational_logging import log_operational_event
 
 logger = logging.getLogger(__name__)
 
@@ -275,7 +277,14 @@ def recompute_ratings(conn=None):
         if owns_conn:
             conn.close()
 
-    logger.debug("Ratings recomputed.")
+    log_operational_event(
+        logger,
+        logging.INFO,
+        "ratings.full_recomputation.completed",
+        "Full rating recomputation completed.",
+        player_count=len(rows),
+        match_count=len(matches),
+    )
 
 
 def get_rating_config(conn=None):
@@ -474,6 +483,7 @@ def clear_dirty_date(conn=None):
 
 def update_from_latest_snapshot():
     conn = get_db()
+    dirty_date = None
 
     try:
         # Serialize incremental replays so concurrent imports cannot both
@@ -483,9 +493,21 @@ def update_from_latest_snapshot():
 
         if dirty_date is None:
             conn.commit()
-            logger.debug("Ratings are already up to date.")
+            log_operational_event(
+                logger,
+                logging.DEBUG,
+                "ratings.replay.skipped",
+                "Incremental rating replay skipped because ratings are current.",
+            )
             return
 
+        log_operational_event(
+            logger,
+            logging.INFO,
+            "ratings.replay.started",
+            "Incremental rating replay started.",
+            earliest_dirty_date=dirty_date,
+        )
         _replay_from_dirty_date(conn, dirty_date)
         conn.execute(
             """
@@ -495,9 +517,31 @@ def update_from_latest_snapshot():
             """
         )
         conn.commit()
-        logger.debug("Incremental rating update complete.")
-    except Exception:
+        log_operational_event(
+            logger,
+            logging.INFO,
+            "ratings.replay.completed",
+            "Incremental rating replay completed.",
+            earliest_dirty_date=dirty_date,
+        )
+    except Exception as exc:
+        log_operational_event(
+            logger,
+            logging.ERROR,
+            "ratings.replay.failed",
+            "Incremental rating replay failed.",
+            exc_info=True,
+            earliest_dirty_date=dirty_date,
+        )
         conn.rollback()
+        send_admin_alert(
+            "rating_replay_failure",
+            "Incremental rating replay failed.",
+            (
+                f"Earliest affected date: {dirty_date or 'unknown'}\n"
+                f"Failure type: {type(exc).__name__}"
+            ),
+        )
         raise
     finally:
         conn.close()

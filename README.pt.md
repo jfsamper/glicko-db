@@ -32,6 +32,7 @@ Glicko BD é uma aplicação Flask e SQLite para gerenciar jogadores, ratings, p
 - Notícias publicadas por administradores, com links rápidos para jogadores, torneios, partidas e registros SGF
 - Sistemas suíço, suíço por categoria, suíço acelerado e McMahon
 - Tratamento de BYE e ausências, cópias de segurança, proteções de restauração e migrações SQLite
+- Alertas por e-mail para administradores ativos sobre falhas críticas no banco de dados, na reprodução de ratings e na criação/restauração de cópias, além de limites de login atingidos repetidamente em 30 dias
 - Apenas torneios ativos e concluídos aparecem na lista pública; diretores, operadores e administradores podem exibir rascunhos. Os perfis mostram apenas torneios concluídos, e somente partidas de torneios concluídos afetam os ratings.
 - Partidas com handicap em pedras (estilo Go), com sugestão automática pela diferença de categoria e ajuste de rating no estilo OGS
 - Instalação como aplicativo em navegadores móveis compatíveis, exceto Safari
@@ -94,9 +95,10 @@ Os valores padrão estão em `config.py`.
 - `APP_PUBLIC_ORIGIN`: origem HTTPS pública, por exemplo `https://colombiago.org`, para criar links de recuperação sem confiar no cabeçalho Host. Não inclua caminho nem parâmetros. Sem essa configuração, não são enviados e-mails nem criados tokens de recuperação.
 - `LOAD_SAMPLE_DATA=1`: importa `rank-final.xlsx` se existir e substitui o conjunto de dados atual; serve apenas para desenvolvimento local.
 - `DB_PATH`: local do banco SQLite, definido em `config.py`.
+- Por padrão, os eventos operacionais da aplicação são emitidos como linhas JSON em stderr; as mensagens do servidor de desenvolvimento e das solicitações HTTP do Werkzeug permanecem como texto normal, preservando o formato e as cores do terminal. Formatos definidos pelo servidor hospedeiro são preservados.
 - `AUDIT_RETENTION_DAYS`: número de dias para manter eventos de auditoria; o padrão é `730`.
 - `SCHEDULED_BACKUP_KEEP`: número de backups agendados a manter; o padrão é `14`, com mínimo `1`.
-- `MAIL_SERVER`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_USE_TLS` e `MAIL_FROM`: configurações SMTP para recuperação de senha; `PASSWORD_RESET_TTL_SECONDS` controla a expiração do link e usa 3600 segundos por padrão.
+- `MAIL_SERVER`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_USE_TLS` e `MAIL_FROM`: configurações SMTP para recuperação de senha e alertas operacionais enviados a administradores ativos com e-mail; `PASSWORD_RESET_TTL_SECONDS` controla a expiração do link e usa 3600 segundos por padrão. Alertas de login são enviados quando a mesma origem IP ou conta atinge o limite mais de uma vez em 30 dias; não há período de espera entre alertas.
 - `RECAPTCHA_SITE_KEY` e `RECAPTCHA_SECRET_KEY`: chaves do Google reCAPTCHA v3 para o formulário de registro de membros. A chave secreta é verificada no servidor e nunca deve ser exposta ao navegador.
 - `RECAPTCHA_MIN_SCORE`: pontuação v3 mínima aceita para o registro; o padrão é `0.5`.
 - `RECAPTCHA_EXPECTED_HOSTNAME`: verificação opcional do hostname na resposta; deixe vazio se a chave servir para vários hostnames configurados.

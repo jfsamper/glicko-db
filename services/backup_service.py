@@ -7,6 +7,8 @@ import sqlite3
 import uuid
 from pathlib import Path
 
+from services.alert_service import send_admin_alert
+
 logger = logging.getLogger(__name__)
 BACKUP_NAME_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*\.db$")
 SCHEDULED_BACKUP_PATTERN = re.compile(
@@ -317,11 +319,16 @@ def restore_db_from_backup(path, db_path):
     try:
         _prepare_staged_database(backup_path, staging_path)
         os.replace(staging_path, active_db_path)
-    except Exception:
+    except Exception as exc:
         logger.exception(
             "Backup restore failed; the active database was left unchanged: %s", path
         )
         staging_path.unlink(missing_ok=True)
+        send_admin_alert(
+            "backup_restore_failure",
+            "A database backup could not be restored; the active database was left unchanged.",
+            f"Failure type: {type(exc).__name__}",
+        )
         return False
 
     return True
