@@ -4,7 +4,7 @@ import os
 import wsgiref.handlers
 
 import app as app_module
-import cgi_bridge
+from scripts.dev_only import cgi_bridge
 
 
 def test_selector_env_is_loaded_without_overriding_real_environment(tmp_path):
@@ -49,6 +49,8 @@ def test_app_root_maps_to_slash():
 
 
 def test_initialization_runs_once_per_deployed_app(tmp_path, monkeypatch):
+    (tmp_path / "app.py").touch()
+    monkeypatch.setattr(cgi_bridge, "PROJECT_ROOT", str(tmp_path))
     monkeypatch.setattr(cgi_bridge, "INIT_STAMP", str(tmp_path / "temp" / ".cgi-initialized"))
     calls = []
 
@@ -81,6 +83,8 @@ def test_cgi_request_is_served_by_the_real_app():
 
 
 def test_run_wires_environment_initialization_and_app(tmp_path, monkeypatch):
+    (tmp_path / "app.py").touch()
+    monkeypatch.setattr(cgi_bridge, "PROJECT_ROOT", str(tmp_path))
     monkeypatch.setattr(cgi_bridge, "INIT_STAMP", str(tmp_path / ".cgi-initialized"))
     monkeypatch.setattr(cgi_bridge, "load_selector_env", lambda environ: None)
     monkeypatch.setitem(os.environ, "REQUEST_URI", "/glicko/rankings?lang=en")

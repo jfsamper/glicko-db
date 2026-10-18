@@ -1,4 +1,4 @@
-# BEGIN glicko CGI fallback (temporary: remove when Passenger works again)
+# BEGIN emergency glicko CGI fallback (do not use while Passenger works)
 Options +ExecCGI -Indexes
 AddHandler cgi-script .cgi
 DirectoryIndex disabled

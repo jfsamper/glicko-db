@@ -191,16 +191,25 @@ the deployed entry point still matches the repository; Python syntax checks alon
 do not detect this recursion. Use the interpreter configured by cPanel rather than
 adding a Windows virtualenv path on Linux.
 
-If Apache does not load `mod_passenger`, any `Passenger*` directive in `.htaccess`
-causes a 500 error that the parent site may render as a Joomla 404. As a temporary
-workaround that keeps the same URL, upload `glicko.cgi` and `cgi_bridge.py` to the app
-root with LF line endings, give `glicko.cgi` permission 755, and point its first line to the cPanel
-virtualenv Python. Stop the app in the Python selector so cPanel removes the Passenger
-block, then append the contents of `cgi_fallback.htaccess` to the app's `.htaccess`.
-The bridge reads the environment variables configured in the selector, runs migrations
-once per deployed `app.py`, and serves each request in a new process, so it is slower
-than Passenger. When Passenger works again, remove that block and `glicko.cgi`, then
-start the app again.
+The deployed application currently uses Passenger. The hosting provider restored
+`mod_passenger`; do not use the CGI fallback while Passenger is working.
+
+#### Emergency CGI fallback
+
+Only if the provider confirms Apache has stopped loading `mod_passenger` and a routing
+probe confirms Passenger is not handling the app, use the temporary CGI bridge in
+`scripts/dev_only/`. First back up the database and the app's `.htaccess`. Copy
+`scripts/dev_only/glicko.cgi` and `scripts/dev_only/cgi_bridge.py` to the server app
+root, preserve LF line endings, point the `glicko.cgi` shebang to the cPanel virtualenv
+Python, and set its permissions to 755. Stop the app in the Python selector, remove
+its Passenger directives from `.htaccess`, and add the rules in
+`scripts/dev_only/cgi_fallback.htaccess`. Verify the home page, an internal route, and
+static files; also confirm private files return 404. CGI starts Python for every
+request and is slower than Passenger.
+
+After Passenger is restored, remove the CGI rules and the two copied files from the
+server, start the app in the selector again, and verify the public URL. The files in
+`scripts/dev_only/` are recovery material and must not be deployed with the normal app.
 
 The tests cover ratings and charts, player filters, language support, backups, tournament migrations, pairing, standings, OpenGotha compatibility, result moderation, and public tournament pages.
 

@@ -1,7 +1,6 @@
-"""Temporary CGI fallback for hosts where Apache's mod_passenger is unavailable.
+"""Emergency CGI fallback for hosts where Apache's mod_passenger is unavailable.
 
-glicko.cgi calls run(). Requests reach it through the CGI rewrite rules documented
-in README.md, while the public URL stays /glicko.
+Copy this file and glicko.cgi to the app root only during a confirmed outage.
 """
 import json
 import os

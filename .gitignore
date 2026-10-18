@@ -72,6 +72,9 @@ scripts/dev_only/*
 !scripts/dev_only/diagnose_hosting.py
 !scripts/dev_only/passenger_probe.py
 !scripts/dev_only/check_passenger_startup.py
+!scripts/dev_only/cgi_bridge.py
+!scripts/dev_only/glicko.cgi
+!scripts/dev_only/cgi_fallback.htaccess
 
 temp/
 tmp/

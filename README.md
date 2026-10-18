@@ -192,16 +192,27 @@ comprueba que el archivo desplegado coincida con el repositorio; una prueba de s
 no detecta esta recursión. Usa el intérprete configurado en cPanel en lugar de
 añadir una ruta de entorno virtual de Windows en Linux.
 
-Si Apache no carga `mod_passenger`, cualquier directiva `Passenger*` en `.htaccess`
-provoca un error 500 que el sitio padre puede mostrar como un 404 de Joomla. Como
-solución temporal con la misma URL, sube `glicko.cgi` y `cgi_bridge.py` a la raíz de
-la aplicación (con finales de línea LF), da permisos 755 a `glicko.cgi` y ajusta su primera línea al Python del
-entorno virtual de cPanel. Detén la aplicación en el selector de Python para que cPanel
-retire el bloque de Passenger y añade el contenido de `cgi_fallback.htaccess` al
-`.htaccess` de la aplicación. El puente lee las variables de entorno configuradas en el
-selector, ejecuta las migraciones una vez por cada `app.py` desplegado y sirve cada
-petición en un proceso nuevo, por lo que es más lento que Passenger. Cuando Passenger
-vuelva a funcionar, elimina ese bloque y `glicko.cgi`, e inicia de nuevo la aplicación.
+La aplicación desplegada actualmente usa Passenger. El proveedor restauró el módulo
+`mod_passenger`; no uses el mecanismo CGI mientras Passenger funcione.
+
+#### Respaldo CGI de emergencia
+
+Solo si el proveedor confirma que Apache dejó de cargar `mod_passenger` y una prueba
+de ruta confirma que Passenger no procesa la aplicación, se puede usar temporalmente
+el puente CGI incluido en `scripts/dev_only/`. Primero respalda la base de datos y
+el `.htaccess` de la aplicación. Copia `scripts/dev_only/glicko.cgi` y
+`scripts/dev_only/cgi_bridge.py` a la raíz de la aplicación en el servidor, conserva
+finales de línea LF, ajusta el shebang de `glicko.cgi` al Python del entorno virtual
+de cPanel y asígnale permisos 755. Detén la aplicación en el selector de Python,
+retira sus directivas Passenger del `.htaccess` y añade las reglas de
+`scripts/dev_only/cgi_fallback.htaccess`. Comprueba la página principal, una ruta
+interna y archivos estáticos; confirma también que los archivos privados devuelvan
+404. CGI inicia Python en cada petición y es más lento que Passenger.
+
+Al restaurarse Passenger, elimina las reglas CGI y los dos archivos copiados del
+servidor, vuelve a iniciar la aplicación en el selector y verifica la URL pública.
+Los archivos en `scripts/dev_only/` son material de recuperación y no deben
+desplegarse con la aplicación normal.
 
 Las pruebas cubren ratings y gráficos, filtros de jugadores, soporte de idiomas, respaldos, migraciones de torneos, emparejamientos, clasificación, compatibilidad con OpenGotha, moderación de resultados y páginas públicas de torneos.
 
