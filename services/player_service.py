@@ -515,15 +515,6 @@ def load_player(
 
     badges = build_player_badges(
         player["id"], translations=translations, conn=conn)
-    rank_badge = get_player_rank_badge(conn, player["id"])
-    if rank_badge is not None:
-        badges.append({
-            "label": f"#{rank_badge}",
-            "value": None,
-            "period": [translations["period_current"]],
-            "is_rank_badge": True,
-            "scope_label": translations["ranking_global_scope"],
-        })
     badges.extend(get_player_scope_rank_badges(
         conn, player, translations, lang=lang))
 

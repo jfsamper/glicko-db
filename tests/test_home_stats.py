@@ -668,7 +668,7 @@ def test_get_player_rank_badge_returns_rank_for_top_five_with_games():
     conn.close()
 
 
-def test_load_player_computes_rank_badge_before_connection_closes(monkeypatch):
+def test_load_player_omits_global_rank_and_keeps_scoped_badges(monkeypatch):
     conn = sqlite3.connect(":memory:")
     conn.row_factory = sqlite3.Row
 
@@ -731,6 +731,13 @@ def test_load_player_computes_rank_badge_before_connection_closes(monkeypatch):
     data = load_player(1)
 
     assert data is not None
-    assert any(badge["label"] == "#1" for badge in data["badges"])
+    assert all(
+        badge.get("scope_label") != "Global"
+        for badge in data["badges"]
+    )
+    assert any(
+        badge.get("is_rank_badge") and badge.get("scope_label")
+        for badge in data["badges"]
+    )
 
     conn.close()
