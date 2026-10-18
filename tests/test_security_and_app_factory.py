@@ -296,7 +296,7 @@ def test_tournament_player_management_can_create_and_enroll_player(tmp_path, mon
     assert response.status_code == 200
     assert b"Create pending player" in response.data
     option_match = re.search(
-        rb'<option value="([0-9]+)">4 dan</option>',
+        rb'<option\b[^>]*value="([0-9]+)"[^>]*>\s*4 dan\s*</option>',
         response.data,
     )
     assert option_match is not None
@@ -363,7 +363,7 @@ def test_tournament_player_management_can_create_and_enroll_player(tmp_path, mon
         follow_redirects=True,
     )
     assert response.status_code == 200
-    assert b"similar name" in response.data
+    assert b"Did you mean Lovelace, Ada?" in response.data
 
     conn = sqlite3.connect(db_path)
     remaining_pending = conn.execute(
