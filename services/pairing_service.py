@@ -650,7 +650,9 @@ def acceleration_category_settings(scheme=None):
 
 def validate_acceleration_scheme(scheme):
     """Validate and return a stored Accelerated Swiss band scheme."""
-    _acceleration_bands(scheme)
+    bands = _acceleration_bands(scheme)
+    if any(not bonus.is_integer() for _, bonus in bands):
+        raise ValueError("Acceleration bonuses must be whole numbers")
     return scheme.strip()
 
 
@@ -670,13 +672,14 @@ def acceleration_for_rank(rank, player_count, scheme=None, player_rank=None):
         category = sum(int(player_rank) < floor for floor in floors)
         if category_count <= 1:
             return 0.0
-        return max(0.0, 1.0 - category / (category_count - 1))
+        bonus = 1.0 - category / (category_count - 1)
+        return float(int(bonus + 0.5))
 
     covered = 0
     for fraction, bonus in _acceleration_bands(scheme):
         covered += max(1, round(player_count * fraction))
         if rank <= covered:
-            return bonus
+            return float(int(bonus + 0.5))
     return 0.0
 
 

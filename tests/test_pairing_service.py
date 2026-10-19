@@ -147,13 +147,23 @@ def test_acceleration_scheme_rejects_incomplete_bands():
         validate_acceleration_scheme("50:1,25:0.5")
 
 
+def test_acceleration_bonuses_are_whole_numbers():
+    with pytest.raises(ValueError, match="whole numbers"):
+        validate_acceleration_scheme("25:1,25:0.5,50:0")
+
+    assert [
+        acceleration_for_rank(rank, 8, scheme="25:1,25:0.5,50:0")
+        for rank in (1, 3, 5)
+    ] == [1.0, 1.0, 0.0]
+
+
 def test_acceleration_categories_round_trip_and_apply_rank_floors():
     scheme = serialize_acceleration_categories(3, (0, -5))
 
     assert scheme == "categories:3;floors:0,-5"
     assert parse_acceleration_categories(scheme) == (3, (0, -5))
     assert acceleration_for_rank(1, 8, scheme=scheme, player_rank=1) == 1.0
-    assert acceleration_for_rank(1, 8, scheme=scheme, player_rank=-2) == 0.5
+    assert acceleration_for_rank(1, 8, scheme=scheme, player_rank=-2) == 1.0
     assert acceleration_for_rank(1, 8, scheme=scheme, player_rank=-6) == 0.0
 
 

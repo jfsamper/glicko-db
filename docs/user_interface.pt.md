@@ -236,7 +236,7 @@ Entre em `/admin/login` com uma conta administrativa. A navegação disponível 
 - **Sistema de emparelhamento**:
   - **Suíço padrão (`swiss`)**: emparelha participantes com pontuações próximas, evitando repetição de adversários e equilibrando as cores branca e preta.
   - **Suíço por categoria (`swiss_cat`)**: restringe emparelhamentos estritamente dentro da mesma categoria nas rodadas iniciais indicadas.
-  - **Suíço acelerado (`accelerated_swiss`)**: divide os participantes em faixas de aceleração (esquema de 3 faixas Go ou limites de categoria personalizados) nas rodadas iniciais para acelerar a convergência.
+  - **Suíço acelerado (`accelerated_swiss`)**: divide os participantes em faixas de aceleração (esquema de 3 faixas Go ou limites de categoria personalizados) nas rodadas iniciais para acelerar a convergência. As bonificações usam pontos inteiros; valores decimais personalizados não são válidos.
   - **McMahon (`mcmahon`)**: atribui pontuação inicial (MMS) com base na graduação a partir da Barra McMahon (`mm_bar`), Piso McMahon (`mm_floor`) e Zero McMahon (`mm_zero`).
 - **Pontuação de folgas (BYE) e ausências**:
   - *Pontos por descanso (BYE)*: pontos atribuídos ao participante sem par quando o número for ímpar (padrão: 1.0 ponto).

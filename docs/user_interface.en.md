@@ -236,7 +236,7 @@ Sign in at `/admin/login` with an administrative account. Available navigation a
 - **Pairing system**:
   - **Standard Swiss (`swiss`)**: pairs players with identical or close scores, avoiding rematches and alternating colors.
   - **Category Swiss (`swiss_cat`)**: restricts pairings strictly within rating categories for a specified initial number of rounds.
-  - **Accelerated Swiss (`accelerated_swiss`)**: divides participants into acceleration bands (Go 3-band scheme or custom category limits) during initial rounds to speed up convergence.
+  - **Accelerated Swiss (`accelerated_swiss`)**: divides participants into acceleration bands (Go 3-band scheme or custom category limits) during initial rounds to speed up convergence. Bonuses use whole points; custom decimal values are not valid.
   - **McMahon (`mcmahon`)**: assigns starting McMahon scores (MMS) based on rating using the McMahon Bar (`mm_bar`), Floor (`mm_floor`), and Zero (`mm_zero`).
 - **BYE and absence points**:
   - *BYE points*: points awarded to an odd unassigned player (default: 1.0 point).

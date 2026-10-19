@@ -236,7 +236,7 @@ Inicia sesión en `/admin/login` con una cuenta con rol administrativo. El menú
 - **Sistema de emparejamiento**:
   - **Suizo estándar (`swiss`)**: empareja jugadores con puntuaciones similares evitando repeticiones de rivales y equilibrando colores.
   - **Suizo por categoría (`swiss_cat`)**: restringe los emparejamientos estrictamente dentro de la misma categoría en las rondas iniciales configuradas.
-  - **Suizo acelerado (`accelerated_swiss`)**: divide el torneo en bandas de aceleración según el esquema seleccionado (3 bandas Go o límites de categoría personalizados) durante las rondas indicadas.
+  - **Suizo acelerado (`accelerated_swiss`)**: divide el torneo en bandas de aceleración según el esquema seleccionado (3 bandas Go o límites de categoría personalizados) durante las rondas indicadas. Las bonificaciones se expresan en puntos enteros; los valores personalizados con decimales no son válidos.
   - **McMahon (`mcmahon`)**: asigna puntos iniciales (MMS) según el rango de cada jugador a partir de la Barra McMahon (`mm_bar`), el Piso McMahon (`mm_floor`) y el Cero McMahon (`mm_zero`).
 - **Puntuación de descansos y ausencias**:
   - *Puntos por descanso (BYE)*: puntos otorgados al jugador libre cuando el número de participantes es impar (por defecto 1.0 punto).
