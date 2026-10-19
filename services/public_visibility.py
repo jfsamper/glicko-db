@@ -1,15 +1,16 @@
-"""Visibility rules that keep draft tournaments and their games out of public views."""
+"""Visibility rules that keep unpublished tournament games out of public views."""
 from services.auth_service import user_has_permission
 
 TOURNAMENT_TABLES = ("tournaments", "tournament_rounds", "tournament_pairings")
 
-# Correlated subquery: a game is hidden when its pairing belongs to a draft tournament.
-DRAFT_GAME_EXCLUSION = """NOT EXISTS (
+# Correlated subquery: a game is hidden when its pairing belongs to an unpublished tournament.
+UNPUBLISHED_GAME_EXCLUSION = """NOT EXISTS (
     SELECT 1
     FROM tournament_pairings p
     JOIN tournament_rounds r ON r.id = p.round_id
     JOIN tournaments t ON t.id = r.tournament_id
-    WHERE p.id = {alias}.tournament_pairing_id AND t.status = 'draft'
+    WHERE p.id = {alias}.tournament_pairing_id
+      AND t.status IN ('draft', 'canceled')
 )"""
 
 
@@ -29,14 +30,14 @@ def _has_tournament_schema(conn):
 
 
 def public_match_condition(conn, alias="m"):
-    """SQL condition for a ``matches`` alias that hides games from draft tournaments.
+    """SQL condition for a ``matches`` alias that hides games from unpublished tournaments.
 
-    Databases without the tournament schema cannot hold draft games, so the condition
-    is a tautology there.
+    Databases without the tournament schema cannot hold unpublished tournament
+    games, so the condition is a tautology there.
     """
     if not _has_tournament_schema(conn):
         return "1 = 1"
-    return DRAFT_GAME_EXCLUSION.format(alias=alias)
+    return UNPUBLISHED_GAME_EXCLUSION.format(alias=alias)
 
 
 def rating_match_condition(conn, alias="m"):
@@ -61,11 +62,11 @@ def can_view_draft_tournaments():
     return user_has_permission("operator")
 
 
-def draft_only_sgf_filenames(conn):
-    """SGF files linked only to games of draft tournaments, which public pages must hide."""
+def unpublished_tournament_sgf_filenames(conn):
+    """SGF files linked only to unpublished tournament games, hidden from public pages."""
     if not _has_tournament_schema(conn):
         return set()
-    draft_linked = {
+    unpublished_linked = {
         row[0]
         for row in conn.execute(
             """
@@ -74,7 +75,7 @@ def draft_only_sgf_filenames(conn):
             JOIN tournament_pairings p ON p.id = m.tournament_pairing_id
             JOIN tournament_rounds r ON r.id = p.round_id
             JOIN tournaments t ON t.id = r.tournament_id
-            WHERE t.status = 'draft' AND m.sgf_filename IS NOT NULL
+            WHERE t.status IN ('draft', 'canceled') AND m.sgf_filename IS NOT NULL
             """
         ).fetchall()
     }
@@ -88,4 +89,4 @@ def draft_only_sgf_filenames(conn):
             """
         ).fetchall()
     }
-    return draft_linked - public_linked
+    return unpublished_linked - public_linked

@@ -48,8 +48,9 @@ La mayoría de las páginas acepta el parámetro opcional `lang=es`, `lang=en` o
 Comportamiento actual:
 
 - `/tournaments` muestra torneos activos y completados. Los directores, operadores y administradores también pueden incluir borradores con `show_drafts=1`; los torneos cancelados no aparecen en la lista.
-- Las páginas públicas de partidas ocultan partidas vinculadas a torneos en borrador. El historial de torneos de los perfiles de jugadores muestra únicamente torneos completados.
+- Las páginas públicas de partidas y los perfiles ocultan partidas vinculadas a torneos en borrador o cancelados. El historial de torneos de los perfiles de jugadores muestra únicamente torneos completados.
 - El recálculo de ratings incluye partidas independientes y partidas vinculadas a torneos completados. Las partidas de torneos activos, en borrador o cancelados no afectan a los ratings.
+- Cambiar el estado de un torneo que agrega o quita partidas completadas marca la fecha más antigua afectada, sin recalcular los ratings inmediatamente. Usa el recálculo completo o la actualización incremental en `/admin/ratings` para aplicar el cambio.
 
 Estas reglas se aplican a partidas vinculadas mediante el emparejamiento del torneo; las partidas independientes siguen contando para los ratings. Consulta [FUTURE_FEATURES.md](../FUTURE_FEATURES.md) para las demás propuestas pendientes.
 

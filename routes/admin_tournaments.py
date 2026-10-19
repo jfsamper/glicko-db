@@ -20,7 +20,7 @@ from services.idempotency_service import (
     claim_command,
     complete_command,
 )
-from services.tournament_status import refresh_ratings_for_tournament_status
+from services.tournament_status import mark_ratings_dirty_for_tournament_status
 
 MAX_TOURNAMENTS_PER_DELETE = 100
 
@@ -265,8 +265,8 @@ def admin_update_tournament_status(tournament_id):
         if not updated:
             flash(TRANSLATIONS[lang]["error"])
         else:
-            refresh_ratings_for_tournament_status(
-                conn, current["status"] if current else None, status
+            mark_ratings_dirty_for_tournament_status(
+                conn, tournament_id, current["status"] if current else None, status
             )
             conn.commit()
             admin.log_admin_action(

@@ -380,6 +380,7 @@ Permite cargar datos históricos o torneos masivos:
 - **Recálculo de ratings**:
   - *Recálculo completo*: procesa todo el historial cronológicamente por fecha, ronda y mesa.
   - *Actualización incremental*: recalcula únicamente a partir de la fecha modificada (*dirty date*).
+  - Los cambios de estado que agregan o quitan partidas de torneos completados marcan la fecha más antigua afectada; los ratings se actualizan cuando se ejecuta una de estas acciones.
 
 <a href="screenshots/admin-ratings.png"><img src="screenshots/admin-ratings.png" alt="Configuración administrativa de ratings" width="560" /></a>
 

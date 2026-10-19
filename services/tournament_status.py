@@ -9,26 +9,47 @@ VALID_TOURNAMENT_RESULTS = {"1-0", "0-1", "1/2-1/2", "!0-1", "1-!0", "!0-0"}
 PLAYED_GAME_RESULTS = {"1-0", "0-1", "1/2-1/2"}
 
 
-def refresh_ratings_for_tournament_status(conn, previous_status, status):
-    if (previous_status == "completed") != (status == "completed"):
+def mark_ratings_dirty_for_tournament_status(
+    conn, tournament_id, previous_status, status
+):
+    changes_rating_history = (
+        (previous_status == "completed") != (status == "completed")
+        or (
+            previous_status == "active"
+            and status in {"draft", "canceled"}
+        )
+    )
+    if changes_rating_history:
         tables = {
             row[0]
             for row in conn.execute(
                 """
                 SELECT name FROM sqlite_master
                 WHERE type = 'table'
-                  AND name IN ('players', 'matches', 'rating_snapshots',
-                               'rating_config', 'rating_state')
+                  AND name IN ('matches', 'rating_state',
+                               'tournament_pairings', 'tournament_rounds')
                 """
             ).fetchall()
         }
         if tables != {
-            "players", "matches", "rating_snapshots", "rating_config", "rating_state"
+            "matches", "rating_state", "tournament_pairings", "tournament_rounds"
         }:
             return
-        from services.rating_service import recompute_ratings
 
-        recompute_ratings(conn=conn)
+        earliest_match_date = conn.execute(
+            """
+            SELECT MIN(m.match_date)
+            FROM matches m
+            JOIN tournament_pairings p ON p.id = m.tournament_pairing_id
+            JOIN tournament_rounds r ON r.id = p.round_id
+            WHERE r.tournament_id = ?
+            """,
+            (tournament_id,),
+        ).fetchone()[0]
+        if earliest_match_date is not None:
+            from services.rating_service import mark_dirty
+
+            mark_dirty(earliest_match_date, conn=conn)
 
 
 def _round_is_complete(conn, round_id):
@@ -63,7 +84,9 @@ def _refresh_tournament_completion_state(conn, tournament_id, round_id=None):
                 "UPDATE tournaments SET status = 'draft' WHERE id = ?", (
                     tournament_id,)
             )
-            refresh_ratings_for_tournament_status(conn, previous_status, "draft")
+            mark_ratings_dirty_for_tournament_status(
+                conn, tournament_id, previous_status, "draft"
+            )
             commit(conn)
             return
         round_id = row[0]
@@ -96,7 +119,9 @@ def _refresh_tournament_completion_state(conn, tournament_id, round_id=None):
             "UPDATE tournaments SET status = 'draft' WHERE id = ?", (
                 tournament_id,)
         )
-        refresh_ratings_for_tournament_status(conn, previous_status, "draft")
+        mark_ratings_dirty_for_tournament_status(
+            conn, tournament_id, previous_status, "draft"
+        )
         commit(conn)
         return
     completed_rounds = sum(
@@ -114,7 +139,7 @@ def _refresh_tournament_completion_state(conn, tournament_id, round_id=None):
         "UPDATE tournaments SET status = ? WHERE id = ?",
         (status, tournament_id),
     )
-    refresh_ratings_for_tournament_status(
-        conn, tournament["status"], status
+    mark_ratings_dirty_for_tournament_status(
+        conn, tournament_id, tournament["status"], status
     )
     commit(conn)

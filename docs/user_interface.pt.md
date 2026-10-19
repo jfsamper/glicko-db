@@ -379,6 +379,7 @@ Importe planilhas históricas, partidas ou arquivos do OpenGotha:
 - **Recálculo de ratings**:
   - *Recálculo completo*: reprocessa todo o histórico cronologicamente por data e rodada.
   - *Atualização incremental*: recalcula instantâneos a partir da data modificada mais antiga (*dirty date*).
+  - Alterações de status que adicionam ou removem partidas de torneios concluídos marcam a data afetada mais antiga; os ratings são atualizados quando uma dessas ações é executada.
 
 <a href="screenshots/admin-ratings.png"><img src="screenshots/admin-ratings.png" alt="Configuração administrativa de ratings" width="560" /></a>
 

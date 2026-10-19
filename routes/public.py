@@ -58,7 +58,7 @@ from services.player_service import (
 from services.tournament_service import TOURNAMENT_STATUSES
 from services.public_visibility import (
     can_view_draft_tournaments,
-    draft_only_sgf_filenames,
+    unpublished_tournament_sgf_filenames,
     public_match_condition,
 )
 from services.tournament_standings import get_tournament_standings
@@ -227,8 +227,8 @@ def show_drafts_requested():
 
 
 def _hidden_sgf_filenames(conn):
-    """SGF files that only support draft games; public pages never show them."""
-    return draft_only_sgf_filenames(conn)
+    """SGF files that only support unpublished tournament games."""
+    return unpublished_tournament_sgf_filenames(conn)
 
 
 @public_bp.route("/help")

@@ -48,8 +48,9 @@ Most pages accept an optional `lang=es`, `lang=en`, or `lang=pt` query parameter
 Current behavior:
 
 - `/tournaments` lists active and completed tournaments. Directors, operators, and administrators can also include drafts with `show_drafts=1`; canceled tournaments are excluded from the list.
-- Public match pages hide matches linked to draft tournaments. Player tournament histories include completed tournaments only.
+- Public match pages and profiles hide matches linked to draft or canceled tournaments. Player tournament histories include completed tournaments only.
 - Rating recalculation includes standalone matches and matches linked to completed tournaments. Matches from active, draft, or canceled tournaments do not affect ratings.
+- Changing a tournament status so completed games are added or removed marks the earliest affected date without recalculating ratings immediately. Use full recomputation or incremental replay in `/admin/ratings` to apply the change.
 
 These rules apply to games linked through a tournament pairing; standalone matches continue to count toward ratings. See [FUTURE_FEATURES.md](../FUTURE_FEATURES.md) for other remaining proposals.
 

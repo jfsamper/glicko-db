@@ -1,6 +1,7 @@
 import sqlite3
 
 import conftest
+import pytest
 import services.rating_service as rating_service
 from services.player_service import load_player
 from services.tournament_status import _refresh_tournament_completion_state
@@ -99,8 +100,9 @@ def test_player_profiles_list_only_completed_tournaments(isolate_test_database):
     ]
 
 
-def test_changing_completed_tournament_status_recomputes_ratings(
-    client, isolate_test_database
+@pytest.mark.parametrize("status", ["draft", "canceled"])
+def test_changing_completed_tournament_status_marks_dirty_until_manual_recalculation(
+    client, isolate_test_database, status
 ):
     db_path = isolate_test_database
     rating_service.recompute_ratings()
@@ -121,14 +123,31 @@ def test_changing_completed_tournament_status_recomputes_ratings(
     conftest.set_admin_session(client, db_path)
     response = client.post(
         f"/admin/tournaments/{tournament_id}/status?lang=en",
-        data={"status": "active"},
+        data={"status": status},
     )
 
     assert response.status_code == 302
+    assert _player_rating(db_path) != baseline_rating
+    assert rating_service.get_dirty_date() == "2026-08-01"
+
+    profile = load_player(1, lang="en")
+    assert all(
+        match["event"] != "Status change event"
+        for match in profile["all_matches"]
+    )
+    assert "Status change event" not in client.get(
+        "/matches?lang=en"
+    ).get_data(as_text=True)
+
+    response = client.post(
+        "/admin/ratings?lang=en", data={"action": "recalculate"}
+    )
+    assert response.status_code == 302
     assert _player_rating(db_path) == baseline_rating
+    assert rating_service.get_dirty_date() is None
 
 
-def test_automatic_completion_recomputes_ratings(isolate_test_database):
+def test_automatic_completion_marks_ratings_dirty_without_recomputing(isolate_test_database):
     db_path = isolate_test_database
     rating_service.recompute_ratings()
     baseline_rating = _player_rating(db_path)
@@ -147,4 +166,63 @@ def test_automatic_completion_recomputes_ratings(isolate_test_database):
     finally:
         conn.close()
 
+    assert _player_rating(db_path) == baseline_rating
+    assert rating_service.get_dirty_date() == "2026-08-01"
+    rating_service.update_from_latest_snapshot()
     assert _player_rating(db_path) != baseline_rating
+
+
+def test_incremental_replay_removes_ratings_for_canceled_games(client, isolate_test_database):
+    db_path = isolate_test_database
+    rating_service.recompute_ratings()
+    baseline_rating = _player_rating(db_path)
+
+    conn = sqlite3.connect(db_path)
+    try:
+        tournament_id = _add_tournament(
+            conn, "Incremental status event", "completed", include_game=True
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+    rating_service.recompute_ratings()
+    assert _player_rating(db_path) != baseline_rating
+
+    conftest.set_admin_session(client, db_path)
+    response = client.post(
+        f"/admin/tournaments/{tournament_id}/status?lang=en",
+        data={"status": "canceled"},
+    )
+    assert response.status_code == 302
+    assert rating_service.get_dirty_date() == "2026-08-01"
+
+    response = client.post("/admin/ratings?lang=en", data={"action": "update"})
+    assert response.status_code == 302
+    assert _player_rating(db_path) == baseline_rating
+    assert rating_service.get_dirty_date() is None
+
+
+def test_canceling_materialized_active_tournament_marks_dirty(client, isolate_test_database):
+    db_path = isolate_test_database
+    rating_service.recompute_ratings()
+    baseline_rating = _player_rating(db_path)
+
+    conn = sqlite3.connect(db_path)
+    try:
+        tournament_id = _add_tournament(
+            conn, "Active status event", "active", include_game=True
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+    conftest.set_admin_session(client, db_path)
+    response = client.post(
+        f"/admin/tournaments/{tournament_id}/status?lang=en",
+        data={"status": "canceled"},
+    )
+
+    assert response.status_code == 302
+    assert _player_rating(db_path) == baseline_rating
+    assert rating_service.get_dirty_date() == "2026-08-01"

@@ -28,6 +28,7 @@ Glicko DB is a Flask and SQLite application for managing a Go community's player
 - Backups, protected restores, and SQLite migrations
 - Country, regional, age, and female-player rankings
 - Handicap games, BYEs, and absences
+- Draft and canceled tournament games are excluded from public profiles and ratings
 
 ## User help
 

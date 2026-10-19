@@ -4,7 +4,8 @@ This roadmap lists proposed work that has not yet been implemented. Priorities m
 
 ## Product and operations
 
-- Support non-rated tournaments, including PairGo.
+- Support non-rated tournaments - show in profiles and matches but do not affect ratings.
+- Support PairGo tournaments.
 - Add country- and region-scoped permissions.
 - Consider a tournament preflight and approval dry run.
 - Add named reporting seasons if calendar periods are insufficient.

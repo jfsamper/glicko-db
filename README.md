@@ -28,6 +28,7 @@ Glicko BD es una aplicación Flask y SQLite para administrar jugadores, ratings,
 - Copias de seguridad, restauración protegida y migraciones SQLite
 - Clasificaciones por país, región, edad y categoría femenina
 - Torneos con hándicap, descansos y ausencias
+- Las partidas de torneos en borrador o cancelados se excluyen de los perfiles públicos y los ratings
 
 ## Ayuda para usuarios
 

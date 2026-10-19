@@ -380,6 +380,7 @@ Import historical workbooks, match spreadsheets, or OpenGotha files:
 - **Rating recalculation**:
   - *Full recompute*: rebuilds entire rating history from scratch ordered by date and round.
   - *Incremental replay*: recalculates snapshots starting from the earliest modified date (*dirty date*).
+  - Status changes that add or remove completed tournament games mark the earliest affected date; ratings update when one of these actions is run.
 
 <a href="screenshots/admin-ratings.png"><img src="screenshots/admin-ratings.png" alt="Administrative rating configuration" width="560" /></a>
 

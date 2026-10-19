@@ -270,9 +270,9 @@ def recompute_ratings(conn=None):
                  states[match["black_player_id"]]["rd"], states[match["black_player_id"]]["volatility"]),
             )
 
+        clear_dirty_date(conn=conn)
         if owns_conn:
             conn.commit()
-        clear_dirty_date(conn=conn)
     finally:
         if owns_conn:
             conn.close()
@@ -574,7 +574,17 @@ def _replay_from_dirty_date(conn, dirty_date):
         (dirty_date,),
     ).fetchall()
 
-    affected_players = set()
+    affected_players = {
+        row["player_id"]
+        for row in conn.execute(
+            """
+            SELECT DISTINCT player_id
+            FROM rating_snapshots
+            WHERE snapshot_date >= ?
+            """,
+            (dirty_date,),
+        ).fetchall()
+    }
     for match in matches:
         affected_players.add(match["white_player_id"])
         affected_players.add(match["black_player_id"])

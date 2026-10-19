@@ -48,8 +48,9 @@ A maioria das páginas aceita o parâmetro opcional `lang=es`, `lang=en` ou `lan
 Comportamento atual:
 
 - `/tournaments` lista torneios ativos e concluídos. Diretores, operadores e administradores também podem incluir rascunhos com `show_drafts=1`; torneios cancelados são excluídos da lista.
-- As páginas públicas de partidas ocultam partidas vinculadas a torneios em rascunho. O histórico de torneios nos perfis de jogadores inclui apenas torneios concluídos.
+- As páginas públicas de partidas e os perfis ocultam partidas vinculadas a torneios em rascunho ou cancelados. O histórico de torneios nos perfis de jogadores inclui apenas torneios concluídos.
 - O recálculo de ratings inclui partidas independentes e partidas vinculadas a torneios concluídos. Partidas de torneios ativos, em rascunho ou cancelados não afetam os ratings.
+- Alterar o status de um torneio de modo que partidas concluídas sejam incluídas ou removidas marca a data afetada mais antiga, sem recalcular os ratings imediatamente. Use o recálculo completo ou a atualização incremental em `/admin/ratings` para aplicar a alteração.
 
 Essas regras se aplicam às partidas vinculadas por meio de um emparelhamento do torneio; partidas independentes continuam contando para os ratings. Consulte [FUTURE_FEATURES.md](../FUTURE_FEATURES.md) para outras propostas pendentes.
 

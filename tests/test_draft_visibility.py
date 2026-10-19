@@ -4,7 +4,10 @@ import conftest
 from app import app
 import services.news_service as news_service
 import services.sgf_service as sgf_service
-from services.public_visibility import draft_only_sgf_filenames, public_match_condition
+from services.public_visibility import (
+    public_match_condition,
+    unpublished_tournament_sgf_filenames,
+)
 
 SGF_TEXT = "(;GM[1]FF[4]SZ[19]PB[Black]PW[White]RE[W+R];B[pd];W[dd])"
 
@@ -51,9 +54,10 @@ def _add_tournament_game(db_path, status, event, sgf_filename=None):
     )
 
 
-def test_public_match_condition_hides_only_games_of_draft_tournaments(isolate_test_database):
+def test_public_match_condition_hides_draft_and_canceled_tournament_games(isolate_test_database):
     db_path = isolate_test_database
     _add_tournament_game(db_path, "draft", "Draft cup game")
+    _add_tournament_game(db_path, "canceled", "Canceled cup game")
     _add_tournament_game(db_path, "active", "Live cup game")
     _execute(
         db_path,
@@ -76,24 +80,29 @@ def test_public_match_condition_hides_only_games_of_draft_tournaments(isolate_te
         conn.close()
 
     assert "Draft cup game" not in visible_events
+    assert "Canceled cup game" not in visible_events
     assert {"Live cup game", "Friendly game"} <= visible_events
     assert "Draft cup game" in stored_events
+    assert "Canceled cup game" in stored_events
 
 
-def test_match_list_hides_draft_games_while_admin_matches_keep_them(isolate_test_database):
+def test_match_list_hides_draft_and_canceled_games_while_admin_matches_keep_them(isolate_test_database):
     db_path = isolate_test_database
     _add_tournament_game(db_path, "draft", "Hidden draft marker")
+    _add_tournament_game(db_path, "canceled", "Hidden canceled marker")
 
     public_body = app.test_client().get("/matches?lang=en").get_data(as_text=True)
     assert "Hidden draft marker" not in public_body
+    assert "Hidden canceled marker" not in public_body
 
     staff_client = app.test_client()
     conftest.set_admin_session(staff_client, db_path)
     admin_body = staff_client.get("/admin/matches?lang=en").get_data(as_text=True)
     assert "Hidden draft marker" in admin_body
+    assert "Hidden canceled marker" in admin_body
 
 
-def test_sgf_linked_only_to_draft_game_is_hidden_from_public_pages(
+def test_sgf_linked_only_to_unpublished_tournament_game_is_hidden_from_public_pages(
     isolate_test_database, monkeypatch, tmp_path
 ):
     db_path = isolate_test_database
@@ -103,19 +112,26 @@ def test_sgf_linked_only_to_draft_game_is_hidden_from_public_pages(
     (upload_dir / "live-game.sgf").write_text(SGF_TEXT, encoding="utf-8")
     monkeypatch.setattr(sgf_service, "SGF_UPLOAD_DIR", upload_dir)
     _add_tournament_game(db_path, "draft", "Draft SGF game", "draft-game.sgf")
+    (upload_dir / "canceled-game.sgf").write_text(SGF_TEXT, encoding="utf-8")
+    _add_tournament_game(db_path, "canceled", "Canceled SGF game", "canceled-game.sgf")
     _add_tournament_game(db_path, "active", "Live SGF game", "live-game.sgf")
 
     conn = sqlite3.connect(db_path)
     try:
-        assert draft_only_sgf_filenames(conn) == {"draft-game.sgf"}
+        assert unpublished_tournament_sgf_filenames(conn) == {
+            "draft-game.sgf",
+            "canceled-game.sgf",
+        }
     finally:
         conn.close()
 
     client = app.test_client()
     library = client.get("/sgf-library?lang=en").get_data(as_text=True)
     assert "draft-game.sgf" not in library
+    assert "canceled-game.sgf" not in library
     assert "live-game.sgf" in library
     assert client.get("/sgf/draft-game.sgf").status_code == 404
+    assert client.get("/sgf/canceled-game.sgf").status_code == 404
     assert client.get("/sgf-library/draft-game.sgf").status_code == 404
     assert client.get("/sgf/live-game.sgf").status_code == 200
 
