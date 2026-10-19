@@ -229,6 +229,9 @@ def test_role_permissions_allow_tournament_director_but_not_admin_only_access(tm
     assert admin_routes.get_required_permission_for_route("admin.admin_ratings") == "data_admin"
     assert admin_routes.get_required_permission_for_route("admin.admin_categories") == "data_admin"
     assert admin_routes.get_required_permission_for_route("admin.admin_result_submissions") == "operator"
+    assert admin_routes.get_required_permission_for_route("admin.admin_add_tournament_participants") == "operator"
+    assert admin_routes.get_required_permission_for_route("admin.admin_remove_tournament_participants") == "operator"
+    assert admin_routes.get_required_permission_for_route("admin.admin_delete_sgf_batch") == "admin"
     assert admin_routes.get_required_permission_for_route("admin.admin_approve_result_submission") == "operator"
     assert admin_routes.get_required_permission_for_route("admin.admin_reject_result_submission") == "operator"
     data_management_items = dict(

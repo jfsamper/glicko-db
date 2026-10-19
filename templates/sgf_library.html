@@ -33,10 +33,21 @@
   </div>
 
   {% if files %}
+  {% if can_delete_sgf %}
+  <form id="sgf-batch-delete-form" class="filter-form"
+    action="{{ url_for('admin_delete_sgf_batch', lang=lang) }}" method="post"
+    onsubmit="return confirm('{{ translations.sgf_batch_delete_confirmation }}');">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button class="sgf-library-delete-button" type="submit">
+      {{ translations.sgf_delete_selected }}
+    </button>
+  </form>
+  {% endif %}
   <div class="table-wrapper">
     <table class="table-stack sgf-library-table">
       <thead>
         <tr>
+          {% if can_delete_sgf %}<th>{{ translations.select_label }}</th>{% endif %}
           <th>{{ translations.sgf_file_label }}</th>
           <th>{{ translations.date }}</th>
           <th>{{ translations.white }} / {{ translations.black }}</th>
@@ -50,6 +61,12 @@
       <tbody>
         {% for sgf in files %}
         <tr>
+          {% if can_delete_sgf %}
+          <td>
+            <input type="checkbox" form="sgf-batch-delete-form" name="filenames"
+              value="{{ sgf.filename }}" aria-label="{{ sgf.filename }}">
+          </td>
+          {% endif %}
           <td class="sgf-library-file">
             <a class="text-link sgf-library-filename"
               href="{{ url_for('sgf_library_record', filename=sgf.filename, lang=lang) }}" title="{{ sgf.filename }}"

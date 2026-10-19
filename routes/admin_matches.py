@@ -211,31 +211,43 @@ def admin_delete_match():
     if not admin.admin_required():
         return redirect(url_for("admin_login", lang=admin.get_language(request.args.get("lang"))))
     lang = admin.get_language(request.args.get("lang"))
-    match_id = request.args.get("id")
-    if not match_id:
+    requested_ids = request.form.getlist("match_ids")
+    if not requested_ids and request.args.get("id"):
+        requested_ids = [request.args.get("id")]
+    try:
+        parsed_ids = [int(match_id) for match_id in requested_ids]
+    except (TypeError, ValueError):
+        parsed_ids = []
+    if not parsed_ids or any(match_id <= 0 for match_id in parsed_ids):
         flash(admin.TRANSLATIONS[lang]["error"])
         return redirect(url_for("admin_matches", lang=lang))
+    match_ids = list(dict.fromkeys(parsed_ids))
     conn = admin.get_db()
     admin.ensure_sgf_schema(conn)
     admin.clear_missing_sgf_links(conn)
-    row = conn.execute(
-        "SELECT match_date, sgf_filename FROM matches WHERE id = ?", (match_id,)).fetchone()
-    if not row:
+    placeholders = ", ".join("?" for _ in match_ids)
+    rows = conn.execute(
+        f"SELECT id, match_date FROM matches WHERE id IN ({placeholders})",
+        match_ids,
+    ).fetchall()
+    if len(rows) != len(match_ids):
         conn.close()
         flash(admin.TRANSLATIONS[lang]["error"])
         return redirect(url_for("admin_matches", lang=lang))
-    conn.execute("DELETE FROM matches WHERE id = ?", (match_id,))
+    conn.execute(
+        f"DELETE FROM matches WHERE id IN ({placeholders})", match_ids)
     conn.commit()
     conn.close()
-    admin.log_admin_action("match_deleted", "match", {
-                           "match_id": match_id}, user_id=admin.session.get("user_id"))
+    for row in rows:
+        admin.log_admin_action("match_deleted", "match", {
+            "match_id": row["id"]}, user_id=admin.session.get("user_id"))
     try:
         admin.refresh_stats()
-        admin.mark_dirty(row["match_date"])
+        admin.mark_dirty(min(row["match_date"] for row in rows))
         admin.update_from_latest_snapshot()
     except sqlite3.DatabaseError as exc:
         admin.logger.exception(
-            "Match deletion for %s left the database in a malformed state; restoring a valid backup.", match_id)
+            "Match deletion for %s left the database in a malformed state; restoring a valid backup.", match_ids)
         backup_path = admin.get_latest_valid_backup_path()
         if backup_path is not None and admin.restore_db_from_backup(backup_path):
             flash("Database recovered from backup after a malformed SQLite image. Please review the restored data before continuing.")

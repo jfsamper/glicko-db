@@ -144,6 +144,8 @@ La biblioteca pública (`/sgf-library`) contiene los registros de partidas carga
 
 *Biblioteca SGF con metadatos, partidas vinculadas y enlaces al visor.*
 
+Los administradores pueden seleccionar varios archivos SGF y eliminarlos en una sola acción. Las partidas y los resultados pendientes vinculados se conservan y se limpian sus referencias SGF antes de eliminar los archivos.
+
 <a href="screenshots/public-sgf-record.png"><img src="screenshots/public-sgf-record.png" alt="Registro SGF de la biblioteca" width="560" /></a>
 
 *Registro SGF abierto desde la biblioteca, con sus metadatos y controles del visor.*
@@ -243,6 +245,7 @@ Inicia sesión en `/admin/login` con una cuenta con rol administrativo. El menú
   - *Puntos por ausencia*: puntos otorgados en partidas no jugadas por ausencia (por defecto 0.0 puntos).
 - **Hándicap automático**: habilita o deshabilita la sugerencia automática de piedras de hándicap calculadas por la diferencia de categoría.
 - **Copiar un torneo**: usa **Copiar** en la lista para crear un borrador con la configuración y los participantes del torneo. La copia no incluye fechas, emparejamientos ni resultados.
+- **Eliminar torneos en lote**: selecciona torneos de la página actual y confirma la eliminación. Se eliminan sus rondas, emparejamientos, participantes y partidas vinculadas; los archivos SGF se conservan.
 
 <a href="screenshots/admin-tournaments.png"><img src="screenshots/admin-tournaments.png" alt="Administración de torneos" width="560" /></a>
 
@@ -253,6 +256,9 @@ Inicia sesión en `/admin/login` con una cuenta con rol administrativo. El menú
 *Ajustes del torneo con fechas, rondas, puntos de BYE/ausencia, hándicap y aceleración.*
 
 #### 2. Gestión de participantes
+
+- **Agregar participantes en lote**: selecciona varios jugadores disponibles en la página de gestión y agrégalos en una sola acción.
+- **Retirar participantes en lote**: selecciona varios jugadores inscritos y confirma la retirada. La operación es atómica; si alguno no se puede retirar (por ejemplo, porque ya fue emparejado), no se retira ninguno.
 
 - **Inscripción de jugadores**: agrega jugadores activos existentes mediante el selector o crea un jugador nuevo directamente desde el torneo.
 - **Eliminación de participantes**: retira participantes que no vayan a competir antes de iniciar la primera ronda.
@@ -329,6 +335,7 @@ Permite cargar datos históricos o torneos masivos:
 #### 2. Administración de jugadores (`/admin/players`)
 
 - Filtra por nombre, rango de rating y estado.
+- **Importar jugadores**: carga un CSV o XLSX con las columnas `Name`, `Rank` y `Country`. Usa rangos Go de `30k` a `9d` (por ejemplo, `5k` o `1d`); el país puede quedar vacío. Revisa la vista previa y los errores de cada fila antes de confirmar. Los nombres existentes o repetidos y las filas no válidas bloquean toda la importación.
 - **Edición (`/admin/players/edit?id=<id>`)**: modifica nombre, nombre para mostrar, rating inicial, país, año de nacimiento opcional, una casilla para indicar si es mujer y estado activo. Los datos demográficos son públicos; el año de nacimiento se usa para la clasificación sub-18.
 - **Eliminación**: modal de confirmación seguro que advierte sobre la eliminación del historial y partidas vinculadas.
 

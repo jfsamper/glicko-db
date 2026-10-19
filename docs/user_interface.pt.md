@@ -144,6 +144,8 @@ A biblioteca pública (`/sgf-library`) indexa todos os registros de partidas env
 
 *Biblioteca SGF com metadados, partidas vinculadas e links para o visualizador.*
 
+Administradores podem selecionar vários arquivos SGF e excluí-los em uma única ação. As partidas e os resultados pendentes vinculados são mantidos, e suas referências SGF são removidas antes da exclusão dos arquivos.
+
 <a href="screenshots/public-sgf-record.png"><img src="screenshots/public-sgf-record.png" alt="Registro SGF da biblioteca" width="560" /></a>
 
 *Registro SGF aberto pela biblioteca, com seus metadados e controles do visualizador.*
@@ -243,6 +245,7 @@ Entre em `/admin/login` com uma conta administrativa. A navegação disponível 
   - *Pontos por ausência*: pontos concedidos em partidas não jogadas por ausência (padrão: 0.0 pontos).
 - **Handicap automático**: habilita ou desabilita a sugestão automática de pedras calculada pela diferença de categoria.
 - **Copiar um torneio**: selecione **Copiar** na lista para criar um rascunho com as configurações e os participantes do torneio. Datas, emparelhamentos e resultados não são copiados.
+- **Excluir torneios em lote**: selecione torneios da página atual e confirme a exclusão. As rodadas, emparelhamentos, participantes e partidas vinculadas serão excluídos; os arquivos SGF serão mantidos.
 
 <a href="screenshots/admin-tournaments.png"><img src="screenshots/admin-tournaments.png" alt="Administração de torneios" width="560" /></a>
 
@@ -254,6 +257,8 @@ Entre em `/admin/login` com uma conta administrativa. A navegação disponível 
 
 #### 2. Gestão de participantes
 
+- **Adicionar participantes em lote**: selecione vários jogadores disponíveis na página de gestão e adicione-os em uma única ação.
+- **Remover participantes em lote**: selecione vários jogadores inscritos e confirme a remoção. A operação é atômica; se algum jogador não puder ser removido (por exemplo, porque já foi emparelhado), nenhum será removido.
 - **Inscrição de jogadores**: adicione jogadores ativos existentes pelo seletor ou crie novos jogadores diretamente no torneio.
 - **Retirada de participantes**: remova participantes antes do início da primeira rodada.
 - **Importação OpenGotha XML**: ao importar um arquivo OpenGotha, os participantes são carregados automaticamente com graduação, categoria e rating inicial. Se houver nomes parecidos com registros existentes, um assistente interativo permite vinculá-los, criar novos ou descartá-los.
@@ -329,6 +334,7 @@ Importe planilhas históricas, partidas ou arquivos do OpenGotha:
 #### 2. Administração de jogadores (`/admin/players`)
 
 - Filtre jogadores por nome, faixa de rating e status ativo/inativo.
+- **Importar jogadores**: envie um CSV ou XLSX com as colunas `Name`, `Rank` e `Country`. Use classificações Go de `30k` a `9d` (por exemplo, `5k` ou `1d`); o país pode ficar em branco. Revise a prévia e os erros por linha antes de confirmar. Nomes existentes ou repetidos e linhas inválidas bloqueiam toda a importação.
 - **Editar jogador (`/admin/players/edit?id=<id>`)**: atualize nome, nome de exibição, rating inicial, país, ano de nascimento opcional, uma caixa para indicar se é mulher e status ativo. Os dados demográficos são públicos; o ano de nascimento é usado no ranking sub-18.
 - **Excluir jogador**: modal de confirmação seguro que avisa sobre a exclusão do histórico e partidas associadas.
 

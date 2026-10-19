@@ -125,10 +125,24 @@
       </div>
     </form>
     {% if tournaments %}
+    <form id="delete-tournaments-form" method="post"
+      action="{{ url_for('admin_delete_tournaments', lang=lang) }}"
+      class="filter-actions" style="margin-bottom: 1rem;">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+      <button id="delete-selected-tournaments" type="button" class="button danger"
+        data-delete-selected-tournaments data-delete-message="{{ translations.delete_tournaments_confirmation }}"
+        disabled>
+        {{ translations.delete_selected_tournaments }}
+      </button>
+    </form>
     <div class="table-wrapper">
       <table class="table-stack">
         <thead>
           <tr>
+            <th>
+              <input type="checkbox" id="select-all-tournaments"
+                aria-label="{{ translations.select_page_tournaments }}">
+            </th>
             <th>{{ translations.tournament_name }}</th>
             <th>{{ translations.tournament_type }}</th>
             <th>{{ translations.rounds }}</th>
@@ -139,6 +153,10 @@
         <tbody>
           {% for tournament in tournaments %}
           <tr>
+            <td>
+              <input type="checkbox" name="tournament_ids" value="{{ tournament.id }}"
+                form="delete-tournaments-form" aria-label="{{ translations.select_tournament }} {{ tournament.name }}">
+            </td>
             <td>{{ tournament.name }}</td>
             <td>{{ translations.get(tournament.tournament_type, tournament.tournament_type) }}</td>
             <td>{{ tournament.rounds }}</td>
@@ -204,7 +222,7 @@
   <h2 id="delete-tournament-title">{{ translations.delete_tournament_heading }}</h2>
   <p id="delete-tournament-message">
     <strong data-delete-tournament-name></strong><br>
-    {{ translations.delete_tournament_confirmation }}
+    <span data-delete-tournament-confirmation-message>{{ translations.delete_tournament_confirmation }}</span>
   </p>
   <form method="post" data-delete-tournament-confirmation>
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
@@ -218,24 +236,87 @@
 
 <script>
   (() => {
-    const dialog = document.getElementById("delete-tournament-dialog");
+  const selectAll = document.getElementById("select-all-tournaments");
+  const tournamentCheckboxes = Array.from(
+    document.querySelectorAll('input[name="tournament_ids"]')
+  );
+  const deleteSelected = document.getElementById("delete-selected-tournaments");
+
+  if (selectAll && deleteSelected) {
+    const updateSelection = () => {
+      const selectedCount = tournamentCheckboxes.filter(
+        (checkbox) => checkbox.checked
+      ).length;
+      deleteSelected.disabled = selectedCount === 0;
+      selectAll.checked = tournamentCheckboxes.length > 0
+        && selectedCount === tournamentCheckboxes.length;
+      selectAll.indeterminate = selectedCount > 0
+        && selectedCount < tournamentCheckboxes.length;
+    };
+    selectAll.addEventListener("change", () => {
+      tournamentCheckboxes.forEach((checkbox) => {
+        checkbox.checked = selectAll.checked;
+      });
+      updateSelection();
+    });
+    tournamentCheckboxes.forEach((checkbox) => {
+      checkbox.addEventListener("change", updateSelection);
+    });
+    updateSelection();
+  }
+
+  const dialog = document.getElementById("delete-tournament-dialog");
     const confirmationForm = dialog?.querySelector("[data-delete-tournament-confirmation]");
     const tournamentName = dialog?.querySelector("[data-delete-tournament-name]");
-    const cancelButton = dialog?.querySelector("[data-delete-tournament-cancel]");
+  const confirmationMessage = dialog?.querySelector("[data-delete-tournament-confirmation-message]");
+  const cancelButton = dialog?.querySelector("[data-delete-tournament-cancel]");
 
-    if (!dialog || !confirmationForm || !tournamentName || !cancelButton) return;
+  if (!dialog || !confirmationForm || !tournamentName || !confirmationMessage || !cancelButton) return;
 
-    document.querySelectorAll("[data-delete-tournament]").forEach((trigger) => {
-      trigger.addEventListener("click", () => {
-        confirmationForm.action = trigger.form.action;
-        tournamentName.textContent = trigger.dataset.tournamentName || "";
-        if (typeof dialog.showModal === "function") {
-          dialog.showModal();
-        } else {
-          dialog.setAttribute("open", "");
-        }
-      });
+  const openDeleteConfirmation = (trigger, names, batch) => {
+    confirmationForm.action = trigger.form.action;
+    tournamentName.textContent = names.join(", ");
+    confirmationMessage.textContent = trigger.dataset.deleteMessage
+      || "{{ translations.delete_tournament_confirmation }}";
+    confirmationForm.querySelectorAll("[data-selected-tournament-id]").forEach((input) => {
+      input.remove();
     });
+    if (batch) {
+      document.querySelectorAll('input[name="tournament_ids"]:checked').forEach((checkbox) => {
+        const input = document.createElement("input");
+        input.type = "hidden";
+        input.name = "tournament_ids";
+        input.value = checkbox.value;
+        input.dataset.selectedTournamentId = "1";
+        confirmationForm.appendChild(input);
+      });
+    }
+    if (typeof dialog.showModal === "function") {
+      dialog.showModal();
+    } else {
+      dialog.setAttribute("open", "");
+    }
+  };
+
+  document.querySelectorAll("[data-delete-tournament]").forEach((trigger) => {
+    trigger.addEventListener("click", () => {
+      openDeleteConfirmation(
+        trigger,
+        [trigger.dataset.tournamentName || ""],
+        false
+      );
+    });
+  });
+
+  document.querySelector("[data-delete-selected-tournaments]")?.addEventListener("click", (event) => {
+    const trigger = event.currentTarget;
+    const selected = document.querySelectorAll('input[name="tournament_ids"]:checked');
+    const names = Array.from(selected, (checkbox) => {
+      const row = checkbox.closest("tr");
+      return row?.querySelector("td:nth-child(2)")?.textContent.trim() || "";
+    }).filter(Boolean);
+    openDeleteConfirmation(trigger, names, true);
+  });
 
     cancelButton.addEventListener("click", () => {
       dialog.close();
@@ -244,6 +325,9 @@
     dialog.addEventListener("close", () => {
       confirmationForm.removeAttribute("action");
       tournamentName.textContent = "";
+      confirmationForm.querySelectorAll("[data-selected-tournament-id]").forEach((input) => {
+        input.remove();
+      });
     });
   })();
 </script>

@@ -144,6 +144,8 @@ The public library (`/sgf-library`) indexes all SGF game records uploaded to the
 
 *SGF library with metadata, linked matches, and viewer links.*
 
+Administrators can select multiple SGF files and delete them in one action. Matches and pending result submissions are left intact, with their SGF references cleared before the files are removed.
+
 <a href="screenshots/public-sgf-record.png"><img src="screenshots/public-sgf-record.png" alt="SGF library record" width="560" /></a>
 
 *An SGF record opened from the library, with metadata and viewer controls.*
@@ -243,6 +245,7 @@ Sign in at `/admin/login` with an administrative account. Available navigation a
   - *Absence points*: points awarded for unplayed absence games (default: 0.0 points).
 - **Automatic handicap**: enable or disable automatic handicap stone suggestions calculated from category differences.
 - **Copy a tournament**: select **Copy** in the list to create a draft with the tournament's settings and participants. Dates, pairings, and results are not copied.
+- **Delete tournaments in bulk**: select tournaments on the current page and confirm deletion. Their rounds, pairings, participants, and linked tournament matches are removed; SGF files are retained.
 
 <a href="screenshots/admin-tournaments.png"><img src="screenshots/admin-tournaments.png" alt="Tournament administration" width="560" /></a>
 
@@ -253,6 +256,9 @@ Sign in at `/admin/login` with an administrative account. Available navigation a
 *Tournament settings with dates, rounds, BYE/absence points, handicap, and acceleration options.*
 
 #### 2. Managing participants
+
+- **Add participants in bulk**: select multiple available players on the participant-management page and add them in one action.
+- **Remove participants in bulk**: select multiple enrolled players and confirm removal. The operation is atomic; if any selected player cannot be removed (for example, because they have already been paired), none are removed.
 
 - **Register players**: add existing active players via selector or create new players directly in the tournament interface.
 - **Withdraw participants**: remove players before round 1 begins.
@@ -329,6 +335,7 @@ Import historical workbooks, match spreadsheets, or OpenGotha files:
 #### 2. Player administration (`/admin/players`)
 
 - Filter players by name, rating range, and active status.
+- **Import players**: upload CSV or XLSX with `Name`, `Rank`, and `Country` columns. Use Go ranks from `30k` through `9d` (for example, `5k` or `1d`); Country may be blank. Review the row-level validation preview before confirming the import. Existing or duplicate names and invalid rows block the whole import.
 - **Edit player (`/admin/players/edit?id=<id>`)**: update name, display name, initial rating, country, optional birth year, a checkbox indicating a female player, and active status. Demographic values are public; birth year is used for the Sub-18 ranking.
 - **Delete player**: safe confirmation modal warning about cascade deletion of associated match history.
 

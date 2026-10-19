@@ -1,11 +1,27 @@
 """Administrative player, category, and rating routes."""
+import hashlib
 import json
 import math
+import re
 import sqlite3
+import time
+import uuid
+from pathlib import Path
 
-from flask import flash, redirect, render_template, request, url_for
+from flask import flash, redirect, render_template, request, session, url_for
 from services.country_service import country_options, normalize_country_code
+from services.player_import_service import (
+    insert_imported_players,
+    preview_player_import,
+)
 from services.timezone_service import current_date
+
+PLAYER_IMPORT_SESSION_KEY = "player_import_preview"
+PLAYER_IMPORT_TTL_SECONDS = 30 * 60
+PLAYER_IMPORT_MAX_BYTES = 5 * 1024 * 1024
+PLAYER_IMPORT_FILENAME_RE = re.compile(
+    r"^player-import-([a-f0-9]{32})\.(csv|xlsx)$"
+)
 
 
 def _admin_routes():
@@ -16,6 +32,7 @@ def _admin_routes():
 def register_player_routes(admin_bp):
     routes = (
         ("/admin/players", "admin_players", ("GET",)),
+        ("/admin/players/import", "admin_player_import", ("GET", "POST")),
         ("/admin/players/edit", "admin_edit_player", ("GET", "POST")),
         ("/admin/players/delete", "admin_delete_player", ("POST",)),
         ("/admin/categories", "admin_categories", ("GET", "POST")),
@@ -24,6 +41,201 @@ def register_player_routes(admin_bp):
     for route, endpoint, methods in routes:
         admin_bp.add_url_rule(route, endpoint=endpoint, view_func=globals()[
                               endpoint], methods=list(methods))
+
+
+def _player_import_path(admin, filename):
+    if not PLAYER_IMPORT_FILENAME_RE.fullmatch(filename or ""):
+        raise ValueError("player_import_read_error")
+    return Path(admin.BASE_DIR) / "uploads" / "player-imports" / filename
+
+
+def _discard_player_import_preview(admin):
+    state = session.pop(PLAYER_IMPORT_SESSION_KEY, None)
+    if not isinstance(state, dict):
+        return
+    filename = state.get("filename", "")
+    if PLAYER_IMPORT_FILENAME_RE.fullmatch(filename):
+        _player_import_path(admin, filename).unlink(missing_ok=True)
+
+
+def _get_player_import_preview(admin, token):
+    state = session.get(PLAYER_IMPORT_SESSION_KEY)
+    if (
+        not isinstance(state, dict)
+        or not isinstance(token, str)
+        or token != state.get("token")
+        or state.get("user_id") != session.get("user_id")
+        or time.time() - state.get("created_at", 0) > PLAYER_IMPORT_TTL_SECONDS
+    ):
+        _discard_player_import_preview(admin)
+        raise ValueError("player_import_preview_expired")
+
+    path = _player_import_path(admin, state.get("filename", ""))
+    if not path.is_file():
+        _discard_player_import_preview(admin)
+        raise ValueError("player_import_read_error")
+    digest = hashlib.sha256(path.read_bytes()).hexdigest()
+    if digest != state.get("sha256"):
+        _discard_player_import_preview(admin)
+        raise ValueError("player_import_read_error")
+    return state, path
+
+
+def _render_player_import(admin, lang, preview=None, token=None, error=None):
+    return render_template(
+        "admin/player_import.html",
+        lang=lang,
+        translations=admin.TRANSLATIONS[lang],
+        preview=preview,
+        preview_token=token,
+        import_error=error,
+    )
+
+
+def admin_player_import():
+    admin = _admin_routes()
+    permission_error = admin.require_permission("data_admin")
+    if permission_error is not None:
+        return permission_error
+    lang = admin.get_language(request.args.get("lang"))
+
+    if request.method == "POST":
+        action = request.form.get("action")
+        if action == "cancel":
+            _discard_player_import_preview(admin)
+            return redirect(url_for("admin_player_import", lang=lang))
+
+        if action == "commit":
+            try:
+                state, upload_path = _get_player_import_preview(
+                    admin, request.form.get("preview_token")
+                )
+                conn = admin.get_db()
+                try:
+                    conn.execute("BEGIN IMMEDIATE")
+                    preview = preview_player_import(upload_path, conn)
+                    if preview["error_count"]:
+                        conn.rollback()
+                        return _render_player_import(
+                            admin,
+                            lang,
+                            preview=preview,
+                            token=state["token"],
+                        )
+                    inserted_ids = insert_imported_players(
+                        conn, preview["rows"])
+                    conn.commit()
+                except (OSError, ValueError, sqlite3.DatabaseError):
+                    conn.rollback()
+                    raise
+                finally:
+                    conn.close()
+
+                _discard_player_import_preview(admin)
+                admin.log_admin_action(
+                    "players_imported",
+                    "players",
+                    {"player_count": len(inserted_ids)},
+                    user_id=session.get("user_id"),
+                )
+                flash(
+                    admin.TRANSLATIONS[lang][
+                        "player_import_completed"
+                    ].format(count=len(inserted_ids))
+                )
+                return redirect(url_for("admin_players", lang=lang))
+            except ValueError as exc:
+                key = str(exc)
+                return _render_player_import(
+                    admin,
+                    lang,
+                    error=admin.TRANSLATIONS[lang].get(
+                        key, admin.TRANSLATIONS[lang]["error"]
+                    ),
+                )
+
+        uploaded_file = request.files.get("file")
+        if not uploaded_file or not uploaded_file.filename:
+            return _render_player_import(
+                admin,
+                lang,
+                error=admin.TRANSLATIONS[lang]["player_import_file_required"],
+            )
+        extension = Path(uploaded_file.filename).suffix.lower()
+        if extension not in {".csv", ".xlsx"}:
+            return _render_player_import(
+                admin,
+                lang,
+                error=admin.TRANSLATIONS[lang]["player_import_file_type"],
+            )
+        content = uploaded_file.stream.read(PLAYER_IMPORT_MAX_BYTES + 1)
+        if len(content) > PLAYER_IMPORT_MAX_BYTES:
+            return _render_player_import(
+                admin,
+                lang,
+                error=admin.TRANSLATIONS[lang]["player_import_file_too_large"],
+            )
+
+        _discard_player_import_preview(admin)
+        token = uuid.uuid4().hex
+        filename = f"player-import-{token}{extension}"
+        upload_path = _player_import_path(admin, filename)
+        upload_path.parent.mkdir(parents=True, exist_ok=True)
+        upload_path.write_bytes(content)
+        try:
+            conn = admin.get_db()
+            try:
+                preview = preview_player_import(upload_path, conn)
+            finally:
+                conn.close()
+        except (OSError, ValueError) as exc:
+            upload_path.unlink(missing_ok=True)
+            key = str(exc)
+            return _render_player_import(
+                admin,
+                lang,
+                error=admin.TRANSLATIONS[lang].get(
+                    key, admin.TRANSLATIONS[lang]["error"]
+                ),
+            )
+        except sqlite3.DatabaseError:
+            upload_path.unlink(missing_ok=True)
+            raise
+
+        session[PLAYER_IMPORT_SESSION_KEY] = {
+            "token": token,
+            "filename": filename,
+            "sha256": hashlib.sha256(content).hexdigest(),
+            "created_at": time.time(),
+            "user_id": session.get("user_id"),
+        }
+        return _render_player_import(
+            admin, lang, preview=preview, token=token
+        )
+
+    state = session.get(PLAYER_IMPORT_SESSION_KEY)
+    if isinstance(state, dict):
+        try:
+            state, upload_path = _get_player_import_preview(
+                admin, state.get("token")
+            )
+            conn = admin.get_db()
+            try:
+                preview = preview_player_import(upload_path, conn)
+            finally:
+                conn.close()
+            return _render_player_import(
+                admin, lang, preview=preview, token=state["token"]
+            )
+        except (OSError, ValueError) as exc:
+            return _render_player_import(
+                admin,
+                lang,
+                error=admin.TRANSLATIONS[lang].get(
+                    str(exc), admin.TRANSLATIONS[lang]["error"]
+                ),
+            )
+    return _render_player_import(admin, lang)
 
 
 def admin_players():

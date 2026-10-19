@@ -30,8 +30,10 @@ from services.tournament_service import (
     pair_selected_players,
     process_tournament_round_matches,
     remove_participant,
+    remove_participants,
     read_gotha_tournament,
     _refresh_tournament_completion_state,
+    add_participants,
     save_tournament_matches,
     set_pairing_result,
     set_round_player_status,
@@ -179,6 +181,49 @@ def create_manual_tournament(conn, rounds=5, pairing_system="swiss", name="Manua
             (default_acceleration_rounds(rounds), tournament_id),
         )
     return tournament_id
+
+
+def test_bulk_participant_operations_are_atomic():
+    conn = create_db()
+    conn.executemany(
+        "INSERT INTO players (id, first_name, last_name, rating, active) VALUES (?, ?, ?, ?, 1)",
+        [(1, "Alice", "Alpha", 1500), (2, "Bob", "Bravo", 1450)],
+    )
+    tournament_id = create_manual_tournament(conn)
+    conn.commit()
+
+    with pytest.raises(ValueError, match="Tournament player not found"):
+        add_participants(conn, tournament_id, [1, 999])
+    assert conn.execute(
+        "SELECT COUNT(*) FROM tournament_participants WHERE tournament_id = ?",
+        (tournament_id,),
+    ).fetchone()[0] == 0
+
+    add_participants(conn, tournament_id, [1, 2])
+    conn.execute(
+        "INSERT INTO tournament_rounds (tournament_id, round_number) VALUES (?, 1)",
+        (tournament_id,),
+    )
+    round_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
+    conn.execute(
+        """
+        INSERT INTO tournament_pairings
+            (round_id, board_number, white_player_id, black_player_id)
+        VALUES (?, 1, 1, 2)
+        """,
+        (round_id,),
+    )
+    conn.commit()
+
+    with pytest.raises(ValueError, match="Cannot remove a player after they have been paired"):
+        remove_participants(conn, tournament_id, [1, 2])
+    remaining_ids = conn.execute(
+        "SELECT player_id FROM tournament_participants WHERE tournament_id = ? ORDER BY player_id",
+        (tournament_id,),
+    ).fetchall()
+    assert [row["player_id"] for row in remaining_ids] == [1, 2]
+
+    conn.close()
 
 
 def test_suggest_player_name_uses_token_overlap_for_reordered_names():
@@ -1422,6 +1467,7 @@ def test_delete_tournament_removes_all_dependent_records():
 
     delete_tournament(conn, tournament_id)
 
+    assert conn.execute("SELECT COUNT(*) FROM matches").fetchone()[0] == 0
     for table in (
         "tournaments",
         "tournament_participants",

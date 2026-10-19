@@ -142,9 +142,10 @@ def test_sgf_library_is_public_and_admin_can_link_or_unlink(client, admin_client
         FileStorage(stream=BytesIO(SGF_TEXT.encode("utf-8")), filename="library.sgf")
     )
 
-    library = client.get("/sgf-library?lang=en")
+    library = client.application.test_client().get("/sgf-library?lang=en")
     assert library.status_code == 200
     library_body = library.get_data(as_text=True)
+    assert "sgf-batch-delete-form" not in library_body
     assert stored_name in library_body
     assert "Black" in library_body
     assert client.get(f"/sgf/{stored_name}").status_code == 200
@@ -163,6 +164,9 @@ def test_sgf_library_is_public_and_admin_can_link_or_unlink(client, admin_client
     assert "PW[Samper, Juan]" in linked_body
     assert "PB[Acuna, Camilo]" in linked_body
     assert "RE[W+R]" in linked_body
+    admin_library = admin_client.get("/sgf-library?lang=en")
+    assert b"sgf-batch-delete-form" in admin_library.data
+    assert b'name="filenames"' in admin_library.data
 
     response = admin_client.post(
         "/admin/sgf/unlink?lang=en",
@@ -376,6 +380,11 @@ def test_only_admin_can_delete_sgf_and_delete_clears_match_link(
         data={"filename": stored_name},
     )
     assert response.status_code == 403
+    batch_response = client.post(
+        "/admin/sgf/delete-batch?lang=en",
+        data={"filenames": [stored_name]},
+    )
+    assert batch_response.status_code == 403
     assert (upload_dir / stored_name).is_file()
 
     conftest.set_user_session(client, administrator_id)
@@ -389,6 +398,80 @@ def test_only_admin_can_delete_sgf_and_delete_clears_match_link(
         assert conn.execute(
             "SELECT sgf_filename FROM matches WHERE id = 1"
         ).fetchone()[0] is None
+
+
+def test_admin_can_batch_delete_sgf_files_and_clear_match_links(
+    admin_client, tmp_path, monkeypatch
+):
+    upload_dir = tmp_path / "sgf"
+    monkeypatch.setattr(sgf_service, "SGF_UPLOAD_DIR", upload_dir)
+    filenames = [
+        sgf_service.save_sgf_upload(
+            FileStorage(
+                stream=BytesIO(SGF_TEXT.encode("utf-8")),
+                filename=f"batch-{index}.sgf",
+            )
+        )
+        for index in range(2)
+    ]
+    with common.get_db() as conn:
+        conn.execute(
+            "UPDATE matches SET sgf_filename = ? WHERE id = 1", (filenames[0],)
+        )
+        with admin_client.session_transaction() as session:
+            admin_id = session["user_id"]
+        conn.execute(
+            """
+            INSERT INTO result_submissions
+                (submitted_by_user_id, match_date, white_player_id, black_player_id,
+                 result, sgf_filename)
+            VALUES (?, '2026-01-01', 1, 2, '1-0', ?)
+            """,
+            (admin_id, filenames[1]),
+        )
+        conn.commit()
+
+    response = admin_client.post(
+        "/admin/sgf/delete-batch?lang=en",
+        data={"filenames": filenames},
+    )
+
+    assert response.status_code == 302
+    assert all(not (upload_dir / filename).exists() for filename in filenames)
+    with common.get_db() as conn:
+        assert conn.execute(
+            "SELECT COUNT(*) FROM matches WHERE sgf_filename IS NOT NULL"
+        ).fetchone()[0] == 0
+        assert conn.execute(
+            "SELECT COUNT(*) FROM result_submissions WHERE sgf_filename IS NOT NULL"
+        ).fetchone()[0] == 0
+
+
+def test_admin_batch_sgf_delete_rejects_invalid_selection_atomically(
+    admin_client, tmp_path, monkeypatch
+):
+    upload_dir = tmp_path / "sgf"
+    monkeypatch.setattr(sgf_service, "SGF_UPLOAD_DIR", upload_dir)
+    filename = sgf_service.save_sgf_upload(
+        FileStorage(stream=BytesIO(SGF_TEXT.encode("utf-8")), filename="keep.sgf")
+    )
+    with common.get_db() as conn:
+        conn.execute(
+            "UPDATE matches SET sgf_filename = ? WHERE id = 1", (filename,)
+        )
+        conn.commit()
+
+    response = admin_client.post(
+        "/admin/sgf/delete-batch?lang=en",
+        data={"filenames": [filename, "../outside.sgf"]},
+    )
+
+    assert response.status_code == 302
+    assert (upload_dir / filename).is_file()
+    with common.get_db() as conn:
+        assert conn.execute(
+            "SELECT sgf_filename FROM matches WHERE id = 1"
+        ).fetchone()[0] == filename
 
 
 def test_missing_sgf_link_self_heals_and_match_delete_keeps_file(admin_client, tmp_path, monkeypatch):
@@ -481,4 +564,3 @@ def test_missing_sgf_pointers_are_cleared_on_matches_and_submissions(tmp_path, m
         (3, None),
     ]
     conn.close()
-

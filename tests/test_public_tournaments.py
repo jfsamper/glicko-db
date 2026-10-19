@@ -1139,3 +1139,43 @@ def test_admin_matches_page_supports_pagination_controls():
     assert response.status_code == 200
     assert "Page 1" in response.get_data(as_text=True)
     assert "Next" in response.get_data(as_text=True)
+
+
+def test_admin_matches_page_supports_batch_deletion():
+    app.testing = True
+    client = app.test_client()
+    _, csrf_token = conftest.set_admin_session(client)
+    response = client.get("/admin/matches?lang=en")
+
+    assert response.status_code == 200
+    body = response.get_data(as_text=True)
+    assert 'id="select-all-matches"' in body
+    assert 'name="match_ids"' in body
+    assert "Delete selected" in body
+
+    conn = common.get_db()
+    match_ids = [
+        row["id"] for row in conn.execute(
+            "SELECT id FROM matches ORDER BY id LIMIT 2"
+        ).fetchall()
+    ]
+    conn.close()
+    assert len(match_ids) == 2
+
+    response = client.post(
+        "/admin/matches/delete?lang=en",
+        data={
+            "csrf_token": csrf_token,
+            "match_ids": [str(match_id) for match_id in match_ids],
+        },
+    )
+
+    assert response.status_code == 302
+    conn = common.get_db()
+    remaining_ids = {
+        row["id"] for row in conn.execute(
+            "SELECT id FROM matches"
+        ).fetchall()
+    }
+    conn.close()
+    assert not set(match_ids) & remaining_ids

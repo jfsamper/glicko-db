@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="panel">
+  <div class="panel-actions">
+    <nav aria-label="Breadcrumb" class="breadcrumb">
+      <a href="{{ url_for('admin', lang=lang) }}">{{ translations.admin_heading }}</a>
+      <span> &gt; </span>
+      <a href="{{ url_for('admin_players', lang=lang) }}">{{ translations.players }}</a>
+      <span> &gt; </span>
+      <span>{{ translations.player_import_title }}</span>
+    </nav>
+  </div>
+
+  <div class="panel-header">
+    <div>
+      <h2>{{ translations.player_import_title }}</h2>
+      <p>{{ translations.player_import_subtitle }}</p>
+    </div>
+  </div>
+
+  {% if import_error %}
+  <div class="flash" role="alert">{{ import_error }}</div>
+  {% endif %}
+
+  {% if not preview %}
+  <form method="post" enctype="multipart/form-data" class="filter-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+    <div class="filter-panel">
+      <div class="filter-item wide">
+        <label for="player-import-file">{{ translations.upload_file }}</label>
+        <input id="player-import-file" name="file" type="file" accept=".csv,.xlsx" required>
+        <small>{{ translations.player_import_format }}</small>
+      </div>
+      <div class="filter-actions">
+        <button type="submit" class="button">{{ translations.player_import_upload }}</button>
+      </div>
+    </div>
+  </form>
+  {% else %}
+  <div class="card">
+    <h3>{{ translations.player_import_preview }}</h3>
+    <p>{{ translations.player_import_counts.format(valid=preview.valid_count, errors=preview.error_count) }}</p>
+
+    <div class="table-wrapper">
+      <table class="table-stack">
+        <thead>
+          <tr>
+            <th>{{ translations.player_import_row }}</th>
+            <th>{{ translations.name_label }}</th>
+            <th>{{ translations.rank_label }}</th>
+            <th>{{ translations.country }}</th>
+            <th>{{ translations.get('status_label', 'Status') }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in preview.rows %}
+          <tr>
+            <td>{{ row.line_number }}</td>
+            <td>{{ row.name }}</td>
+            <td>{{ row.rank }}</td>
+            <td>{{ row.country or "" }}</td>
+            <td>
+              {% if row.errors %}
+              {% for error in row.errors %}
+              <div>{{ translations.get(error, error) }}</div>
+              {% endfor %}
+              {% else %}
+              {{ translations.player_import_ready }}
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="filter-actions">
+      {% if not preview.error_count %}
+      <form method="post" action="{{ url_for('admin_player_import', lang=lang) }}"
+        onsubmit="return confirm('{{ translations.player_import_confirmation }}');">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+        <input type="hidden" name="action" value="commit">
+        <input type="hidden" name="preview_token" value="{{ preview_token }}">
+        <button type="submit" class="button">{{ translations.player_import_commit }}</button>
+      </form>
+      {% endif %}
+      <form method="post" action="{{ url_for('admin_player_import', lang=lang) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+        <input type="hidden" name="action" value="cancel">
+        <button type="submit" class="button secondary">{{ translations.player_import_cancel }}</button>
+      </form>
+    </div>
+  </div>
+  {% endif %}
+</section>
+{% endblock %}

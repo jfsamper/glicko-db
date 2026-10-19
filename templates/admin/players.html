@@ -19,6 +19,10 @@
       <p>{{ translations.edit_subtitle }}</p>
     </div>
 
+    <a class="button" href="{{ url_for('admin_player_import', lang=lang) }}">
+      {{ translations.player_import_title }}
+    </a>
+
   </div>
 
   {% set admin_mode = true %}

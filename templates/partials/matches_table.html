@@ -10,6 +10,15 @@
   </a>
 </div>
 
+{% if admin_mode %}
+<form id="match-batch-delete-form" method="post"
+  action="{{ url_for('admin_delete_match', lang=lang) }}"
+  onsubmit="return confirm('{{ translations.delete_matches_confirmation }}');">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+  <button type="submit">{{ translations.delete_selected_matches }}</button>
+</form>
+{% endif %}
+
 <form method="get" class="filter-form">
   <input type="hidden" name="lang" value="{{ lang }}">
 
@@ -57,6 +66,11 @@
 
     <thead>
       <tr>
+        {% if admin_mode %}
+        <th>
+          <input type="checkbox" id="select-all-matches" aria-label="{{ translations.select_page_matches }}">
+        </th>
+        {% endif %}
         <th>
           <a
             href="{{ url_for(matches_endpoint, **dict(base_query_args, sort='date', order='asc' if current_sort == 'date' and current_order == 'desc' else 'desc')) }}">
@@ -95,6 +109,12 @@
       {% for match in matches %}
 
       <tr>
+        {% if admin_mode %}
+        <td>
+          <input type="checkbox" name="match_ids" value="{{ match.id }}" form="match-batch-delete-form"
+            aria-label="{{ translations.select_match }} {{ match.id }}">
+        </td>
+        {% endif %}
 
         <td>{{ match.match_date }}</td>
 
@@ -152,7 +172,7 @@
       {% else %}
 
       <tr>
-        <td colspan="{% if admin_mode %}8{% else %}7{% endif %}">
+        <td colspan="{% if admin_mode %}9{% else %}7{% endif %}">
           {{ translations.no_matches_found }}
         </td>
       </tr>
@@ -163,6 +183,25 @@
 
   </table>
 </div>
+
+{% if admin_mode %}
+<script>
+  const selectAllMatches = document.getElementById("select-all-matches");
+  const matchCheckboxes = document.querySelectorAll('input[name="match_ids"]');
+  selectAllMatches.addEventListener("change", function () {
+    matchCheckboxes.forEach(function (checkbox) {
+      checkbox.checked = selectAllMatches.checked;
+    });
+  });
+  matchCheckboxes.forEach(function (checkbox) {
+    checkbox.addEventListener("change", function () {
+      const selectedCount = document.querySelectorAll('input[name="match_ids"]:checked').length;
+      selectAllMatches.checked = selectedCount === matchCheckboxes.length;
+      selectAllMatches.indeterminate = selectedCount > 0 && selectedCount < matchCheckboxes.length;
+    });
+  });
+</script>
+{% endif %}
 
 {% if total_count is defined and total_count > 10 %}
 <div class="pagination-summary">

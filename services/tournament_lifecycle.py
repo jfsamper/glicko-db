@@ -1,40 +1,63 @@
 """Tournament lifecycle persistence operations."""
-from services.transactions import transactional
+from services.transactions import command, transactional
 
 
-def delete_tournament(conn, tournament_id):
+def _delete_tournament(conn, tournament_id):
     if conn.execute(
         "SELECT id FROM tournaments WHERE id = ?", (tournament_id,)
     ).fetchone() is None:
         raise ValueError("Tournament not found")
-    try:
-        conn.execute(
-            "DELETE FROM tournament_pairings WHERE round_id IN (SELECT id FROM tournament_rounds WHERE tournament_id = ?)",
-            (tournament_id,),
+    conn.execute(
+        """
+        DELETE FROM matches
+        WHERE tournament_pairing_id IN (
+            SELECT p.id
+            FROM tournament_pairings p
+            JOIN tournament_rounds r ON r.id = p.round_id
+            WHERE r.tournament_id = ?
         )
-        conn.execute(
-            "DELETE FROM tournament_round_players WHERE round_id IN (SELECT id FROM tournament_rounds WHERE tournament_id = ?)",
-            (tournament_id,),
-        )
-        conn.execute(
-            "DELETE FROM tournament_rounds WHERE tournament_id = ?", (
-                tournament_id,)
-        )
-        conn.execute(
-            "DELETE FROM tournament_participants WHERE tournament_id = ?", (
-                tournament_id,)
-        )
-        conn.execute(
-            "DELETE FROM tournament_pending_players WHERE tournament_id = ?", (
-                tournament_id,)
-        )
-        conn.execute(
-            "DELETE FROM tournaments WHERE id = ?", (tournament_id,)
-        )
-        conn.commit()
-    except Exception:
-        conn.rollback()
-        raise
+        """,
+        (tournament_id,),
+    )
+    conn.execute(
+        "DELETE FROM tournament_pairings WHERE round_id IN (SELECT id FROM tournament_rounds WHERE tournament_id = ?)",
+        (tournament_id,),
+    )
+    conn.execute(
+        "DELETE FROM tournament_round_players WHERE round_id IN (SELECT id FROM tournament_rounds WHERE tournament_id = ?)",
+        (tournament_id,),
+    )
+    conn.execute(
+        "DELETE FROM tournament_rounds WHERE tournament_id = ?", (
+            tournament_id,)
+    )
+    conn.execute(
+        "DELETE FROM tournament_participants WHERE tournament_id = ?", (
+            tournament_id,)
+    )
+    conn.execute(
+        "DELETE FROM tournament_pending_players WHERE tournament_id = ?", (
+            tournament_id,)
+    )
+    conn.execute(
+        "DELETE FROM tournaments WHERE id = ?", (tournament_id,)
+    )
+
+
+@transactional
+def delete_tournaments(conn, tournament_ids):
+    """Delete tournaments and all of their tournament-linked records atomically."""
+    ids = list(dict.fromkeys(tournament_ids))
+    if not ids:
+        raise ValueError("No tournaments selected")
+    for tournament_id in ids:
+        _delete_tournament(conn, tournament_id)
+    return len(ids)
+
+
+def delete_tournament(conn, tournament_id):
+    with command(conn):
+        _delete_tournament(conn, tournament_id)
 
 
 @transactional

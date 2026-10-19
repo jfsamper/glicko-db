@@ -74,15 +74,16 @@ All routes below require a signed-in account and role permissions. The forms and
 - `/admin`: administration dashboard
 - `/admin/import`: Excel, CSV, and OpenGotha imports
 - `/admin/backups`: create, restore, and delete managed backups
-- `/admin/players`, `/admin/matches`: player and match management
+- `/admin/players`, `/admin/players/import`, `/admin/matches`: player and match management, including CSV/XLSX player import
 - `/admin/ratings`, `/admin/categories`: rating and category configuration
-- `/admin/tournaments`: tournament creation and management
+- `/admin/tournaments`: tournament creation, management, and batch deletion
 - `/admin/tournaments/<tournament_id>/...`: participants, pairings, results, round processing, and export
-- `/admin/sgf/...`: SGF linking and deletion actions
+- `/admin/tournaments/<tournament_id>/participants/add-batch` and `/admin/tournaments/<tournament_id>/participants/remove-batch`: enroll or remove up to 100 selected participants atomically
+- `/admin/sgf/...`: SGF linking and deletion actions; `/admin/sgf/delete-batch` deletes up to 100 selected files and clears linked match and pending-submission references
 - `/admin/news`: news management
 - `/admin/users`, `/admin/audit`, `/admin/settings`: account, audit, and application settings
 
-POST routes change application state and should be called through the rendered forms. Backup, restore, import, deletion, and tournament actions are deliberately not exposed as unauthenticated GET operations.
+POST routes change application state and should be called through the rendered forms. Batch actions require the same role permissions and CSRF protection as their single-item equivalents; tournament batch participant actions also require idempotency keys. Backup, restore, import, deletion, and tournament actions are deliberately not exposed as unauthenticated GET operations.
 
 ## Integration guidance
 

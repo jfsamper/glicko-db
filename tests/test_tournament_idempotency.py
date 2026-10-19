@@ -138,7 +138,7 @@ def test_tournament_command_forms_render_a_fresh_key_per_form():
     repo_root = Path(__file__).resolve().parents[1]
     expected_keys = {
         "templates/admin/tournament.html": 2,
-        "templates/admin/tournament_players.html": 2,
+        "templates/admin/tournament_players.html": 4,
         "templates/admin/tournaments.html": 2,
     }
     key_input = 'name="idempotency_key" value="{{ new_idempotency_key() }}"'

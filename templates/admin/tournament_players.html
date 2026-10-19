@@ -24,10 +24,18 @@
     <article class="card">
       <h3>{{ translations.participant_list }}</h3>
       {% if participants %}
+      <form id="remove-participants-form" method="post"
+        action="{{ url_for('admin_remove_tournament_participants', tournament_id=tournament.id, lang=lang) }}"
+        onsubmit="return confirm('{{ translations.remove_participants_confirmation }}');">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="idempotency_key" value="{{ new_idempotency_key() }}">
+        <button type="submit">{{ translations.remove_selected_players }}</button>
+      </form>
       <div class="table-wrapper">
         <table class="table-stack">
           <thead>
             <tr>
+              <th>{{ translations.select_label }}</th>
               <th>{{ translations.player }}</th>
               <th>{{ translations.rating }}</th>
               <th>{{ translations.actions_label }}</th>
@@ -36,6 +44,12 @@
           <tbody>
             {% for participant in participants %}
             <tr>
+              <td>
+                {% if not participant.is_pending %}
+                <input type="checkbox" form="remove-participants-form" name="player_ids"
+                  value="{{ participant.player_id }}" aria-label="{{ participant.display_name }}">
+                {% endif %}
+              </td>
               <td>{{ participant.display_name }}{% if participant.is_pending %} <em>({{ translations.pending_label
                   }})</em>{% endif %}</td>
               <td>{{ participant.seed_rating|round(1) }}</td>
@@ -84,6 +98,21 @@
         </select>
         <button type="submit">{{ translations.add_player }}</button>
       </form>
+      {% if available_players %}
+      <form method="post"
+        action="{{ url_for('admin_add_tournament_participants', tournament_id=tournament.id, lang=lang) }}"
+        class="filter-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="idempotency_key" value="{{ new_idempotency_key() }}">
+        <label for="player_ids">{{ translations.select_players_for_batch }}</label>
+        <select id="player_ids" name="player_ids" multiple size="8" required>
+          {% for player in available_players %}
+          <option value="{{ player.id }}">{{ player.display_name }} ({{ player.rating|round(1) }})</option>
+          {% endfor %}
+        </select>
+        <button type="submit">{{ translations.add_selected_players }}</button>
+      </form>
+      {% endif %}
 
       <hr>
       {% if similar_player_confirmation %}

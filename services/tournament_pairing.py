@@ -376,6 +376,24 @@ def remove_participant(conn, tournament_id, player_id):
 
 
 @transactional
+def add_participants(conn, tournament_id, player_ids):
+    ids = list(player_ids)
+    if not ids or len(ids) > 100 or len(set(ids)) != len(ids):
+        raise ValueError("Select between 1 and 100 distinct players")
+    for player_id in ids:
+        add_participant(conn, tournament_id, player_id)
+
+
+@transactional
+def remove_participants(conn, tournament_id, player_ids):
+    ids = list(player_ids)
+    if not ids or len(ids) > 100 or len(set(ids)) != len(ids):
+        raise ValueError("Select between 1 and 100 distinct players")
+    for player_id in ids:
+        remove_participant(conn, tournament_id, player_id)
+
+
+@transactional
 def manual_pair(conn, tournament_id, round_id, white_player_id, black_player_id, handicap_stones=None):
     if conn.execute("SELECT 1 FROM tournament_rounds WHERE id = ? AND tournament_id = ?", (round_id, tournament_id)).fetchone() is None or white_player_id == black_player_id:
         raise ValueError("Invalid manual pairing")

@@ -3,6 +3,8 @@ import sqlite3
 
 from flask import flash, redirect, request, url_for
 
+MAX_SGF_DELETE_BATCH = 100
+
 
 def _admin_routes():
     from routes import admin
@@ -18,6 +20,8 @@ def register_sgf_routes(admin_bp):
         ("/admin/sgf/unlink", "admin_unlink_sgf", admin_unlink_sgf),
         ("/admin/sgf-library/unlink", "admin_unlink_sgf_alias", admin_unlink_sgf),
         ("/admin/sgf/delete", "admin_delete_sgf", admin_delete_sgf),
+        ("/admin/sgf/delete-batch",
+         "admin_delete_sgf_batch", admin_delete_sgf_batch),
     ):
         admin_bp.add_url_rule(route, endpoint=endpoint,
                               view_func=view_func, methods=["POST"])
@@ -193,36 +197,96 @@ def admin_unlink_sgf():
     return _library_redirect(lang)
 
 
+def _delete_sgf_files(admin, lang, filenames):
+    translations = admin.TRANSLATIONS[lang]
+    selected = list(dict.fromkeys(filenames))
+    if not selected or len(selected) > MAX_SGF_DELETE_BATCH:
+        flash(translations["error"])
+        return _library_redirect(lang)
+    paths = {filename: admin.get_sgf_path(filename) for filename in selected}
+    if any(path is None or not path.is_file() for path in paths.values()):
+        flash(translations.get(
+            "sgf_file_not_found", translations["error"]))
+        return _library_redirect(lang)
+
+    def action(conn):
+        admin.ensure_sgf_schema(conn)
+        placeholders = ", ".join("?" for _ in selected)
+        conn.execute(
+            f"UPDATE matches SET sgf_filename = NULL "
+            f"WHERE sgf_filename IN ({placeholders})",
+            selected,
+        )
+        submissions_table = conn.execute(
+            "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'result_submissions'"
+        ).fetchone()
+        if submissions_table and "sgf_filename" in {
+            row["name"] for row in conn.execute(
+                "PRAGMA table_info(result_submissions)"
+            ).fetchall()
+        }:
+            conn.execute(
+                f"UPDATE result_submissions SET sgf_filename = NULL "
+                f"WHERE sgf_filename IN ({placeholders})",
+                selected,
+            )
+        conn.commit()
+
+    try:
+        admin.run_admin_db_action(action, lang)
+    except sqlite3.DatabaseError as exc:
+        admin.logger.exception("SGF batch deletion could not clear match links")
+        flash(f"{translations['error']}: {exc}")
+        return _library_redirect(lang)
+
+    failures = []
+    for filename, path in paths.items():
+        try:
+            path.unlink()
+        except OSError:
+            admin.logger.exception("Could not delete SGF file %s", filename)
+            failures.append(filename)
+            continue
+        admin.log_admin_action(
+            "sgf_deleted",
+            "sgf",
+            {"filename": filename},
+            user_id=admin.session.get("user_id"),
+        )
+
+    deleted_count = len(selected) - len(failures)
+    if failures:
+        flash(
+            translations["sgf_batch_delete_partial"].format(
+                deleted=deleted_count, failed=len(failures)
+            )
+        )
+    else:
+        flash(translations["sgf_batch_deleted_success"].format(
+            count=deleted_count))
+    return _library_redirect(lang)
+
+
 def admin_delete_sgf():
     admin = _admin_routes()
     permission_error = admin.require_permission("admin")
     if permission_error is not None:
         return permission_error
-
     lang = admin.get_language(request.args.get("lang"))
     filename = (request.form.get("filename")
                 or request.form.get("sgf_filename") or "").strip()
-    if not filename or admin.get_sgf_path(filename) is None:
-        flash(admin.TRANSLATIONS[lang].get(
-            "sgf_file_not_found", admin.TRANSLATIONS[lang]["error"]))
-        return _library_redirect(lang)
+    return _delete_sgf_files(admin, lang, [filename] if filename else [])
 
-    def action(conn):
-        admin.ensure_sgf_schema(conn)
-        conn.execute(
-            "UPDATE matches SET sgf_filename = NULL WHERE sgf_filename = ?",
-            (filename,),
-        )
-        conn.commit()
-    admin.run_admin_db_action(action, lang)
 
-    admin.delete_sgf_file(filename)
-    admin.log_admin_action(
-        "sgf_deleted",
-        "sgf",
-        {"filename": filename},
-        user_id=admin.session.get("user_id"),
-    )
-    flash(admin.TRANSLATIONS[lang].get(
-        "sgf_deleted_success", admin.TRANSLATIONS[lang]["success"]))
-    return _library_redirect(lang)
+def admin_delete_sgf_batch():
+    admin = _admin_routes()
+    permission_error = admin.require_permission("admin")
+    if permission_error is not None:
+        return permission_error
+    lang = admin.get_language(request.args.get("lang"))
+    filenames = [
+        filename.strip()
+        for filename in request.form.getlist("filenames")
+        if filename.strip()
+    ]
+    return _delete_sgf_files(admin, lang, filenames)

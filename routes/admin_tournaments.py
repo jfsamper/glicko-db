@@ -22,6 +22,8 @@ from services.idempotency_service import (
 )
 from services.tournament_status import refresh_ratings_for_tournament_status
 
+MAX_TOURNAMENTS_PER_DELETE = 100
+
 
 def _admin_routes():
     from routes import admin
@@ -149,6 +151,8 @@ def register_tournament_detail_routes(admin_bp):
          "admin_copy_tournament", ("POST",)),
         ("/admin/tournaments/<int:tournament_id>/delete",
          "admin_delete_tournament", ("POST",)),
+        ("/admin/tournaments/delete-batch",
+         "admin_delete_tournaments", ("POST",)),
         ("/admin/tournaments/<int:tournament_id>/status",
          "admin_update_tournament_status", ("POST",)),
         ("/admin/tournaments/<int:tournament_id>/settings",
@@ -164,12 +168,16 @@ def register_tournament_detail_routes(admin_bp):
          "admin_tournament_players", ("GET",)),
         ("/admin/tournaments/<int:tournament_id>/participants/add",
          "admin_add_tournament_participant", ("POST",)),
+        ("/admin/tournaments/<int:tournament_id>/participants/add-batch",
+         "admin_add_tournament_participants", ("POST",)),
         ("/admin/tournaments/<int:tournament_id>/players/create",
          "admin_create_tournament_player", ("POST",)),
         ("/admin/tournaments/<int:tournament_id>/pending-player/delete",
          "admin_delete_pending_player", ("POST",)),
         ("/admin/tournaments/<int:tournament_id>/participants/remove",
          "admin_remove_tournament_participant", ("POST",)),
+        ("/admin/tournaments/<int:tournament_id>/participants/remove-batch",
+         "admin_remove_tournament_participants", ("POST",)),
         ("/admin/tournaments/<int:tournament_id>/pairing-handicap",
          "admin_update_pairing_handicap", ("POST",)),
         ("/admin/tournaments/<int:tournament_id>/pair",
@@ -193,6 +201,7 @@ def register_tournament_detail_routes(admin_bp):
     handler_map = {
         "admin_copy_tournament": admin_copy_tournament,
         "admin_delete_tournament": admin_delete_tournament,
+        "admin_delete_tournaments": admin_delete_tournaments,
         "admin_update_tournament_status": admin_update_tournament_status,
         "admin_update_tournament_settings": admin_update_tournament_settings,
         "admin_tournament_settings": admin_tournament_settings,
@@ -202,8 +211,10 @@ def register_tournament_detail_routes(admin_bp):
         "admin_create_tournament_player": admin_create_tournament_player,
         "admin_tournament_players": admin_tournament_players,
         "admin_add_tournament_participant": admin_add_tournament_participant,
+        "admin_add_tournament_participants": admin_add_tournament_participants,
         "admin_delete_pending_player": admin_delete_pending_player,
         "admin_remove_tournament_participant": admin_remove_tournament_participant,
+        "admin_remove_tournament_participants": admin_remove_tournament_participants,
         "admin_update_pairing_handicap": admin_update_pairing_handicap,
         "admin_manual_pair": admin_manual_pair,
         "admin_pair_selected_players": admin_pair_selected_players,
@@ -317,21 +328,102 @@ def admin_copy_tournament(tournament_id):
         conn.close()
 
 
-def admin_delete_tournament(tournament_id):
-    admin = _admin_routes()
-    if not admin.admin_required():
-        return redirect(url_for("admin_login", lang=admin.get_language(request.args.get("lang"))))
-    lang = admin.get_language(request.args.get("lang"))
+def _delete_tournaments(admin, lang, tournament_ids):
+    ids = list(dict.fromkeys(tournament_ids))
+    if (
+        not ids
+        or len(ids) > MAX_TOURNAMENTS_PER_DELETE
+        or any(tournament_id <= 0 for tournament_id in ids)
+    ):
+        flash(TRANSLATIONS[lang]["error"])
+        return False
 
-    def action(conn):
-        admin.delete_tournament(conn, tournament_id)
+    conn = admin.get_db()
+    try:
+        conn.execute("BEGIN IMMEDIATE")
+        placeholders = ", ".join("?" for _ in ids)
+        existing_ids = {
+            row["id"]
+            for row in conn.execute(
+                f"SELECT id FROM tournaments WHERE id IN ({placeholders})",
+                ids,
+            ).fetchall()
+        }
+        if existing_ids != set(ids):
+            conn.rollback()
+            flash(TRANSLATIONS[lang]["error"])
+            return False
+        match_dates = conn.execute(
+            f"""
+            SELECT m.match_date
+            FROM matches m
+            JOIN tournament_pairings p ON p.id = m.tournament_pairing_id
+            JOIN tournament_rounds r ON r.id = p.round_id
+            WHERE r.tournament_id IN ({placeholders})
+            """,
+            ids,
+        ).fetchall()
+        admin.delete_tournaments(conn, ids)
+    except ValueError as exc:
+        conn.rollback()
+        flash(f"{TRANSLATIONS[lang]['error']}: {exc}")
+        return False
+    except sqlite3.DatabaseError as exc:
+        conn.rollback()
+        admin.logger.exception(
+            "Tournament deletion failed for %s", ids)
+        flash(f"{TRANSLATIONS[lang]['error']}: {exc}")
+        return False
+    finally:
+        conn.close()
+
+    for tournament_id in ids:
         admin.log_admin_action(
             "tournament_deleted",
             "tournament",
             {"tournament_id": tournament_id},
             user_id=admin.session.get("user_id"),
         )
-    admin.run_admin_db_action(action, lang, TRANSLATIONS[lang]["success"])
+
+    try:
+        admin.refresh_stats()
+        if match_dates:
+            admin.mark_dirty(min(row["match_date"] for row in match_dates))
+            admin.update_from_latest_snapshot()
+    except sqlite3.DatabaseError as exc:
+        admin.logger.exception(
+            "Tournament deletion committed for %s, but post-delete rating refresh failed",
+            ids,
+        )
+        flash(
+            f"{TRANSLATIONS[lang]['tournament_delete_committed_refresh_failed']}: {exc}"
+        )
+        return False
+
+    flash(TRANSLATIONS[lang]["success"])
+    return True
+
+
+def admin_delete_tournament(tournament_id):
+    admin = _admin_routes()
+    if not admin.admin_required():
+        return redirect(url_for("admin_login", lang=admin.get_language(request.args.get("lang"))))
+    lang = admin.get_language(request.args.get("lang"))
+    _delete_tournaments(admin, lang, [tournament_id])
+    return redirect(url_for("admin_tournaments", lang=lang))
+
+
+def admin_delete_tournaments():
+    admin = _admin_routes()
+    if not admin.admin_required():
+        return redirect(url_for("admin_login", lang=admin.get_language(request.args.get("lang"))))
+    lang = admin.get_language(request.args.get("lang"))
+    requested_ids = request.form.getlist("tournament_ids")
+    try:
+        tournament_ids = [int(value) for value in requested_ids]
+    except (TypeError, ValueError):
+        tournament_ids = []
+    _delete_tournaments(admin, lang, tournament_ids)
     return redirect(url_for("admin_tournaments", lang=lang))
 
 
@@ -935,6 +1027,39 @@ def admin_add_tournament_participant(tournament_id):
     return redirect(url_for("admin_tournament_players", tournament_id=tournament_id, lang=lang))
 
 
+def _batch_player_ids():
+    values = request.form.getlist("player_ids")
+    if not values or len(values) > 100:
+        raise ValueError("Select between 1 and 100 players")
+    try:
+        player_ids = [int(value) for value in values]
+    except (TypeError, ValueError) as exc:
+        raise ValueError("Invalid player selection") from exc
+    if any(player_id <= 0 for player_id in player_ids) or len(set(player_ids)) != len(player_ids):
+        raise ValueError("Select distinct valid players")
+    return player_ids
+
+
+@idempotent_command("tournament.participants_add_batch")
+def admin_add_tournament_participants(tournament_id):
+    admin = _admin_routes()
+    if not admin.admin_required():
+        return redirect(url_for("admin_login", lang=admin.get_language(request.args.get("lang"))))
+    lang = admin.get_language(request.args.get("lang"))
+
+    def action(conn):
+        player_ids = _batch_player_ids()
+        admin.add_participants(conn, tournament_id, player_ids)
+        admin.log_admin_action(
+            "tournament_participants_added",
+            "tournament",
+            {"tournament_id": tournament_id, "player_ids": player_ids},
+            user_id=admin.session.get("user_id"),
+        )
+    admin.run_admin_db_action(action, lang, TRANSLATIONS[lang]["success"])
+    return redirect(url_for("admin_tournament_players", tournament_id=tournament_id, lang=lang))
+
+
 def admin_delete_pending_player(tournament_id):
     admin = _admin_routes()
     if not admin.admin_required():
@@ -993,6 +1118,26 @@ def admin_remove_tournament_participant(tournament_id):
             round_id=request.form.get("round_id", type=int),
         )
     )
+
+
+@idempotent_command("tournament.participants_remove_batch")
+def admin_remove_tournament_participants(tournament_id):
+    admin = _admin_routes()
+    if not admin.admin_required():
+        return redirect(url_for("admin_login", lang=admin.get_language(request.args.get("lang"))))
+    lang = admin.get_language(request.args.get("lang"))
+
+    def action(conn):
+        player_ids = _batch_player_ids()
+        admin.remove_participants(conn, tournament_id, player_ids)
+        admin.log_admin_action(
+            "tournament_participants_removed",
+            "tournament",
+            {"tournament_id": tournament_id, "player_ids": player_ids},
+            user_id=admin.session.get("user_id"),
+        )
+    admin.run_admin_db_action(action, lang, TRANSLATIONS[lang]["success"])
+    return redirect(url_for("admin_tournament_players", tournament_id=tournament_id, lang=lang))
 
 
 def admin_update_pairing_handicap(tournament_id):
