@@ -171,6 +171,8 @@ Os jogadores da comunidade podem registrar uma conta pessoal para gerenciar pref
 
 ### Gestão de perfil e preferências
 
+O menu **Usuário** da barra superior reúne **Menu de administração** (conforme as permissões), **Reportar Resultados**, **Perfil** e **Sair**. Ao abri-lo, ele também mostra uma saudação com o nome da conta. Ele abre ao passar o ponteiro em dispositivos compatíveis, ou por clique, toque, `Enter` ou espaço. No menu móvel, as opções abrem à esquerda. O submenu começa fechado em cada página e fecha quando o ponteiro ou o foco sai dele, ao clicar fora, pressionar `Esc`, navegar ou fechar o menu principal. As informações de contato estão no rodapé.
+
 Em `/admin/profile`, o usuário autenticado pode:
 - Atualizar o endereço de e-mail para notificações e recuperação.
 - Escolher o idioma preferido da interface (`Español`, `English`, `Português`).

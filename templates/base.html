@@ -61,9 +61,33 @@
               href="{{ url_for('category_converter', lang=lang) }}" {% if current_endpoint=='category_converter' %}
               aria-current="page" {% endif %}>{{ translations.category }}</a></li>
           {% if session.get('user_id') %}
-          <li><a class="top-nav-link{% if current_endpoint == 'admin_profile' %} is-active{% endif %}"
-              href="{{ url_for('admin_profile', lang=lang) }}" {% if current_endpoint=='admin_profile' %}
-              aria-current="page" {% endif %}>{{ translations.profile_title }}</a></li>
+          <li>
+            <details class="top-nav-submenu">
+              <summary class="top-nav-link top-nav-submenu-trigger{% if current_endpoint in
+                  ['admin', 'admin_report_results', 'admin_profile', 'admin_logout'] %} is-active{% endif %}">
+                {{ translations.user_menu }}
+              </summary>
+              <ul class="top-nav-submenu-menu">
+                {% if current_user %}
+                <li class="top-nav-submenu-greeting">{{ translations.welcome_user }}, {{ current_user.username }}</li>
+                {% endif %}
+                {% if current_user and current_user.role in ['administrator', 'tournament_director', 'operator'] %}
+                <li><a class="top-nav-link{% if current_endpoint == 'admin' %} is-active{% endif %}"
+                    href="{{ url_for('admin', lang=lang) }}" {% if current_endpoint == 'admin' %} aria-current="page" {%
+                    endif %}>{{ translations.admin_menu_link }}</a></li>
+                {% endif %}
+                <li><a class="top-nav-link{% if current_endpoint == 'admin_report_results' %} is-active{% endif %}"
+                    href="{{ url_for('admin_report_results', lang=lang) }}" {% if current_endpoint ==
+                    'admin_report_results' %} aria-current="page" {% endif %}>{{ translations.report_results }}</a></li>
+                <li><a class="top-nav-link{% if current_endpoint == 'admin_profile' %} is-active{% endif %}"
+                    href="{{ url_for('admin_profile', lang=lang) }}" {% if current_endpoint == 'admin_profile' %}
+                    aria-current="page" {% endif %}>{{ translations.profile_link }}</a></li>
+                <li><a class="top-nav-link{% if current_endpoint == 'admin_logout' %} is-active{% endif %}"
+                    href="{{ url_for('admin_logout', lang=lang) }}" {% if current_endpoint == 'admin_logout' %}
+                    aria-current="page" {% endif %}>{{ translations.logout_button }}</a></li>
+              </ul>
+            </details>
+          </li>
           {% else %}
           <li><a class="top-nav-link{% if current_endpoint == 'admin_login' %} is-active{% endif %}"
               href="{{ url_for('admin_login', lang=lang) }}" {% if current_endpoint=='admin_login' %}
@@ -105,29 +129,6 @@
   </aside>
 
   <div class="page-shell">
-    <aside class="sidebar">
-      <div class="sidebar-block small">
-        <h3>{{ translations.contact }}</h3>
-        <a href="tel:318-007-9047">318-007-9047</a>
-        <a href="mailto:contacto@colombiago.org">contacto@colombiago.org</a>
-        <a href="https://colombiago.org">colombiago.org</a>
-      </div>
-      <div class="sidebar-block small">
-        {% if current_user %}
-        <h4>{{ translations.welcome_user }}, {{ current_user.username }}</h4>
-        {% if current_user.role in ['administrator', 'tournament_director', 'operator'] %}
-        <p><a href="{{ url_for('admin', lang=lang) }}">{{ translations.admin_menu_link }}</a></p>
-        {% endif %}
-        <p><a href="{{ url_for('admin_report_results', lang=lang) }}">{{ translations.report_results }}</a></p>
-        <p><a href="{{ url_for('admin_logout', lang=lang) }}">{{ translations.logout_button }}</a></p>
-        {% else %}
-        <h4>{{ translations.report_results }}</h4>
-        <p>{{ translations.report_results_help }} <a href="{{ url_for('admin_login', lang=lang) }}">{{ translations.here
-            }}.</a></p>
-        {% endif %}
-      </div>
-    </aside>
-
     <main class="content-area">
       {% with messages = get_flashed_messages() %}
       {% if messages %}
@@ -143,6 +144,12 @@
   </div>
 
   <footer>
+    <div class="footer-contact">
+      <h2>{{ translations.contact }}</h2>
+      <a href="tel:318-007-9047">318-007-9047</a>
+      <a href="mailto:contacto@colombiago.org">contacto@colombiago.org</a>
+      <a href="https://colombiago.org">colombiago.org</a>
+    </div>
     <p>{{ translations.footer }}</p>
   </footer>
 
@@ -245,46 +252,88 @@
 
     const topNav = document.querySelector(".top-nav");
     const topNavToggle = document.querySelector(".top-nav-toggle");
-    let topNavCloseTimer;
+    const userMenu = document.querySelector(".top-nav-submenu");
+    const userMenuToggle = userMenu?.querySelector("summary");
+    const compactNav = window.matchMedia("(max-width: 900px)");
+    const hoverNav = window.matchMedia("(hover: hover) and (pointer: fine)");
+    let userMenuCloseTimer;
+    let userMenuOpenedByHover = false;
+
+    function closeUserMenu() {
+      window.clearTimeout(userMenuCloseTimer);
+      if (userMenu) userMenu.open = false;
+      userMenuOpenedByHover = false;
+    }
 
     function closeTopNav() {
+      closeUserMenu();
       if (!topNav || !topNavToggle) return;
       topNav.classList.remove("is-open");
       topNavToggle.setAttribute("aria-expanded", "false");
-      window.clearTimeout(topNavCloseTimer);
-    }
-
-    function scheduleTopNavClose() {
-      window.clearTimeout(topNavCloseTimer);
-      if (window.matchMedia("(max-width: 900px)").matches) {
-        topNavCloseTimer = window.setTimeout(closeTopNav, 5000);
-      }
     }
 
     if (topNav && topNavToggle) {
       topNavToggle.addEventListener("click", (event) => {
         event.stopPropagation();
+        closeUserMenu();
         const isOpen = topNav.classList.toggle("is-open");
         topNavToggle.setAttribute("aria-expanded", String(isOpen));
-        if (isOpen) scheduleTopNavClose();
-        else window.clearTimeout(topNavCloseTimer);
       });
 
-      topNav.querySelectorAll(".top-nav-link").forEach((link) => {
+      topNav.querySelectorAll("a.top-nav-link").forEach((link) => {
         link.addEventListener("click", closeTopNav);
       });
 
+      if (userMenu && userMenuToggle) {
+        userMenuToggle.addEventListener("click", (event) => {
+          event.preventDefault();
+          window.clearTimeout(userMenuCloseTimer);
+          const keepHoverOpen = event.detail > 0 && userMenuOpenedByHover;
+          userMenu.open = keepHoverOpen || !userMenu.open;
+          userMenuOpenedByHover = false;
+        });
+
+        userMenu.addEventListener("pointerenter", (event) => {
+          if (event.pointerType !== "mouse" || !hoverNav.matches) return;
+          if (compactNav.matches && !topNav.classList.contains("is-open")) return;
+          window.clearTimeout(userMenuCloseTimer);
+          if (!userMenu.open) {
+            userMenu.open = true;
+            userMenuOpenedByHover = true;
+          }
+        });
+
+        userMenu.addEventListener("pointerleave", (event) => {
+          if (event.pointerType !== "mouse" || !hoverNav.matches) return;
+          userMenuCloseTimer = window.setTimeout(closeUserMenu, 150);
+        });
+
+        userMenu.addEventListener("focusout", (event) => {
+          if (!userMenu.contains(event.relatedTarget)) closeUserMenu();
+        });
+      }
+
       document.addEventListener("click", (event) => {
         if (!topNav.contains(event.target)) closeTopNav();
+        else if (userMenu && !userMenu.contains(event.target)) closeUserMenu();
       });
 
       document.addEventListener("keydown", (event) => {
-        if (event.key === "Escape") closeTopNav();
+        if (event.key !== "Escape") return;
+        const wasUserMenuOpen = userMenu?.open;
+        const wasTopNavOpen = topNav.classList.contains("is-open");
+        closeTopNav();
+        if (wasTopNavOpen && compactNav.matches) topNavToggle.focus();
+        else if (wasUserMenuOpen) userMenuToggle.focus();
       });
 
-      window.addEventListener("resize", () => {
-        if (!window.matchMedia("(max-width: 900px)").matches) closeTopNav();
+      topNav.addEventListener("focusout", (event) => {
+        if (!topNav.contains(event.relatedTarget)) closeTopNav();
       });
+
+      window.addEventListener("resize", closeTopNav);
+      window.addEventListener("pagehide", closeTopNav);
+      window.addEventListener("pageshow", closeTopNav);
     }
   </script>
   <script src="{{ url_for('static', filename='js/install-app.js') }}" defer></script>

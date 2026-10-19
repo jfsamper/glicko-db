@@ -171,6 +171,8 @@ Community players can register a personal account to manage preferences and subm
 
 ### Profile management
 
+The top-navigation **User** menu contains **Admin Menu** (when permitted), **Report Results**, **Profile**, and **Logout**. When opened, it also displays a greeting with the account name. Open it by hovering on supported devices, or by clicking, tapping, pressing `Enter`, or pressing space. In the mobile menu, its options open to the left. The submenu starts closed on each page and closes when the pointer or focus leaves it, you click outside, press `Esc`, navigate, or close the main menu. Contact information is in the footer.
+
 From `/admin/profile`, authenticated users can:
 - Update their notification and recovery email address.
 - Select their preferred UI language (`Español`, `English`, `Português`).

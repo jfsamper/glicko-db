@@ -111,6 +111,14 @@ Execute os testes a partir da raiz:
 pytest -q
 ```
 
+Os testes opcionais de navegação no Chromium exigem Playwright:
+
+```powershell
+python -m pip install playwright
+python -m playwright install chromium
+python -m pytest tests\test_navigation_browser.py -q
+```
+
 ### Organização do código
 
 As rotas ficam em `routes/`, a lógica compartilhada em `services/` e os testes em `tests/`. Os arquivos de exemplo dos testes estão versionados.

@@ -111,6 +111,14 @@ Run tests from the project root:
 pytest -q
 ```
 
+Optional Chromium navigation tests require Playwright:
+
+```powershell
+python -m pip install playwright
+python -m playwright install chromium
+python -m pytest tests\test_navigation_browser.py -q
+```
+
 ### Code organization
 
 Application routes are in `routes/`, shared logic in `services/`, and tests in `tests/`. Test fixtures are versioned with the project.

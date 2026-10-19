@@ -114,7 +114,7 @@ def test_homepage_stats_render_all_periods_with_accessible_tabs():
     assert 'id="home-stats-period-all_time"' in invalid_body
 
 
-def test_public_navigation_keeps_reports_link_and_sidebar_login_link():
+def test_public_navigation_places_contact_in_footer_without_sidebar():
     app.testing = True
     body = app.test_client().get("/?lang=en").get_data(as_text=True)
 
@@ -123,10 +123,15 @@ def test_public_navigation_keeps_reports_link_and_sidebar_login_link():
     assert 'aria-label="Help"' in body
     assert 'href="/admin/login?lang=en"' in body
     assert body.index('href="/admin/login?lang=en"') < body.index('href="/help?lang=en"')
-    assert "Report Results" in body
+    assert 'class="top-nav-submenu"' not in body
     assert 'class="top-nav"' in body
     assert 'class="top-nav-toggle"' in body
-    assert 'class="sidebar-nav"' not in body
+    assert 'class="sidebar"' not in body
+    assert 'class="sidebar-block"' not in body
+    assert 'href="tel:318-007-9047"' in body
+    assert 'href="mailto:contacto@colombiago.org"' in body
+    assert 'href="https://colombiago.org"' in body
+    assert body.index("<footer") < body.index('href="tel:318-007-9047"')
 
 
 def test_help_route_serves_the_localized_interface_guide():
@@ -232,8 +237,8 @@ def test_authenticated_help_link_follows_profile_link(admin_client):
     assert body.index('href="/admin/profile?lang=en"') < body.index('href="/help?lang=en"')
 
 
-def test_logged_in_sidebar_links_back_to_admin_menu(monkeypatch, tmp_path):
-    db_path = tmp_path / "sidebar_user.db"
+def test_logged_in_navigation_shows_greeting_in_user_menu(monkeypatch, tmp_path):
+    db_path = tmp_path / "navigation_user.db"
     monkeypatch.setattr(config, "DB_PATH", str(db_path))
     monkeypatch.setattr(common, "DB_PATH", str(db_path))
 
@@ -246,6 +251,8 @@ def test_logged_in_sidebar_links_back_to_admin_menu(monkeypatch, tmp_path):
     assert response.status_code == 200
     body = response.get_data(as_text=True)
     assert "Welcome, admin" in body
+    assert body.index('class="top-nav-submenu-greeting"') < body.index("Welcome, admin")
+    assert 'class="sidebar"' not in body
     assert 'href="/admin?lang=en"' in body
     assert "Admin Menu" in body
     assert 'href="/admin/report-results?lang=en"' in body

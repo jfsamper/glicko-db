@@ -4,7 +4,6 @@
   --bg: #f3f6fb;
   --panel: #ffffff;
   --card: #fbfcff;
-  --sidebar: #0f1d2d;
   --header: #16324f;
 
   --text: #1f2937;
@@ -28,7 +27,6 @@
   --bg: #111827;
   --panel: #1f2937;
   --card: #273548;
-  --sidebar: #0b1220;
   --header: #0b1220;
 
   --text: #f3f4f6;
@@ -157,6 +155,69 @@ nav a,
   transform: translateY(-1px);
 }
 
+.top-nav-submenu {
+  position: relative;
+}
+
+.top-nav-submenu > summary {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  list-style: none;
+  cursor: pointer;
+}
+
+.top-nav-submenu-trigger::after {
+  width: 0.42rem;
+  height: 0.42rem;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  content: "";
+  transform: translateY(-0.12rem) rotate(45deg);
+  transition: transform 0.15s ease;
+}
+
+.top-nav-submenu[open] > .top-nav-submenu-trigger::after {
+  transform: translateY(0.12rem) rotate(225deg);
+}
+
+.top-nav-submenu > summary::-webkit-details-marker {
+  display: none;
+}
+
+.top-nav-submenu-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  z-index: 10;
+  display: none;
+  min-width: 12rem;
+  margin: 0;
+  padding: 0.4rem;
+  list-style: none;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: var(--shadow);
+}
+
+.top-nav-submenu[open] > .top-nav-submenu-menu {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.top-nav-submenu-menu .top-nav-link {
+  color: var(--text);
+}
+
+.top-nav-submenu-greeting {
+  padding: 0.45rem 0.65rem 0.6rem;
+  border-bottom: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
 .top-nav-toggle {
   display: none;
 }
@@ -167,8 +228,7 @@ nav a:hover,
 }
 
 .page-shell {
-  display: grid;
-  grid-template-columns: 240px minmax(0, 1fr);
+  display: block;
   min-height: calc(100vh - 180px);
 }
 
@@ -178,38 +238,6 @@ nav a:hover,
 .panel,
 .card {
   min-width: 0;
-}
-
-.sidebar {
-  background: var(--sidebar);
-  color: white;
-  padding: 1.25rem 1rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.sidebar-block {
-  padding: 0.8rem;
-  border: 1px solid rgba(255,255,255,0.14);
-  border-radius: 10px;
-  background: rgba(255,255,255,0.05);
-}
-
-.sidebar-block a {
-  color: #edf6ff;
-  text-decoration: underline;
-  text-decoration-color: rgba(255, 255, 255, 0.7);
-}
-
-.sidebar-block a:hover,
-.sidebar-block a:focus-visible {
-  color: #ffffff;
-  text-decoration-color: #ffffff;
-}
-
-.sidebar-block.small p {
-  margin-bottom: 0;
 }
 
 .content-area {
@@ -271,6 +299,35 @@ nav a:hover,
 
 .breadcrumb a:hover {
   text-decoration: underline;
+}
+
+footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+footer p {
+  margin: 0;
+}
+
+.footer-contact {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+}
+
+.footer-contact h2 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.footer-contact a {
+  color: inherit;
+  overflow-wrap: anywhere;
 }
 
 .button {
@@ -511,14 +568,6 @@ nav a:hover,
 }
 
 @media (max-width: 900px) {
-  .page-shell {
-    grid-template-columns: 1fr;
-  }
-
-  .sidebar {
-    order: 2;
-  }
-
   .card-grid.two-up {
     grid-template-columns: 1fr;
   }
@@ -557,6 +606,11 @@ nav a:hover,
   header,
   footer {
     padding: 0.85rem 1rem;
+  }
+
+  footer {
+    align-items: flex-start;
+    flex-direction: column;
   }
 
   .topbar {
@@ -654,13 +708,25 @@ nav a:hover,
     visibility: visible;
   }
 
+  .top-nav-menu:has(.top-nav-submenu) {
+    width: min(18rem, calc((100vw - 2rem) / 2));
+  }
+
   .top-nav-menu li {
     min-width: 0;
   }
 
   .top-nav-link {
     color: var(--text);
-    white-space: nowrap;
+    white-space: normal;
+  }
+
+  .top-nav-submenu-menu {
+    top: 0;
+    right: 100%;
+    width: min(12rem, calc((100vw - 2rem) / 2));
+    min-width: 0;
+    margin: 0;
   }
 
   .content-area {
@@ -682,10 +748,6 @@ nav a:hover,
   .panel-header > div:last-child .button {
     flex: 1 1 10rem;
     text-align: center;
-  }
-
-  .sidebar {
-    padding: 0.85rem 0.75rem;
   }
 
   .pagination-row {
