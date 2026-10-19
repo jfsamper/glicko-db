@@ -223,7 +223,11 @@ def test_help_document_links_support_deployment_url_prefix():
 def test_authenticated_help_link_follows_profile_link(admin_client):
     body = admin_client.get("/?lang=en").get_data(as_text=True)
 
+    assert "User" in body
+    assert 'href="/admin?lang=en"' in body
+    assert 'href="/admin/report-results?lang=en"' in body
     assert 'href="/admin/profile?lang=en"' in body
+    assert 'href="/admin/logout?lang=en"' in body
     assert 'href="/help?lang=en"' in body
     assert body.index('href="/admin/profile?lang=en"') < body.index('href="/help?lang=en"')
 

@@ -157,7 +157,10 @@
               <input type="checkbox" name="tournament_ids" value="{{ tournament.id }}"
                 form="delete-tournaments-form" aria-label="{{ translations.select_tournament }} {{ tournament.name }}">
             </td>
-            <td>{{ tournament.name }}</td>
+            <td>
+              <a href="{{ url_for('admin_tournament', tournament_id=tournament.id, lang=lang) }}">{{ tournament.name
+                }}</a>
+            </td>
             <td>{{ translations.get(tournament.tournament_type, tournament.tournament_type) }}</td>
             <td>{{ tournament.rounds }}</td>
             <td>
@@ -173,8 +176,6 @@
               </form>
             </td>
             <td>
-              <a href="{{ url_for('admin_tournament', tournament_id=tournament.id, lang=lang) }}">{{
-                translations.open_link }}</a>
               <form method="post"
                 action="{{ url_for('admin_copy_tournament', tournament_id=tournament.id, lang=lang) }}"
                 class="inline-form">
