@@ -147,6 +147,7 @@ from services.tournament_service import (
     _player_lookup,
     _recalculate_mcmahon_seeds,
     _suggest_player_name,
+    copy_tournament,
     delete_tournament,
     list_tournament_participants,
     normalize_tournament_rounds,

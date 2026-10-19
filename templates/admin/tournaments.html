@@ -158,6 +158,13 @@
               <a href="{{ url_for('admin_tournament', tournament_id=tournament.id, lang=lang) }}">{{
                 translations.open_link }}</a>
               <form method="post"
+                action="{{ url_for('admin_copy_tournament', tournament_id=tournament.id, lang=lang) }}"
+                class="inline-form">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                <input type="hidden" name="idempotency_key" value="{{ new_idempotency_key() }}" />
+                <button type="submit">{{ translations.copy_tournament }}</button>
+              </form>
+              <form method="post"
                 action="{{ url_for('admin_delete_tournament', tournament_id=tournament.id, lang=lang) }}"
                 class="inline-form">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />

@@ -145,6 +145,8 @@ def register_tournament_routes(admin_bp):
 
 def register_tournament_detail_routes(admin_bp):
     routes = (
+        ("/admin/tournaments/<int:tournament_id>/copy",
+         "admin_copy_tournament", ("POST",)),
         ("/admin/tournaments/<int:tournament_id>/delete",
          "admin_delete_tournament", ("POST",)),
         ("/admin/tournaments/<int:tournament_id>/status",
@@ -189,6 +191,7 @@ def register_tournament_detail_routes(admin_bp):
          "admin_process_tournament_round", ("POST",)),
     )
     handler_map = {
+        "admin_copy_tournament": admin_copy_tournament,
         "admin_delete_tournament": admin_delete_tournament,
         "admin_update_tournament_status": admin_update_tournament_status,
         "admin_update_tournament_settings": admin_update_tournament_settings,
@@ -272,6 +275,46 @@ def admin_update_tournament_status(tournament_id):
     return admin.redirect_or_json(
         url_for("admin_tournament", tournament_id=tournament_id, lang=lang)
     )
+
+
+@idempotent_command("tournament.copy")
+def admin_copy_tournament(tournament_id):
+    admin = _admin_routes()
+    lang = admin.get_language(request.args.get("lang"))
+    translations = TRANSLATIONS[lang]
+    conn = admin.get_db()
+    try:
+        source = conn.execute(
+            "SELECT name FROM tournaments WHERE id = ?", (tournament_id,)
+        ).fetchone()
+        if source is None:
+            flash(translations["error"])
+            return redirect(url_for("admin_tournaments", lang=lang))
+
+        copied_name = translations["tournament_copy_name"].format(
+            name=source["name"]
+        )
+        copied_id = admin.copy_tournament(conn, tournament_id, copied_name)
+        admin.log_admin_action(
+            "tournament_copied",
+            "tournament",
+            {"source_tournament_id": tournament_id, "tournament_id": copied_id},
+            user_id=admin.session.get("user_id"),
+        )
+        flash(translations["success"])
+        return redirect(
+            url_for("admin_tournament", tournament_id=copied_id, lang=lang)
+        )
+    except ValueError as exc:
+        flash(f"{translations['error']}: {exc}")
+        return redirect(url_for("admin_tournaments", lang=lang))
+    except sqlite3.DatabaseError as exc:
+        conn.rollback()
+        admin.logger.exception("Tournament copy failed for %s", tournament_id)
+        flash(f"{translations['error']}: {exc}")
+        return redirect(url_for("admin_tournaments", lang=lang))
+    finally:
+        conn.close()
 
 
 def admin_delete_tournament(tournament_id):

@@ -1,5 +1,5 @@
 """Compatibility facade for the decomposed tournament services."""
-from services.tournament_lifecycle import delete_tournament
+from services.tournament_lifecycle import copy_tournament, delete_tournament
 from services.tournament_gotha import create_tournament_from_gotha, export_tournament_results, read_gotha_tournament
 from services.tournament_matches import process_tournament_round_matches, save_tournament_matches, set_pairing_result, sync_match_pairing, sync_pairing_match, sync_tournament_matches
 from services.tournament_pairing import (

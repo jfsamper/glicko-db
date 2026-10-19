@@ -139,9 +139,103 @@ def test_tournament_command_forms_render_a_fresh_key_per_form():
     expected_keys = {
         "templates/admin/tournament.html": 2,
         "templates/admin/tournament_players.html": 2,
-        "templates/admin/tournaments.html": 1,
+        "templates/admin/tournaments.html": 2,
     }
     key_input = 'name="idempotency_key" value="{{ new_idempotency_key() }}"'
     for relative_path, expected in expected_keys.items():
         text = (repo_root / relative_path).read_text(encoding="utf-8")
         assert text.count(key_input) == expected, relative_path
+
+
+def test_copy_tournament_clones_setup_as_a_fresh_draft(client, isolate_test_database):
+    db_path = isolate_test_database
+    conftest.set_admin_session(client, db_path)
+    conn = sqlite3.connect(db_path)
+    conn.execute(
+        """
+        INSERT INTO tournaments
+            (name, short_name, location, description, begin_date, end_date, rounds,
+             tournament_type, pairing_system, bye_points, absent_points,
+             handicap_enabled, status)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            "Original Open", "ORIG", "Bogota", "Annual event",
+            "2026-06-01", "2026-06-02", 5, "mcmahon", "mcmahon",
+            0.5, 0.0, 1, "completed",
+        ),
+    )
+    source_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
+    conn.execute(
+        """
+        INSERT INTO tournament_participants
+            (tournament_id, player_id, seed_rating, seed_rank, category,
+             initial_score, acceleration, score, received_bye, mc_seeds_calculated)
+        VALUES (?, 1, 1800, 2, '2D', 4, 1, 8, 1, 1)
+        """,
+        (source_id,),
+    )
+    conn.execute(
+        """
+        INSERT INTO tournament_pending_players
+            (tournament_id, first_name, last_name, rating, rank, category)
+        VALUES (?, 'Ana', 'Pending', 1600, 3, '1D')
+        """,
+        (source_id,),
+    )
+    conn.commit()
+    conn.close()
+
+    response = client.post(
+        f"/admin/tournaments/{source_id}/copy?lang=en",
+        data={"idempotency_key": "copy-tournament-0001"},
+    )
+
+    assert response.status_code == 302
+    copied_id = int(response.headers["Location"].rsplit("/", 1)[1].split("?", 1)[0])
+    conn = sqlite3.connect(db_path)
+    conn.row_factory = sqlite3.Row
+    try:
+        copied = conn.execute(
+            "SELECT * FROM tournaments WHERE id = ?", (copied_id,)
+        ).fetchone()
+        assert copied["name"] == "Copy of Original Open"
+        assert copied["short_name"] is None
+        assert copied["location"] == "Bogota"
+        assert copied["description"] == "Annual event"
+        assert copied["begin_date"] is None
+        assert copied["end_date"] is None
+        assert copied["rounds"] == 5
+        assert copied["pairing_system"] == "mcmahon"
+        assert copied["handicap_enabled"] == 1
+        assert copied["status"] == "draft"
+
+        participant = conn.execute(
+            "SELECT * FROM tournament_participants WHERE tournament_id = ?",
+            (copied_id,),
+        ).fetchone()
+        assert participant["player_id"] == 1
+        assert participant["seed_rating"] == 1800
+        assert participant["initial_score"] == 4
+        assert participant["score"] == 0
+        assert participant["received_bye"] == 0
+        assert conn.execute(
+            """
+            SELECT COUNT(*) FROM tournament_pending_players
+            WHERE tournament_id = ? AND first_name = 'Ana'
+            """,
+            (copied_id,),
+        ).fetchone()[0] == 1
+        assert conn.execute(
+            "SELECT COUNT(*) FROM tournament_rounds WHERE tournament_id = ?",
+            (copied_id,),
+        ).fetchone()[0] == 0
+    finally:
+        conn.close()
+
+    replay = client.post(
+        f"/admin/tournaments/{source_id}/copy?lang=en",
+        data={"idempotency_key": "copy-tournament-0001"},
+    )
+    assert replay.status_code == 302
+    assert replay.headers["Location"] == response.headers["Location"]

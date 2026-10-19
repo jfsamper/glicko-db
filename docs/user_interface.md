@@ -242,6 +242,7 @@ Inicia sesión en `/admin/login` con una cuenta con rol administrativo. El menú
   - *Puntos por descanso (BYE)*: puntos otorgados al jugador libre cuando el número de participantes es impar (por defecto 1.0 punto).
   - *Puntos por ausencia*: puntos otorgados en partidas no jugadas por ausencia (por defecto 0.0 puntos).
 - **Hándicap automático**: habilita o deshabilita la sugerencia automática de piedras de hándicap calculadas por la diferencia de categoría.
+- **Copiar un torneo**: usa **Copiar** en la lista para crear un borrador con la configuración y los participantes del torneo. La copia no incluye fechas, emparejamientos ni resultados.
 
 <a href="screenshots/admin-tournaments.png"><img src="screenshots/admin-tournaments.png" alt="Administración de torneos" width="560" /></a>
 

@@ -242,6 +242,7 @@ Sign in at `/admin/login` with an administrative account. Available navigation a
   - *BYE points*: points awarded to an odd unassigned player (default: 1.0 point).
   - *Absence points*: points awarded for unplayed absence games (default: 0.0 points).
 - **Automatic handicap**: enable or disable automatic handicap stone suggestions calculated from category differences.
+- **Copy a tournament**: select **Copy** in the list to create a draft with the tournament's settings and participants. Dates, pairings, and results are not copied.
 
 <a href="screenshots/admin-tournaments.png"><img src="screenshots/admin-tournaments.png" alt="Tournament administration" width="560" /></a>
 

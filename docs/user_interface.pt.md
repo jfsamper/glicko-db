@@ -242,6 +242,7 @@ Entre em `/admin/login` com uma conta administrativa. A navegação disponível 
   - *Pontos por descanso (BYE)*: pontos atribuídos ao participante sem par quando o número for ímpar (padrão: 1.0 ponto).
   - *Pontos por ausência*: pontos concedidos em partidas não jogadas por ausência (padrão: 0.0 pontos).
 - **Handicap automático**: habilita ou desabilita a sugestão automática de pedras calculada pela diferença de categoria.
+- **Copiar um torneio**: selecione **Copiar** na lista para criar um rascunho com as configurações e os participantes do torneio. Datas, emparelhamentos e resultados não são copiados.
 
 <a href="screenshots/admin-tournaments.png"><img src="screenshots/admin-tournaments.png" alt="Administração de torneios" width="560" /></a>
 
