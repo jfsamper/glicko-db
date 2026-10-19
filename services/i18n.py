@@ -47,6 +47,7 @@ TRANSLATIONS = {
 
         "hero_text": "Este portal ayuda a manejar la base de datos de jugadores, partidas y rankings para la comunidad.",
         "hero_text2": "Los jugadores pueden revisar sus perfiles y ver su historial de partidas.",
+        "hero_text3": "Si organizas torneos, inicia sesión aquí",
         "cta_rankings": "Abrir rankings",
         "cta_players": "Ver jugadores",
         "stats_title": "Estadísticas de la comunidad",
@@ -678,6 +679,7 @@ TRANSLATIONS = {
         "hero_title": "Launch the ratings portal",
         "hero_text": "This portal helps manage the player, match, and ranking database for the community.",
         "hero_text2": "Players can review their profiles and see their match history.",
+        "hero_text3": "If you're a tournament organizer, login here",
         "cta_rankings": "Open rankings",
         "cta_players": "Browse players",
         "stats_title": "Community Stats",
@@ -1308,6 +1310,7 @@ TRANSLATIONS = {
         "hero_title": "Portal de classificações",
         "hero_text": "Este portal ajuda a gerenciar o banco de dados de jogadores, partidas e classificações da comunidade.",
         "hero_text2": "Os jogadores podem consultar seus perfis e ver seu histórico de partidas.",
+        "hero_text3": "Se você organiza torneios, entre aqui",
         "cta_rankings": "Abrir classificação",
         "cta_players": "Ver jogadores",
         "stats_title": "Estatísticas da comunidade",

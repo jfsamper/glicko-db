@@ -4,6 +4,7 @@
   <h2>{{ translations.hero_title }}</h2>
   <p>{{ translations.hero_text }}</p>
   <p>{{ translations.hero_text2 }}</p>
+  <p><a href="{{ url_for('admin_login', lang=lang) }}">{{ translations.hero_text3 }}</a></p>
   <div class="actions">
     <a class="button" href="{{ url_for('rankings', lang=lang) }}">{{ translations.cta_rankings }}</a>
     <a class="button secondary" href="{{ url_for('players', lang=lang) }}">{{ translations.cta_players }}</a>

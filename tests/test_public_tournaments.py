@@ -1,3 +1,4 @@
+import html
 import json
 import sqlite3
 
@@ -132,6 +133,20 @@ def test_public_navigation_places_contact_in_footer_without_sidebar():
     assert 'href="mailto:contacto@colombiago.org"' in body
     assert 'href="https://colombiago.org"' in body
     assert body.index("<footer") < body.index('href="tel:318-007-9047"')
+
+
+def test_homepage_tournament_organizer_prompt_links_to_localized_login():
+    app.testing = True
+    client = app.test_client()
+
+    expected_prompts = {
+        "en": ("If you're a tournament organizer, login here", "/admin/login?lang=en"),
+        "es": ("Si organizas torneos, inicia sesión aquí", "/admin/login?lang=es"),
+        "pt": ("Se você organiza torneios, entre aqui", "/admin/login?lang=pt"),
+    }
+    for language, (prompt, login_url) in expected_prompts.items():
+        body = html.unescape(client.get(f"/?lang={language}").get_data(as_text=True))
+        assert f'<a href="{login_url}">{prompt}</a>' in body
 
 
 def test_help_route_serves_the_localized_interface_guide():
