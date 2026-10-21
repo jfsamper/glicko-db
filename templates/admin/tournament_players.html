@@ -124,6 +124,7 @@
           <input type="hidden" name="first_name" value="{{ pending_player_draft.first_name }}">
           <input type="hidden" name="last_name" value="{{ pending_player_draft.last_name }}">
           <input type="hidden" name="glicko" value="{{ pending_player_draft.glicko }}">
+          <input type="hidden" name="country" value="{{ pending_player_draft.get('country', '') }}">
           <input type="hidden" name="allow_similar" value="1">
           <button type="submit" class="button">{{ translations.create_player_anyway }}</button>
         </form>
@@ -157,6 +158,17 @@
                 <option value="{{ option.glicko }}"
                   {% if pending_player_draft.get('glicko')|float == option.glicko %}selected{% endif %}>
                   {{ option.label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="filter-item">
+              <label for="new_country">{{ translations.country }}</label>
+              <select id="new_country" name="country">
+                <option value="">{{ translations.country_unassigned }}</option>
+                {% for option in country_options %}
+                <option value="{{ option.code }}"
+                  {% if pending_player_draft.get('country', '') == option.code %}selected{% endif %}>
+                  {{ option.name }}</option>
                 {% endfor %}
               </select>
             </div>

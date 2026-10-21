@@ -269,6 +269,7 @@ def init_db():
             rating REAL NOT NULL DEFAULT 0,
             rank INTEGER NOT NULL DEFAULT 0,
             category TEXT NOT NULL DEFAULT '',
+            country TEXT,
             source_key TEXT,
             participating TEXT NOT NULL DEFAULT '11111111111111111111',
             created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -632,7 +633,7 @@ def migrate_config_schema(conn):
 
 def migrate_tournament_schema(conn):
     """Create or upgrade tournament tables before any tournament queries run."""
-    schema_version = 6
+    schema_version = 7
     current_version = conn.execute("PRAGMA user_version").fetchone()[0]
     if current_version >= schema_version:
         return
@@ -696,6 +697,7 @@ def migrate_tournament_schema(conn):
             rating REAL NOT NULL DEFAULT 0,
             rank INTEGER NOT NULL DEFAULT 0,
             category TEXT NOT NULL DEFAULT '',
+            country TEXT,
             source_key TEXT,
             participating TEXT NOT NULL DEFAULT '11111111111111111111',
             created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -755,6 +757,7 @@ def migrate_tournament_schema(conn):
             "rating": "REAL NOT NULL DEFAULT 0",
             "rank": "INTEGER NOT NULL DEFAULT 0",
             "category": "TEXT NOT NULL DEFAULT ''",
+            "country": "TEXT",
             "source_key": "TEXT",
             "participating": "TEXT NOT NULL DEFAULT '11111111111111111111'",
             "created_at": "TEXT",

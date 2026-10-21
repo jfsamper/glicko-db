@@ -241,7 +241,14 @@ def materialize_pending_players(conn, tournament_id, pending_id=None):
             if normalize_key(display_name) in lookup:
                 raise ValueError("Player already exists; select an existing player")
             player_id = ensure_player(
-                conn, display_name, rating=rating, initial_rating=rating, active=1, player_lookup=lookup)
+                conn,
+                display_name,
+                rating=rating,
+                initial_rating=rating,
+                active=1,
+                player_lookup=lookup,
+                country=row["country"] if "country" in row.keys() else None,
+            )
         conn.execute("UPDATE tournament_pairings SET white_player_id = ?, white_player_name = NULL WHERE round_id IN (SELECT id FROM tournament_rounds WHERE tournament_id = ?) AND white_player_id IS NULL AND white_player_name = ?", (player_id, tournament_id, display_name))
         conn.execute("UPDATE tournament_pairings SET black_player_id = ?, black_player_name = NULL WHERE round_id IN (SELECT id FROM tournament_rounds WHERE tournament_id = ?) AND black_player_id IS NULL AND black_player_name = ?", (player_id, tournament_id, display_name))
         initial_score = pending_initial_score(tournament, row["rank"])

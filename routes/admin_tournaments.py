@@ -7,6 +7,7 @@ from functools import wraps
 from flask import Response, flash, redirect, render_template, request, session, url_for
 from werkzeug.utils import secure_filename
 
+from services.country_service import country_options, normalize_country_code
 from services.i18n import TRANSLATIONS
 from services.display_name import (
     normalize_name_text,
@@ -894,6 +895,7 @@ def _render_admin_tournament_players(
         translations=TRANSLATIONS[lang],
         similar_player_confirmation=similar_player_confirmation,
         pending_player_draft=pending_player_draft or {},
+        country_options=country_options(lang),
     )
 
 
@@ -912,6 +914,12 @@ def admin_create_tournament_player(tournament_id):
     lang = admin.get_language(request.args.get("lang"))
     first_name = request.form.get("first_name", "").strip()
     last_name = request.form.get("last_name", "").strip()
+    raw_country = request.form.get("country", "").strip()
+    try:
+        country = normalize_country_code(raw_country) if raw_country else None
+    except ValueError:
+        flash(TRANSLATIONS[lang]["invalid_country"])
+        return redirect(url_for("admin_tournament_players", tournament_id=tournament_id, lang=lang))
     if not first_name or not last_name:
         flash(
             f"{TRANSLATIONS[lang]['error']}: {TRANSLATIONS[lang]['player_name_required']}")
@@ -960,6 +968,7 @@ def admin_create_tournament_player(tournament_id):
                     "first_name": first_name,
                     "last_name": last_name,
                     "glicko": selected_glicko,
+                    "country": raw_country,
                 },
             )
         if conn.execute("SELECT 1 FROM tournaments WHERE id = ?", (tournament_id,)).fetchone() is None:
@@ -970,25 +979,27 @@ def admin_create_tournament_player(tournament_id):
         ).fetchone()[0]
         pending_columns = {row[1] for row in conn.execute(
             "PRAGMA table_info(tournament_pending_players)").fetchall()}
-        pending_values = (tournament_id, first_name, last_name, glicko,
-                          rank, f"manual:{first_name}:{last_name}")
+        source_key = f"manual:{first_name}:{last_name}"
         if "created_at" in pending_columns:
             conn.execute(
                 """
                 INSERT INTO tournament_pending_players
-                    (tournament_id, first_name, last_name, rating, rank, source_key, created_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
+                    (tournament_id, first_name, last_name, rating, rank, country, source_key, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 """,
-                pending_values + (admin.current_timestamp(),),
+                (
+                    tournament_id, first_name, last_name, glicko, rank,
+                    country or "", source_key, admin.current_timestamp(),
+                ),
             )
         else:
             conn.execute(
                 """
                 INSERT INTO tournament_pending_players
-                    (tournament_id, first_name, last_name, rating, rank, source_key)
-                VALUES (?, ?, ?, ?, ?, ?)
+                    (tournament_id, first_name, last_name, rating, rank, country, source_key)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
                 """,
-                pending_values,
+                (tournament_id, first_name, last_name, glicko, rank, country or "", source_key),
             )
         conn.commit()
         admin.log_admin_action(

@@ -228,7 +228,7 @@ def build_player_lookup(conn):
     return lookup
 
 
-def ensure_player(conn, display_name, rating=None, initial_rating=None, active=None, player_lookup=None):
+def ensure_player(conn, display_name, rating=None, initial_rating=None, active=None, player_lookup=None, country=None):
     if not display_name:
         return None
 
@@ -255,6 +255,7 @@ def ensure_player(conn, display_name, rating=None, initial_rating=None, active=N
     has_rd = "rd" in columns
     has_volatility = "volatility" in columns
     has_active = "active" in columns
+    country_value = "COL" if country is None else country or None
 
     base_slug = slugify(display_name)
     slug = base_slug
@@ -318,12 +319,16 @@ def ensure_player(conn, display_name, rating=None, initial_rating=None, active=N
     if has_slug and has_country and has_club and has_initial_rating and has_rating and has_rd and has_volatility:
         insert_columns += ["country", "club", "slug", "initial_rating",
                            "rating", "rd", "volatility"]
-        insert_values += ["COL", "", slug,
+        insert_values += [country_value, "", slug,
                           normalized_initial_rating or normalized_rating,
                           normalized_rating, DEFAULT_RD, DEFAULT_VOLATILITY]
-    elif has_rating:
-        insert_columns.append("rating")
-        insert_values.append(normalized_rating)
+    else:
+        if has_country and country is not None:
+            insert_columns.append("country")
+            insert_values.append(country_value)
+        if has_rating:
+            insert_columns.append("rating")
+            insert_values.append(normalized_rating)
     if has_active:
         insert_columns.append("active")
         insert_values.append(int(active) if active is not None else 1)

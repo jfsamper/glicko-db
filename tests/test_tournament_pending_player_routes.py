@@ -1,6 +1,7 @@
 import sqlite3
 
 import routes.admin as admin_routes
+from services.tournament_participants import materialize_pending_players
 
 
 def _create_tournament(db_path):
@@ -75,6 +76,58 @@ def test_similar_pending_player_can_be_created_after_confirmation(
             (tournament_id,),
         ).fetchone()
         assert pending_player == ("Sebastian", "Rios")
+    finally:
+        conn.close()
+
+
+def test_new_pending_player_country_is_saved_and_applied_when_materialized(
+        admin_client, isolate_test_database):
+    tournament_id, glicko = _create_tournament(isolate_test_database)
+    form_url = f"/admin/tournaments/{tournament_id}/players?lang=en"
+
+    form = admin_client.get(form_url)
+
+    assert form.status_code == 200
+    assert b'<select id="new_country" name="country">' in form.data
+    assert b'value="COL"' in form.data
+    assert b'Colombia' in form.data
+
+    created = admin_client.post(
+        f"/admin/tournaments/{tournament_id}/players/create?lang=en",
+        data={
+            "first_name": "New",
+            "last_name": "Player",
+            "glicko": glicko,
+            "country": "CO",
+        },
+    )
+
+    assert created.status_code == 302
+    admin_client.post(
+        f"/admin/tournaments/{tournament_id}/players/create?lang=en",
+        data={
+            "first_name": "Other",
+            "last_name": "Player",
+            "glicko": glicko,
+        },
+    )
+    conn = sqlite3.connect(isolate_test_database)
+    conn.row_factory = sqlite3.Row
+    try:
+        pending_countries = conn.execute(
+            "SELECT country FROM tournament_pending_players WHERE tournament_id = ? ORDER BY first_name",
+            (tournament_id,),
+        ).fetchall()
+        assert [row["country"] for row in pending_countries] == ["COL", ""]
+
+        assert materialize_pending_players(conn, tournament_id) == 2
+        players = conn.execute(
+            "SELECT first_name, country FROM players WHERE last_name = 'Player' ORDER BY first_name"
+        ).fetchall()
+        assert [(row["first_name"], row["country"]) for row in players] == [
+            ("New", "COL"),
+            ("Other", None),
+        ]
     finally:
         conn.close()
 
