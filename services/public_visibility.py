@@ -41,9 +41,17 @@ def public_match_condition(conn, alias="m"):
 
 
 def rating_match_condition(conn, alias="m"):
-    """SQL condition for standalone matches and games from completed tournaments."""
+    """SQL condition for standalone matches and rated games from completed tournaments."""
     if not _has_tournament_schema(conn):
         return "1 = 1"
+    tournament_columns = {
+        row[1] for row in conn.execute("PRAGMA table_info(tournaments)").fetchall()
+    }
+    rated_condition = (
+        "AND COALESCE(t.is_rated, 1) = 1"
+        if "is_rated" in tournament_columns
+        else ""
+    )
     return f"""(
         {alias}.tournament_pairing_id IS NULL
         OR EXISTS (
@@ -53,8 +61,29 @@ def rating_match_condition(conn, alias="m"):
             JOIN tournaments t ON t.id = r.tournament_id
             WHERE p.id = {alias}.tournament_pairing_id
               AND t.status = 'completed'
+              {rated_condition}
         )
     )"""
+
+
+def unrated_match_expression(conn, alias="m"):
+    """SQL expression marking completed unrated tournament matches for public display."""
+    if not _has_tournament_schema(conn):
+        return "0 AS is_unrated"
+    tournament_columns = {
+        row[1] for row in conn.execute("PRAGMA table_info(tournaments)").fetchall()
+    }
+    if "is_rated" not in tournament_columns:
+        return "0 AS is_unrated"
+    return f"""CASE WHEN EXISTS (
+        SELECT 1
+        FROM tournament_pairings p
+        JOIN tournament_rounds r ON r.id = p.round_id
+        JOIN tournaments t ON t.id = r.tournament_id
+        WHERE p.id = {alias}.tournament_pairing_id
+          AND t.status = 'completed'
+          AND COALESCE(t.is_rated, 1) = 0
+    ) THEN 1 ELSE 0 END AS is_unrated"""
 
 
 def can_view_draft_tournaments():

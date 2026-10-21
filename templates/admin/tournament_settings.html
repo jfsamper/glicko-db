@@ -74,6 +74,15 @@
           </label>
           <input type="hidden" name="apply_auto_handicap" value="0">
         </div>
+        <div class="filter-item">
+          <input type="hidden" name="is_rated_form_present" value="1">
+          <label for="tournament_is_rated">
+            <input id="tournament_is_rated" name="is_rated" type="checkbox" value="1" {% if
+              tournament.is_rated %}checked{% endif %}>
+            {{ translations.tournament_rated_label }}
+          </label>
+          <p class="muted">{{ translations.tournament_rated_help }}</p>
+        </div>
       </div>
       {% if tournament.tournament_type == 'accelerated_swiss' %}
       {% set category_count = acceleration_categories[0] %}

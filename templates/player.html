@@ -215,7 +215,12 @@
           <td><a href="{{ url_for('tournament_page', tournament_id=tournament.id, lang=lang) }}">{{ tournament.name
               }}</a></td>
           <td>{{ tournament.score }}</td>
-          <td>{{ translations.get(tournament.tournament_type, tournament.tournament_type) }}</td>
+          <td>
+            {{ translations.get(tournament.tournament_type, tournament.tournament_type) }}
+            {% if not tournament.is_rated_value %}
+            <span class="badge-pill">{{ translations.unrated_match_label }}</span>
+            {% endif %}
+          </td>
         </tr>{% endfor %}</tbody>
     </table>
   </div>
@@ -363,6 +368,9 @@
             white_player_id=match.white_player_id,
             black_player_id=match.black_player_id
             ) }}
+            {% if match.is_unrated %}
+            <span class="badge-pill">{{ translations.unrated_match_label }}</span>
+            {% endif %}
           </td>
 
           <td>

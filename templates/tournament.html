@@ -12,6 +12,9 @@
         tournament.begin_date %} - {{ tournament.end_date }}{% endif %}</p>
       <p>{{ translations.handicap_tournament_label }}: {{ translations.handicap_status_enabled if
         tournament.handicap_enabled else translations.handicap_status_disabled }}</p>
+      {% if not tournament.is_rated_value %}
+      <p><span class="badge-pill">{{ translations.unrated_match_label }}</span></p>
+      {% endif %}
     </div>
   </div>
 

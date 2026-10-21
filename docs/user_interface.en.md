@@ -247,6 +247,7 @@ Sign in at `/admin/login` with an administrative account. Available navigation a
   - *BYE points*: points awarded to an odd unassigned player (default: 1.0 point).
   - *Absence points*: points awarded for unplayed absence games (default: 0.0 points).
 - **Automatic handicap**: enable or disable automatic handicap stone suggestions calculated from category differences.
+- **Tournament rating**: *Rated tournament* is checked by default. Uncheck it so that, once completed, the tournament and its games remain public without affecting ratings; those games are labeled unrated.
 - **Copy a tournament**: select **Copy** in the list to create a draft with the tournament's settings and participants. Dates, pairings, and results are not copied.
 - **Delete tournaments in bulk**: select tournaments on the current page and confirm deletion. Their rounds, pairings, participants, and linked tournament matches are removed; SGF files are retained.
 
@@ -305,9 +306,9 @@ Sign in at `/admin/login` with an administrative account. Available navigation a
 - **Tournament lifecycle**:
   - *Draft (`draft`)*: hidden from public view during organization.
   - *Active (`active`)*: published and visible with live pairings and standings.
-  - *Completed (`completed`)*: concluded tournament with locked standings.
+  - *Completed (`completed`)*: concluded tournament with final standings. If *Rated tournament* is unchecked, its games still appear in public lists and profiles but do not affect ratings.
   - *Canceled (`canceled`)*: omitted from the public list, and its matches do not affect ratings.
-- Player profiles list completed tournaments only. Matches from active and draft tournaments do not affect ratings until the tournament is completed; matches from canceled tournaments are excluded as well.
+- Player profiles list completed tournaments only. Active tournament games do not affect ratings until completion; draft and canceled tournaments and their games stay hidden from public views and do not affect ratings.
 - **Result exports**: export tournament standings and pairings in compatible formats for external software and archives.
 
 ### Data management

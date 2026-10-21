@@ -59,6 +59,34 @@ def test_public_match_condition_hides_draft_and_canceled_tournament_games(isolat
     _add_tournament_game(db_path, "draft", "Draft cup game")
     _add_tournament_game(db_path, "canceled", "Canceled cup game")
     _add_tournament_game(db_path, "active", "Live cup game")
+    unrated_tournament_id = _execute(
+        db_path,
+        "INSERT INTO tournaments (name, rounds, status, is_rated) VALUES (?, 1, 'completed', 0)",
+        ("Unrated cup",),
+    )
+    unrated_round_id = _execute(
+        db_path,
+        "INSERT INTO tournament_rounds (tournament_id, round_number, status) VALUES (?, 1, 'completed')",
+        (unrated_tournament_id,),
+    )
+    unrated_pairing_id = _execute(
+        db_path,
+        """
+        INSERT INTO tournament_pairings
+            (round_id, board_number, white_player_id, black_player_id, result, is_bye)
+        VALUES (?, 1, 1, 2, '1-0', 0)
+        """,
+        (unrated_round_id,),
+    )
+    _execute(
+        db_path,
+        """
+        INSERT INTO matches
+            (match_date, white_player_id, black_player_id, result, event, round_number, tournament_pairing_id)
+        VALUES ('2026-08-03', 1, 2, '1-0', 'Unrated cup game', 1, ?)
+        """,
+        (unrated_pairing_id,),
+    )
     _execute(
         db_path,
         """
@@ -81,7 +109,7 @@ def test_public_match_condition_hides_draft_and_canceled_tournament_games(isolat
 
     assert "Draft cup game" not in visible_events
     assert "Canceled cup game" not in visible_events
-    assert {"Live cup game", "Friendly game"} <= visible_events
+    assert {"Live cup game", "Unrated cup game", "Friendly game"} <= visible_events
     assert "Draft cup game" in stored_events
     assert "Canceled cup game" in stored_events
 
@@ -100,6 +128,45 @@ def test_match_list_hides_draft_and_canceled_games_while_admin_matches_keep_them
     admin_body = staff_client.get("/admin/matches?lang=en").get_data(as_text=True)
     assert "Hidden draft marker" in admin_body
     assert "Hidden canceled marker" in admin_body
+
+
+def test_completed_unrated_games_are_publicly_labeled(isolate_test_database):
+    db_path = isolate_test_database
+    tournament_id = _execute(
+        db_path,
+        "INSERT INTO tournaments (name, rounds, status, is_rated) VALUES (?, 1, 'completed', 0)",
+        ("Public unrated cup",),
+    )
+    round_id = _execute(
+        db_path,
+        "INSERT INTO tournament_rounds (tournament_id, round_number, status) VALUES (?, 1, 'completed')",
+        (tournament_id,),
+    )
+    pairing_id = _execute(
+        db_path,
+        """
+        INSERT INTO tournament_pairings
+            (round_id, board_number, white_player_id, black_player_id, result, is_bye)
+        VALUES (?, 1, 1, 2, '1-0', 0)
+        """,
+        (round_id,),
+    )
+    _execute(
+        db_path,
+        """
+        INSERT INTO matches
+            (match_date, white_player_id, black_player_id, result, event, round_number, tournament_pairing_id)
+        VALUES ('2026-08-04', 1, 2, '1-0', 'Public unrated game', 1, ?)
+        """,
+        (pairing_id,),
+    )
+
+    response = app.test_client().get("/matches?lang=en")
+
+    assert response.status_code == 200
+    body = response.get_data(as_text=True)
+    assert "Public unrated game" in body
+    assert "Unrated" in body
 
 
 def test_sgf_linked_only_to_unpublished_tournament_game_is_hidden_from_public_pages(

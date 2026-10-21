@@ -247,6 +247,7 @@ Entre em `/admin/login` com uma conta administrativa. A navegação disponível 
   - *Pontos por descanso (BYE)*: pontos atribuídos ao participante sem par quando o número for ímpar (padrão: 1.0 ponto).
   - *Pontos por ausência*: pontos concedidos em partidas não jogadas por ausência (padrão: 0.0 pontos).
 - **Handicap automático**: habilita ou desabilita a sugestão automática de pedras calculada pela diferença de categoria.
+- **Rating do torneio**: a opção *Torneio válido para rating* fica marcada por padrão. Desmarque-a para que, quando concluídos, o torneio e suas partidas continuem públicos sem afetar os ratings; essas partidas são identificadas como não pontuáveis.
 - **Copiar um torneio**: selecione **Copiar** na lista para criar um rascunho com as configurações e os participantes do torneio. Datas, emparelhamentos e resultados não são copiados.
 - **Excluir torneios em lote**: selecione torneios da página atual e confirme a exclusão. As rodadas, emparelhamentos, participantes e partidas vinculadas serão excluídos; os arquivos SGF serão mantidos.
 
@@ -304,9 +305,9 @@ Entre em `/admin/login` com uma conta administrativa. A navegação disponível 
 - **Ciclo de vida do torneio**:
   - *Rascunho (`draft`)*: oculto do portal público durante a preparação.
   - *Ativo (`active`)*: publicado e visível com emparelhamentos e classificação em tempo real.
-  - *Concluído (`completed`)*: torneio encerrado com classificação final oficial.
+  - *Concluído (`completed`)*: torneio encerrado com classificação final. Se *Torneio válido para rating* estiver desmarcado, suas partidas aparecem nas listas públicas e nos perfis, mas não afetam os ratings.
   - *Cancelado (`canceled`)*: não aparece na lista pública e suas partidas não afetam os ratings.
-- Os perfis de jogadores listam apenas torneios concluídos. Partidas de torneios ativos e em rascunho não afetam os ratings até a conclusão do torneio; partidas de torneios cancelados também são excluídas.
+- Os perfis de jogadores listam apenas torneios concluídos. Partidas de torneios ativos não afetam os ratings até a conclusão; rascunhos e torneios cancelados e suas partidas ficam ocultos das páginas públicas e não afetam os ratings.
 - **Exportação de resultados**: baixe os resultados do torneio em formatos compatíveis para relatórios e sistemas externos.
 
 ### Gestão de dados

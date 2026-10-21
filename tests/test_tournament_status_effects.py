@@ -100,6 +100,128 @@ def test_player_profiles_list_only_completed_tournaments(isolate_test_database):
     ]
 
 
+def test_completed_unrated_tournament_games_are_public_but_do_not_change_ratings(
+    client, isolate_test_database
+):
+    db_path = isolate_test_database
+    rating_service.recompute_ratings()
+    baseline_rating = _player_rating(db_path)
+
+    conn = sqlite3.connect(db_path)
+    try:
+        tournament_id = _add_tournament(
+            conn, "Completed unrated event", "completed", include_game=True
+        )
+        conn.execute(
+            "UPDATE tournaments SET is_rated = 0 WHERE id = ?", (tournament_id,)
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+    rating_service.recompute_ratings()
+    assert _player_rating(db_path) == baseline_rating
+    rating_service.mark_dirty("2026-08-01")
+    rating_service.update_from_latest_snapshot()
+    assert _player_rating(db_path) == baseline_rating
+
+    profile = load_player(1, lang="en")
+    assert any(
+        tournament["name"] == "Completed unrated event"
+        and tournament["is_rated_value"] == 0
+        for tournament in profile["tournaments"]
+    )
+    assert any(
+        match["event"] == "Completed unrated event" and match["is_unrated"]
+        for match in profile["all_matches"]
+    )
+    public_matches = client.get("/matches?lang=en").get_data(as_text=True)
+    assert "Completed unrated event" in public_matches
+    assert "Unrated" in public_matches
+    public_tournaments = client.get("/tournaments?lang=en").get_data(as_text=True)
+    assert "Completed unrated event" in public_tournaments
+    assert "Unrated" in public_tournaments
+
+
+def test_tournament_creation_can_select_unrated(client, isolate_test_database):
+    conftest.set_admin_session(client, isolate_test_database)
+
+    response = client.post(
+        "/admin/tournaments?lang=en",
+        data={
+            "action": "create",
+            "name": "New unrated event",
+            "rounds": "1",
+            "tournament_type": "swiss",
+            "is_rated_form_present": "1",
+        },
+    )
+
+    assert response.status_code == 302
+    conn = sqlite3.connect(isolate_test_database)
+    try:
+        assert conn.execute(
+            "SELECT is_rated FROM tournaments WHERE name = ?",
+            ("New unrated event",),
+        ).fetchone() == (0,)
+    finally:
+        conn.close()
+
+
+@pytest.mark.parametrize(
+    ("initial_is_rated", "new_is_rated", "expect_rating_change"),
+    [(1, 0, False), (0, 1, True)],
+)
+def test_changing_completed_tournament_rated_setting_marks_ratings_dirty(
+    client,
+    isolate_test_database,
+    initial_is_rated,
+    new_is_rated,
+    expect_rating_change,
+):
+    db_path = isolate_test_database
+    rating_service.recompute_ratings()
+    baseline_rating = _player_rating(db_path)
+
+    conn = sqlite3.connect(db_path)
+    try:
+        tournament_id = _add_tournament(
+            conn, "Rated setting event", "completed", include_game=True
+        )
+        conn.execute(
+            "UPDATE tournaments SET is_rated = ? WHERE id = ?",
+            (initial_is_rated, tournament_id),
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+    rating_service.recompute_ratings()
+    assert (_player_rating(db_path) != baseline_rating) == bool(initial_is_rated)
+    rating_service.clear_dirty_date()
+    conftest.set_admin_session(client, db_path)
+
+    form_data = {
+        "name": "Rated setting event",
+        "rounds": "1",
+        "bye_points": "1",
+        "absent_points": "0",
+        "handicap_enabled": "0",
+        "is_rated_form_present": "1",
+    }
+    if new_is_rated:
+        form_data["is_rated"] = "1"
+    response = client.post(
+        f"/admin/tournaments/{tournament_id}/settings?lang=en",
+        data=form_data,
+    )
+
+    assert response.status_code == 302
+    assert rating_service.get_dirty_date() == "2026-08-01"
+    rating_service.update_from_latest_snapshot()
+    assert (_player_rating(db_path) != baseline_rating) == expect_rating_change
+
+
 @pytest.mark.parametrize("status", ["draft", "canceled"])
 def test_changing_completed_tournament_status_marks_dirty_until_manual_recalculation(
     client, isolate_test_database, status

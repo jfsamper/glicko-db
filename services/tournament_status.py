@@ -9,6 +9,47 @@ VALID_TOURNAMENT_RESULTS = {"1-0", "0-1", "1/2-1/2", "!0-1", "1-!0", "!0-0"}
 PLAYED_GAME_RESULTS = {"1-0", "0-1", "1/2-1/2"}
 
 
+def _earliest_tournament_match_date(conn, tournament_id):
+    tables = {
+        row[0]
+        for row in conn.execute(
+            """
+            SELECT name FROM sqlite_master
+            WHERE type = 'table'
+              AND name IN ('matches', 'rating_state',
+                           'tournament_pairings', 'tournament_rounds')
+            """
+        ).fetchall()
+    }
+    if tables != {
+        "matches", "rating_state", "tournament_pairings", "tournament_rounds"
+    }:
+        return None
+    return conn.execute(
+        """
+        SELECT MIN(m.match_date)
+        FROM matches m
+        JOIN tournament_pairings p ON p.id = m.tournament_pairing_id
+        JOIN tournament_rounds r ON r.id = p.round_id
+        WHERE r.tournament_id = ?
+        """,
+        (tournament_id,),
+    ).fetchone()[0]
+
+
+def mark_ratings_dirty_for_tournament_rating(
+    conn, tournament_id, status, previous_is_rated, is_rated
+):
+    """Mark completed tournament games for replay when their rated setting changes."""
+    if status != "completed" or previous_is_rated == is_rated:
+        return
+    earliest_match_date = _earliest_tournament_match_date(conn, tournament_id)
+    if earliest_match_date is not None:
+        from services.rating_service import mark_dirty
+
+        mark_dirty(earliest_match_date, conn=conn)
+
+
 def mark_ratings_dirty_for_tournament_status(
     conn, tournament_id, previous_status, status
 ):
@@ -20,32 +61,7 @@ def mark_ratings_dirty_for_tournament_status(
         )
     )
     if changes_rating_history:
-        tables = {
-            row[0]
-            for row in conn.execute(
-                """
-                SELECT name FROM sqlite_master
-                WHERE type = 'table'
-                  AND name IN ('matches', 'rating_state',
-                               'tournament_pairings', 'tournament_rounds')
-                """
-            ).fetchall()
-        }
-        if tables != {
-            "matches", "rating_state", "tournament_pairings", "tournament_rounds"
-        }:
-            return
-
-        earliest_match_date = conn.execute(
-            """
-            SELECT MIN(m.match_date)
-            FROM matches m
-            JOIN tournament_pairings p ON p.id = m.tournament_pairing_id
-            JOIN tournament_rounds r ON r.id = p.round_id
-            WHERE r.tournament_id = ?
-            """,
-            (tournament_id,),
-        ).fetchone()[0]
+        earliest_match_date = _earliest_tournament_match_date(conn, tournament_id)
         if earliest_match_date is not None:
             from services.rating_service import mark_dirty
 

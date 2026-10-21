@@ -56,6 +56,14 @@
                 {{ translations.handicap_tournament_label }}
               </label>
             </div>
+            <div class="filter-item">
+              <input type="hidden" name="is_rated_form_present" value="1">
+              <label for="is_rated">
+                <input id="is_rated" name="is_rated" type="checkbox" value="1" checked>
+                {{ translations.tournament_rated_label }}
+              </label>
+              <p class="muted">{{ translations.tournament_rated_help }}</p>
+            </div>
 
           </div>
 

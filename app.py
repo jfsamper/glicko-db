@@ -217,6 +217,7 @@ def init_db():
             mm_floor INTEGER NOT NULL DEFAULT -30,
             mm_zero INTEGER NOT NULL DEFAULT 0,
             status TEXT NOT NULL DEFAULT 'draft',
+            is_rated INTEGER NOT NULL DEFAULT 1,
             source_format TEXT,
             created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
         );
@@ -644,7 +645,7 @@ def migrate_config_schema(conn):
 
 def migrate_tournament_schema(conn):
     """Create or upgrade tournament tables before any tournament queries run."""
-    schema_version = 7
+    schema_version = 8
     current_version = conn.execute("PRAGMA user_version").fetchone()[0]
     if current_version >= schema_version:
         return
@@ -664,7 +665,8 @@ def migrate_tournament_schema(conn):
             mm_bar INTEGER NOT NULL DEFAULT 8,
             mm_floor INTEGER NOT NULL DEFAULT -30,
             mm_zero INTEGER NOT NULL DEFAULT 0,
-            status TEXT NOT NULL DEFAULT 'draft', source_format TEXT,
+            status TEXT NOT NULL DEFAULT 'draft',
+            is_rated INTEGER NOT NULL DEFAULT 1, source_format TEXT,
             created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
         );
         CREATE TABLE IF NOT EXISTS tournament_participants (
@@ -733,7 +735,8 @@ def migrate_tournament_schema(conn):
             "mm_bar": "INTEGER NOT NULL DEFAULT 8",
             "mm_floor": "INTEGER NOT NULL DEFAULT -30",
             "mm_zero": "INTEGER NOT NULL DEFAULT 0",
-            "status": "TEXT NOT NULL DEFAULT 'draft'", "source_format": "TEXT",
+            "status": "TEXT NOT NULL DEFAULT 'draft'",
+            "is_rated": "INTEGER NOT NULL DEFAULT 1", "source_format": "TEXT",
             "created_at": "TEXT",
         },
         "tournament_participants": {

@@ -11,7 +11,10 @@ from services.timezone_service import current_date
 from services.i18n import TRANSLATIONS
 from services.home_stats import build_player_badges
 from services.player_stats import build_recent_result_summaries
-from services.public_visibility import public_match_condition
+from services.public_visibility import (
+    public_match_condition,
+    unrated_match_expression,
+)
 from services.display_name import (
     read_display_name_setting, render_display_name, split_display_name)
 from services.helpers import normalize_key, normalize_text, slugify
@@ -415,6 +418,7 @@ def load_player(
         match_params.append(f"{season}-??-??")
     count_condition = match_condition.replace("m.", "")
     public_filter = public_match_condition(conn, "m")
+    unrated_select = unrated_match_expression(conn, "m")
 
     columns = conn.execute("PRAGMA table_info(matches)").fetchall()
     has_event = any(column[1] == "event" for column in columns)
@@ -427,6 +431,7 @@ def load_player(
 
     match_select = """
         SELECT m.id, m.match_date, m.result, {event_select}, {sgf_select},
+               {unrated_select},
                m.white_player_id, m.black_player_id,
                p_white.display_name AS white_name,
                p_white.slug AS white_slug,
@@ -451,12 +456,14 @@ def load_player(
 
     matches = conn.execute(
         match_select.format(event_select=match_event_select, sgf_select=match_sgf_select,
-                            match_condition=match_condition, public_filter=public_filter) + " LIMIT ? OFFSET ?",
+                            match_condition=match_condition, public_filter=public_filter,
+                            unrated_select=unrated_select) + " LIMIT ? OFFSET ?",
         (*match_params, page_size, offset),
     ).fetchall()
     all_matches = conn.execute(
         match_select.format(event_select=match_event_select, sgf_select=match_sgf_select,
-                            match_condition=match_condition, public_filter=public_filter) + " LIMIT -1 OFFSET 0",
+                            match_condition=match_condition, public_filter=public_filter,
+                            unrated_select=unrated_select) + " LIMIT -1 OFFSET 0",
         match_params,
     ).fetchall()
     white_stats = {"games": 0, "wins": 0, "losses": 0, "draws": 0}
@@ -617,10 +624,18 @@ def load_player(
         "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name IN ('tournaments', 'tournament_participants')"
     ).fetchone()[0] == 2
     if has_tournament_tables:
+        tournament_columns = {
+            row[1]
+            for row in conn.execute("PRAGMA table_info(tournaments)").fetchall()
+        }
+        tournament_rated_select = (
+            "t.is_rated" if "is_rated" in tournament_columns else "1"
+        )
         tournament_rows = conn.execute(
-            """
+            f"""
             SELECT t.id, t.name, t.begin_date, t.status, t.pairing_system,
                    t.tournament_type, t.bye_points, t.absent_points,
+                   {tournament_rated_select} AS is_rated_value,
                    tp.category, tp.initial_score, tp.acceleration, tp.seed_rating,
                    tp.player_id
             FROM tournament_participants tp

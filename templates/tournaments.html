@@ -73,6 +73,9 @@
         }}</p>
       <p>{{ translations.players }}: {{ tournament.participant_count }}</p>
       <p>{{ translations.status }}: {{ translations.get(tournament.public_status, tournament.public_status) }}</p>
+      {% if not tournament.is_rated_value %}
+      <p><span class="badge-pill">{{ translations.unrated_match_label }}</span></p>
+      {% endif %}
       <p>{{ translations.date }}: {{ tournament.begin_date if tournament.begin_date else '' }} - {{ tournament.end_date
         if tournament.end_date else '' }}</p>
     </article>

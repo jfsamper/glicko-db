@@ -23,7 +23,10 @@ from services.idempotency_service import (
     claim_command,
     complete_command,
 )
-from services.tournament_status import mark_ratings_dirty_for_tournament_status
+from services.tournament_status import (
+    mark_ratings_dirty_for_tournament_rating,
+    mark_ratings_dirty_for_tournament_status,
+)
 
 MAX_TOURNAMENTS_PER_DELETE = 100
 
@@ -551,7 +554,9 @@ def admin_update_tournament_settings(tournament_id):
     optional_select = f", {', '.join(optional_columns)}" if optional_columns else ""
     try:
         current_tournament = conn.execute(
-            f"SELECT pairing_system, tournament_type{optional_select} FROM tournaments WHERE id = ?",
+            f"SELECT pairing_system, tournament_type, status{optional_select}"
+            f"{', is_rated' if 'is_rated' in tournament_columns else ''} "
+            "FROM tournaments WHERE id = ?",
             (tournament_id,),
         ).fetchone()
         if current_tournament is None:
@@ -579,6 +584,13 @@ def admin_update_tournament_settings(tournament_id):
 
         pairing_system = admin.normalize_tournament_system(
             current_tournament["pairing_system"])
+        is_rated = (
+            request.form.get("is_rated") == "1"
+            if "is_rated_form_present" in request.form
+            else bool(current_tournament["is_rated"])
+            if "is_rated" in current_tournament.keys()
+            else True
+        )
         acceleration_scheme = (
             current_tournament["acceleration_scheme"]
             if "acceleration_scheme" in tournament_columns
@@ -622,6 +634,9 @@ def admin_update_tournament_settings(tournament_id):
         ]
         update_values = [name, location, rounds, bye_points, absent_points, int(
             handicap_enabled), pairing_system, pairing_system]
+        if "is_rated" in tournament_columns:
+            update_fields.append("is_rated = ?")
+            update_values.append(int(is_rated))
         if "begin_date" in tournament_columns:
             update_fields.append("begin_date = ?")
             update_values.append(begin_date)
@@ -678,6 +693,14 @@ def admin_update_tournament_settings(tournament_id):
                 name=name,
                 match_date=begin_date,
             )
+            if "is_rated" in current_tournament.keys():
+                mark_ratings_dirty_for_tournament_rating(
+                    conn,
+                    tournament_id,
+                    current_tournament["status"],
+                    bool(current_tournament["is_rated"]),
+                    is_rated,
+                )
             if pairing_system == "mcmahon":
                 participant_columns = {
                     row[1] for row in conn.execute("PRAGMA table_info(tournament_participants)").fetchall()
@@ -697,7 +720,12 @@ def admin_update_tournament_settings(tournament_id):
             admin.log_admin_action(
                 "tournament_settings_updated",
                 "tournament",
-                {"tournament_id": tournament_id, "name": name, "rounds": rounds},
+                {
+                    "tournament_id": tournament_id,
+                    "name": name,
+                    "rounds": rounds,
+                    "is_rated": is_rated,
+                },
                 user_id=admin.session.get("user_id"),
             )
             flash(TRANSLATIONS[lang]["success"])
@@ -1629,6 +1657,15 @@ def admin_tournaments():
                 if "handicap_enabled" in tournament_columns:
                     insert_columns.append("handicap_enabled")
                     tournament_values.append(handicap_enabled)
+                if "is_rated" in tournament_columns:
+                    insert_columns.append("is_rated")
+                    tournament_values.append(
+                        int(
+                            request.form.get("is_rated") == "1"
+                            if "is_rated_form_present" in request.form
+                            else True
+                        )
+                    )
                 insert_columns.extend(["status", "created_at"])
                 tournament_values.extend(["draft", admin.current_timestamp()])
                 placeholders = ", ".join("?" for _ in insert_columns)

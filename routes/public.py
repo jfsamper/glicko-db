@@ -60,6 +60,7 @@ from services.public_visibility import (
     can_view_draft_tournaments,
     unpublished_tournament_sgf_filenames,
     public_match_condition,
+    unrated_match_expression,
 )
 from services.tournament_standings import get_tournament_standings
 
@@ -695,6 +696,7 @@ def matches():
     clear_missing_sgf_links(conn)
     sgf_select = "m.sgf_filename" if has_sgf_column(
         conn) else "NULL AS sgf_filename"
+    unrated_select = unrated_match_expression(conn, "m")
 
     total_count = conn.execute(
         f"SELECT COUNT(*) FROM matches m {filter_sql}",
@@ -717,7 +719,8 @@ def matches():
             p_white.id AS white_id,
             p_black.id AS black_id,
             m.result,
-            {sgf_select}
+            {sgf_select},
+            {unrated_select}
         FROM matches m
         JOIN players_display p_white
             ON p_white.id = m.white_player_id
@@ -950,6 +953,9 @@ def tournaments():
     tournament_columns = {
         row[1] for row in conn.execute("PRAGMA table_info(tournaments)").fetchall()
     }
+    tournament_rated_select = (
+        "t.is_rated" if "is_rated" in tournament_columns else "1"
+    )
     tournament_tables = {
         row[0] for row in conn.execute(
             "SELECT name FROM sqlite_master WHERE type = 'table'"
@@ -1022,7 +1028,7 @@ def tournaments():
 
     tournaments = conn.execute(
         f"""
-             SELECT t.*,
+             SELECT t.*, {tournament_rated_select} AS is_rated_value,
                  CASE
                      WHEN t.status = 'draft' THEN 'draft'
                      WHEN t.status = 'active' THEN 'active'
@@ -1059,6 +1065,12 @@ def tournaments():
 def tournament_page(tournament_id):
     lang = get_language(request.args.get("lang"))
     conn = get_db()
+    tournament_columns = {
+        row[1] for row in conn.execute("PRAGMA table_info(tournaments)").fetchall()
+    }
+    tournament_rated_select = (
+        "t.is_rated" if "is_rated" in tournament_columns else "1"
+    )
     status_clause = (
         "t.status IN ('draft', 'active', 'canceled', 'completed')"
         if can_view_draft_tournaments()
@@ -1066,7 +1078,7 @@ def tournament_page(tournament_id):
     )
     tournament = conn.execute(
         f"""
-        SELECT t.*,
+        SELECT t.*, {tournament_rated_select} AS is_rated_value,
                CASE
                    WHEN t.status = 'draft' THEN 'draft'
                    WHEN t.status = 'active' THEN 'active'

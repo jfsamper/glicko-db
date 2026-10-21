@@ -142,7 +142,12 @@
           {% endif %}
         </td>
 
-        <td>{{ match.event or "" }}</td>
+        <td>
+          {{ match.event or "" }}
+          {% if match.is_unrated %}
+          <span class="badge-pill">{{ translations.unrated_match_label }}</span>
+          {% endif %}
+        </td>
 
         <td>
           {% if match.sgf_filename %}

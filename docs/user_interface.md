@@ -247,6 +247,7 @@ Inicia sesión en `/admin/login` con una cuenta con rol administrativo. El menú
   - *Puntos por descanso (BYE)*: puntos otorgados al jugador libre cuando el número de participantes es impar (por defecto 1.0 punto).
   - *Puntos por ausencia*: puntos otorgados en partidas no jugadas por ausencia (por defecto 0.0 puntos).
 - **Hándicap automático**: habilita o deshabilita la sugerencia automática de piedras de hándicap calculadas por la diferencia de categoría.
+- **Rating del torneo**: la casilla *Torneo puntuable para rating* está activada por defecto. Desactívala para que, al completarse, el torneo y sus partidas sigan siendo públicos pero no afecten los ratings; las partidas se identifican como no puntuables.
 - **Copiar un torneo**: usa **Copiar** en la lista para crear un borrador con la configuración y los participantes del torneo. La copia no incluye fechas, emparejamientos ni resultados.
 - **Eliminar torneos en lote**: selecciona torneos de la página actual y confirma la eliminación. Se eliminan sus rondas, emparejamientos, participantes y partidas vinculadas; los archivos SGF se conservan.
 
@@ -305,9 +306,9 @@ Inicia sesión en `/admin/login` con una cuenta con rol administrativo. El menú
 - **Ciclo de vida del torneo**:
   - *Borrador (`draft`)*: oculto del portal público para preparación previa.
   - *Activo (`active`)*: visible en el portal público con emparejamientos y resultados en tiempo real.
-  - *Completado (`completed`)*: torneo cerrado con posiciones finales oficiales.
+  - *Completado (`completed`)*: torneo cerrado con posiciones finales oficiales. Si se desactivó *Torneo puntuable para rating*, sus partidas aparecen en listas públicas, perfiles e historial, pero no afectan los ratings.
   - *Cancelado (`canceled`)*: no aparece en la lista pública y sus partidas no afectan los ratings.
-- Los perfiles de jugadores muestran únicamente sus torneos completados. Las partidas de torneos activos y en borrador no afectan los ratings hasta que el torneo se complete; las partidas de torneos cancelados tampoco se incluyen.
+- Los perfiles de jugadores muestran únicamente sus torneos completados. Las partidas activas no afectan los ratings hasta completar el torneo; los borradores y cancelados no aparecen públicamente y sus partidas no afectan ratings.
 - **Exportación**: descarga los resultados del torneo en formatos compatibles para informes o software externo.
 
 ### Gestión de datos
