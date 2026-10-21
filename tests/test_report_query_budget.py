@@ -58,9 +58,19 @@ def _statements_for(client, counter, url):
 
 PAGES = (
     "/",
+    "/rankings",
     "/reports?start_date=2026-01-01&end_date=2026-12-31",
     "/reports/export.csv?start_date=2026-01-01&end_date=2026-12-31",
+    "/reports/export.pdf?start_date=2026-01-01&end_date=2026-12-31&player_id=1",
 )
+
+STATEMENT_BUDGETS = {
+    "/": 40,
+    "/rankings": 20,
+    "/reports?start_date=2026-01-01&end_date=2026-12-31": 20,
+    "/reports/export.csv?start_date=2026-01-01&end_date=2026-12-31": 12,
+    "/reports/export.pdf?start_date=2026-01-01&end_date=2026-12-31&player_id=1": 20,
+}
 
 
 def test_public_pages_do_not_issue_queries_per_player(client, isolate_test_database, statement_counter):
@@ -73,3 +83,8 @@ def test_public_pages_do_not_issue_queries_per_player(client, isolate_test_datab
 
     for page in PAGES:
         assert large[page] <= small[page] + 2, (page, small[page], large[page])
+        assert large[page] <= STATEMENT_BUDGETS[page], (
+            page,
+            large[page],
+            STATEMENT_BUDGETS[page],
+        )

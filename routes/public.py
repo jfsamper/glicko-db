@@ -411,7 +411,6 @@ def reports():
         group["display_name"]: country_name(group["display_name"], lang)
         for group in report.get("countries", [])
     }
-    all_report_players = report["players"]
     page_details = pagination_details(total_count, page, page_size)
     report["players"] = report["players"][(
         page_details["page"] - 1) * page_details["page_size"]:page_details["page"] * page_details["page_size"]]
@@ -421,7 +420,6 @@ def reports():
         translations=TRANSLATIONS[lang],
         report=report,
         country_labels=country_labels,
-        all_report_players=all_report_players,
         period=period,
         season=season,
         report_seasons=report_seasons,

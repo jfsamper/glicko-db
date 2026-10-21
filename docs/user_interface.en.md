@@ -108,6 +108,7 @@ Pages accept `?lang=es`, `?lang=en`, or `?lang=pt`; use `YYYY-MM-DD` in date fil
   - Predefined periods: *All time*, *This year*, *This quarter*, or *Custom date range*.
   - Optional player filter to inspect records against individual opponents, clubs, and countries during the period.
   - Date ranges `start_date` and `end_date` are inclusive and evaluated in the server's fixed timezone (UTC-5).
+  - The player table shows 25 results per page by default, with options for 50 or 100. Page navigation preserves active filters. Pagination only limits rendered HTML rows; report data and exports continue to use the full period and filters.
   - Matches with invalid dates or results are excluded and tallied in the report summary.
 - **CSV export (`/reports/export.csv`)**: downloads a CSV spreadsheet reflecting the exact calculated report table and active filters.
 - **PDF export (`/reports/export.pdf`)**: generates a formatted PDF document with centered headers, generation date, current language, and the selected player and period in the filename.

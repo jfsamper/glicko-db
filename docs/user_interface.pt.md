@@ -108,6 +108,7 @@ As páginas aceitam `?lang=es`, `?lang=en` ou `?lang=pt`; use `AAAA-MM-DD` nos f
   - Períodos predefinidos: *Todo o período*, *Este ano*, *Este trimestre* ou *Intervalo personalizado*.
   - Filtro opcional por jogador para examinar o desempenho contra adversários, clubes e países no período.
   - As datas `start_date` e `end_date` são inclusivas e avaliadas no fuso horário fixo do servidor (UTC-5).
+  - A tabela de jogadores mostra 25 resultados por página por padrão, com opções para 50 ou 100. A navegação preserva os filtros ativos. A paginação limita apenas as linhas HTML exibidas; os dados do relatório e as exportações continuam usando o período e os filtros completos.
   - Partidas com datas ou resultados inválidos são excluídas e contabilizadas no resumo.
 - **Exportação CSV (`/reports/export.csv`)**: gera uma planilha CSV com a tabela exata calculada na tela, mantendo os filtros aplicados.
 - **Exportação PDF (`/reports/export.pdf`)**: gera um relatório em PDF formatado com cabeçalhos centralizados, data de geração, idioma atual e o nome do jogador e período no arquivo.

@@ -132,19 +132,13 @@ def _normalized_date(value):
 def list_report_seasons(conn):
     """Return calendar years represented by valid match dates."""
     seasons = set()
-    for row in conn.execute("SELECT match_date FROM matches").fetchall():
+    for row in conn.execute(
+        "SELECT DISTINCT match_date FROM matches"
+    ).fetchall():
         match_date = _normalized_date(row["match_date"])
         if match_date is not None:
             seasons.add(match_date.year)
     return sorted(seasons, reverse=True)
-
-
-def _result_for_player(result, is_white):
-    if result == "1/2-1/2":
-        return "draw"
-    if (result == "1-0") == is_white:
-        return "win"
-    return "loss"
 
 
 def _empty_record(name=""):
@@ -162,6 +156,16 @@ def _finish_record(record):
     record["win_percentage"] = round(
         record["wins"] * 100.0 / games, 1) if games else None
     return record
+
+
+def _record_result(record, result, is_white):
+    record["games"] += 1
+    if result == "1/2-1/2":
+        record["draws"] += 1
+    elif (result == "1-0") == is_white:
+        record["wins"] += 1
+    else:
+        record["losses"] += 1
 
 
 def _category_rank(rating, k, m):
@@ -245,27 +249,55 @@ def build_date_report(conn, start_date=None, end_date=None, selected_player_id=N
         end_date = parse_report_date(end_date, "end date")
     if start_date and end_date and start_date > end_date:
         raise ValueError("Start date must not be after end date")
+    selected_player_id = (
+        int(selected_player_id)
+        if selected_player_id not in (None, "")
+        else None
+    )
 
-    match_columns = {row["name"] for row in conn.execute("PRAGMA table_info(matches)").fetchall()}
-    pairing_select = "m.tournament_pairing_id" if "tournament_pairing_id" in match_columns else "NULL AS tournament_pairing_id"
+    match_columns = {row["name"] for row in conn.execute(
+        "PRAGMA table_info(matches)").fetchall()}
+    pairing_select = (
+        "m.tournament_pairing_id AS tournament_pairing_id"
+        if "tournament_pairing_id" in match_columns
+        else "NULL AS tournament_pairing_id"
+    )
+    players = conn.execute(
+        """
+        SELECT id, display_name, initial_rating, rating, country, club
+        FROM players_display
+        """
+    ).fetchall()
+    player_metadata = {row["id"]: row for row in players}
     match_rows = conn.execute(
         f"""
         SELECT m.id, m.match_date, m.white_player_id, m.black_player_id, m.result,
-               {pairing_select},
-               white.display_name AS white_name, white.country AS white_country, white.club AS white_club,
-               black.display_name AS black_name, black.country AS black_country, black.club AS black_club
+               {pairing_select}
         FROM matches m
-        JOIN players_display white ON white.id = m.white_player_id
-        JOIN players_display black ON black.id = m.black_player_id
         WHERE {public_match_condition(conn, 'm')}
         ORDER BY m.match_date, m.id
         """
     ).fetchall()
 
+    stats = {
+        row["id"]: _empty_record(row["display_name"])
+        for row in players
+    }
+    opponent_records = (
+        {selected_player_id: {}}
+        if selected_player_id is not None
+        else {}
+    )
+    country_records = {}
+    club_records = {}
+    summary = {"games": 0}
     seen_pairings = set()
-    matches = []
     excluded_games = 0
     for row in match_rows:
+        white_player = player_metadata.get(row["white_player_id"])
+        black_player = player_metadata.get(row["black_player_id"])
+        if white_player is None or black_player is None:
+            continue
         pairing_id = row["tournament_pairing_id"]
         if pairing_id is not None:
             if pairing_id in seen_pairings:
@@ -279,54 +311,26 @@ def build_date_report(conn, start_date=None, end_date=None, selected_player_id=N
         if row["result"] not in VALID_RESULTS:
             excluded_games += 1
             continue
-        matches.append((row, match_date))
-
-    players = conn.execute(
-        "SELECT id, display_name, initial_rating, rating FROM players_display"
-    ).fetchall()
-    stats = {
-        row["id"]: _empty_record(row["display_name"])
-        for row in players
-    }
-    opponent_records = {row["id"]: {} for row in players}
-    country_records = {}
-    club_records = {}
-    summary = {"games": 0}
-
-    def apply_result(record, result):
-        record["games"] += 1
-        outcome = _result_for_player(result, record["is_white"])
-        record[{"win": "wins", "loss": "losses", "draw": "draws"}[outcome]] += 1
-
-    for row, _match_date in matches:
         summary["games"] += 1
         for player_id, opponent_id, is_white, opponent_name, opponent_country, opponent_club in (
             (row["white_player_id"], row["black_player_id"], True,
-             row["black_name"], row["black_country"], row["black_club"]),
+             black_player["display_name"], black_player["country"], black_player["club"]),
             (row["black_player_id"], row["white_player_id"], False,
-             row["white_name"], row["white_country"], row["white_club"]),
+             white_player["display_name"], white_player["country"], white_player["club"]),
         ):
             record = stats.get(player_id)
             if record is None:
                 continue
-            result_record = {"is_white": is_white, **record}
-            apply_result(result_record, row["result"])
-            record.update(
-                {key: value for key, value in result_record.items() if key != "is_white"})
-            opponent = opponent_records[player_id].setdefault(
-                opponent_id, _empty_record(opponent_name))
-            opponent_result = {"is_white": is_white, **opponent}
-            apply_result(opponent_result, row["result"])
-            opponent.update(
-                {key: value for key, value in opponent_result.items() if key != "is_white"})
+            _record_result(record, row["result"], is_white)
+            if player_id == selected_player_id:
+                opponent = opponent_records[player_id].setdefault(
+                    opponent_id, _empty_record(opponent_name))
+                _record_result(opponent, row["result"], is_white)
 
             for group, value in ((country_records, opponent_country), (club_records, opponent_club)):
                 label = value or "(unknown)"
                 grouped = group.setdefault(label, _empty_record(label))
-                grouped_result = {"is_white": is_white, **grouped}
-                apply_result(grouped_result, row["result"])
-                grouped.update(
-                    {key: value for key, value in grouped_result.items() if key != "is_white"})
+                _record_result(grouped, row["result"], is_white)
 
     for record in stats.values():
         _finish_record(record)
@@ -349,7 +353,7 @@ def build_date_report(conn, start_date=None, end_date=None, selected_player_id=N
             snapshots_by_player.get(player_id, []), player, start_date, end_date, category_config))
         row["opponents"] = sorted(
             ({"player_id": opponent_id, **record}
-             for opponent_id, record in opponent_records[player_id].items()),
+             for opponent_id, record in opponent_records.get(player_id, {}).items()),
             key=lambda item: (-item["games"], item["display_name"].casefold()),
         )
         player_rows.append(row)
@@ -363,8 +367,6 @@ def build_date_report(conn, start_date=None, end_date=None, selected_player_id=N
         key=lambda row: (-row["games"], row["display_name"].casefold()),
     )
 
-    selected_player_id = int(
-        selected_player_id) if selected_player_id not in (None, "") else None
     selected_player = next(
         (row for row in player_rows if row["player_id"] == selected_player_id), None)
     visible_player_rows = [

@@ -84,6 +84,63 @@ def _matches_in_period(conn, start_date=None, end_date=None):
     return conn.execute(query, params).fetchall()
 
 
+def _player_match_stats_in_period(conn, start_date=None, end_date=None):
+    normalized_match_date = _normalized_sql_date("m.match_date")
+    visible = public_match_condition(conn, "m")
+    clauses = ["m.result NOT LIKE '%!%'", visible]
+    params = []
+    if start_date is not None:
+        clauses.append(f"{normalized_match_date} >= ?")
+        params.append(start_date.isoformat())
+    if end_date is not None:
+        clauses.append(f"{normalized_match_date} <= ?")
+        params.append(end_date.isoformat())
+
+    rows = conn.execute(
+        f"""
+        WITH period_matches AS (
+            SELECT m.white_player_id, m.black_player_id, m.result
+            FROM matches m
+            WHERE {" AND ".join(clauses)}
+        ),
+        player_results AS (
+            SELECT white_player_id AS player_id,
+                   COUNT(*) AS games,
+                   SUM(CASE WHEN result = '1-0' THEN 1 ELSE 0 END) AS wins,
+                   SUM(CASE WHEN result = '1-0' THEN 1 ELSE 0 END) AS wins_as_white,
+                   0 AS wins_as_black
+            FROM period_matches
+            GROUP BY white_player_id
+            UNION ALL
+            SELECT black_player_id AS player_id,
+                   COUNT(*) AS games,
+                   SUM(CASE WHEN result = '0-1' THEN 1 ELSE 0 END) AS wins,
+                   0 AS wins_as_white,
+                   SUM(CASE WHEN result = '0-1' THEN 1 ELSE 0 END) AS wins_as_black
+            FROM period_matches
+            GROUP BY black_player_id
+        )
+        SELECT player_id,
+               SUM(games) AS games,
+               SUM(wins) AS wins,
+               SUM(wins_as_white) AS wins_as_white,
+               SUM(wins_as_black) AS wins_as_black
+        FROM player_results
+        GROUP BY player_id
+        """,
+        params,
+    ).fetchall()
+    return {
+        row["player_id"]: {
+            "games": row["games"],
+            "wins": row["wins"],
+            "wins_as_white": row["wins_as_white"],
+            "wins_as_black": row["wins_as_black"],
+        }
+        for row in rows
+    }
+
+
 def _snapshots_in_period(conn, player_id, start_date=None, end_date=None):
     normalized_snapshot_date = _normalized_sql_date("snapshot_date")
     if start_date is None and end_date is None:
@@ -158,38 +215,12 @@ def _build_metric_entries(players, metric_values, min_value=1):
 
 def _period_stats(conn, period):
     start_date, end_date = _period_bounds(period)
-    matches = _matches_in_period(conn, start_date, end_date)
+    player_stats = _player_match_stats_in_period(conn, start_date, end_date)
     players = conn.execute(
         "SELECT id AS player_id, display_name, initial_rating, rating FROM players_display"
     ).fetchall()
 
     player_rows = [dict(player) for player in players]
-    player_stats = {
-        row["player_id"]: {
-            "games": 0,
-            "wins": 0,
-            "wins_as_white": 0,
-            "wins_as_black": 0,
-        }
-        for row in player_rows
-    }
-
-    for match in matches:
-        white_id = match["white_player_id"]
-        black_id = match["black_player_id"]
-        result = match["result"]
-
-        if white_id in player_stats:
-            player_stats[white_id]["games"] += 1
-            if result == "1-0":
-                player_stats[white_id]["wins"] += 1
-                player_stats[white_id]["wins_as_white"] += 1
-
-        if black_id in player_stats:
-            player_stats[black_id]["games"] += 1
-            if result == "0-1":
-                player_stats[black_id]["wins"] += 1
-                player_stats[black_id]["wins_as_black"] += 1
 
     metric_values = {
         "most_active": {},

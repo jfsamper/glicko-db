@@ -132,8 +132,9 @@ def test_reports_paginate_player_performance_with_default_page_size(app, monkeyp
     conn.close()
 
     client = app.test_client()
-    first_page = client.get("/reports?lang=en")
-    second_page = client.get("/reports?lang=en&page=2")
+    query = "lang=en&period=custom&start_date=2026-01-01&end_date=2026-01-01"
+    first_page = client.get(f"/reports?{query}")
+    second_page = client.get(f"/reports?{query}&page=2")
 
     assert first_page.status_code == 200
     assert second_page.status_code == 200
@@ -141,10 +142,15 @@ def test_reports_paginate_player_performance_with_default_page_size(app, monkeyp
     second_body = second_page.get_data(as_text=True)
     assert 'id="report-page-size"' in first_body
     assert "Page 1 of 2" in first_body
-    assert ">Player 27</a>" in first_body
-    assert 'data-report-player-row hidden' in first_body
+    assert ">Player 27</a>" not in first_body
     assert ">Player 27</a>" in second_body
     assert "Page 2 of 2" in second_body
+    assert "period=custom" in second_body
+    assert "start_date=2026-01-01" in second_body
+    assert "end_date=2026-01-01" in second_body
+    assert "page_size=25" in second_body
+    table_rows = second_body.split("<tbody>", 1)[1].split("</tbody>", 1)[0]
+    assert "Player 27" in table_rows
 
 
 def test_reports_reject_reversed_custom_range(app, monkeypatch, tmp_path):

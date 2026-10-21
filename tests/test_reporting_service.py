@@ -9,6 +9,7 @@ from services.display_name import create_display_name_views
 from services.reporting_service import (
     build_date_report,
     export_report_csv,
+    list_report_seasons,
     resolve_report_range,
 )
 from services.settings_service import ensure_application_settings_table
@@ -80,6 +81,23 @@ def test_resolve_report_range_uses_inclusive_calendar_boundaries():
     )
 
 
+def test_list_report_seasons_deduplicates_dates_and_ignores_invalid_values():
+    conn = create_report_db()
+    conn.executemany(
+        "INSERT INTO matches (match_date, white_player_id, black_player_id, result) VALUES (?, 1, 2, '1-0')",
+        [
+            ("2026-01-01",),
+            ("2026/01/01",),
+            ("31/12/2024",),
+            ("not-a-date",),
+            ("",),
+        ],
+    )
+
+    assert list_report_seasons(conn) == [2026, 2025, 2024]
+    conn.close()
+
+
 def test_report_uses_inclusive_range_and_precomputed_metrics():
     conn = create_report_db()
     report = build_date_report(conn, date(2026, 1, 1), date(2026, 1, 2), selected_player_id=1)
@@ -121,6 +139,24 @@ def test_player_selector_is_ordered_by_total_games():
 
     assert [player["player_id"] for player in report["selector_players"]] == [1, 2, 3]
     assert [player["games"] for player in report["selector_players"]] == [3, 2, 1]
+    conn.close()
+
+
+def test_report_ignores_matches_with_missing_players():
+    conn = create_report_db()
+    baseline = build_date_report(conn, "2026-01-01", "2026-01-02")
+    conn.execute(
+        """
+        INSERT INTO matches (id, match_date, white_player_id, black_player_id, result, event)
+        VALUES (4, '2026-01-01', 1, 99, '1-0', 'League')
+        """
+    )
+
+    report = build_date_report(conn, "2026-01-01", "2026-01-02")
+
+    assert report["summary"]["games"] == 2
+    assert report["summary"]["players"] == 2
+    assert report["excluded_games"] == baseline["excluded_games"]
     conn.close()
 
 

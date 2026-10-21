@@ -239,37 +239,77 @@ def test_home_stats_filters_periods_in_sql_not_python(monkeypatch):
     conn.close()
 
 
-def test_period_stats_counts_matches_in_one_pass(monkeypatch):
-    class GuardedMatches(list):
-        def __iter__(self):
-            if getattr(self, "_iterated", False):
-                raise AssertionError("period stats should not re-iterate all match rows for each player")
-            self._iterated = True
-            return super().__iter__()
-
+def test_period_stats_uses_preaggregated_player_match_counts(monkeypatch):
     player_rows = [
         {"player_id": 1, "display_name": "Alice", "initial_rating": 1500.0, "rating": 1500.0},
         {"player_id": 2, "display_name": "Bob", "initial_rating": 1500.0, "rating": 1500.0},
     ]
-    matches = GuardedMatches([
-        {"white_player_id": 1, "black_player_id": 2, "result": "1-0"},
-        {"white_player_id": 2, "black_player_id": 1, "result": "0-1"},
-        {"white_player_id": 1, "black_player_id": 2, "result": "1/2-1/2"},
-    ])
+    match_stats = {
+        1: {"games": 3, "wins": 1, "wins_as_white": 1, "wins_as_black": 0},
+        2: {"games": 3, "wins": 1, "wins_as_white": 0, "wins_as_black": 1},
+    }
 
     class DummyConn:
         def execute(self, sql, params=()):
-            sql_text = str(sql).upper()
-            if "FROM PLAYERS" in sql_text:
+            if "FROM PLAYERS" in str(sql).upper():
                 return type("Rows", (), {"fetchall": lambda self: player_rows})()
             return type("Rows", (), {"fetchall": lambda self: []})()
 
-    monkeypatch.setattr(home_stats, "_matches_in_period", lambda conn, start_date, end_date: matches)
-    monkeypatch.setattr(home_stats, "_snapshots_in_period", lambda conn, player_id, start_date, end_date: [])
+    aggregate_calls = []
+
+    def aggregated_match_stats(conn, start_date, end_date):
+        aggregate_calls.append((start_date, end_date))
+        return match_stats
+
+    monkeypatch.setattr(home_stats, "_player_match_stats_in_period", aggregated_match_stats)
+    monkeypatch.setattr(home_stats, "_snapshots_by_player", lambda conn, start_date, end_date: {})
 
     result = home_stats._period_stats(DummyConn(), "year")
+    assert len(aggregate_calls) == 1
     assert result["most_active"][0]["player_id"] == 1
     assert result["most_wins"][0]["player_id"] == 1
+
+
+def test_player_match_stats_aggregate_results_with_period_date_rules():
+    conn = sqlite3.connect(":memory:")
+    conn.row_factory = sqlite3.Row
+    conn.execute(
+        """
+        CREATE TABLE matches (
+            id INTEGER PRIMARY KEY,
+            match_date TEXT,
+            white_player_id INTEGER,
+            black_player_id INTEGER,
+            result TEXT
+        )
+        """
+    )
+    conn.executemany(
+        """
+        INSERT INTO matches (match_date, white_player_id, black_player_id, result)
+        VALUES (?, ?, ?, ?)
+        """,
+        [
+            ("2025-01-01", 1, 2, "1-0"),
+            ("02/02/2025", 2, 1, "0-1"),
+            ("2025/03/01", 1, 2, "1/2-1/2"),
+            ("2025-04-01", 1, 2, "1-!0"),
+            ("invalid", 1, 2, "1-0"),
+        ],
+    )
+
+    bounded = home_stats._player_match_stats_in_period(
+        conn, date(2025, 1, 1), date(2025, 3, 31)
+    )
+    all_time = home_stats._player_match_stats_in_period(conn)
+
+    assert bounded == {
+        1: {"games": 3, "wins": 2, "wins_as_white": 1, "wins_as_black": 1},
+        2: {"games": 3, "wins": 0, "wins_as_white": 0, "wins_as_black": 0},
+    }
+    assert all_time[1]["games"] == 4
+    assert all_time[2]["games"] == 4
+    conn.close()
 
 
 def test_build_player_badges_returns_ranked_achievements():

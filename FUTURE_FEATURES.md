@@ -66,9 +66,45 @@ P0 means a prerequisite to exposing an API slice; P1 is the first value-bearing 
 
 **Exit:** a resource-to-service/permission/test inventory, reproducible measurements, and explicit blockers for each delivery slice. Existing fixed findings are regression gates, not new open bugs.
 
-#### Initial A0 findings and provisional priorities
+#### A0 performance baseline for F3
 
-This is the first static pass, not A0 completion. The handler-by-handler inventory, invariant matrix, representative-volume fixture, and measurements below remain outstanding.
+The F3 measurement prerequisite is complete. The benchmark creates a fresh database, runs the app's normal initialization (which seeds 5 baseline players and 5 matches), then adds 1,000 deterministic synthetic players, 20,000 matches, 3,000 rating snapshots, and 20 tournaments using seed `20260827`. Thus measured totals are 1,005 players, 20,005 matches, 3,010 snapshots, and 20 tournaments. Reproduce from the repository root using a disposable database:
+
+```powershell
+$bench = Join-Path $env:TEMP 'glicko-a0-benchmark.db'
+if (Test-Path $bench) { Remove-Item -LiteralPath $bench -Force }
+.\.venv\Scripts\python.exe scripts\benchmark_public_pages.py --output $bench --players 1000 --matches 20000 --tournaments 20 --repeat 10
+Remove-Item -LiteralPath $bench -Force
+```
+
+The benchmark performs two warm-ups and ten measured requests per workload through Flask's in-process test client. Latency p95 uses nearest-rank (the maximum of ten samples); SQL counts are traced statements per request, not query-plan or row-scan counts. This is a repeatable local before/after baseline, not a production-load or multi-worker test.
+
+Measured on Windows 10 (build 19045), AMD64 Family 25 Model 33, 16 logical CPUs, Python 3.11.9, SQLite 3.45.1:
+
+| Workload | p50 ms | p95 ms | SQL statements (median / max) | Initial F3 target |
+| --- | ---: | ---: | ---: | --- |
+| Home `/` | 130.91 | 154.97 | 34 / 34 | p95 <= 250 ms; <= 40 statements |
+| Rankings `/rankings` | 9.33 | 11.50 | 16 / 16 | p95 <= 250 ms; <= 20 statements |
+| Player list `/players` | 11.54 | 15.59 | 16 / 16 | p95 <= 250 ms; <= 20 statements |
+| Match list `/matches` | 20.82 | 22.93 | 13 / 13 | p95 <= 250 ms; <= 20 statements |
+| Tournament list `/tournaments` | 4.40 | 5.48 | 9 / 9 | p95 <= 250 ms; <= 12 statements |
+| Report HTML, all time | 489.07 | 558.70 | 12 / 12 | p95 <= 500 ms; <= 20 statements |
+| Report HTML, bounded dates | 279.31 | 293.49 | 12 / 12 | p95 <= 500 ms; <= 20 statements |
+| Report HTML, selected player | 212.73 | 228.28 | 12 / 12 | p95 <= 500 ms; <= 20 statements |
+| Report CSV, bounded dates | 191.91 | 202.59 | 8 / 8 | p95 <= 500 ms; <= 12 statements |
+| Report PDF, bounded dates/player | 200.67 | 209.35 | 14 / 14 | p95 <= 750 ms; <= 20 statements |
+| Player profile `/player/view` | 146.27 | 180.07 | 52 / 52 | p95 <= 250 ms; <= 60 statements |
+| Category `/category` | 2.36 | 2.59 | 4 / 4 | p95 <= 250 ms; <= 8 statements |
+
+All measured requests returned HTTP 200. A controlled SQLite `BEGIN IMMEDIATE` probe held a writer lock for 50 ms; the competing writer acquired it after 89.57 ms, with no lock error (SQLite's default connection timeout is five seconds). This is a single local lock probe, not a concurrent request/load guarantee.
+
+These are initial acceptance budgets for same-host comparisons. The query ceilings for home, rankings, report HTML, CSV, and PDF are enforced by `tests/test_report_query_budget.py`; latency budgets remain benchmark targets and must be remeasured on the same hardware after F3 changes. The all-time report exceeds its initial latency target and is the first measured optimization candidate. Preserve the inclusive calendar-date semantics covered by `tests/test_reporting_service.py` and `tests/test_reporting_routes.py`.
+
+F3 may start against this baseline. The broader A0 API migration exit remains open: handler-by-handler permission/resource inventory, complete visibility matrix for proposed API resources, and command-level write-side-effect tracing are still required before A1/A3/A4/A5 delivery. Do not treat the F3 performance baseline as API authorization or write-path approval.
+
+#### Remaining A0 findings and provisional priorities
+
+The initial static findings below continue to track API-specific work that the F3 baseline does not close.
 
 | Finding | Current evidence | Planning consequence |
 | --- | --- | --- |
@@ -77,7 +113,7 @@ This is the first static pass, not A0 completion. The handler-by-handler invento
 | Role permissions already union all roles, but the web route map has a permissive fallback and session-coupled checks. | `services/auth_service.py` provides named permission checks; `routes/admin.py` defaults unmapped endpoints to `operator`; `can_view_draft_tournaments()` reads the current web identity. | A1/A2 are P0. API operations must map explicitly to named permissions and a bearer principal; never inherit the admin route fallback or let a token scope elevate a role. |
 | Draft/canceled visibility logic is shared for matches and SGF, but it is not yet a complete API resource policy. | `services/public_visibility.py` centralizes match filtering and hidden SGF filenames. `tests/test_draft_visibility.py` covers match visibility, SGF library/downloads, and news tags, but does not establish parity for every proposed detail, pairing, participant, standings, profile, or alternate-ID operation. | A3 is P1 only after A0 closes the resource-by-resource visibility matrix. Member authentication must not expose staff-only drafts. |
 | Write foundations exist but do not yet establish API command semantics. | `services/transactions.py` provides a shared command boundary; `services/idempotency_service.py` stores tournament command status/location, not a fingerprinted/replayable API response body. | A4 is P2 and A5 P3. Trace each command's side effects and transaction boundary; extend idempotency for API payloads/concurrency where required before enabling writes. |
-| API performance readiness is unknown. | Existing tests cover ranking filters and report behavior, but no API workload, representative larger fixture, or numeric latency/query budget is recorded. | Keep A0 P0 and block A3's performance exit until the fixture and measurements exist. Do not prioritize optimization without measured hotspots. |
+| API resource-query readiness is not measured. | A reproducible web workload baseline and first-stage budgets are recorded above; no API endpoint exists to benchmark, and request-level service/query profiles are not yet available. | F3 may use and improve the shared baseline. Keep API-specific budgets and performance exit open until the selected A3 contract and workload are defined. |
 
 The priorities apply to API milestones only. The separate product/operational backlog items already marked `next` are unchanged; this pass does not reprioritize them.
 
@@ -195,13 +231,18 @@ The following merges the review's Feature Suggestions with the previous roadmap.
 
 | ID / priority | Proposal | Dependencies and acceptance criteria |
 | --- | --- | --- |
-| F3 / next | Report/home scalability and clarity | Share A0's representative-volume fixture, timings, query counts, and agreed budgets. Optimize measured hotspots using filtered SQL/aggregation or invalidated summaries; preserve the resolved V4-13 inclusive-period baseline in HTML/CSV/PDF/API. Add named reporting seasons only as optional in addition to calendar periods, with explicit boundaries/timezone semantics. |
+| F3 / in progress | Report/home scalability and clarity | A0's representative-volume fixture, web timings, SQL statement counts, and initial budgets are recorded above. Optimize measured hotspots using filtered SQL/aggregation or invalidated summaries; preserve the resolved V4-13 inclusive-period baseline in HTML/CSV/PDF/API. |
 | F4 / later | Non-rated tournaments | Show eligible tournaments and games in profiles/match history without affecting ratings. Specify the interaction between rated flag and draft/active/completed/canceled status, and test transitions/replay/report consistency across web and API. |
 | F5 / later | PairGo tournaments | Define team composition, pair identity, pairings, results, profiles, and whether/how ratings apply before changing the singles data model. Preserve existing singles systems. |
 | F6 / later | Country- and region-scoped permissions | Add explicit resource scope to existing named permissions; define cross-region players/tournaments and administrator override. Test list filtering and direct-ID reads/writes on web and API. Token scopes must not bypass geographic restrictions. |
 | F7 / later | UI resilience and accessibility | Evaluate self-hosted versioned UI dependencies, reduced-motion behavior, mobile layout, keyboard navigation, and focus/error handling before release. Preserve current language/theme behavior; verify actual workflows rather than only screenshots. |
 | F8 / explore | Tournament preflight and approval dry run | Preview participant reconciliation, settings, expected operations, warnings, and rating impact without mutation; require explicit approval and detect changes between preview and execution. Reuse established transaction/import-preview patterns. |
 | F9 / explore | Self-service tournament registration | Linked members request a place only on a published, registration-open tournament. Define director-controlled closing time/timezone, capacity, idempotent enrollment, waitlist promotion, withdrawal/cancellation rules, and staff approval for unmatched accounts. Registration state must be separate from draft visibility. Test concurrent requests for the last place. Add API registration only after this domain workflow exists. |
+| F10 / explore | Named reporting seasons | Assess the need for administrator-configurable reporting seasons in addition to existing calendar periods. Define season names, inclusive start/end dates, overlap/duplicate behavior, timezone semantics, and how seasons are created, edited, and retired before implementation. Preserve existing calendar-year, quarter, month, and custom-range reports and exports. |
+
+F3 progress: report player rows now use server-side pagination (25/50/100 per page), preserving active filters and limiting per-player export links to rendered rows. Report aggregation avoids temporary result-record copies and computes opponent breakdowns only for selected-player reports. Home-page leader metrics now aggregate per-player results in SQL instead of materializing all match rows separately for each time period. The existing calendar-year selector queries distinct date strings before applying the legacy-format parser. Report match loading now fetches only match columns and resolves player display/country/club data from a single player map rather than joining both player views for every match. On the representative workload, a run after this change returned HTTP 200 for every workload and measured home p95 at 156.13 ms (34 statements), all-time report p95 at 224.84 ms (12 statements), bounded report at 173.58 ms, selected-player report at 133.84 ms, CSV at 118.90 ms, and PDF at 132.27 ms. These ten-request local figures vary between runs and are indicative, not production guarantees; the home target remains p95 <= 250 ms and <= 40 statements, while the all-time report remains within p95 <= 500 ms and <= 20 statements. Focused home, reporting, route, and query-budget tests pass (31).
+
+Latest F3 slice: report match processing now aggregates each valid match as it is read, eliminating an intermediate list of all match rows and player metadata tuples. On the same representative workload, the latest run measured all-time report p95 at 209.57 ms (12 SQL statements), bounded report at 159.57 ms, selected-player report at 183.43 ms, CSV at 145.85 ms, PDF at 137.64 ms, and home at 148.30 ms (34 statements); every workload returned HTTP 200. Focused home, reporting, route, and query-budget tests pass (31). These are indicative local measurements, not production guarantees.
 
 ## Completed backlog
 
