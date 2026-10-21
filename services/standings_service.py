@@ -8,6 +8,10 @@ def _format_rank_label(category):
     if not text:
         return ""
     normalized = text.upper()
+    if normalized.endswith(" DAN"):
+        return f"{normalized[:-4].strip()}d"
+    if normalized.endswith(" KYU"):
+        return f"{normalized[:-4].strip()}k"
     if normalized.endswith("D"):
         return f"{normalized[:-1]}d"
     if normalized.endswith("K"):

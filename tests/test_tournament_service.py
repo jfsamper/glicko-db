@@ -183,6 +183,25 @@ def create_manual_tournament(conn, rounds=5, pairing_system="swiss", name="Manua
     return tournament_id
 
 
+def test_tournament_standings_derive_missing_categories_from_seed_rating():
+    conn = create_db()
+    conn.executemany(
+        "INSERT INTO players (id, first_name, last_name, rating, active) VALUES (?, ?, ?, ?, 1)",
+        [(1, "Alice", "Alpha", 2100), (2, "Bob", "Bravo", 900)],
+    )
+    tournament_id = create_manual_tournament(conn)
+    add_participant(conn, tournament_id, 1)
+    add_participant(conn, tournament_id, 2)
+
+    standings = get_tournament_standings(conn, tournament_id)
+
+    assert {row["id"]: row["rank_label"] for row in standings} == {
+        1: "2d",
+        2: "13k",
+    }
+    conn.close()
+
+
 def test_bulk_participant_operations_are_atomic():
     conn = create_db()
     conn.executemany(

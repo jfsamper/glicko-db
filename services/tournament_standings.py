@@ -1,6 +1,12 @@
 """Tournament-specific standings assembly."""
+import math
+
 from config import DEFAULT_RATING
-from services.category_service import category_value
+from services.category_service import (
+    category_value,
+    get_category_config,
+    glicko_to_category,
+)
 from services.pairing_service import acceleration_for_rank, default_acceleration_rounds
 from services.standings_service import calculate_standings
 
@@ -19,17 +25,29 @@ def get_tournament_standings(conn, tournament_id):
         for row in participant_rows
         if row["is_pending"]
     }
-    players = [
-        {
+    category_config = get_category_config(conn=conn)
+    players = []
+    for row in participant_rows:
+        category = str(row["category"] or "").strip()
+        if not category:
+            try:
+                rating = float(row["seed_rating"] or 0)
+            except (TypeError, ValueError):
+                rating = 0.0
+            if math.isfinite(rating) and rating > 0:
+                category = glicko_to_category(
+                    rating,
+                    k=category_config["glicko_k"],
+                    m=category_config["glicko_m"],
+                )
+        players.append({
             "id": row["player_id"] if row["player_id"] is not None else row["id"],
             "name": row["display_name"],
             "rating": row["seed_rating"],
             "initial_score": row["initial_score"],
             "acceleration": row["acceleration"],
-            "category": row["category"],
-        }
-        for row in participant_rows
-    ]
+            "category": category,
+        })
     game_rows = conn.execute(
         """
         SELECT p.white_player_id, p.black_player_id,

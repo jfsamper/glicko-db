@@ -58,6 +58,20 @@ def test_standings_assign_unique_positions_when_all_tiebreakers_are_equal():
     assert [row["rank"] for row in result] == [1, 2, 3]
 
 
+def test_standings_format_full_dan_and_kyu_categories_compactly():
+    category_players = [
+        {"id": 1, "name": "Dan player", "rating": 1500, "category": "3 dan"},
+        {"id": 2, "name": "Kyu player", "rating": 1500, "category": "11 kyu"},
+    ]
+
+    result = calculate_standings(category_players, [])
+
+    assert {row["id"]: row["rank_label"] for row in result} == {
+        1: "3d",
+        2: "11k",
+    }
+
+
 def test_mcmahon_uses_initial_score_as_primary_score():
     games = [{"white_player_id": 2, "black_player_id": 3, "result": "1-0"}]
 
