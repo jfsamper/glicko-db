@@ -1,5 +1,6 @@
 """Main application module for the Glicko rating system web service."""
 import os
+import logging
 import sqlite3
 import re
 from pathlib import Path
@@ -39,11 +40,12 @@ from services.i18n import TRANSLATIONS, get_language
 from services.helpers import normalize_round_note
 from services.import_service import import_workbook_data
 from services.idempotency_service import migrate_idempotency_schema, new_idempotency_key
-from services.rating_service import recompute_ratings
+from services.rating_service import get_dirty_date, recompute_ratings
 from services.settings_service import migrate_application_settings_schema
 from services.news_service import migrate_news_schema
 from services.sgf_service import clear_missing_sgf_links, ensure_sgf_schema
 from services.operational_logging import configure_application_logging
+from services.operational_status import migrate_operational_events_schema
 from services.alert_service import (
     prime_admin_alert_recipients,
     send_admin_alert,
@@ -53,6 +55,7 @@ from routes.admin import register_admin_routes
 from services.pairing_service import DEFAULT_ACCELERATION_SCHEME, format_rank_category
 
 csrf = CSRFProtect()
+logger = logging.getLogger(__name__)
 
 
 def create_app(test_config=None, auto_init=True):
@@ -106,6 +109,13 @@ def create_app(test_config=None, auto_init=True):
         def current_lang():
             return get_language(request.args.get("lang"))
 
+        try:
+            ratings_stale = get_dirty_date() is not None
+            rating_freshness = "stale" if ratings_stale else "current"
+        except sqlite3.OperationalError:
+            logger.exception("Could not determine public rating freshness.")
+            rating_freshness = "unknown"
+
         return {
             "current_lang": current_lang,
             "current_user": get_current_user(),
@@ -113,6 +123,7 @@ def create_app(test_config=None, auto_init=True):
             "translations": TRANSLATIONS,
             "format_match_result": format_match_result,
             "format_rank_category": format_rank_category,
+            "rating_freshness": rating_freshness,
         }
 
     @app_instance.url_build_error_handlers.append
@@ -963,6 +974,7 @@ def migrate_database_schema(conn):
     migrate_result_submissions_schema(conn)
     migrate_application_settings_schema(conn)
     migrate_audit_log_schema(conn)
+    migrate_operational_events_schema(conn)
     migrate_news_schema(conn)
     bootstrap_default_admin_account(conn)
     ensure_player_schema_columns(conn)

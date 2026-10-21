@@ -15,6 +15,7 @@ Glicko DB is a Flask and SQLite application for managing a Go community's player
 - [Development](#development)
   - [Code organization](#code-organization)
   - [Linux hosting installation](#linux-hosting-installation)
+  - [Scheduled backups and restore drills](#scheduled-backups-and-restore-drills)
 - [License and attribution](#license-and-attribution)
 
 ## Features
@@ -134,6 +135,22 @@ python3 -m venv .venv
 ```
 
 If Pillow has no compatible wheel, check that the host's Python version and platform are supported. For common deployment issues, check server logs, the Python environment, dependencies, WSGI entry point, permissions, and routing. Optional diagnostic tools are in `scripts/dev_only/`; do not include them in normal deployments.
+
+### Scheduled backups and restore drills
+
+Schedule `scripts/scheduled_backup.py` with the same Python runtime, working directory, and environment (`DB_PATH` and `SCHEDULED_BACKUP_KEEP`) used by the application. The job verifies the backup and a restore into a temporary database before applying retention; it exits with status 1 on failure. In Windows Task Scheduler, configure:
+
+- **Program**: `C:\path\to\glicko-db\.venv\Scripts\python.exe`
+- **Arguments**: `scripts\scheduled_backup.py`
+- **Start in**: `C:\path\to\glicko-db`
+
+On Linux, a daily cron entry can be:
+
+```cron
+0 2 * * * cd /srv/glicko-db && .venv/bin/python scripts/scheduled_backup.py >> /var/log/glicko-db-backup.log 2>&1
+```
+
+Set the same production environment variables in the scheduler; cron and Task Scheduler may not inherit the web server's environment. As an administrator, review `/admin/backups` for rating freshness, the latest backup and restore check, and operational failures. Practice restoration on a disposable instance. Before replacing the active database, schedule a maintenance window, block new writes, and let in-flight requests finish during the final swap. SQLite backups do not include `uploads/sgf`; protect and restore that directory separately.
 
 ## License and attribution
 

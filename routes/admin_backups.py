@@ -8,6 +8,10 @@ from flask import flash, redirect, render_template, request, url_for
 from services.timezone_service import current_datetime
 from services.audit_service import log_admin_action
 from services.i18n import TRANSLATIONS
+from services.operational_status import (
+    get_operational_dashboard,
+    record_operational_event_safely,
+)
 
 
 def _admin_routes():
@@ -69,11 +73,18 @@ def admin_backups():
             }
         )
 
+    conn = admin.get_db()
+    try:
+        operations = get_operational_dashboard(conn)
+    finally:
+        conn.close()
+
     return render_template(
         "admin/backups.html",
         backups=backups,
         lang=lang,
         translations=TRANSLATIONS[lang],
+        operations=operations,
     )
 
 
@@ -88,11 +99,23 @@ def admin_create_backup():
     filename = current_datetime().strftime("%Y-%m-%d-%H%M%S") + ".db"
     try:
         admin.create_checked_backup(filename)
-    except Exception:
+    except Exception as exc:
         admin.logger.exception("Manual backup %s could not be verified", filename)
+        record_operational_event_safely(
+            "backup_action_failed",
+            {
+                "action": "create",
+                "failure_type": type(exc).__name__,
+                "user_id": admin.session.get("user_id"),
+            },
+        )
         flash(TRANSLATIONS[lang]["error"])
         return redirect(url_for("admin_backups", lang=lang))
 
+    record_operational_event_safely(
+        "manual_backup_succeeded",
+        {"backup": filename, "user_id": admin.session.get("user_id")},
+    )
     log_admin_action(
         "backup_created",
         "backup",
@@ -112,6 +135,15 @@ def admin_restore_backup():
     lang = admin.get_language(request.args.get("lang"))
     path = admin.get_backup_path(request.form.get("name"))
     if path is None or not path.is_file():
+        record_operational_event_safely(
+            "backup_action_failed",
+            {
+                "action": "restore",
+                "stage": "selection",
+                "failure_type": "InvalidOrMissingBackup",
+                "user_id": admin.session.get("user_id"),
+            },
+        )
         admin.logger.warning(
             "Backup restore rejected: missing or invalid backup path %r",
             request.form.get("name"),
@@ -120,6 +152,16 @@ def admin_restore_backup():
         return redirect(url_for("admin_backups", lang=lang))
 
     if not admin.is_valid_sqlite_backup(path):
+        record_operational_event_safely(
+            "backup_action_failed",
+            {
+                "action": "restore",
+                "backup": path.name,
+                "stage": "integrity_check",
+                "failure_type": "InvalidSQLiteBackup",
+                "user_id": admin.session.get("user_id"),
+            },
+        )
         admin.logger.warning(
             "Backup restore rejected: invalid SQLite backup %s", path)
         admin.send_admin_alert(
@@ -136,14 +178,34 @@ def admin_restore_backup():
     )
     try:
         snapshot_path = admin.create_checked_backup(snapshot_name)
-    except Exception:
+    except Exception as exc:
         admin.logger.exception(
             "Backup restore aborted: pre-restore snapshot could not be verified")
+        record_operational_event_safely(
+            "backup_action_failed",
+            {
+                "action": "restore",
+                "backup": path.name,
+                "stage": "pre_restore_snapshot",
+                "failure_type": type(exc).__name__,
+                "user_id": admin.session.get("user_id"),
+            },
+        )
         flash(TRANSLATIONS[lang]["error"])
         return redirect(url_for("admin_backups", lang=lang))
 
     if not admin.restore_db_from_backup(path):
         admin.remove_backup(snapshot_path)
+        record_operational_event_safely(
+            "backup_action_failed",
+            {
+                "action": "restore",
+                "backup": path.name,
+                "stage": "restore",
+                "failure_type": "RestoreFailed",
+                "user_id": admin.session.get("user_id"),
+            },
+        )
         admin.logger.warning(
             "Backup restore failed during restore step for %s", path)
         flash(TRANSLATIONS[lang]["error"])
@@ -168,10 +230,33 @@ def admin_delete_backup():
     lang = admin.get_language(request.args.get("lang"))
     path = admin.get_backup_path(request.form.get("name"))
     if path is None or not path.is_file():
+        record_operational_event_safely(
+            "backup_action_failed",
+            {
+                "action": "delete",
+                "stage": "selection",
+                "failure_type": "InvalidOrMissingBackup",
+                "user_id": admin.session.get("user_id"),
+            },
+        )
         flash(TRANSLATIONS[lang]["error"])
         return redirect(url_for("admin_backups", lang=lang))
 
-    admin.remove_backup(path)
+    try:
+        admin.remove_backup(path)
+    except OSError as exc:
+        admin.logger.exception("Backup %s could not be deleted", path.name)
+        record_operational_event_safely(
+            "backup_action_failed",
+            {
+                "action": "delete",
+                "backup": path.name,
+                "failure_type": type(exc).__name__,
+                "user_id": admin.session.get("user_id"),
+            },
+        )
+        flash(TRANSLATIONS[lang]["error"])
+        return redirect(url_for("admin_backups", lang=lang))
     log_admin_action(
         "backup_deleted",
         "backup",

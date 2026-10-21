@@ -18,6 +18,7 @@ from services.timezone_service import current_timestamp
 from services.glicko2 import Player
 from services.public_visibility import rating_match_condition
 from services.operational_logging import log_operational_event
+from services.operational_status import record_operational_event_safely
 
 logger = logging.getLogger(__name__)
 
@@ -516,6 +517,11 @@ def update_from_latest_snapshot():
             WHERE id = 1
             """
         )
+        record_operational_event_safely(
+            "rating_replay_succeeded",
+            {"earliest_dirty_date": dirty_date},
+            conn=conn,
+        )
         conn.commit()
         log_operational_event(
             logger,
@@ -534,6 +540,15 @@ def update_from_latest_snapshot():
             earliest_dirty_date=dirty_date,
         )
         conn.rollback()
+        if record_operational_event_safely(
+            "rating_replay_failed",
+            {
+                "earliest_dirty_date": dirty_date,
+                "failure_type": type(exc).__name__,
+            },
+            conn=conn,
+        ):
+            conn.commit()
         send_admin_alert(
             "rating_replay_failure",
             "Incremental rating replay failed.",

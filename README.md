@@ -15,6 +15,7 @@ Glicko BD es una aplicación Flask y SQLite para administrar jugadores, ratings,
 - [Desarrollo](#desarrollo)
   - [Organización del código](#organización-del-código)
   - [Instalación en hosting Linux](#instalación-en-hosting-linux)
+  - [Copias programadas y pruebas de restauración](#copias-programadas-y-pruebas-de-restauración)
 - [Licencia y atribución](#licencia-y-atribución)
 
 ## Funciones
@@ -134,6 +135,22 @@ python3 -m venv .venv
 ```
 
 Si Pillow no tiene wheels compatibles, revisa que la versión de Python y la plataforma del hosting sean compatibles. Para diagnosticar fallos comunes, revisa los registros del servidor, el entorno Python, las dependencias, el punto de entrada WSGI, los permisos y el enrutamiento. Hay herramientas de diagnóstico opcionales en `scripts/dev_only/`; no las incluyas en el despliegue normal.
+
+### Copias programadas y pruebas de restauración
+
+Programa `scripts/scheduled_backup.py` con el mismo Python, directorio de trabajo y variables de entorno (`DB_PATH` y `SCHEDULED_BACKUP_KEEP`) que usa la aplicación. El trabajo verifica la copia y una restauración en una base temporal antes de aplicar la retención; termina con código 1 si falla. En Windows Task Scheduler, configura:
+
+- **Programa**: `C:\ruta\glicko-db\.venv\Scripts\python.exe`
+- **Argumentos**: `scripts\scheduled_backup.py`
+- **Iniciar en**: `C:\ruta\glicko-db`
+
+En Linux, una entrada de cron diaria puede ser:
+
+```cron
+0 2 * * * cd /srv/glicko-db && .venv/bin/python scripts/scheduled_backup.py >> /var/log/glicko-db-backup.log 2>&1
+```
+
+Configura en el entorno del programador las mismas variables de producción; cron y Task Scheduler no necesariamente heredan el entorno del servidor web. Revisa `/admin/backups` como administrador para comprobar la frescura de ratings, la última copia y prueba de restauración, y los fallos operativos. Practica la restauración en una instancia desechable. Para sustituir la base activa, programa una ventana de mantenimiento, bloquea nuevas escrituras y espera a que terminen las solicitudes en curso durante el cambio final. Las copias SQLite no contienen `uploads/sgf`; protege y restaura esa carpeta por separado.
 
 ## Licencia y atribución
 Glicko-db fue originalmente desarrollado para la comunidad de Go en Colombia por Juan Felipe Samper en 2026. 

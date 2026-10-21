@@ -417,6 +417,10 @@ Importe planilhas históricas, partidas ou arquivos do OpenGotha:
   - Não altera `uploads/sgf`. Os vínculos com arquivos SGF ausentes no disco são removidos, como de costume.
   - Restringe candidatos a arquivos gerenciados e ao backup `.bak` designado.
 - **Backups agendados**: os backups criados pelo job `scripts/scheduled_backup.py` aparecem aqui junto com os manuais. O job mantém os `SCHEDULED_BACKUP_KEEP` backups agendados mais recentes (padrão 14) e nunca exclui backups manuais, anteriores a importações ou anteriores a restaurações.
+- **Status operacional (somente administradores)**: mostra desde quando os ratings estão pendentes, os resultados mais recentes do recálculo, do backup agendado e do teste de restauração, da retenção, das restaurações manuais e das ações administrativas com falha. O histórico é limitado aos 2.000 eventos mais recentes dos últimos 180 dias. As páginas públicas mostram apenas se os ratings estão atualizados, pendentes ou se não foi possível determinar o estado; a data interna não é exibida.
+- **Teste de restauração**: os backups agendados são restaurados e verificados em um banco temporário antes de remover backups antigos. Pratique uma restauração completa somente em uma instância descartável e verifique depois o banco e os arquivos SGF.
+- **Janela de manutenção**: antes de substituir o banco ativo, bloqueie novas gravações e aguarde a conclusão das solicitações em andamento durante a troca final. Se não for possível pausar o tráfego da aplicação, programe a restauração para uma janela de manutenção; leitores SQLite abertos podem impedir a substituição atômica, especialmente no Windows.
+- **Proteção SGF**: o SQLite armazena apenas os nomes e vínculos dos arquivos; não inclui nem restaura `uploads/sgf`. Faça backup dessa pasta separadamente e coordene a restauração com o banco para evitar vínculos quebrados.
 - **Excluir backups**: remove cópias antigas para liberar espaço de armazenamento.
 - Execute `python scripts/check_legacy_players_state.py` para auditar o banco ativo e os backups gerenciados.
 

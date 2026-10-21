@@ -1,4 +1,5 @@
 import importlib.util
+import json
 import sqlite3
 import warnings
 from pathlib import Path
@@ -505,7 +506,17 @@ def test_update_from_latest_snapshot_matches_full_recompute_ratings(monkeypatch,
     conn = get_test_db()
     incremental_players = conn.execute("SELECT id, rating, rd, volatility FROM players ORDER BY id").fetchall()
     incremental_snapshots = conn.execute("SELECT player_id, snapshot_date, rating, rd, volatility FROM rating_snapshots ORDER BY snapshot_date, id").fetchall()
+    replay_event = conn.execute(
+        """
+        SELECT event_type, details
+        FROM operational_events
+        ORDER BY id DESC
+        LIMIT 1
+        """
+    ).fetchone()
     conn.close()
+    assert replay_event["event_type"] == "rating_replay_succeeded"
+    assert json.loads(replay_event["details"])["earliest_dirty_date"] == "2026-01-03"
 
     # Now run full recompute from scratch
     rating_service.recompute_ratings()

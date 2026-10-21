@@ -15,6 +15,7 @@ Glicko BD é uma aplicação Flask e SQLite para gerenciar jogadores, ratings, p
 - [Desenvolvimento](#desenvolvimento)
   - [Organização do código](#organização-do-código)
   - [Instalação em hospedagem Linux](#instalação-em-hospedagem-linux)
+  - [Backups agendados e testes de restauração](#backups-agendados-e-testes-de-restauração)
 - [Licença e atribuição](#licença-e-atribuição)
 
 ## Recursos
@@ -134,6 +135,22 @@ python3 -m venv .venv
 ```
 
 Se o Pillow não tiver um wheel compatível, verifique se a versão do Python e a plataforma da hospedagem são compatíveis. Para problemas comuns, consulte os logs do servidor, o ambiente Python, as dependências, o ponto de entrada WSGI, as permissões e o roteamento. Há ferramentas opcionais de diagnóstico em `scripts/dev_only/`; não as inclua na implantação normal.
+
+### Backups agendados e testes de restauração
+
+Agende `scripts/scheduled_backup.py` com o mesmo Python, diretório de trabalho e ambiente (`DB_PATH` e `SCHEDULED_BACKUP_KEEP`) usados pela aplicação. O job verifica o backup e uma restauração em um banco temporário antes de aplicar a retenção; termina com código 1 se falhar. No Agendador de Tarefas do Windows, configure:
+
+- **Programa**: `C:\caminho\glicko-db\.venv\Scripts\python.exe`
+- **Argumentos**: `scripts\scheduled_backup.py`
+- **Iniciar em**: `C:\caminho\glicko-db`
+
+No Linux, uma entrada diária do cron pode ser:
+
+```cron
+0 2 * * * cd /srv/glicko-db && .venv/bin/python scripts/scheduled_backup.py >> /var/log/glicko-db-backup.log 2>&1
+```
+
+Defina no agendador as mesmas variáveis de ambiente de produção; cron e Agendador de Tarefas talvez não herdem o ambiente do servidor web. Como administrador, confira `/admin/backups` para verificar a atualização dos ratings, o backup e o teste de restauração mais recentes e as falhas operacionais. Faça testes de restauração em uma instância descartável. Antes de substituir o banco ativo, agende uma janela de manutenção, bloqueie novas gravações e aguarde a conclusão das solicitações em andamento durante a troca final. Os backups SQLite não incluem `uploads/sgf`; proteja e restaure essa pasta separadamente.
 
 ## Licença e atribuição
 

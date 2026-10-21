@@ -1,6 +1,8 @@
 import re
 import shutil
 import sqlite3
+import threading
+import time
 
 import pytest
 
@@ -8,6 +10,7 @@ import app as app_module
 import routes.admin as admin_routes
 import services.backup_service as backup_service
 import services.sgf_service as sgf_service
+from services.operational_status import get_operational_dashboard
 
 
 def _execute(db_path, sql, params=()):
@@ -87,6 +90,53 @@ def test_restore_replaces_database_and_clears_only_missing_sgf_pointers(restore_
     assert (sgf_dir / "newer.sgf").read_text(encoding="utf-8") == "uploaded after the backup"
     assert sorted(path.name for path in sgf_dir.iterdir()) == ["kept.sgf", "newer.sgf"]
     assert _staging_files(live_db) == []
+    with sqlite3.connect(live_db) as conn:
+        status = get_operational_dashboard(conn)
+    assert status["backup_restore_success"]["details"]["backup"] == backup_path.name
+
+
+def test_restore_staging_allows_readers_before_quiesced_atomic_cutover(
+    restore_env, monkeypatch
+):
+    live_db, backup_path, _, _, _ = restore_env
+    stop_readers = threading.Event()
+    read_errors = []
+    completed_reads = []
+
+    def read_request_loop():
+        while not stop_readers.is_set():
+            conn = sqlite3.connect(live_db, timeout=5)
+            try:
+                conn.execute("SELECT COUNT(*) FROM players").fetchone()
+                completed_reads.append(True)
+            except sqlite3.Error as exc:
+                read_errors.append(type(exc).__name__)
+                break
+            finally:
+                conn.close()
+
+    readers = [
+        threading.Thread(target=read_request_loop)
+        for _ in range(3)
+    ]
+    for reader in readers:
+        reader.start()
+    time.sleep(0.05)
+    real_replace = backup_service.os.replace
+
+    def quiesce_then_replace(source, destination):
+        stop_readers.set()
+        for reader in readers:
+            reader.join(timeout=5)
+        return real_replace(source, destination)
+
+    monkeypatch.setattr(backup_service.os, "replace", quiesce_then_replace)
+    assert backup_service.restore_db_from_backup(backup_path, live_db)
+
+    assert all(not reader.is_alive() for reader in readers)
+    assert completed_reads
+    assert read_errors == []
+    assert not _has_live_player(live_db)
 
 
 def test_failed_migration_keeps_database_and_sgf_library(restore_env, monkeypatch):
@@ -101,6 +151,9 @@ def test_failed_migration_keeps_database_and_sgf_library(restore_env, monkeypatc
 
     _assert_live_state_unchanged(live_db, sgf_dir, kept_match, missing_match)
     assert _staging_files(live_db) == []
+    with sqlite3.connect(live_db) as conn:
+        status = get_operational_dashboard(conn)
+    assert status["backup_restore_failure"]["details"]["failure_type"] == "RuntimeError"
 
 
 def test_failed_swap_keeps_database_and_sgf_library(restore_env, monkeypatch):

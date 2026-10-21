@@ -63,6 +63,7 @@ from services.alert_service import (
     send_admin_alert,
 )
 from services.operational_logging import log_operational_event
+from services.operational_status import record_operational_event_safely
 from services.stats_service import refresh_stats
 from services.timezone_service import (
     current_datetime,
@@ -757,6 +758,24 @@ def admin_auth_check():
     lang = get_language(request.args.get("lang"))
     flash(TRANSLATIONS[lang]["invalid_password"])
     return redirect(url_for("admin.admin_login", lang=lang))
+
+
+@admin_bp.after_request
+def record_failed_admin_action(response):
+    if (
+        request.method == "POST"
+        and response.status_code >= 400
+        and session.get("user_id") is not None
+    ):
+        record_operational_event_safely(
+            "admin_action_failed",
+            {
+                "endpoint": request.endpoint or "unknown",
+                "status": response.status_code,
+                "user_id": session["user_id"],
+            },
+        )
+    return response
 
 
 @admin_bp.route("/admin")

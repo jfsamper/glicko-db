@@ -8,6 +8,7 @@ import uuid
 from pathlib import Path
 
 from services.alert_service import send_admin_alert
+from services.operational_status import record_operational_event_safely
 
 logger = logging.getLogger(__name__)
 BACKUP_NAME_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*\.db$")
@@ -329,6 +330,19 @@ def restore_db_from_backup(path, db_path):
             "A database backup could not be restored; the active database was left unchanged.",
             f"Failure type: {type(exc).__name__}",
         )
+        record_operational_event_safely(
+            "backup_restore_failed",
+            {
+                "backup": backup_path.name,
+                "failure_type": type(exc).__name__,
+            },
+            db_path=active_db_path,
+        )
         return False
 
+    record_operational_event_safely(
+        "backup_restore_succeeded",
+        {"backup": backup_path.name},
+        db_path=active_db_path,
+    )
     return True

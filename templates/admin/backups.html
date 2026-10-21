@@ -27,6 +27,80 @@
 
   </div>
 
+  <section class="card" aria-labelledby="operations-status-heading">
+    <h3 id="operations-status-heading">{{ translations.operations_status_heading }}</h3>
+    <dl class="operations-status-grid">
+      <div class="operations-status-item">
+        <dt>{{ translations.ratings_dirty_since }}</dt>
+        <dd class="operations-status-value">
+          {% if operations.earliest_dirty_date %}
+          {{ operations.earliest_dirty_date }}
+          {% elif operations.rating_status_known %}
+          {{ translations.ratings_current_status }}
+          {% else %}
+          {{ translations.ratings_unknown_status }}
+          {% endif %}
+        </dd>
+      </div>
+      {% for key, label_key in (
+        ('rating_replay_success', 'rating_replay_success'),
+        ('rating_replay_failure', 'rating_replay_failure'),
+        ('manual_backup_success', 'manual_backup_success'),
+        ('scheduled_backup_success', 'scheduled_backup_success'),
+        ('scheduled_backup_failure', 'scheduled_backup_failure'),
+        ('restore_check_success', 'restore_check_success'),
+        ('restore_check_failure', 'restore_check_failure'),
+        ('retention_failure', 'retention_failure'),
+        ('backup_restore_success', 'backup_restore_success'),
+        ('backup_restore_failure', 'backup_restore_failure'),
+        ('backup_action_failure', 'backup_action_failure')
+      ) %}
+      {% set event = operations[key] %}
+      <div class="operations-status-item">
+        <dt>{{ translations[label_key] }}</dt>
+        <dd class="operations-status-value">
+          {% if event %}
+          {{ event.occurred_at }}
+          {% if event.details.backup %}
+          <span class="operations-status-detail">
+            {{ translations.backup_name_detail.format(name=event.details.backup) }}
+          </span>
+          {% endif %}
+          {% if event.details.failure_type %}
+          <span class="operations-status-detail">
+            {{ translations.failure_type_detail.format(failure=event.details.failure_type) }}
+          </span>
+          {% endif %}
+          {% else %}
+          {{ translations.not_recorded }}
+          {% endif %}
+        </dd>
+      </div>
+      {% endfor %}
+    </dl>
+
+    <details class="operations-failures">
+      <summary>
+        {{ translations.failed_admin_actions }}
+        <span class="operations-failure-count">{{ operations.failed_admin_actions|length }}</span>
+      </summary>
+      <ul class="operations-failure-list">
+        {% for event in operations.failed_admin_actions %}
+        <li>
+          <time>{{ event.occurred_at }}</time>
+          <span>{{ event.details.endpoint or event.details.action or event.event_type }}</span>
+          {% if event.details.status %}<span>HTTP {{ event.details.status }}</span>{% endif %}
+          {% if event.details.failure_type %}
+          <span>{{ translations.failure_type_detail.format(failure=event.details.failure_type) }}</span>
+          {% endif %}
+        </li>
+        {% else %}
+        <li>{{ translations.no_failed_admin_actions }}</li>
+        {% endfor %}
+      </ul>
+    </details>
+  </section>
+
   <div class="table-wrapper">
     <table class="table-stack">
 

@@ -7,6 +7,7 @@ import routes.admin as admin_routes
 import services.alert_service as alert_service
 import services.backup_service as backup_service
 import services.rating_service as rating_service
+from services.operational_status import get_operational_dashboard
 import pytest
 
 
@@ -239,6 +240,11 @@ def test_rating_replay_failure_alerts_and_preserves_original_exception(monkeypat
     monkeypatch.setattr(rating_service, "_replay_from_dirty_date", fail_replay)
     monkeypatch.setattr(
         rating_service,
+        "record_operational_event_safely",
+        lambda *_args, **_kwargs: False,
+    )
+    monkeypatch.setattr(
+        rating_service,
         "send_admin_alert",
         lambda *args: sent_alerts.append(args),
     )
@@ -249,6 +255,23 @@ def test_rating_replay_failure_alerts_and_preserves_original_exception(monkeypat
     assert conn.rolled_back
     assert conn.closed
     assert sent_alerts[0][0] == "rating_replay_failure"
+
+
+def test_rating_replay_failure_is_persisted(isolate_test_database, monkeypatch):
+    def fail_replay(_conn, _dirty_date):
+        raise sqlite3.OperationalError("replay failed")
+
+    monkeypatch.setattr(rating_service, "_replay_from_dirty_date", fail_replay)
+    monkeypatch.setattr(rating_service, "send_admin_alert", lambda *_args: None)
+    rating_service.mark_dirty("2026-01-02")
+
+    with pytest.raises(sqlite3.OperationalError, match="replay failed"):
+        rating_service.update_from_latest_snapshot()
+
+    with sqlite3.connect(isolate_test_database) as conn:
+        status = get_operational_dashboard(conn)
+    assert status["rating_replay_failure"]["details"]["earliest_dirty_date"] == "2026-01-02"
+    assert status["rating_replay_failure"]["details"]["failure_type"] == "OperationalError"
 
 
 def test_restore_failure_alerts_and_returns_false(monkeypatch, tmp_path):

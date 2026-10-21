@@ -418,6 +418,10 @@ Permite cargar datos históricos o torneos masivos:
   - No modifica `uploads/sgf`. Los enlaces a archivos SGF que faltan en disco se eliminan, como siempre.
   - Bloquea el uso de archivos temporales de `data/` como origen de restauración.
 - **Copias programadas**: las copias creadas por el trabajo `scripts/scheduled_backup.py` aparecen aquí junto con las manuales. El trabajo conserva las `SCHEDULED_BACKUP_KEEP` copias programadas más recientes (predeterminado 14) y nunca elimina copias manuales, previas a una importación ni previas a una restauración.
+- **Estado operativo (solo administradores)**: muestra desde cuándo están pendientes los ratings, los últimos resultados del recálculo, la copia y la prueba de restauración programadas, la retención, las restauraciones manuales y las acciones administrativas fallidas. El historial se limita a los 180 días y 2.000 eventos más recientes. El sitio público solo indica si los ratings están al día, pendientes o si no se pudo determinar su estado; no muestra la fecha interna.
+- **Prueba de restauración**: las copias programadas se restauran y verifican en una base temporal antes de retener copias antiguas. Practica una restauración completa únicamente en una instancia desechable y comprueba después las tablas y los archivos SGF.
+- **Ventana de mantenimiento**: antes de reemplazar la base activa, bloquea nuevas escrituras y espera a que terminen las solicitudes en curso durante el cambio final. Si no puedes detener temporalmente el tráfico de la aplicación, planifica la restauración en una ventana de mantenimiento; lectores SQLite abiertos pueden impedir el reemplazo atómico, especialmente en Windows.
+- **Protección SGF**: la base SQLite solo conserva los nombres y vínculos de los archivos; no incluye ni restaura `uploads/sgf`. Incluye esta carpeta en un respaldo independiente y coordina su restauración con la base para evitar vínculos rotos.
 - **Eliminar copias**: elimina copias de seguridad obsoletas para liberar almacenamiento.
 - Ejecuta `python scripts/check_legacy_players_state.py` para auditar la base activa y las copias administradas.
 

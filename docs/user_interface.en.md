@@ -418,6 +418,10 @@ Import historical workbooks, match spreadsheets, or OpenGotha files:
   - Leaves `uploads/sgf` unchanged. Links to SGF files that are missing from disk are cleared, as usual.
   - Restricts candidate backups to managed files and designated `.bak` fallbacks.
 - **Scheduled backups**: backups created by the `scripts/scheduled_backup.py` job are listed here with the manual ones. The job keeps the newest `SCHEDULED_BACKUP_KEEP` scheduled backups (default 14) and never deletes manual, pre-import, or pre-restore backups.
+- **Operational status (administrators only)**: shows when ratings first became dirty, the latest replay outcomes, scheduled backup and restore-check outcomes, retention, manual restores, and failed admin actions. The journal is bounded to the newest 2,000 events from the last 180 days. Public pages show only whether ratings are current, stale, or unavailable; they do not expose the internal date.
+- **Restore drill**: scheduled backups are restored and verified in a temporary database before old backups are pruned. Practice a full restore only on a disposable instance, then verify both the database and SGF files.
+- **Maintenance window**: before replacing the active database, block new writes and let in-flight requests finish during the final swap. If application traffic cannot be paused, schedule the restore for a maintenance window; open SQLite readers can prevent the atomic replacement, especially on Windows.
+- **SGF protection**: SQLite stores only filenames and links; it does not contain or restore `uploads/sgf`. Back up that directory separately and coordinate its restore with the database to avoid broken links.
 - **Delete backups**: purge older backups to free storage space.
 - Run `python scripts/check_legacy_players_state.py` to audit the active database and managed backups.
 

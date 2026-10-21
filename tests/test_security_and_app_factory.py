@@ -571,6 +571,61 @@ def test_admin_backups_requires_administrator_capability(tmp_path, monkeypatch):
         )
         assert response.status_code == 403
 
+    with sqlite3.connect(db_path) as conn:
+        failed_actions = [
+            json.loads(row[0])
+            for row in conn.execute(
+                """
+                SELECT details
+                FROM operational_events
+                WHERE event_type = 'admin_action_failed'
+                """
+            )
+        ]
+    assert len(failed_actions) == 3
+    assert all(event["status"] == 403 for event in failed_actions)
+
+
+def test_operational_status_is_staff_only_and_public_freshness_hides_date(
+    tmp_path, monkeypatch
+):
+    db_path = tmp_path / "operational_status_visibility.db"
+    monkeypatch.setattr(config, "DB_PATH", str(db_path))
+    monkeypatch.setattr(common, "DB_PATH", str(db_path))
+
+    app_instance = create_app(
+        {
+            "TESTING": True,
+            "WTF_CSRF_ENABLED": False,
+            "SECRET_KEY": "test-operational-status-secret",
+        }
+    )
+    dirty_date = "2026-10-21"
+    with sqlite3.connect(db_path) as conn:
+        conn.execute(
+            "UPDATE rating_state SET earliest_dirty_date = ? WHERE id = 1",
+            (dirty_date,),
+        )
+
+    client = app_instance.test_client()
+    public_response = client.get("/?lang=en")
+    public_page = public_response.get_data(as_text=True)
+    assert public_response.status_code == 200
+    assert "Ratings may be out of date" in public_page
+    assert dirty_date not in public_page
+
+    conftest.set_admin_session(client, db_path)
+    status_response = client.get("/admin/backups?lang=en")
+    assert status_response.status_code == 200
+    assert dirty_date in status_response.get_data(as_text=True)
+
+    with sqlite3.connect(db_path) as conn:
+        conn.execute("DROP TABLE rating_state")
+    unknown_response = client.get("/?lang=en")
+    unknown_page = unknown_response.get_data(as_text=True)
+    assert "Rating freshness could not be checked." in unknown_page
+    assert dirty_date not in unknown_page
+
 
 def test_restore_db_from_backup_recreates_auth_schema_for_session_checks(tmp_path, monkeypatch):
     db_path = tmp_path / "restored_auth_backup.db"

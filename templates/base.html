@@ -139,6 +139,11 @@
       </div>
       {% endif %}
       {% endwith %}
+      {% if rating_freshness == 'stale' %}
+      <div class="warning-box" role="status">{{ translations.public_ratings_stale }}</div>
+      {% elif rating_freshness == 'unknown' %}
+      <div class="warning-box" role="status">{{ translations.public_ratings_unknown }}</div>
+      {% endif %}
       {% block content %}{% endblock %}
     </main>
   </div>
