@@ -95,55 +95,21 @@ The v3 "already fixed" claims still hold for Glicko-2 `_f()` ([services/glicko2.
 ## Broader Review Notes
 
 - **What is working:** Named accounts, role checks, production CSRF, secure cookie defaults, allowlisted sort fields, parameterized data filters, bounded SGF reads, and numerical Glicko regression tests provide a good foundation ([app.py](app.py#L48), [services/sgf_service.py](services/sgf_service.py#L11), [tests/test_glicko2_f_correctness.py](tests/test_glicko2_f_correctness.py)). These controls do not repair the authorization and transaction gaps above.
-- **Backup reliability:** Creation copies a live SQLite file with `shutil.copy2`, and restore overwrites the live database before migrations complete ([routes/admin_backups.py](routes/admin_backups.py#L80), [services/backup_service.py](services/backup_service.py#L163)). This is a concurrency/recovery risk, not a corruption reproduced in this review. Prefer SQLite's connection backup API, verify the staged copy and SGF sidecar, migrate it, then replace atomically with rollback and a restore generation that invalidates sessions. The existing roadmap already calls for scheduled backups and restore verification ([FUTURE_FEATURES.md](FUTURE_FEATURES.md#L138)).
+- **Backup reliability:** Creation copies a live SQLite file with `shutil.copy2`, and restore overwrites the live database before migrations complete ([routes/admin_backups.py](routes/admin_backups.py#L80), [services/backup_service.py](services/backup_service.py#L163)). This is a concurrency/recovery risk, not a corruption reproduced in this review. Prefer SQLite's connection backup API, verify the staged copy and SGF sidecar, migrate it, then replace atomically with rollback and a restore generation that invalidates sessions. See the [roadmap's current foundations](FUTURE_FEATURES.md#current-foundations-and-constraints) and [operational follow-up](FUTURE_FEATURES.md#product-and-operational-backlog) for subsequent implementation and remaining verification work.
 - **Transaction ownership:** Pairing and status helpers call `commit()` inside caller-owned connections ([services/tournament_pairing.py](services/tournament_pairing.py#L260), [services/tournament_status.py](services/tournament_status.py#L90)). This makes multi-step operations hard to roll back as one unit. Centralize commits at the route/use-case boundary before adding API writes, and make rating replay failure states visible.
 - **Public performance:** `/reports` builds all match/player metrics and then slices the player list for pagination ([services/reporting_service.py](services/reporting_service.py#L237), [routes/public.py](routes/public.py#L390)); home stats read snapshots per player for three periods ([services/home_stats.py](services/home_stats.py#L61), [services/home_stats.py](services/home_stats.py#L149)). No large-data benchmark was run. Add representative-volume timing/query-count tests, then use filtered SQL/aggregation or cached summaries rather than doing more Python work per page or API request.
 - **Draft policy needs a decision:** Anonymous visitors are offered "Show drafts" and can request draft details ([templates/tournaments.html](templates/tournaments.html#L81), [routes/public.py](routes/public.py#L875), [routes/public.py](routes/public.py#L1004)); existing tests deliberately assert this ([tests/test_public_tournaments.py](tests/test_public_tournaments.py#L28)). If drafts are unannounced/private, gate **both** list and detail; if they are public previews, say so consistently in the README and guides. Do not treat `status='draft'` as an API privacy boundary until that policy is set.
 - **Usability and operations:** Row-level diagnostics for invalid workbook data, size limits for workbook/CSV/XML uploads, explicit restore confirmation, self-hosted versioned UI dependencies, and pre-release mobile/keyboard checks would lower support costs. Honor reduced-motion preferences for menu/hover transitions as well ([static/css/layout.css](static/css/layout.css#L647)). The admin import stages uploaded files before validation ([routes/admin_import.py](routes/admin_import.py#L116)), and base layout loads third-party slider assets on every page ([templates/base.html](templates/base.html#L13)). These are recommendations, not separately reproduced defects.
 
-## Feature Suggestions
+## Roadmap follow-up
 
-1. **Self-service tournament registration** (carried forward from v3): member accounts linked to players can request a spot on a *published, registration-open* tournament, with a director-set close time/capacity, idempotent enrollment, waitlist/withdrawal rules, and staff approval for unmatched accounts. Keep unpublished draft policy separate from registration state.
-2. **Import safety follow-up:** Add row-level diagnostics for invalid workbook rows, upload size limits, and a recovery receipt after replacement; the XLSX preview, explicit confirmation, and verified pre-replacement backup are implemented.
-3. **Operational visibility:** Schedule verified backups only after restore is safe; surface dirty-rating replay state, last successful replay, backup health, and failed administrative actions without exposing secrets to members.
-4. **Report scalability and clarity:** Measure report/home response time against a larger fixture, and add named seasons only if the organization needs them (as the current roadmap suggests). Rating-change baseline semantics are resolved in V4-13.
+The former **Feature Suggestions** and **Plan: A Real Auth-Only API** sections have been moved and merged into [FUTURE_FEATURES.md](FUTURE_FEATURES.md), the canonical plan for future work:
 
-## Plan: A Real Auth-Only API
+- [Product and operational backlog](FUTURE_FEATURES.md#product-and-operational-backlog): registration, import diagnostics/limits/receipts, operational visibility, report scalability, and the previous roadmap proposals.
+- [Authenticated API migration](FUTURE_FEATURES.md#authenticated-api-migration): detailed milestones, proposed resources, token lifecycle, permissions, contracts, tests, and rollout gates.
+- [Current foundations and constraints](FUTURE_FEATURES.md#current-foundations-and-constraints): distinguishes subsequent implementation from remaining work. The broader notes above remain a historical review snapshot, not a current issue list.
 
-The current integration guide explicitly states there is **no stable REST API**; public HTML, CSV/PDF exports, and AJAX redirect JSON are not an API contract ([docs/api_endpoints.md](docs/api_endpoints.md#L14)). Keep public web pages public. Every route under a new `/api/v1` blueprint, including read-only resources and its OpenAPI document, must require an active authenticated identity; do not quietly expose an anonymous JSON mirror of the site.
-
-### 1. Prerequisites and identity
-
-- Close V4-01 through V4-10, particularly backup authorization, Host validation, actual login throttling, last-admin protection, explicit reconciliation, handicap correctness, consistent restore migrations, and session invalidation. Define whether draft tournaments are confidential. Stabilize transaction boundaries and report query costs before exposing write/high-volume read endpoints.
-- Use **opaque bearer personal-access tokens**, not the browser's ambient session cookie or a shared `ADMIN_PASSWORD`. Issue them through the existing authenticated, CSRF-protected profile/admin UI after password confirmation; no anonymous `/api/v1/token` bootstrap endpoint. Store only a digest and metadata (`user_id`, allowed scopes, expiry, revoked time, name, last use); show the raw token once. Require HTTPS, short default lifetime, rotation/revocation, per-token/IP rate limits, redacted logs, and no cross-origin browser access by default.
-- Resolve the user and current role(s) on **every** request; deny missing/expired/revoked tokens, inactive users, and unknown scopes. Never serialize `password_hash` from the current auth payload ([services/auth_service.py](services/auth_service.py#L369)). Revoke tokens and browser sessions on password reset, deactivation, role change where scopes shrink, or DB restore. For APIs, return JSON 401 (missing/invalid token) vs 403 (valid identity, insufficient scope); keep existing web login redirects and CSRF behavior unchanged.
-
-### 2. Contract and permission matrix
-
-| API resource | `member` | `operator` | `tournament_director` | `administrator` |
-| --- | --- | --- | --- | --- |
-| Players, rankings, matches, published tournaments/standings, reports | Read with token | Read | Read | Read |
-| Own profile and result submissions | Own records; create pending results only for linked player | Own records | Own records | Own records |
-| Review submissions, match/news/SGF operations | No | Yes | Yes, where the current web policy allows | Yes |
-| Tournament participants, pairings, rounds, results | No | Yes | Yes | Yes |
-| Users, roles, settings, audit | No | No | No | Yes |
-| Backup create/restore/delete | Not in initial API | Not in initial API | Not in initial API | Defer until an audited, atomic design |
-
-Use named permissions/scopes shared with web policy, but remove the admin map's permissive fallback for API routes. An account with multiple role rows needs an explicit union/priority policy: the current lookup chooses only the alphabetically first role ([services/auth_service.py](services/auth_service.py#L401)). Member IDs and linked-player ownership must be derived from the token's user, never a client-supplied `submitted_by_user_id`. Decide whether an authenticated member can view draft data separately from staff scope.
-
-### 3. Incremental endpoint delivery
-
-1. **Read-only v1:** `GET /api/v1/me`, `/players`, `/players/{id}`, `/matches`, `/tournaments`, `/tournaments/{id}`, `/tournaments/{id}/standings`, `/reports`; add SGF metadata/download only with explicit authenticated streaming and size rules. Reuse domain services, not HTML handlers. SQL-backed cursor or bounded page pagination (maximum 100), validated filters/sort keys, stable IDs and ordering, ISO-8601 dates, documented nullability, and no private user/email fields in public-style resources.
-2. **Member workflow:** `GET/POST /api/v1/me/result-submissions`, reusing the moderation queue and server-derived linked player, with 201/Location and duplicate detection. Staff review/decision endpoints come next with explicit operator permission, audit events, optimistic concurrency, and idempotency keys. Keep proposed results out of ratings until approval.
-3. **Tournament writes:** Add participant/round/pairing/result commands only after V4-05/06/09 and transaction refactoring. Validate status transitions, reject ambiguous repeat commands, use `Idempotency-Key` on round generation/imports, and recompute/mark ratings once per committed change. Do not ship direct rating or database-restore writes in v1.
-
-Publish a versioned OpenAPI 3.1 schema and authenticated interactive docs, typed request/response examples for es/en/pt clients, JSON validation errors (`application/problem+json`), standard 400/401/403/404/409/422/429 behavior, and clear compatibility/deprecation rules. Keep all three integration guides and READMEs synchronized when API behavior actually ships, not in this review-only pass.
-
-### 4. Gates and rollout
-
-- Contract tests for **every** `/api/v1` GET and mutation with no token, wrong role, expired/revoked token, inactive account, and wrong owner; assert no HTML redirects and no accidental cookie-only access. Cover token issuance/revocation, rate limits, restore/role/password changes, CSRF on issuance UI, and absent CORS permissions.
-- Fixture tests for filtering/pagination, inclusive dates, tournament and moderation invariants, optimistic concurrency and repeated idempotency keys; run against fresh schema and representative real-backup migrations. Document a safe migration/rollback path and feature-flag staff writers during initial rollout.
-- Ship read endpoints first behind authentication, observe latency/audit/error rates, then enable member submissions and staff writes per role. Never use the current AJAX redirect payloads or HTML form routes as a public contract.
+The API remains unimplemented; consult the [integration guide](docs/api_endpoints.en.md) for current supported routes.
 
 ## Verification and Limits
 

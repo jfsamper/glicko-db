@@ -95,7 +95,7 @@ The default timezone is UTC-5. Use HTTPS in production and keep secrets out of s
 
 ## Project roadmap
 
-See the [remaining work](FUTURE_FEATURES.md).
+See the [project roadmap](FUTURE_FEATURES.md), which consolidates product and operational proposals and the [detailed authenticated API migration plan](FUTURE_FEATURES.md#authenticated-api-migration). The API is planned, not implemented; existing public web pages and exports remain the available interfaces.
 
 ## Development
 

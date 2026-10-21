@@ -87,4 +87,6 @@ As rotas POST alteram o estado da aplicação e devem ser usadas pelos formulár
 
 ## Orientações para integrações
 
-Para uma integração externa, use as exportações documentadas em CSV/PDF ou o banco de dados por meio de um processo operacional aprovado. Não faça scraping de formulários administrativos nem dependa de respostas JSON não documentadas. Uma futura API REST deve definir autenticação, esquemas de requisição e resposta, códigos de erro, paginação e versionamento antes da criação de clientes.
+Para uma integração externa, use as exportações documentadas em CSV/PDF ou o banco de dados por meio de um processo operacional aprovado. Não faça scraping de formulários administrativos nem dependa de respostas JSON não documentadas.
+
+O [roteiro de migração para uma API autenticada](../FUTURE_FEATURES.md#authenticated-api-migration) é o plano futuro de referência, consolidado a partir de Code Review v4. Ele propõe autenticação com tokens bearer para todos os recursos de `/api/v1` (incluindo leituras e OpenAPI/documentação), permissões e esquemas explícitos, paginação limitada, erros JSON e entrega gradual de consultas a envios de membros e operações da equipe. As páginas públicas e exportações existentes continuariam disponíveis. Essas rotas de API estão **planejadas, não implementadas**; este guia continua documentando apenas o comportamento atual.

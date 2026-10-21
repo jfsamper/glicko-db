@@ -95,7 +95,7 @@ O fuso padrão é UTC-5. Em produção, use HTTPS e mantenha os segredos fora do
 
 ## Plano do projeto
 
-Consulte o [trabalho pendente](FUTURE_FEATURES.md).
+Consulte o [roteiro do projeto](FUTURE_FEATURES.md), que reúne propostas de recursos e operações e o [plano detalhado de migração para uma API autenticada](FUTURE_FEATURES.md#authenticated-api-migration). A API está planejada, não implementada; as páginas públicas e exportações atuais continuam sendo as interfaces disponíveis.
 
 ## Desenvolvimento
 

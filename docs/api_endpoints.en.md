@@ -88,4 +88,6 @@ POST routes change application state and should be called through the rendered f
 
 ## Integration guidance
 
-For an external integration, use the documented CSV/PDF report exports or the database only through an approved operational process. Do not scrape admin forms or depend on undocumented JSON responses. A future REST API should define authentication, request schemas, response schemas, error codes, pagination, and versioning before clients are built.
+For an external integration, use the documented CSV/PDF report exports or the database only through an approved operational process. Do not scrape admin forms or depend on undocumented JSON responses.
+
+The [authenticated API migration roadmap](../FUTURE_FEATURES.md#authenticated-api-migration) is the canonical future plan, consolidated from Code Review v4. It proposes bearer-token authentication for all `/api/v1` resources (including reads and OpenAPI/docs), explicit permissions and schemas, bounded pagination, JSON errors, and staged delivery from read-only access to member submissions and staff writes. Existing public web pages and exports would remain available. These API routes are **planned, not implemented**; this guide continues to document current behavior only.

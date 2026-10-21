@@ -87,4 +87,6 @@ Las rutas POST cambian el estado de la aplicación y deben usarse mediante los f
 
 ## Recomendaciones para integraciones
 
-Para una integración externa, usa las exportaciones documentadas CSV/PDF o la base de datos mediante un proceso operativo aprobado. No dependas de formularios administrativos ni de respuestas JSON no documentadas. Una futura API REST debe definir autenticación, esquemas de solicitud y respuesta, códigos de error, paginación y versionado antes de crear clientes.
+Para una integración externa, usa las exportaciones documentadas CSV/PDF o la base de datos mediante un proceso operativo aprobado. No dependas de formularios administrativos ni de respuestas JSON no documentadas.
+
+La [hoja de ruta de migración a una API autenticada](../FUTURE_FEATURES.md#authenticated-api-migration) es el plan futuro de referencia, consolidado desde Code Review v4. Propone autenticación con tokens bearer para todos los recursos de `/api/v1` (incluidas las lecturas y OpenAPI/documentación), permisos y esquemas explícitos, paginación limitada, errores JSON y una entrega gradual desde consultas hasta envíos de miembros y operaciones del personal. Las páginas web públicas y exportaciones existentes seguirían disponibles. Estas rutas de API están **planificadas, no implementadas**; esta guía sigue documentando solo el comportamiento actual.

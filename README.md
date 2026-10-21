@@ -95,7 +95,7 @@ La aplicación usa UTC-5 de forma predeterminada. En producción, usa HTTPS y no
 
 ## Hoja de ruta del proyecto
 
-Consulta el [trabajo pendiente](FUTURE_FEATURES.md).
+Consulta la [hoja de ruta](FUTURE_FEATURES.md), que reúne las propuestas de funciones y operaciones y el [plan detallado de migración a una API autenticada](FUTURE_FEATURES.md#authenticated-api-migration). La API está planificada, no implementada; las páginas web públicas y exportaciones actuales siguen siendo las interfaces disponibles.
 
 ## Desarrollo
 
