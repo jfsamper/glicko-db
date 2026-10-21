@@ -29,7 +29,7 @@
       <div class="filter-grid">
         <div class="filter-item wide">
           <label for="file">{{ translations.upload_file }}</label>
-          <input id="file" name="file" type="file" accept=".csv,.xlsx,.xls,.xml">
+          <input id="file" name="file" type="file" accept=".csv,.xlsx,.xml">
         </div>
       </div>
 
@@ -38,6 +38,27 @@
       </div>
     </div>
   </form>
+
+  {% if import_diagnostics %}
+  <section class="warning-box" role="alert" style="margin-top: 1.5rem;">
+    <h3>{{ translations.import_diagnostics_heading }}</h3>
+    <p>{{ translations.import_diagnostics_counts.format(
+      valid=import_diagnostics.valid_count,
+      errors=import_diagnostics.error_count,
+      rows=import_diagnostics.row_count
+    ) }}</p>
+    <ul>
+      {% for issue in import_diagnostics.issues %}
+      <li>{{ translations.import_diagnostic_issue.format(
+        row=issue.row, field=issue.field, message=issue.message
+      ) }}</li>
+      {% endfor %}
+    </ul>
+    {% if import_diagnostics.omitted_issue_count %}
+    <p>{{ import_diagnostics.omitted_issue_count }} additional issues omitted.</p>
+    {% endif %}
+  </section>
+  {% endif %}
 
   {% if preview %}
   <div class="card" style="margin-top: 1.5rem;">
@@ -51,6 +72,17 @@
       · {{ preview.metadata.begin_date }}
       {% endif %}
     </p>
+    <p>{{ preview.summary.matches_total }} matches found; {{ preview.summary.warnings }} warnings.</p>
+    {% if preview.warnings %}
+    <ul>
+      {% for warning in preview.warnings %}
+      <li>{{ warning.field }} row {{ warning.row }}: {{ warning.message }}</li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+    {% if preview.omitted_warning_count %}
+    <p>{{ preview.omitted_warning_count }} additional warnings omitted.</p>
+    {% endif %}
 
     <div class="filter-grid">
       <div class="filter-item wide">

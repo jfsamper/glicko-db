@@ -1,14 +1,16 @@
 """Tournament index and creation routes for the admin blueprint."""
-import os
 import math
 import sqlite3
 from functools import wraps
+from pathlib import Path
+import uuid
 
 from flask import Response, flash, redirect, render_template, request, session, url_for
 from werkzeug.utils import secure_filename
 
 from services.country_service import country_options, normalize_country_code
 from services.i18n import TRANSLATIONS
+from services.import_safety import save_upload_bounded, validate_xml_limits
 from services.display_name import (
     normalize_name_text,
     read_display_name_setting,
@@ -109,31 +111,68 @@ def _import_opengotha_tournament(admin, lang, translations):
         flash(translations["no_file"])
         return redirect(tournaments_url)
 
-    filename = secure_filename(file.filename or "")
-    upload_path = os.path.join(admin.BASE_DIR, "uploads", filename)
-    file.save(upload_path)
-    conn = admin.get_db()
+    source_filename = secure_filename(file.filename or "")
+    filename = f"tournament-import-{uuid.uuid4().hex}.xml"
+    upload_path = Path(admin.BASE_DIR) / "uploads" / filename
+    upload_path.parent.mkdir(parents=True, exist_ok=True)
+    conn = None
     try:
+        save_upload_bounded(file, upload_path)
+        validate_xml_limits(upload_path)
+        conn = admin.get_db()
+        preview = admin.build_import_preview(conn, upload_path)
         tournament_id, metadata, matched = admin.create_tournament_from_gotha(
             conn, upload_path)
         admin.log_admin_action(
             "tournament_imported",
             "tournament",
-            {"tournament_id": tournament_id,
-                "filename": filename, "matched_players": matched},
+            {
+                "tournament_id": tournament_id,
+                "filename": source_filename,
+                "matched_players": matched,
+                "match_count": preview["summary"]["matches_total"],
+                "warning_count": preview["summary"]["warnings"],
+            },
             user_id=admin.session.get("user_id"),
         )
         flash(f"{translations['success']} ({matched} players)")
+        dirty_row = conn.execute(
+            "SELECT earliest_dirty_date FROM rating_state WHERE id = 1"
+        ).fetchone()
+        for warning in preview["warnings"][:5]:
+            flash(
+                translations["import_diagnostic_issue"].format(
+                    row=warning["row"],
+                    field=warning["field"],
+                    message=warning["message"],
+                )
+            )
+        flash(
+            translations["import_recovery_receipt"].format(
+                players=matched,
+                matches=preview["summary"]["matches_total"],
+                warnings=preview["summary"]["warnings"],
+                backup=translations["import_no_backup_transactional"],
+                rating_state=(
+                    dirty_row["earliest_dirty_date"]
+                    if dirty_row and dirty_row["earliest_dirty_date"]
+                    else translations["import_ratings_current"]
+                ),
+            )
+        )
         return redirect(url_for("admin_tournament", tournament_id=tournament_id, lang=lang))
     except (OSError, ValueError) as exc:
-        flash(f"{translations['error']}: {exc}")
+        flash(f"{translations['error']}: {translations.get(str(exc), str(exc))}")
     except sqlite3.DatabaseError as exc:
-        conn.rollback()
+        if conn is not None:
+            conn.rollback()
         admin.logger.exception(
             "OpenGotha tournament import failed for %s", upload_path)
         flash(f"{translations['error']}: {exc}")
     finally:
-        conn.close()
+        if conn is not None:
+            conn.close()
+        upload_path.unlink(missing_ok=True)
     return redirect(tournaments_url)
 
 

@@ -195,7 +195,6 @@ The following merges the review's Feature Suggestions with the previous roadmap.
 
 | ID / priority | Proposal | Dependencies and acceptance criteria |
 | --- | --- | --- |
-| F1 / next | Import safety follow-up | Preserve implemented XLSX preview, explicit confirmation, and verified pre-replacement backup. Assess current CSV/XLSX/OpenGotha diagnostics; add missing row/field errors, upload/decompression/row limits, and a recovery receipt containing counts, warnings, backup reference, and rating-dirty state, without secrets. Test over-limit input, malformed data, partial failure, and cleanup. Reuse for A5 imports. |
 | F2 / next | Operational visibility and restore drills | Build on existing verified scheduled backups, retention, and staged restores, not a new scheduler. Document deployment scheduling and test restoration under realistic concurrent access in disposable environments. Surface dirty-rating earliest date, last successful replay, replay failures, last verified backup/restore check, retention/backup failures, and failed admin actions. Restrict operational details to staff; public-style responses expose only safe freshness. Clarify that database restore does not restore SGF files and document their separate protection. |
 | F3 / next | Report/home scalability and clarity | Share A0's representative-volume fixture, timings, query counts, and agreed budgets. Optimize measured hotspots using filtered SQL/aggregation or invalidated summaries; preserve the resolved V4-13 inclusive-period baseline in HTML/CSV/PDF/API. Add named reporting seasons only as optional in addition to calendar periods, with explicit boundaries/timezone semantics. |
 | F4 / later | Non-rated tournaments | Show eligible tournaments and games in profiles/match history without affecting ratings. Specify the interaction between rated flag and draft/active/completed/canceled status, and test transitions/replay/report consistency across web and API. |
@@ -204,6 +203,12 @@ The following merges the review's Feature Suggestions with the previous roadmap.
 | F7 / later | UI resilience and accessibility | Evaluate self-hosted versioned UI dependencies, reduced-motion behavior, mobile layout, keyboard navigation, and focus/error handling before release. Preserve current language/theme behavior; verify actual workflows rather than only screenshots. |
 | F8 / explore | Tournament preflight and approval dry run | Preview participant reconciliation, settings, expected operations, warnings, and rating impact without mutation; require explicit approval and detect changes between preview and execution. Reuse established transaction/import-preview patterns. |
 | F9 / explore | Self-service tournament registration | Linked members request a place only on a published, registration-open tournament. Define director-controlled closing time/timezone, capacity, idempotent enrollment, waitlist promotion, withdrawal/cancellation rules, and staff approval for unmatched accounts. Registration state must be separate from draft visibility. Test concurrent requests for the last place. Add API registration only after this domain workflow exists. |
+
+## Completed backlog
+
+| ID | Completion | Delivered and validation |
+| --- | --- | --- |
+| F1 | Import safety follow-up — 2026-10-21 | Bounded administrative upload size (10 MiB), XLSX decompression (100 MiB), and import row counts (10,000); row/field diagnostics and atomic CSV validation; OpenGotha missing-participant warnings; verified XLSX replacement backup and recovery receipts with counts, warnings, backup reference, and rating-dirty state. Validated with `pytest tests/test_critical_bug_fixes.py tests/test_player_import.py tests/test_opengotha_comparison.py tests/test_backup_restore.py tests/test_tournament_service.py -q` (133 passed). |
 
 ## Documentation and maintenance
 

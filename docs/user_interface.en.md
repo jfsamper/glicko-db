@@ -264,7 +264,7 @@ Sign in at `/admin/login` with an administrative account. Available navigation a
 
 - **Register players**: add existing active players via selector or create new players directly in the tournament interface.
 - **Withdraw participants**: remove players before round 1 begins.
-- **OpenGotha XML import**: importing an OpenGotha file automatically loads players, seed ranks, grades, ratings, and past round history. If names match existing database players fuzzily, an interactive reconciliation tool lets the director link them, create new entries, or discard.
+- **OpenGotha XML import**: direct uploads at `/admin/tournaments` import participants, matches, and round history, warn about players missing from the XML, and show a receipt. Use `/admin/import` to review a preview and reconcile names before confirming.
 
 <a href="screenshots/admin-tournament-players.png"><img src="screenshots/admin-tournament-players.png" alt="Tournament participant management" width="560" /></a>
 
@@ -315,15 +315,18 @@ Sign in at `/admin/login` with an administrative account. Available navigation a
 
 Import historical workbooks, match spreadsheets, or OpenGotha files:
 - **Accepted formats**:
-  - Excel workbook (`.xlsx` or `.xls`): replaces the active dataset with full players and matches.
+  - Excel workbook (`.xlsx`): replaces the active dataset with full players and matches.
   - OpenGotha XML (`.xml`): imports tournament metadata, participants, pairings, and handicap stones.
   - Match CSV (`.csv`): columns `date`, `white`, `black`, `result`, and optional `handicap` (0-9).
 - Create a backup before importing a workbook that replaces the active data.
+- Imports are limited to 10 MiB per upload, 100 MiB of decompressed XLSX content, and 10,000 rows per worksheet, CSV, or combined OpenGotha participant/game set; the same limits apply to direct OpenGotha uploads at `/admin/tournaments`. Player imports at `/admin/players` retain tighter limits of 5 MiB and 1,000 players.
 - **Explicit player reconciliation**:
   - Previews classify rows as *Exact match*, *Fuzzy suggestion*, *New player*, or *Duplicate*.
   - Operators choose to link to existing players, create new players, or reject rows.
   - Metadata can be reviewed and edited before committing.
-  - CSV validation errors abort the import cleanly without partial database commits.
+- CSV is validated before writing: dates, results (`1-0`, `0-1`, or `1/2-1/2`), handicap, existing players, and row/field errors. Any error blocks the entire import; database writes are transactional.
+- XLSX previews identify the worksheet and row for invalid data and do not replace data when errors are present. Replacement still requires explicit confirmation and a verified pre-import backup.
+- OpenGotha previews warn about games whose players are missing from the XML. The completion receipt reports counts, warnings, the backup reference (or that it is not applicable to a transactional import), and the date from which ratings are dirty, if any.
 - If `DEFER_RATING_REPLAY_ON_IMPORT` is enabled, imports still complete but show a notice that ratings may remain stale until the deferred replay is run.
 
 <a href="screenshots/admin-import.png"><img src="screenshots/admin-import.png" alt="Import controls" width="560" /></a>

@@ -16,6 +16,7 @@ from services.display_name import (
     split_display_name,
 )
 from services.helpers import normalize_key, normalize_text, slugify
+from services.import_safety import read_limited_rows, validate_xlsx_archive
 from services.pairing_service import parse_rank_category
 
 MAX_PLAYER_IMPORT_ROWS = 1000
@@ -30,19 +31,19 @@ def _read_rows(file_path):
             with Path(file_path).open(
                 "r", newline="", encoding="utf-8-sig"
             ) as csv_file:
-                rows = []
-                for row in csv.reader(csv_file):
-                    rows.append(row)
-                    if len(rows) > MAX_PLAYER_IMPORT_ROWS + 1:
-                        raise ValueError("player_import_too_many_rows")
-                return rows
-        except ValueError:
+                return read_limited_rows(
+                    csv.reader(csv_file), max_rows=MAX_PLAYER_IMPORT_ROWS + 1
+                )
+        except ValueError as exc:
+            if str(exc) == "import_too_many_rows":
+                raise ValueError("player_import_too_many_rows") from exc
             raise
         except (OSError, UnicodeDecodeError, csv.Error) as exc:
             raise ValueError("player_import_read_error") from exc
 
     if extension == ".xlsx":
         try:
+            validate_xlsx_archive(file_path)
             workbook = openpyxl.load_workbook(
                 file_path, read_only=True, data_only=True)
         except (
@@ -56,15 +57,20 @@ def _read_rows(file_path):
         ) as exc:
             raise ValueError("player_import_read_error") from exc
         try:
-            rows = []
-            for row in workbook.active.iter_rows(values_only=True):
-                rows.append(row)
-                if len(rows) > MAX_PLAYER_IMPORT_ROWS + 1:
-                    raise ValueError("player_import_too_many_rows")
-            return rows
+            return read_limited_rows(
+                workbook.active.iter_rows(values_only=True),
+                max_rows=MAX_PLAYER_IMPORT_ROWS + 1,
+            )
         except ValueError as exc:
-            if str(exc) == "player_import_too_many_rows":
-                raise
+            if str(exc) in {
+                "import_too_many_rows",
+                "import_uncompressed_too_large",
+            }:
+                raise ValueError(
+                    "player_import_too_many_rows"
+                    if str(exc) == "import_too_many_rows"
+                    else "import_uncompressed_too_large"
+                ) from exc
             raise ValueError("player_import_read_error") from exc
         except (
             OSError,

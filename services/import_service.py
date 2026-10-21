@@ -20,6 +20,7 @@ from services.helpers import (
 )
 from services.player_service import build_player_lookup, ensure_player
 from services.import_gotha import GothaMatch, parse_gotha_xml as _parse_gotha_xml
+from services.import_safety import read_limited_rows, validate_xlsx_archive
 from services.rating_service import clear_dirty_date, mark_dirty
 from services.tournament_participants import suggest_player_match as _suggest_player_match
 from services.tournament_gotha import read_gotha_tournament
@@ -47,12 +48,14 @@ def build_import_preview(conn, xml_path):
     rows = []
     summary = {
         "players_total": 0,
+        "matches_total": 0,
         "exact_matches": 0,
         "fuzzy_matches": 0,
         "new_players": 0,
         "duplicate_players": 0,
         "unresolved_players": 0,
         "metadata_mismatches": 0,
+        "warnings": 0,
     }
     seen_keys = set()
 
@@ -99,6 +102,37 @@ def build_import_preview(conn, xml_path):
         )
 
     summary["players_total"] = len(rows)
+    imported_matches = (
+        _parse_gotha_xml(xml_path) if metadata.get("begin_date") else []
+    )
+    summary["matches_total"] = len(imported_matches)
+    warnings = [
+        {
+            "row": index,
+            "field": "player",
+            "message": "The participant name is missing.",
+        }
+        for index, participant in enumerate(metadata["players"], start=1)
+        if not participant.get("display_name")
+    ]
+    if not metadata.get("begin_date"):
+        warnings.append(
+            {
+                "row": 1,
+                "field": "beginDate",
+                "message": "The tournament begin date is missing.",
+            }
+        )
+    warnings.extend(
+        {
+            "row": index,
+            "field": "participants",
+            "message": "A game references a participant missing from the XML player list.",
+        }
+        for index, match in enumerate(imported_matches, start=1)
+        if not match.white or not match.black
+    )
+    summary["warnings"] = len(warnings)
     metadata_mismatches = []
     if _table_exists(conn, "tournaments"):
         existing_tournament = conn.execute(
@@ -135,6 +169,8 @@ def build_import_preview(conn, xml_path):
         },
         "metadata_mismatches": metadata_mismatches,
         "summary": summary,
+        "warnings": warnings[:100],
+        "omitted_warning_count": max(0, len(warnings) - 100),
         "rows": rows,
     }
 
@@ -160,6 +196,7 @@ def import_workbook_data(file_path, reset=False):
             raise ValueError("Workbook file not found")
         return {"players": 0, "matches": 0}
 
+    validate_xlsx_archive(path)
     workbook = openpyxl.load_workbook(
         path,
         data_only=True,
@@ -186,6 +223,7 @@ def preview_workbook_data(file_path):
     if not path.exists():
         raise ValueError("Workbook file not found")
 
+    validate_xlsx_archive(path)
     workbook = openpyxl.load_workbook(
         path,
         data_only=True,
@@ -206,7 +244,9 @@ def preview_workbook_data(file_path):
             ).fetchone()[0],
         }
         preview_conn.execute("PRAGMA foreign_keys = ON")
-        imported_counts = _import_workbook_data(preview_conn, workbook, reset=True)
+        imported_counts = _import_workbook_data(
+            preview_conn, workbook, reset=True, diagnostic_errors=True
+        )
         return {
             "current_players": current_counts["players"],
             "current_matches": current_counts["matches"],
@@ -220,7 +260,7 @@ def preview_workbook_data(file_path):
         workbook.close()
 
 
-def _import_workbook_data(conn, workbook, reset):
+def _import_workbook_data(conn, workbook, reset, diagnostic_errors=False):
     if reset and not {"Player List", "Matches"}.issubset(workbook.sheetnames):
         raise ValueError("Workbook has no importable players or matches")
 
@@ -237,7 +277,7 @@ def _import_workbook_data(conn, workbook, reset):
     ratings_sheet_name = "Ratings by Player"
 
     if ratings_sheet_name in workbook.sheetnames:
-        ratings_rows = list(
+        ratings_rows = read_limited_rows(
             workbook[ratings_sheet_name].iter_rows(values_only=True))
         if ratings_rows:
             ratings_headers = [normalize_text(cell)
@@ -247,7 +287,7 @@ def _import_workbook_data(conn, workbook, reset):
             ratings_rating_idx = header_index(
                 ratings_headers, ["glicko", "rating"])
 
-            for row in ratings_rows[1:]:
+            for row_number, row in enumerate(ratings_rows[1:], start=2):
                 try:
                     if not row:
                         continue
@@ -265,7 +305,11 @@ def _import_workbook_data(conn, workbook, reset):
                     ):
                         current_ratings[str(player_name).strip()] = float(
                             row[ratings_rating_idx])
-                except Exception:
+                except Exception as exc:
+                    if reset and diagnostic_errors:
+                        raise ValueError(
+                            f"Ratings by Player row {row_number}: invalid rating value ({exc})"
+                        ) from exc
                     if reset:
                         raise
                     logger.warning(
@@ -275,7 +319,8 @@ def _import_workbook_data(conn, workbook, reset):
     player_sheet_name = "Player List"
 
     if player_sheet_name in workbook.sheetnames:
-        rows = list(workbook[player_sheet_name].iter_rows(values_only=True))
+        rows = read_limited_rows(
+            workbook[player_sheet_name].iter_rows(values_only=True))
         if rows:
             headers = [normalize_text(cell) for cell in rows[0]]
             name_idx = header_index(
@@ -283,7 +328,7 @@ def _import_workbook_data(conn, workbook, reset):
             rating_idx = header_index(
                 headers, ["player's rating", "players rating", "initial rating"])
 
-            for row in rows[1:]:
+            for row_number, row in enumerate(rows[1:], start=2):
                 try:
                     if not row:
                         continue
@@ -294,6 +339,12 @@ def _import_workbook_data(conn, workbook, reset):
                         else None
                     )
                     if display_name is None or not looks_like_player_name(display_name):
+                        if reset and diagnostic_errors and any(
+                            value not in (None, "") for value in row
+                        ):
+                            raise ValueError(
+                                f"Player List row {row_number}: player name is missing or invalid"
+                            )
                         continue
 
                     initial_rating = DEFAULT_RATING
@@ -302,6 +353,12 @@ def _import_workbook_data(conn, workbook, reset):
                             if row[rating_idx] not in (None, ""):
                                 initial_rating = float(row[rating_idx])
                         except Exception:
+                            if reset and diagnostic_errors:
+                                raise ValueError(
+                                    f"Player List row {row_number}: initial rating is invalid"
+                                )
+                            if reset:
+                                raise
                             logger.warning(
                                 "Invalid initial rating %r; using the default",
                                 row[rating_idx],
@@ -313,7 +370,11 @@ def _import_workbook_data(conn, workbook, reset):
                     ensure_player(conn, display_name, current_rating,
                                   initial_rating=initial_rating, player_lookup=player_lookup)
                     players_imported += 1
-                except Exception:
+                except Exception as exc:
+                    if reset and diagnostic_errors:
+                        raise ValueError(
+                            f"Player List row {row_number}: invalid player data ({exc})"
+                        ) from exc
                     if reset:
                         raise
                     logger.warning(
@@ -322,7 +383,8 @@ def _import_workbook_data(conn, workbook, reset):
 
     match_sheet_name = "Matches"
     if match_sheet_name in workbook.sheetnames:
-        rows = list(workbook[match_sheet_name].iter_rows(values_only=True))
+        rows = read_limited_rows(
+            workbook[match_sheet_name].iter_rows(values_only=True))
         if rows:
             headers = [normalize_text(cell) for cell in rows[0]]
             date_idx = header_index(headers, ["date", "fecha"])
@@ -334,7 +396,7 @@ def _import_workbook_data(conn, workbook, reset):
             comment_idx = header_index(
                 headers, ["comments", "comentarios", "event", "evento", "notes"])
 
-            for row in rows[1:]:
+            for row_number, row in enumerate(rows[1:], start=2):
                 try:
                     if not row:
                         continue
@@ -347,8 +409,18 @@ def _import_workbook_data(conn, workbook, reset):
                         row) else None
 
                     if not white_name or not black_name:
+                        if reset and diagnostic_errors and any(
+                            value not in (None, "") for value in row
+                        ):
+                            raise ValueError(
+                                f"Matches row {row_number}: white and black players are required"
+                            )
                         continue
                     if not looks_like_player_name(white_name) or not looks_like_player_name(black_name):
+                        if reset and diagnostic_errors:
+                            raise ValueError(
+                                f"Matches row {row_number}: player name is invalid"
+                            )
                         continue
 
                     white_id = ensure_player(
@@ -420,7 +492,11 @@ def _import_workbook_data(conn, workbook, reset):
                         matches_imported += 1
                         if earliest_match_date is None or match_date < earliest_match_date:
                             earliest_match_date = match_date
-                except Exception:
+                except Exception as exc:
+                    if reset and diagnostic_errors:
+                        raise ValueError(
+                            f"Matches row {row_number}: invalid match data ({exc})"
+                        ) from exc
                     if reset:
                         raise
                     logger.warning(
@@ -434,7 +510,7 @@ def _import_workbook_data(conn, workbook, reset):
             continue
 
         ws = workbook[sheetname]
-        rows = list(ws.iter_rows(values_only=True))
+        rows = read_limited_rows(ws.iter_rows(values_only=True))
         if not rows:
             continue
 
@@ -472,14 +548,16 @@ def _import_workbook_data(conn, workbook, reset):
         player_id = player_row["id"]
         snapshot_rows = []
 
-        for row in rows[header_row_idx + 1:]:
+        for row_number, row in enumerate(
+            rows[header_row_idx + 1:], start=header_row_idx + 2
+        ):
             if not row or all(cell is None for cell in row):
                 break
-            snapshot_rows.append(row)
+            snapshot_rows.append((row_number, row))
 
         snapshot_rows.reverse()
 
-        for row in snapshot_rows:
+        for row_number, row in snapshot_rows:
             if not row or all(cell is None for cell in row):
                 break
 
@@ -492,7 +570,11 @@ def _import_workbook_data(conn, workbook, reset):
                 snapshot_date = parse_date_value(date_value)
                 rating = float(rating_value) if rating_value not in (
                     None, "") else DEFAULT_RATING
-            except ValueError:
+            except (TypeError, ValueError) as exc:
+                if reset and diagnostic_errors:
+                    raise ValueError(
+                        f"{sheetname} row {row_number}: invalid snapshot date or rating ({exc})"
+                    ) from exc
                 continue
 
             conn.execute(

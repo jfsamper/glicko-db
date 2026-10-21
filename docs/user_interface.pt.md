@@ -263,7 +263,7 @@ Entre em `/admin/login` com uma conta administrativa. A navegação disponível 
 - **Remover participantes em lote**: selecione vários jogadores inscritos e confirme a remoção. A operação é atômica; se algum jogador não puder ser removido (por exemplo, porque já foi emparelhado), nenhum será removido.
 - **Inscrição de jogadores**: adicione jogadores ativos existentes pelo seletor ou crie novos jogadores diretamente no torneio.
 - **Retirada de participantes**: remova participantes antes do início da primeira rodada.
-- **Importação OpenGotha XML**: ao importar um arquivo OpenGotha, os participantes são carregados automaticamente com graduação, categoria e rating inicial. Se houver nomes parecidos com registros existentes, um assistente interativo permite vinculá-los, criar novos ou descartá-los.
+- **Importação OpenGotha XML**: envios diretos em `/admin/tournaments` importam participantes, partidas e histórico de rodadas, avisam sobre jogadores ausentes do XML e exibem um recibo. Use `/admin/import` para revisar a prévia e reconciliar nomes antes de confirmar.
 
 <a href="screenshots/admin-tournament-players.png"><img src="screenshots/admin-tournament-players.png" alt="Gestão de participantes do torneio" width="560" /></a>
 
@@ -314,15 +314,18 @@ Entre em `/admin/login` com uma conta administrativa. A navegação disponível 
 
 Importe planilhas históricas, partidas ou arquivos do OpenGotha:
 - **Formatos aceitos**:
-  - Planilha Excel (`.xlsx` ou `.xls`): substitui o conjunto de dados ativo com jogadores e partidas completos.
+  - Planilha Excel (`.xlsx`): substitui o conjunto de dados ativo com jogadores e partidas completos.
   - XML do OpenGotha (`.xml`): importa metadados do torneio, participantes, emparelhamentos e pedras de handicap.
   - Arquivo CSV (`.csv`): colunas `date`, `white`, `black`, `result` e opcional `handicap` (0 a 9).
 - Crie um backup antes de importar uma planilha que substitua os dados ativos.
+- As importações são limitadas a 10 MiB por arquivo, 100 MiB de conteúdo XLSX descompactado e 10.000 linhas por planilha, CSV ou conjunto combinado de participantes/partidas OpenGotha; os mesmos limites valem para o envio direto em `/admin/tournaments`. A importação de jogadores em `/admin/players` mantém limites menores: 5 MiB e 1.000 jogadores.
 - **Reconciliação explícita de jogadores**:
   - A prévia classifica cada registro como *Correspondência exata*, *Sugestão aproximada*, *Novo jogador* ou *Duplicado*.
   - O operador decide para cada jogador: vincular ao existente, criar novo ou rejeitar a linha.
   - Metadados do torneio podem ser revisados e editados antes da confirmação.
-  - Erros de validação em arquivos CSV cancelam toda a operação sem efetuar alterações parciais no banco.
+- O CSV é validado antes da gravação: datas, resultados (`1-0`, `0-1` ou `1/2-1/2`), handicap, jogadores existentes e erros por linha/campo. Qualquer erro bloqueia toda a importação; as gravações no banco são transacionais.
+- A prévia XLSX identifica a planilha e a linha com dados inválidos e não substitui os dados se houver erros. A substituição continua exigindo confirmação explícita e backup verificado antes da importação.
+- A prévia OpenGotha avisa sobre partidas cujos jogadores não estão no XML. O recibo de conclusão informa quantidades, avisos, referência do backup (ou que não se aplica a uma importação transacional) e a data desde a qual os ratings estão pendentes, se houver.
 - Se `DEFER_RATING_REPLAY_ON_IMPORT` estiver ativado, a importação será concluída, mas um aviso informará que os ratings podem ficar desatualizados até a execução do recálculo adiado.
 
 <a href="screenshots/admin-import.png"><img src="screenshots/admin-import.png" alt="Controles de importação" width="560" /></a>

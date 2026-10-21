@@ -505,6 +505,85 @@ def test_csv_import_shows_notice_when_rating_replay_is_deferred(
     body = response.get_data(as_text=True)
     flash_start = body.find('<div class="flash">')
     assert "rating replay was deferred" in body, body[flash_start:flash_start + 500]
+    assert "Import receipt:" in body
+    assert "ratings dirty since: 2026-10-15" in body
+
+
+def test_import_upload_size_limit_cleans_partial_file(
+    monkeypatch, tmp_path, isolate_test_database
+):
+    import routes.admin_import as import_routes
+
+    db_path = isolate_test_database
+    monkeypatch.setattr(admin_routes, "BASE_DIR", str(tmp_path))
+    real_save_upload = import_routes.save_upload_bounded
+
+    def save_with_small_limit(upload, destination):
+        return real_save_upload(upload, destination, max_bytes=32)
+
+    monkeypatch.setattr(
+        import_routes, "save_upload_bounded", save_with_small_limit
+    )
+    app.testing = True
+    client = app.test_client()
+    conftest.set_admin_session(client, db_path)
+    response = client.post(
+        "/admin/import?lang=en",
+        data={
+            "file": (
+                BytesIO(b"x" * 64),
+                "oversized.csv",
+            )
+        },
+        content_type="multipart/form-data",
+        follow_redirects=True,
+    )
+
+    assert response.status_code == 200
+    assert "file exceeds the 10 MB limit" in response.get_data(as_text=True)
+    assert list((tmp_path / "uploads").iterdir()) == []
+
+
+def test_csv_import_row_limit_rejects_the_entire_file(
+    monkeypatch, tmp_path, isolate_test_database
+):
+    import routes.admin_import as import_routes
+
+    db_path = isolate_test_database
+    with sqlite3.connect(db_path) as conn:
+        names = conn.execute(
+            "SELECT display_name FROM players_display ORDER BY id LIMIT 2"
+        ).fetchall()
+    monkeypatch.setattr(admin_routes, "BASE_DIR", str(tmp_path))
+    monkeypatch.setattr(import_routes, "MAX_IMPORT_ROWS", 1)
+    app.testing = True
+    client = app.test_client()
+    conftest.set_admin_session(client, db_path)
+    response = client.post(
+        "/admin/import?lang=en",
+        data={
+            "file": (
+                BytesIO(
+                    (
+                        "date,white,black,result\n"
+                        f"2026-09-07,{names[0][0]},{names[1][0]},1-0\n"
+                        f"2026-09-08,{names[1][0]},{names[0][0]},0-1\n"
+                    ).encode("utf-8")
+                ),
+                "too-many-rows.csv",
+            )
+        },
+        content_type="multipart/form-data",
+        follow_redirects=True,
+    )
+
+    assert response.status_code == 200
+    assert "10,000-row limit" in response.get_data(as_text=True)
+    with sqlite3.connect(db_path) as conn:
+        assert conn.execute(
+            "SELECT COUNT(*) FROM matches WHERE match_date IN ('2026-09-07', '2026-09-08')"
+        ).fetchone()[0] == 0
+    assert list((tmp_path / "uploads").iterdir()) == []
 
 
 def test_xlsx_replacement_aborts_when_backup_verification_fails(
@@ -1838,6 +1917,156 @@ def test_csv_import_normalizes_headers_and_rejects_ambiguous_duplicates(
         ).fetchone()[0] == 0
 
 
+def test_csv_import_reports_row_field_errors_without_partial_writes(
+    monkeypatch, tmp_path, isolate_test_database
+):
+    db_path = isolate_test_database
+    with sqlite3.connect(db_path) as conn:
+        conn.executemany(
+            "INSERT INTO players (first_name, last_name, custom_display_name, rating, active) VALUES (?, ?, ?, ?, 1)",
+            [
+                ("Alice", "White", "Alice White", 1500),
+                ("Bob", "Black", "Bob Black", 1500),
+            ],
+        )
+
+    monkeypatch.setattr(admin_routes, "BASE_DIR", str(tmp_path))
+    app.testing = True
+    client = app.test_client()
+    conftest.set_admin_session(client, db_path)
+    response = client.post(
+        "/admin/import?lang=en",
+        data={
+            "file": (
+                BytesIO(
+                    b"date,white,black,result\n"
+                    b"2026-09-04,Alice White,Bob Black,1-0\n"
+                    b"not-a-date,Alice White,Missing Player,invalid\n"
+                ),
+                "invalid-rows.csv",
+            )
+        },
+        content_type="multipart/form-data",
+    )
+
+    body = response.get_data(as_text=True)
+    assert response.status_code == 200
+    assert "Row 3, field date" in body
+    assert "Row 3, field black" in body
+    assert "Row 3, field result" in body
+    with sqlite3.connect(db_path) as conn:
+        assert conn.execute(
+            "SELECT COUNT(*) FROM matches WHERE match_date = '2026-09-04'"
+        ).fetchone()[0] == 0
+    assert list((tmp_path / "uploads").iterdir()) == []
+
+
+def test_csv_import_rolls_back_when_a_database_write_fails(
+    monkeypatch, tmp_path, isolate_test_database
+):
+    db_path = isolate_test_database
+    with sqlite3.connect(db_path) as conn:
+        conn.executemany(
+            "INSERT INTO players (first_name, last_name, custom_display_name, rating, active) VALUES (?, ?, ?, ?, 1)",
+            [
+                ("Alice", "White", "Alice White", 1500),
+                ("Bob", "Black", "Bob Black", 1500),
+            ],
+        )
+
+    monkeypatch.setattr(admin_routes, "BASE_DIR", str(tmp_path))
+    real_normalize_round_note = admin_routes.normalize_round_note
+    calls = []
+
+    def fail_second_note(value):
+        calls.append(value)
+        if len(calls) == 2:
+            raise RuntimeError("injected write failure")
+        return real_normalize_round_note(value)
+
+    monkeypatch.setattr(admin_routes, "normalize_round_note", fail_second_note)
+    app.testing = True
+    client = app.test_client()
+    conftest.set_admin_session(client, db_path)
+    response = client.post(
+        "/admin/import?lang=en",
+        data={
+            "file": (
+                BytesIO(
+                    b"date,white,black,result\n"
+                    b"2026-09-05,Alice White,Bob Black,1-0\n"
+                    b"2026-09-06,Bob Black,Alice White,0-1\n"
+                ),
+                "partial-failure.csv",
+            )
+        },
+        content_type="multipart/form-data",
+        follow_redirects=True,
+    )
+
+    assert response.status_code == 200
+    assert "injected write failure" in response.get_data(as_text=True)
+    with sqlite3.connect(db_path) as conn:
+        assert conn.execute(
+            "SELECT COUNT(*) FROM matches WHERE match_date IN ('2026-09-05', '2026-09-06')"
+        ).fetchone()[0] == 0
+    assert list((tmp_path / "uploads").iterdir()) == []
+
+
+def test_import_xlsx_rejects_excessive_decompressed_size(
+    monkeypatch, tmp_path, isolate_test_database
+):
+    import openpyxl
+    import services.import_safety as import_safety
+
+    workbook_path = tmp_path / "large-expanded.xlsx"
+    workbook = openpyxl.Workbook()
+    workbook.active.append(["Name", "Rating"])
+    workbook.active.append(["Alice", 1500])
+    workbook.save(workbook_path)
+    workbook.close()
+
+    monkeypatch.setattr(import_safety, "MAX_IMPORT_UNCOMPRESSED_BYTES", 0)
+    with pytest.raises(ValueError, match="import_uncompressed_too_large"):
+        import_service.preview_workbook_data(workbook_path)
+
+
+def test_workbook_preview_identifies_invalid_match_row_without_mutating_data(
+    tmp_path, isolate_test_database
+):
+    import openpyxl
+
+    db_path = isolate_test_database
+    with sqlite3.connect(db_path) as conn:
+        before = (
+            conn.execute("SELECT COUNT(*) FROM players").fetchone()[0],
+            conn.execute("SELECT COUNT(*) FROM matches").fetchone()[0],
+        )
+
+    workbook_path = tmp_path / "invalid-match-row.xlsx"
+    workbook = openpyxl.Workbook()
+    players = workbook.active
+    players.title = "Player List"
+    players.append(["Name", "Initial Rating"])
+    players.append(["Preview Alice", 1500])
+    players.append(["Preview Bob", 1500])
+    matches = workbook.create_sheet("Matches")
+    matches.append(["Date", "White", "Black", "Winner"])
+    matches.append(["not-a-date", "Preview Alice", "Preview Bob", "Preview Alice"])
+    workbook.save(workbook_path)
+    workbook.close()
+
+    with pytest.raises(ValueError, match="Matches row 2: invalid match data"):
+        import_service.preview_workbook_data(workbook_path)
+
+    with sqlite3.connect(db_path) as conn:
+        after = (
+            conn.execute("SELECT COUNT(*) FROM players").fetchone()[0],
+            conn.execute("SELECT COUNT(*) FROM matches").fetchone()[0],
+        )
+    assert after == before
+
+
 def test_admin_import_commit_passes_reconciliation_decisions(monkeypatch, tmp_path):
     db_path = tmp_path / "admin_commit_preview.db"
     conn = sqlite3.connect(db_path)
@@ -1860,11 +2089,21 @@ def test_admin_import_commit_passes_reconciliation_decisions(monkeypatch, tmp_pa
         })
         return 7, {}, 2
 
+    preview_filename = f"import-{'a' * 32}.xml"
     monkeypatch.setattr(admin_routes, "get_db", get_test_db)
+    monkeypatch.setattr(
+        admin_routes,
+        "build_import_preview",
+        lambda _conn, _path: {
+            "summary": {"matches_total": 0, "warnings": 0}
+        },
+    )
     monkeypatch.setattr(admin_routes, "create_tournament_from_gotha", fake_create)
     monkeypatch.setattr(admin_routes, "BASE_DIR", str(tmp_path))
     (tmp_path / "uploads").mkdir()
-    (tmp_path / "uploads" / "preview.xml").write_text("<Tournament/>", encoding="utf-8")
+    (tmp_path / "uploads" / preview_filename).write_text(
+        "<Tournament/>", encoding="utf-8"
+    )
 
     app.testing = True
     client = app.test_client()
@@ -1873,7 +2112,7 @@ def test_admin_import_commit_passes_reconciliation_decisions(monkeypatch, tmp_pa
         "/admin/import?lang=en",
         data={
             "action": "commit_preview",
-            "preview_file": "preview.xml",
+            "preview_file": preview_filename,
             "metadata_decision": "accept",
             "metadata_name": "Edited name",
             "metadata_description": "Edited description",
@@ -1926,6 +2165,14 @@ def test_admin_tournaments_import_handles_database_error(monkeypatch, tmp_path):
 
     monkeypatch.setattr(admin_routes, "get_db", get_test_db)
     monkeypatch.setattr(admin_routes, "create_tournament_from_gotha", raise_db_error)
+    monkeypatch.setattr(
+        admin_routes,
+        "build_import_preview",
+        lambda _conn, _path: {
+            "summary": {"matches_total": 0, "warnings": 0},
+            "warnings": [],
+        },
+    )
     monkeypatch.setattr(admin_routes, "BASE_DIR", str(tmp_path))
 
     app.testing = True
@@ -1938,12 +2185,19 @@ def test_admin_tournaments_import_handles_database_error(monkeypatch, tmp_path):
             "action": "import_opengotha",
             "idempotency_key": "import-test-key-001",
             "pairing_system": "swiss",
-            "file": (BytesIO(b"<Tournament/>"), "import-test.xml"),
+            "file": (
+                BytesIO(
+                    b"<TournamentParameterSet><GeneralParameterSet name='Test' "
+                    b"beginDate='2026-01-01'/><Players/><Games/></TournamentParameterSet>"
+                ),
+                "import-test.xml",
+            ),
         },
         content_type="multipart/form-data",
     )
 
     assert response.status_code == 302
+    assert list(upload_dir.iterdir()) == []
 
 
 def test_admin_update_tournament_status_async_request_returns_json(monkeypatch, tmp_path):
