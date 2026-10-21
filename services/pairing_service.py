@@ -1,8 +1,7 @@
 """Deterministic tournament pairing algorithms compatible with OpenGotha concepts."""
-
 from collections import defaultdict
 import re
-
+import random
 import networkx as nx
 
 
@@ -135,7 +134,10 @@ def _color_assignment(first, second):
         return _player_id(second), _player_id(first)
     if second_balance > first_balance:
         return _player_id(first), _player_id(second)
-    return _player_id(first), _player_id(second)
+    # If color balance is equal, assign randomly (50/50 chance)
+    if random.random() < 0.5:
+        return _player_id(first), _player_id(second)
+    return _player_id(second), _player_id(first)
 
 
 def _pair_group(group, category_strict=False):
